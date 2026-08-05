@@ -204,9 +204,9 @@
     margin-bottom: 0;
   }
   .legend-toggle {
-    font-size: 11px;
     color: var(--text-tertiary);
     transition: transform 0.2s ease;
+    flex-shrink: 0;
   }
   .legend.collapsed .legend-toggle { transform: rotate(-90deg); }
   .legend.collapsed #legendList { display: none; }
@@ -301,8 +301,6 @@
   /* ========= Responsive ========= */
   @media (max-width: 640px) {
     .navbar-inner { padding: 0 16px; }
-    .brand-text span { display: none; }
-    .legend { display: none; }
     .map-badge { display: none; }
   }
   @media (prefers-reduced-motion: reduce) {
@@ -330,7 +328,7 @@
 <div class="legend" id="legend">
   <div class="legend-header" onclick="toggleLegend()" title="点击收起/展开">
     <h4>谁的足迹</h4>
-    <span class="legend-toggle">▾</span>
+    <svg class="legend-toggle" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
   </div>
   <div id="legendList"><div class="empty">正在加载…</div></div>
 </div>
@@ -349,7 +347,7 @@
 <script src="city-codes.js"></script>
 <script src="app.js"></script>
 <script>
-const map = L.map('map').setView([35.5, 105], 4);
+const map = L.map('map', { zoomControl: false }).setView([35.5, 105], 4);
 // 高德免 Key 瓦片（国内加载快），style=8 街道图
 L.tileLayer('https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}', {
   subdomains: ['1', '2', '3', '4'],
