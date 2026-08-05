@@ -13,7 +13,6 @@
 ## 项目结构
 
 ```
-├── wrangler.toml           # D1 绑定配置
 ├── migrations/
 │   └── 0001_init.sql       # 建表 SQL
 ├── functions/              # Pages Functions（API）
@@ -24,61 +23,53 @@
 │   ├── manage.html         # 个人管理（登录/注册/增删改）
 │   ├── app.js              # API 客户端 + 会话
 │   └── cities.js           # 国内地级市坐标数据
+├── wrangler.local.toml     # 本地开发配置模板（复制成 wrangler.toml 用）
 └── README.md
 ```
 
+> **重要**：`wrangler.toml` 已被 `.gitignore` 忽略。部署到 Pages 不需要它，
+> D1 绑定直接在网页控制台配置（见下方步骤 4）。它只用于本地开发。
+
 ---
 
-## 部署步骤
+## 部署步骤（全网页操作，无需命令行）
 
 ### 1. 创建 D1 数据库
 
-Cloudflare 控制台 → **Workers & Pages** → **D1** → **Create database**
+Cloudflare 控制台 → **Workers & Pages** → **D1** → **创建数据库**（Create database）
 
 - 名字填：`qxwk-cityfootprint`
 - 创建后复制 **database_id**（一串 UUID）
 
-### 2. 配置 wrangler.toml
+### 2. 建表
 
-打开 `wrangler.toml`，把 `database_id` 替换成你的 D1 数据库 ID：
+在 D1 页面点进 `qxwk-cityfootprint` → **控制台**（Console）→ 把 `migrations/0001_init.sql`
+的内容整个复制进去 → **运行**（Run）
 
-```toml
-database_id = "你的-D1-数据库ID"
-```
+（会创建 `users` / `visits` / `sessions` 三张表）
 
-### 3. 应用数据库迁移
+### 3. 部署到 Cloudflare Pages
 
-```bash
-npm i -g wrangler
-wrangler d1 migrations apply qxwk-cityfootprint
-```
+CF 控制台 → **Workers & Pages** → **创建** → **Pages** → **连接到 Git** → 选择仓库，构建配置：
 
-（迁移会创建 `users` / `visits` / `sessions` 三张表）
+- **框架预设**：None
+- **构建命令**：留空
+- **构建输出目录**：`public`
 
-### 4. 部署到 Cloudflare Pages
+> 项目里**不要放 `wrangler.toml`**，否则部署会报 "Missing entry-point" 错误。
+> 它已被 `.gitignore` 忽略，正常推代码不会带上去。
 
-方式 A（推荐）：把项目推到 GitHub，在 CF Pages 里 **Create project → Connect to Git**，选择该仓库，构建配置：
+### 4. 绑定 D1 数据库（网页配置）
 
-- **Framework preset**：None
-- **Build command**：留空
-- **Build output directory**：`public`
+Pages 项目 → **设置**（Settings）→ **函数**（Functions）→ **D1 数据库绑定** → **添加绑定**：
 
-方式 B：本地直接上传
+- **变量名**：`DB`（必须大写）
+- **D1 数据库**：选择 `qxwk-cityfootprint`
+- 保存后**重新部署一次**（部署 → 三个点 → 重试部署）才生效
 
-```bash
-wrangler pages deploy public
-```
+### 5. 自定义域名（可选）
 
-### 5. 绑定 D1 数据库
-
-Pages 项目 → **Settings → Functions → D1 database bindings** → Add binding：
-
-- **Variable name**：`DB`
-- **D1 database**：选择 `qxwk-cityfootprint`
-
-### 6. 自定义域名
-
-Pages 项目 → **Custom domains** → 添加你的域名（如 `travel.qxwkstudio.top`）
+Pages 项目 → **自定义域**（Custom domains）→ 添加你的域名（如 `travel.qxwkstudio.top`）
 
 然后在主站对应位置放一个跳转链接指向它即可。
 
@@ -87,10 +78,11 @@ Pages 项目 → **Custom domains** → 添加你的域名（如 `travel.qxwkstu
 ## 本地开发
 
 ```bash
+# 复制本地配置模板并填入 D1 database_id
+cp wrangler.local.toml wrangler.toml
+# 编辑 wrangler.toml，把 database_id 换成你的
 wrangler pages dev public
 ```
-
-本地也会读取 `wrangler.toml` 里的 D1 绑定（需先建库并填 ID）。
 
 ---
 

@@ -1,0 +1,4 @@
+# wrangler.toml 只在本地开发使用，部署到 Pages 不需要它
+# 本地开发时把 wrangler.local.toml 复制成 wrangler.toml 并填入 D1 database_id
+wrangler.toml
+wrangler.local.toml
