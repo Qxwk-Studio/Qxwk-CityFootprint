@@ -3,6 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<!-- 边界接口(DataV)有来源检查，去掉 Referer 以绕过 403 -->
+<meta name="referrer" content="no-referrer">
 <title>City Footprint - 青翔未阔工作室</title>
 <meta name="description" content="City Footprint 城市足迹地图 —— 记录每个人去过的城市，点亮属于自己的颜色，与朋友们一起拼出一张五彩斑斓的足迹大地图。">
 <link rel="icon" type="image/webp" href="/favicon.webp">
@@ -365,7 +367,7 @@ let renderSeq = 0;           // 渲染批次号，避免异步竞态
 // 加载城市边界（阿里 DataV GeoAtlas），带缓存；失败返回 null
 function loadCityGeo(adcode) {
   if (!geoCache.has(adcode)) {
-    geoCache.set(adcode, fetch(`https://geo.datav.aliyun.com/areas_v3/bound/${adcode}_full.json`)
+    geoCache.set(adcode, fetch(`https://geo.datav.aliyun.com/areas_v3/bound/${adcode}_full.json`, { referrerPolicy: 'no-referrer' })
       .then(r => r.json())
       .catch(() => null));
   }
