@@ -78,6 +78,7 @@
   }
   .navbar-brand:hover { opacity: 0.85; }
 
+  /* 返回主页（导航栏右侧，与 webs 其他页面一致） */
   .back-link {
     display: inline-flex;
     align-items: center;
@@ -90,6 +91,7 @@
     font-size: 0.88rem;
     font-weight: 500;
     backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
     border: 1px solid rgba(147, 197, 253, 0.35);
     transition: all var(--transition);
     white-space: nowrap;
@@ -99,6 +101,33 @@
     background: rgba(37, 99, 235, 0.3);
     border-color: rgba(147, 197, 253, 0.6);
     transform: scale(1.02);
+  }
+
+  /* 右下角：管理我的足迹 */
+  .btn-manage {
+    position: fixed;
+    right: 16px;
+    bottom: 16px;
+    z-index: 1000;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 12px 24px;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    color: #fff;
+    text-decoration: none;
+    border-radius: 40px;
+    font-size: 0.92rem;
+    font-weight: 600;
+    box-shadow: var(--shadow-md);
+    transition: all var(--transition);
+    white-space: nowrap;
+    font-family: inherit;
+  }
+  .btn-manage:hover {
+    background: linear-gradient(135deg, var(--primary-hover), #0f766e);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-lg);
   }
   .brand-logo {
     width: 34px;
@@ -140,8 +169,10 @@
   /* ========= 图例 ========= */
   .legend {
     position: fixed;
-    top: calc(var(--nav-height) + 16px);
-    right: 16px;
+    /* 左上角；+72px 避开上方的空态提示（Leaflet topleft 控制） */
+    top: calc(var(--nav-height) + 72px);
+    left: 16px;
+    right: auto;
     z-index: 1000;
     background: rgba(255, 255, 255, 0.92);
     backdrop-filter: blur(12px);
@@ -265,16 +296,10 @@
       <img class="brand-logo" src="/favicon.webp" alt="City Footprint">
       <span class="brand-text"><b>City Footprint</b><span>我们走过的城市</span></span>
     </a>
-    <div style="display:flex;align-items:center;gap:10px;">
-      <a class="back-link" href="https://home.qxwkstudio.top/">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-        返回主页
-      </a>
-      <a class="btn-nav" href="manage.html">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-        管理我的足迹
-      </a>
-    </div>
+    <a class="back-link" href="https://home.qxwkstudio.top/">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      返回主页
+    </a>
   </div>
 </header>
 
@@ -282,6 +307,11 @@
   <h4>谁的足迹</h4>
   <div id="legendList"><div class="empty">正在加载…</div></div>
 </div>
+
+<a class="btn-manage" href="manage.html">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+  管理我的足迹
+</a>
 
 <div id="map"></div>
 
