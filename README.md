@@ -1,4 +1,4 @@
-# 🗺️ 拾光迹 · CityFootprint
+# 🗺️ City Footprint
 
 > 记录每个人去过的城市，在足迹地图上点亮属于自己的颜色。
 >
@@ -91,14 +91,12 @@ Pages 项目 → **自定义域**（Custom domains）→ 添加你的域名（�
 
 **1. 设置管理员密码**
 
-打开 `wrangler.toml` 的 `[vars]`，把 `ADMIN_PASSWORD` 改成强密码：
+`ADMIN_PASSWORD` 属于**机密**，不要写进 `wrangler.toml`（文件会被提交到仓库，密码会泄露）：
 
-```toml
-[vars]
-ADMIN_PASSWORD = "改成你的强密码"
-```
+- **线上**：CF 控制台 → Worker → **设置** → **变量与机密** → **机密** → 新增 `ADMIN_PASSWORD`
+- **本地**：填入 `.dev.vars` 文件（已被 `.gitignore` 排除，不会提交）
 
-线上想改码时不必重新部署，直接在 CF 控制台 → Worker → **设置** → **变量与机密** 里修改即可。
+改密码时不必重新部署，直接在 CF 控制台修改机密值即可。
 
 **2. 生成邀请码**
 

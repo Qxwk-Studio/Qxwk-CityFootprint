@@ -4,9 +4,9 @@ compatibility_date = "2026-08-05"
 compatibility_flags = ["nodejs_compat"]
 
 # 注册限制（一次性邀请码）
-# ADMIN_PASSWORD：生成邀请码用的管理接口密码。线上可在 CF 控制台单独修改
-[vars]
-ADMIN_PASSWORD = "Qxwk-CityFootprint"
+# 管理员密码 ADMIN_PASSWORD 是机密，不写进本文件（避免提交到仓库泄露）：
+#   - 线上：CF 控制台 → Worker → 设置 → 变量与机密 → 机密 新增 ADMIN_PASSWORD
+#   - 本地：填入 .dev.vars（已被 .gitignore 排除，不会提交）
 
 # 静态资源目录（public/）
 [assets]
