@@ -364,10 +364,10 @@ const offset = 0.15;         // 同城多点错开距离
 const geoCache = new Map();  // adcode -> Promise<geojson|null>，边界缓存
 let renderSeq = 0;           // 渲染批次号，避免异步竞态
 
-// 加载城市边界（阿里 DataV GeoAtlas），带缓存；失败返回 null
+// 加载城市边界（经 Worker 代理请求 DataV，规避浏览器跨域/来源限制），带缓存；失败返回 null
 function loadCityGeo(adcode) {
   if (!geoCache.has(adcode)) {
-    geoCache.set(adcode, fetch(`https://geo.datav.aliyun.com/areas_v3/bound/${adcode}_full.json`, { referrerPolicy: 'no-referrer' })
+    geoCache.set(adcode, fetch(`/api/geo/${adcode}`)
       .then(r => r.json())
       .catch(() => null));
   }

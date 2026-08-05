@@ -81,6 +81,19 @@ async function handleApi(request, env) {
     return json({ inviteCodeRequired: true });
   }
 
+  // GET /api/geo/:adcode（代理 DataV 边界接口，规避浏览器跨域/来源限制）
+  const geoMatch = path.match(/^\/api\/geo\/(\d+)$/);
+  if (method === 'GET' && geoMatch) {
+    const adcode = geoMatch[1];
+    try {
+      const resp = await fetch(`https://geo.datav.aliyun.com/areas_v3/bound/${adcode}_full.json`);
+      if (!resp.ok) return error('边界获取失败', resp.status);
+      return json(await resp.json());
+    } catch (e) {
+      return error('边界获取失败', 502);
+    }
+  }
+
   // POST /api/login
   if (method === 'POST' && path === '/api/login') {
     const body = await request.json().catch(() => ({}));

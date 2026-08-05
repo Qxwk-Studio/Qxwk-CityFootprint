@@ -307,7 +307,7 @@
           <div class="field"><label id="passLabel">密码</label><input id="loginPass" type="password" maxlength="50" required></div>
           <div class="field" id="pass2Field" style="display:none">
             <label>确认新密码</label>
-            <input id="loginPass2" type="password" minlength="4" maxlength="50" required>
+            <input id="loginPass2" type="password" minlength="4" maxlength="50" disabled>
           </div>
           <button class="btn btn-primary" type="submit" id="loginBtn">登录</button>
           <div class="msg" id="loginMsg"></div>
@@ -454,9 +454,12 @@ async function doLogin(e) {
 function enterSetPasswordMode() {
   setPwdMode = true;
   document.getElementById('passLabel').textContent = '设置新密码';
+  const pass2 = document.getElementById('loginPass2');
+  pass2.disabled = false;
+  pass2.required = true;
   document.getElementById('pass2Field').style.display = '';
   document.getElementById('loginPass').value = '';
-  document.getElementById('loginPass2').value = '';
+  pass2.value = '';
   document.getElementById('loginBtn').textContent = '设置密码并登录';
   const msg = document.getElementById('loginMsg');
   msg.className = 'msg ok';
