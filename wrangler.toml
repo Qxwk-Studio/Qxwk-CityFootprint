@@ -1,0 +1,15 @@
+name = "qxwk-cityfootprint"
+main = "src/worker.js"
+compatibility_date = "2026-08-05"
+compatibility_flags = ["nodejs_compat"]
+
+# 静态资源目录（public/）
+[assets]
+directory = "public"
+
+# D1 数据库绑定
+# 部署前：在 CF 控制台创建 D1 数据库后，把 database_id 替换成你的数据库 ID
+[[d1_databases]]
+binding = "DB"
+database_name = "qxwk-cityfootprint"
+database_id = "cdbbc8dd-874b-45db-bc02-2ef8e99683cb"

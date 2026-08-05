@@ -6,7 +6,7 @@
 - 注册后（昵称 + 密码）添加 / 修改 / 删除自己的足迹
 - 每个用户一种专属颜色，同城多点自动散开
 
-技术栈：Cloudflare Pages + Pages Functions + D1（SQLite）
+技术栈：Cloudflare Workers + Static Assets + D1（SQLite）
 
 ---
 
@@ -15,24 +15,21 @@
 ```
 ├── migrations/
 │   └── 0001_init.sql       # 建表 SQL
-├── functions/              # Pages Functions（API）
-│   ├── _lib/               # 密码哈希、会话、工具
-│   └── api/                # 接口
+├── src/
+│   ├── worker.js           # Worker 入口（/api/* 接口 + 静态资源回退）
+│   └── lib.js              # 密码哈希、会话、工具
 ├── public/                 # 静态前端
 │   ├── index.html          # 足迹大地图
 │   ├── manage.html         # 个人管理（登录/注册/增删改）
 │   ├── app.js              # API 客户端 + 会话
 │   └── cities.js           # 国内地级市坐标数据
-├── wrangler.local.toml     # 本地开发配置模板（复制成 wrangler.toml 用）
+├── wrangler.toml           # Worker 配置（D1 绑定在这填 database_id）
 └── README.md
 ```
 
-> **重要**：`wrangler.toml` 已被 `.gitignore` 忽略。部署到 Pages 不需要它，
-> D1 绑定直接在网页控制台配置（见下方步骤 4）。它只用于本地开发。
-
 ---
 
-## 部署步骤（全网页操作，无需命令行）
+## 部署步骤
 
 ### 1. 创建 D1 数据库
 
@@ -48,26 +45,23 @@ Cloudflare 控制台 → **Workers & Pages** → **D1** → **创建数据库**�
 
 （会创建 `users` / `visits` / `sessions` 三张表）
 
-### 3. 部署到 Cloudflare Pages
+### 3. 填入 database_id 并部署
 
-CF 控制台 → **Workers & Pages** → **创建** → **Pages** → **连接到 Git** → 选择仓库，构建配置：
+打开 `wrangler.toml`，把 `database_id` 替换成你的 D1 数据库 ID：
 
-- **框架预设**：None
-- **构建命令**：留空
-- **构建输出目录**：`public`
+```toml
+database_id = "你的-D1-数据库ID"
+```
 
-> 项目里**不要放 `wrangler.toml`**，否则部署会报 "Missing entry-point" 错误。
-> 它已被 `.gitignore` 忽略，正常推代码不会带上去。
+提交并推送。CF Pages 项目会自动执行 `npx wrangler deploy`，这次会正确部署成
+**Worker + 静态资源 + D1 绑定**（绑定写在 wrangler.toml 里，无需再去网页配置）。
 
-### 4. 绑定 D1 数据库（网页配置）
+> 之前遇到的两个问题已解决：
+> - `name` 已改为全小写
+> - `main` + `[assets]` 已配置，不再报 "Missing entry-point"
+> - 已删除 `functions/` 目录，不会再被误判成 Pages
 
-Pages 项目 → **设置**（Settings）→ **函数**（Functions）→ **D1 数据库绑定** → **添加绑定**：
-
-- **变量名**：`DB`（必须大写）
-- **D1 数据库**：选择 `qxwk-cityfootprint`
-- 保存后**重新部署一次**（部署 → 三个点 → 重试部署）才生效
-
-### 5. 自定义域名（可选）
+### 4. 自定义域名（可选）
 
 Pages 项目 → **自定义域**（Custom domains）→ 添加你的域名（如 `travel.qxwkstudio.top`）
 
@@ -78,11 +72,12 @@ Pages 项目 → **自定义域**（Custom domains）→ 添加你的域名（�
 ## 本地开发
 
 ```bash
-# 复制本地配置模板并填入 D1 database_id
-cp wrangler.local.toml wrangler.toml
-# 编辑 wrangler.toml，把 database_id 换成你的
-wrangler pages dev public
+npm i -g wrangler
+wrangler dev
 ```
+
+本地会读取 `wrangler.toml` 里的 D1 绑定（需先建库并填 ID），
+Worker 会在 `localhost:8787` 同时提供页面和 API。
 
 ---
 
@@ -104,4 +99,4 @@ wrangler pages dev public
 - **密码安全**：PBKDF2（10 万次迭代 + 随机盐）哈希存储，不落明文
 - **城市数据**：内置国内地级市坐标（`cities.js`），需要补充城市往对应省份数组加即可
 - **地图瓦片**：默认 OpenStreetMap，无需 Key；国内访问较慢可换成高德/腾讯地图（需申请 Key）
-- **免费额度**：Pages Functions 每天 10 万次请求、D1 5GB 存储，个人使用完全足够
+- **免费额度**：Workers 每天 10 万次请求、D1 5GB 存储，个人使用完全足够
