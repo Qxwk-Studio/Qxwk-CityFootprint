@@ -369,6 +369,22 @@ const CITIES = [
   { name: '阿克苏', province: '新疆', lat: 41.168, lng: 80.260 },
   { name: '和田', province: '新疆', lat: 37.114, lng: 79.923 },
   { name: '石河子', province: '新疆', lat: 44.306, lng: 86.080 },
+
+  // ── 台湾（「台湾」整体渲染色块；市县无边界，地图上回退为圆点）──
+  { name: '台湾', province: '台湾', lat: 23.700, lng: 121.000 }, // 台湾岛整体
+  { name: '台北', province: '台湾', lat: 25.033, lng: 121.565 },
+  { name: '新北', province: '台湾', lat: 25.012, lng: 121.466 },
+  { name: '桃园', province: '台湾', lat: 24.994, lng: 121.301 },
+  { name: '台中', province: '台湾', lat: 24.148, lng: 120.674 },
+  { name: '台南', province: '台湾', lat: 22.999, lng: 120.227 },
+  { name: '高雄', province: '台湾', lat: 22.616, lng: 120.313 },
+  { name: '基隆', province: '台湾', lat: 25.128, lng: 121.739 },
+  { name: '新竹', province: '台湾', lat: 24.802, lng: 120.969 },
+  { name: '嘉义', province: '台湾', lat: 23.480, lng: 120.449 },
+
+  // ── 香港 / 澳门（有边界色块）──
+  { name: '香港', province: '香港', lat: 22.319, lng: 114.169 },
+  { name: '澳门', province: '澳门', lat: 22.198, lng: 113.544 },
 ];
 
 // 供前端使用

@@ -86,7 +86,11 @@ async function handleApi(request, env) {
   if (method === 'GET' && geoMatch) {
     const adcode = geoMatch[1];
     try {
-      const resp = await fetch(`https://geo.datav.aliyun.com/areas_v3/bound/${adcode}_full.json`);
+      // 台湾(710000)无 _full 数据，用非 full 接口取全岛边界
+      const url = adcode === '710000'
+        ? 'https://geo.datav.aliyun.com/areas_v3/bound/710000.json'
+        : `https://geo.datav.aliyun.com/areas_v3/bound/${adcode}_full.json`;
+      const resp = await fetch(url);
       if (!resp.ok) return error('边界获取失败', resp.status);
       return json(await resp.json());
     } catch (e) {

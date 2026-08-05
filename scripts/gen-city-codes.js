@@ -73,6 +73,10 @@ async function main() {
     else missing.push(name);
   }
 
+  // 港澳台补充映射（DataV 不提供台湾省市县，但可用省级/整体边界）
+  const EXTRA_CODES = { '台湾': 710000, '香港': 810000, '澳门': 820000 };
+  Object.assign(codes, EXTRA_CODES);
+
   // 输出
   const out = '// 城市名 -> 行政区划代码(adcode) 映射\n// 由 scripts/gen-city-codes.js 从阿里 DataV GeoAtlas 生成，可重复运行更新\nconst CITY_CODES = ' + JSON.stringify(codes, null, 2) + ';\n';
   fs.writeFileSync(path.join(__dirname, '..', 'public', 'city-codes.js'), out);
