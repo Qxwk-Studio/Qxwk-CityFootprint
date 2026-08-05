@@ -129,7 +129,8 @@ Worker 会在 `localhost:8787` 同时提供页面和 API。
 | 方法 | 路径 | 鉴权 | 说明 |
 |------|------|------|------|
 | POST | `/api/register` | 无 | 注册（需一次性邀请码），返回 token |
-| POST | `/api/login` | 无 | 登录，返回 token |
+| POST | `/api/login` | 无 | 登录，返回 token（密码为 NULL 时返回需设置新密码信号） |
+| POST | `/api/set-password` | 无 | 密码为 NULL 时设置新密码（管理员清空后重置用） |
 | POST | `/api/invites` | 管理员密码 | 生成一次性邀请码（count 1-20） |
 | GET | `/api/config` | 无 | 注册配置（前端判断是否显示邀请码） |
 | GET | `/api/cities` | 无 | 所有城市 + 谁去过（地图用） |
@@ -150,6 +151,14 @@ Worker 会在 `localhost:8787` 同时提供页面和 API。
 
 **3. 查看免费额度**
 - Workers 每天 10 万次请求、D1 5GB 存储，个人使用完全足够
+
+**4. 重置用户密码（忘记密码）**
+- 在 D1 控制台把该用户的 `password_hash` 改成 `NULL`：
+  ```sql
+  UPDATE users SET password_hash = NULL WHERE nickname = '用户名';
+  ```
+- 该用户下次登录时会提示"设置新密码"，设置后即可正常登录
+- ⚠️ 注意：此时任何知道该昵称的人都能设置密码，请仅在信任本人时操作
 
 ---
 

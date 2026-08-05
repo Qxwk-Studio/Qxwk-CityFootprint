@@ -90,9 +90,30 @@ async function handleApi(request, env) {
 
     const user = await DB.prepare('SELECT * FROM users WHERE nickname = ?').bind(nickname).first();
     if (!user) return error('昵称或密码不正确', 401);
+    // 密码字段为 NULL（管理员已清空，待重置）：返回信号，由前端引导设置新密码
+    if (!user.password_hash) {
+      return json({ needSetPassword: true, nickname: user.nickname });
+    }
     const ok = await verifyPassword(password, user.password_hash);
     if (!ok) return error('昵称或密码不正确', 401);
 
+    const token = await createSession(DB, user.id);
+    return json({ token, userId: user.id, nickname: user.nickname, color: user.color });
+  }
+
+  // POST /api/set-password（仅当密码字段为 NULL 时可设置；管理员清空后用于重置）
+  if (method === 'POST' && path === '/api/set-password') {
+    const body = await request.json().catch(() => ({}));
+    const nickname = String(body.nickname || '').trim();
+    const password = String(body.password || '');
+
+    if (!isValidPassword(password)) return error('密码需为 4-50 个字符');
+    const user = await DB.prepare('SELECT * FROM users WHERE nickname = ?').bind(nickname).first();
+    if (!user) return error('用户不存在', 404);
+    if (user.password_hash) return error('该账号已有密码，如需重置请联系管理员', 403);
+
+    const passwordHash = await hashPassword(password);
+    await DB.prepare('UPDATE users SET password_hash = ? WHERE id = ?').bind(passwordHash, user.id).run();
     const token = await createSession(DB, user.id);
     return json({ token, userId: user.id, nickname: user.nickname, color: user.color });
   }

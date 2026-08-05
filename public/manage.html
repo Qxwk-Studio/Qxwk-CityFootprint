@@ -304,13 +304,21 @@
 
         <form id="loginForm" onsubmit="return doLogin(event)">
           <div class="field"><label>昵称</label><input id="loginNick" maxlength="20" required></div>
-          <div class="field"><label>密码</label><input id="loginPass" type="password" maxlength="50" required></div>
-          <button class="btn btn-primary" type="submit">登录</button>
+          <div class="field"><label id="passLabel">密码</label><input id="loginPass" type="password" maxlength="50" required></div>
+          <div class="field" id="pass2Field" style="display:none">
+            <label>确认新密码</label>
+            <input id="loginPass2" type="password" minlength="4" maxlength="50" required>
+          </div>
+          <button class="btn btn-primary" type="submit" id="loginBtn">登录</button>
           <div class="msg" id="loginMsg"></div>
         </form>
 
         <form id="regForm" style="display:none" onsubmit="return doRegister(event)">
-          <div class="field"><label>昵称</label><input id="regNick" maxlength="20" required></div>
+          <div class="field">
+            <label>昵称</label>
+            <input id="regNick" maxlength="20" required>
+            <div class="hint">昵称注册后不可修改</div>
+          </div>
           <div class="field"><label>密码</label><input id="regPass" type="password" minlength="4" maxlength="50" required></div>
           <div class="field"><label>确认密码</label><input id="regPass2" type="password" required></div>
           <div class="field" id="inviteField">
@@ -416,19 +424,44 @@ function switchTab(mode) {
   document.getElementById('regForm').style.display = mode === 'reg' ? '' : 'none';
 }
 
+let setPwdMode = false;
+
 async function doLogin(e) {
   e.preventDefault();
   const msg = document.getElementById('loginMsg');
   msg.className = 'msg error';
+  if (setPwdMode && loginPass.value !== loginPass2.value) {
+    msg.textContent = '两次输入的新密码不一致';
+    return false;
+  }
   try {
-    const data = await api('/login', {
+    const endpoint = setPwdMode ? '/set-password' : '/login';
+    const data = await api(endpoint, {
       method: 'POST',
       body: JSON.stringify({ nickname: loginNick.value.trim(), password: loginPass.value }),
     });
+    if (data.needSetPassword) {
+      enterSetPasswordMode();
+      return false;
+    }
     saveSession(data);
     enterUserView();
   } catch (err) { msg.textContent = err.message; }
   return false;
+}
+
+// 进入"设置新密码"模式（账号密码被管理员清空后，首次登录时触发）
+function enterSetPasswordMode() {
+  setPwdMode = true;
+  document.getElementById('passLabel').textContent = '设置新密码';
+  document.getElementById('pass2Field').style.display = '';
+  document.getElementById('loginPass').value = '';
+  document.getElementById('loginPass2').value = '';
+  document.getElementById('loginBtn').textContent = '设置密码并登录';
+  const msg = document.getElementById('loginMsg');
+  msg.className = 'msg ok';
+  msg.textContent = '该账号尚未设置密码，请设置新密码后即可登录';
+  document.getElementById('loginPass').focus();
 }
 
 async function doRegister(e) {

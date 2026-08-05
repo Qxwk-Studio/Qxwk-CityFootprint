@@ -184,14 +184,30 @@
     overflow-y: auto;
     min-width: 170px;
   }
+  .legend-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    user-select: none;
+    margin-bottom: 6px;
+    padding: 2px;
+  }
   .legend h4 {
     font-size: 0.72rem;
     font-weight: 600;
     color: var(--text-tertiary);
     text-transform: uppercase;
     letter-spacing: 0.6px;
-    margin-bottom: 10px;
+    margin-bottom: 0;
   }
+  .legend-toggle {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    transition: transform 0.2s ease;
+  }
+  .legend.collapsed .legend-toggle { transform: rotate(-90deg); }
+  .legend.collapsed #legendList { display: none; }
   .legend .user {
     display: flex;
     align-items: center;
@@ -217,7 +233,14 @@
     padding: 1px 8px;
     border-radius: 40px;
   }
-  .legend .user.active { font-weight: 600; color: var(--primary); }
+  .legend .user-check {
+    width: 14px;
+    height: 14px;
+    margin: 0;
+    accent-color: var(--primary);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
   .legend .empty { font-size: 0.8rem; color: var(--text-tertiary); text-align: center; padding: 8px 0; }
 
   /* ========= 加载 / 空态 ========= */
@@ -303,7 +326,10 @@
 </header>
 
 <div class="legend" id="legend">
-  <h4>谁的足迹</h4>
+  <div class="legend-header" onclick="toggleLegend()" title="点击收起/展开">
+    <h4>谁的足迹</h4>
+    <span class="legend-toggle">▾</span>
+  </div>
   <div id="legendList"><div class="empty">正在加载…</div></div>
 </div>
 
@@ -318,6 +344,7 @@
 
 <script src="vendor/leaflet.js"></script>
 <script src="cities.js"></script>
+<script src="city-codes.js"></script>
 <script src="app.js"></script>
 <script>
 const map = L.map('map').setView([35.5, 105], 4);
@@ -331,8 +358,19 @@ L.tileLayer('https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scal
 let markers = [];
 const userInfo = new Map(); // nickname -> { color }
 const userCount = new Map(); // nickname -> 足迹数
-let filterUser = null;      // 当前筛选的昵称
 const offset = 0.15;         // 同城多点错开距离
+const geoCache = new Map();  // adcode -> Promise<geojson|null>，边界缓存
+let renderSeq = 0;           // 渲染批次号，避免异步竞态
+
+// 加载城市边界（阿里 DataV GeoAtlas），带缓存；失败返回 null
+function loadCityGeo(adcode) {
+  if (!geoCache.has(adcode)) {
+    geoCache.set(adcode, fetch(`https://geo.datav.aliyun.com/areas_v3/bound/${adcode}_full.json`)
+      .then(r => r.json())
+      .catch(() => null));
+  }
+  return geoCache.get(adcode);
+}
 
 function render(data) {
   document.getElementById('loading').remove();
@@ -360,15 +398,28 @@ function render(data) {
     }
   }
 
-  // 图例
+  // 图例（复选框多选，默认全选）
   const legendList = document.getElementById('legendList');
   legendList.innerHTML = '';
   for (const [name, color] of userInfo) {
-    const div = document.createElement('div');
-    div.className = 'user' + (name === filterUser ? ' active' : '');
-    div.innerHTML = `<span class="dot" style="background:${color}"></span>${escapeHtml(name)}<span class="count">${userCount.get(name)}</span>`;
-    div.onclick = () => { filterUser = filterUser === name ? null : name; renderFilter(); };
-    legendList.appendChild(div);
+    const label = document.createElement('label');
+    label.className = 'user';
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.className = 'user-check';
+    cb.checked = true;
+    cb.dataset.nick = name;
+    cb.addEventListener('change', renderFilter);
+    const dot = document.createElement('span');
+    dot.className = 'dot';
+    dot.style.background = color;
+    const txt = document.createElement('span');
+    txt.textContent = name; // textContent 自动转义，安全
+    const cnt = document.createElement('span');
+    cnt.className = 'count';
+    cnt.textContent = userCount.get(name);
+    label.append(cb, dot, txt, cnt);
+    legendList.appendChild(label);
   }
   if (!userInfo.size) legendList.innerHTML = '<div class="empty">暂无数据</div>';
 
@@ -376,44 +427,72 @@ function render(data) {
 }
 
 function renderFilter() {
-  // 清掉旧标记
+  // 清掉旧图层
+  const seq = ++renderSeq;
   markers.forEach(m => m.remove());
   markers = [];
 
+  // 读取勾选的用户（全勾选 = 显示全部；全不勾 = 显示空）
+  const selected = new Set(
+    [...document.querySelectorAll('#legendList .user-check:checked')].map(cb => cb.dataset.nick)
+  );
+  const allChecked = selected.size === userInfo.size;
+
   const cities = window.__citiesData;
   for (const c of cities) {
-    // 筛选：只看某人的足迹时，仅画该用户的城市
-    if (filterUser && !c.people.some(p => p.nickname === filterUser)) continue;
+    const people = allChecked ? c.people : c.people.filter(p => selected.has(p.nickname));
+    if (!people.length) continue;
+    // 城市颜色：取该城市被勾选人中最后一位的颜色
+    const color = people[people.length - 1].color;
+    const popupHtml = buildPopupHtml(c, people);
 
-    const people = filterUser ? c.people.filter(p => p.nickname === filterUser) : c.people;
-    people.forEach((p, idx) => {
-      // 同城多人错开
-      const angle = (idx / people.length) * Math.PI * 2;
-      const radius = people.length === 1 ? 0 : 4;
-      const lat = c.lat + Math.cos(angle) * radius * 0.006;
-      const lng = c.lng + Math.sin(angle) * radius * 0.008;
+    const adcode = CITY_CODES[c.city];
+    if (!adcode) { addFallbackDot(c, color, popupHtml); continue; }
 
-      const circle = L.circleMarker([lat, lng], {
-        radius: 7,
-        color: '#fff',
-        weight: 1.5,
-        fillColor: p.color,
-        fillOpacity: 0.9,
-      });
-
-      // 弹窗：该城市所有去的人
-      const personHtml = people.map(q => `
-        <div class="popup-person">
-          <span class="name" style="color:${q.color}">${escapeHtml(q.nickname)}</span>
-          <span class="meta">${escapeHtml(fmtDate(q.visit_date))}</span>
-          ${q.note ? `<span class="note">· ${escapeHtml(q.note)}</span>` : ''}
-        </div>`).join('');
-
-      circle.bindPopup(`<div class="popup-title">${escapeHtml(c.city)}</div>${personHtml}`);
-      circle.addTo(map);
-      markers.push(circle);
+    // 异步加载边界，渲染半透明多边形；失败回退圆点
+    loadCityGeo(adcode).then(geo => {
+      if (seq !== renderSeq) return; // 本次渲染已被新筛选作废
+      if (geo) addPolygon(geo, color, popupHtml);
+      else addFallbackDot(c, color, popupHtml);
     });
   }
+}
+
+// 收起/展开图例面板
+function toggleLegend() {
+  document.getElementById('legend').classList.toggle('collapsed');
+}
+
+// 弹窗内容：城市名 + 所有去过的人
+function buildPopupHtml(c, people) {
+  return `<div class="popup-title">${escapeHtml(c.city)}</div>` + people.map(q => `
+    <div class="popup-person">
+      <span class="name" style="color:${q.color}">${escapeHtml(q.nickname)}</span>
+      <span class="meta">${escapeHtml(fmtDate(q.visit_date))}</span>
+      ${q.note ? `<span class="note">· ${escapeHtml(q.note)}</span>` : ''}
+    </div>`).join('');
+}
+
+// 渲染市辖区半透明多边形（weight:0 消除区县间描边，hover 提亮）
+function addPolygon(geo, color, popupHtml) {
+  const layer = L.geoJSON(geo, {
+    style: { color, weight: 0, fillColor: color, fillOpacity: 0.4 },
+  });
+  layer.on('mouseover', () => layer.setStyle({ fillOpacity: 0.6 }));
+  layer.on('mouseout', () => layer.setStyle({ fillOpacity: 0.4 }));
+  layer.bindPopup(popupHtml);
+  layer.addTo(map);
+  markers.push(layer);
+}
+
+// 边界加载失败或无 adcode 时的回退：圆点
+function addFallbackDot(c, color, popupHtml) {
+  const circle = L.circleMarker([c.lat, c.lng], {
+    radius: 7, color: '#fff', weight: 1.5, fillColor: color, fillOpacity: 0.9,
+  });
+  circle.bindPopup(popupHtml);
+  circle.addTo(map);
+  markers.push(circle);
 }
 
 function escapeHtml(t) {
