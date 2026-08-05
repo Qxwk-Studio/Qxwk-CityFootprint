@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>拾光迹 · CityFootprint</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
+  body { font-family: system-ui, -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif; }
+
+  #map { position: absolute; inset: 0; z-index: 0; background: #eef2f6; }
+
+  /* 顶部浮条 */
+  .topbar {
+    position: fixed; top: 16px; left: 16px; z-index: 1000;
+    display: flex; align-items: center; gap: 12px;
+    background: rgba(255,255,255,0.92);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(226,232,240,0.8);
+    border-radius: 14px;
+    padding: 10px 16px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.10);
+  }
+  .topbar .logo {
+    width: 34px; height: 34px; border-radius: 9px;
+    background: linear-gradient(135deg, #2563eb, #0d9488);
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-weight: 700; font-size: 16px;
+  }
+  .topbar .title { line-height: 1.2; }
+  .topbar .title b { font-size: 16px; display: block; }
+  .topbar .title span { font-size: 11px; color: #94a3b8; }
+
+  .topbar .btn {
+    text-decoration: none; color: #fff;
+    background: linear-gradient(135deg, #2563eb, #0d9488);
+    border: none; border-radius: 8px;
+    padding: 7px 14px; font-size: 13px; font-weight: 500; cursor: pointer;
+    transition: transform .15s, box-shadow .15s;
+    white-space: nowrap;
+  }
+  .topbar .btn:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(37,99,235,.3); }
+
+  /* 用户图例 */
+  .legend {
+    position: fixed; top: 16px; right: 16px; z-index: 1000;
+    background: rgba(255,255,255,0.92);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(226,232,240,0.8);
+    border-radius: 14px;
+    padding: 12px 16px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.10);
+    max-height: calc(100vh - 80px);
+    overflow-y: auto;
+    min-width: 160px;
+  }
+  .legend h4 { font-size: 12px; color: #94a3b8; margin-bottom: 8px; letter-spacing: .5px; }
+  .legend .user {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13px; color: #334155; padding: 4px 0;
+    cursor: pointer; user-select: none;
+  }
+  .legend .dot {
+    width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0;
+    box-shadow: 0 0 0 2px #fff, 0 1px 3px rgba(0,0,0,.2);
+  }
+  .legend .count { margin-left: auto; font-size: 11px; color: #94a3b8; }
+  .legend .user.active { font-weight: 600; }
+  .legend .empty { font-size: 12px; color: #94a3b8; text-align: center; padding: 6px 0; }
+
+  /* 加载 / 空态 */
+  .overlay-msg {
+    position: fixed; inset: 0; z-index: 1500;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: #f8fafc; color: #94a3b8; font-size: 14px; gap: 12px;
+    transition: opacity .4s ease;
+  }
+  .spinner {
+    width: 26px; height: 26px; border-radius: 50%;
+    border: 3px solid #e2e8f0; border-top-color: #2563eb;
+    animation: spin .8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Leaflet 弹窗美化 */
+  .leaflet-popup-content-wrapper { border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,.15); }
+  .leaflet-popup-content { margin: 14px 16px; }
+  .popup-title { font-size: 15px; font-weight: 600; margin-bottom: 8px; color: #0f172a; }
+  .popup-person { display: flex; align-items: baseline; gap: 6px; font-size: 13px; padding: 3px 0; color: #475569; }
+  .popup-person .name { font-weight: 600; }
+  .popup-person .meta { color: #94a3b8; font-size: 12px; }
+  .popup-person .note { color: #64748b; }
+
+  @media (max-width: 600px) {
+    .legend { display: none; }
+    .topbar { top: 12px; left: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="overlay-msg" id="loading"><div class="spinner"></div><div>正在绘制足迹地图…</div></div>
+
+<div class="topbar">
+  <div class="logo">迹</div>
+  <div class="title">
+    <b>拾光迹</b>
+    <span>CityFootprint · 我们走过的城市</span>
+  </div>
+  <a class="btn" href="manage.html">管理我的足迹</a>
+</div>
+
+<div class="legend" id="legend">
+  <h4>谁的足迹</h4>
+  <div id="legendList"><div class="empty">正在加载…</div></div>
+</div>
+
+<div id="map"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="cities.js"></script>
+<script src="app.js"></script>
+<script>
+const map = L.map('map').setView([35.5, 105], 4);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom: 18,
+  attribution: '&copy; OpenStreetMap',
+}).addTo(map);
+
+let markers = [];
+const userInfo = new Map(); // nickname -> { color }
+const userCount = new Map(); // nickname -> 足迹数
+let filterUser = null;      // 当前筛选的昵称
+const offset = 0.15;         // 同城多点错开距离
+
+function render(data) {
+  document.getElementById('loading').remove();
+
+  if (!data.cities.length) {
+    const empty = L.control({ position: 'topleft' });
+    empty.onAdd = () => {
+      const div = L.DomUtil.create('div');
+      div.className = 'leaflet-control';
+      div.style.cssText = 'background:#fff;padding:14px 18px;border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,.12);font-size:14px;color:#64748b;';
+      div.textContent = '还没有足迹，去添加第一座城市吧 ✈️';
+      return div;
+    };
+    empty.addTo(map);
+    return;
+  }
+
+  // 收集用户信息
+  for (const c of data.cities) {
+    for (const p of c.people) {
+      userInfo.set(p.nickname, p.color);
+      userCount.set(p.nickname, (userCount.get(p.nickname) || 0) + 1);
+    }
+  }
+
+  // 图例
+  const legendList = document.getElementById('legendList');
+  legendList.innerHTML = '';
+  for (const [name, color] of userInfo) {
+    const div = document.createElement('div');
+    div.className = 'user' + (name === filterUser ? ' active' : '');
+    div.innerHTML = `<span class="dot" style="background:${color}"></span>${escapeHtml(name)}<span class="count">${userCount.get(name)}</span>`;
+    div.onclick = () => { filterUser = filterUser === name ? null : name; renderFilter(); };
+    legendList.appendChild(div);
+  }
+  if (!userInfo.size) legendList.innerHTML = '<div class="empty">暂无数据</div>';
+
+  renderFilter();
+}
+
+function renderFilter() {
+  // 清掉旧标记
+  markers.forEach(m => m.remove());
+  markers = [];
+
+  const cities = window.__citiesData;
+  for (const c of cities) {
+    // 筛选：只看某人的足迹时，仅画该用户的城市
+    if (filterUser && !c.people.some(p => p.nickname === filterUser)) continue;
+
+    const people = filterUser ? c.people.filter(p => p.nickname === filterUser) : c.people;
+    people.forEach((p, idx) => {
+      // 同城多人错开
+      const angle = (idx / people.length) * Math.PI * 2;
+      const radius = people.length === 1 ? 0 : 4;
+      const lat = c.lat + Math.cos(angle) * radius * 0.006;
+      const lng = c.lng + Math.sin(angle) * radius * 0.008;
+
+      const circle = L.circleMarker([lat, lng], {
+        radius: 7,
+        color: '#fff',
+        weight: 1.5,
+        fillColor: p.color,
+        fillOpacity: 0.9,
+      });
+
+      // 弹窗：该城市所有去的人
+      const personHtml = people.map(q => `
+        <div class="popup-person">
+          <span class="name" style="color:${q.color}">${escapeHtml(q.nickname)}</span>
+          <span class="meta">${escapeHtml(fmtDate(q.visit_date))}</span>
+          ${q.note ? `<span class="note">· ${escapeHtml(q.note)}</span>` : ''}
+        </div>`).join('');
+
+      circle.bindPopup(`<div class="popup-title">${escapeHtml(c.city)}</div>${personHtml}`);
+      circle.addTo(map);
+      markers.push(circle);
+    });
+  }
+}
+
+function escapeHtml(t) {
+  const d = document.createElement('div');
+  d.textContent = t || '';
+  return d.innerHTML;
+}
+
+// 拉数据
+api('/cities')
+  .then(data => { window.__citiesData = data.cities; render(data); })
+  .catch(err => {
+    document.getElementById('loading').innerHTML = `<div>❌ ${escapeHtml(err.message)}</div>`;
+  });
+</script>
+</body>
+</html>

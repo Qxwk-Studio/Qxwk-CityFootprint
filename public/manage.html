@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>管理足迹 · 拾光迹</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: system-ui, -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    background: #f8fafc; color: #0f172a; min-height: 100vh;
+  }
+  .container { max-width: 640px; margin: 0 auto; padding: 24px 16px 60px; }
+
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  .topbar .title { font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+  .topbar .back {
+    text-decoration: none; color: #2563eb; font-size: 13px;
+    padding: 6px 12px; border-radius: 8px; background: #eff6ff;
+  }
+
+  .card {
+    background: #fff; border: 1px solid #e2e8f0; border-radius: 14px;
+    padding: 20px; margin-bottom: 16px; box-shadow: 0 2px 10px rgba(0,0,0,.04);
+  }
+  .card h3 { font-size: 15px; margin-bottom: 14px; }
+
+  /* 表单 */
+  label { display: block; font-size: 13px; color: #64748b; margin-bottom: 6px; }
+  input, select, textarea {
+    width: 100%; padding: 10px 12px; border: 1.5px solid #e2e8f0; border-radius: 9px;
+    font-size: 14px; font-family: inherit; color: #0f172a; background: #fff;
+    transition: border-color .15s;
+  }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: #2563eb; }
+  .field { margin-bottom: 14px; }
+  .row { display: flex; gap: 10px; }
+  .row > div { flex: 1; }
+  textarea { resize: vertical; min-height: 52px; }
+
+  .btn {
+    border: none; border-radius: 9px; padding: 10px 16px; font-size: 14px; font-weight: 500;
+    cursor: pointer; transition: transform .15s, box-shadow .15s, background .15s;
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, #2563eb, #0d9488); color: #fff; width: 100%;
+  }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(37,99,235,.3); }
+  .btn-ghost { background: #f1f5f9; color: #475569; }
+  .btn-ghost:hover { background: #e2e8f0; }
+  .btn-danger { background: #fee2e2; color: #dc2626; }
+  .btn-danger:hover { background: #fecaca; }
+
+  .btn-sm { padding: 6px 12px; font-size: 12px; border-radius: 7px; }
+
+  /* 登录注册切换 */
+  .tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+  .tab {
+    flex: 1; text-align: center; padding: 10px; border-radius: 10px; cursor: pointer;
+    font-size: 14px; font-weight: 500; color: #64748b; background: #fff;
+    border: 1.5px solid #e2e8f0; transition: all .15s;
+  }
+  .tab.active { background: #eff6ff; color: #2563eb; border-color: #2563eb; }
+
+  /* 足迹列表 */
+  .visit-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px; border-bottom: 1px solid #f1f5f9;
+  }
+  .visit-item:last-child { border-bottom: none; }
+  .visit-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+  .visit-main { flex: 1; min-width: 0; }
+  .visit-city { font-weight: 600; font-size: 15px; }
+  .visit-meta { font-size: 12px; color: #94a3b8; margin-top: 2px; }
+  .visit-note { font-size: 13px; color: #64748b; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .visit-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+  .empty { text-align: center; color: #94a3b8; font-size: 14px; padding: 30px 0; }
+  .msg { font-size: 13px; margin-top: 10px; }
+  .msg.error { color: #dc2626; }
+  .msg.ok { color: #16a34a; }
+
+  .check-row { display: flex; align-items: center; gap: 8px; }
+  .check-row input[type=checkbox] { width: auto; }
+  .check-row label { margin-bottom: 0; }
+  .hint { font-size: 12px; color: #94a3b8; margin-top: 4px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="topbar">
+    <div class="title">🗺️ 管理我的足迹</div>
+    <a class="back" href="index.html">← 返回地图</a>
+  </div>
+
+  <!-- 未登录 -->
+  <div id="authView">
+    <div class="card">
+      <div class="tabs">
+        <div class="tab active" id="tabLogin" onclick="switchTab('login')">登录</div>
+        <div class="tab" id="tabReg" onclick="switchTab('reg')">注册</div>
+      </div>
+
+      <form id="loginForm" onsubmit="return doLogin(event)">
+        <div class="field"><label>昵称</label><input id="loginNick" maxlength="20" required></div>
+        <div class="field"><label>密码</label><input id="loginPass" type="password" maxlength="50" required></div>
+        <button class="btn btn-primary" type="submit">登录</button>
+        <div class="msg" id="loginMsg"></div>
+      </form>
+
+      <form id="regForm" style="display:none" onsubmit="return doRegister(event)">
+        <div class="field"><label>昵称</label><input id="regNick" maxlength="20" required></div>
+        <div class="field"><label>密码</label><input id="regPass" type="password" minlength="4" maxlength="50" required></div>
+        <div class="field"><label>确认密码</label><input id="regPass2" type="password" required></div>
+        <button class="btn btn-primary" type="submit">注册并登录</button>
+        <div class="msg" id="regMsg"></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 已登录 -->
+  <div id="userView" style="display:none">
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+        <div style="font-size:14px;font-weight:600;" id="welcomeText"></div>
+        <button class="btn btn-ghost btn-sm" onclick="logout()">退出登录</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 id="formTitle">✈️ 添加足迹</h3>
+      <form id="addForm" onsubmit="return addVisit(event)">
+        <div class="field">
+          <label>城市</label>
+          <input list="cityList" id="visitCity" placeholder="输入城市名选择" required autocomplete="off">
+          <datalist id="cityList"></datalist>
+        </div>
+        <div class="row">
+          <div>
+            <label>时间</label>
+            <input id="visitDate" placeholder="如 2024-08" autocomplete="off">
+          </div>
+          <div class="check-row" style="align-self:flex-end;padding-bottom:10px;">
+            <input type="checkbox" id="forgotDate" onchange="toggleDate()">
+            <label for="forgotDate">记不清了</label>
+          </div>
+        </div>
+        <div class="field">
+          <label>备注（可选）</label>
+          <input id="visitNote" maxlength="200" placeholder="一句话留下回忆…" autocomplete="off">
+        </div>
+        <button class="btn btn-primary" type="submit">添加</button>
+        <div class="msg" id="addMsg"></div>
+      </form>
+    </div>
+
+    <div class="card">
+      <h3>📍 我的足迹</h3>
+      <div id="visitList"><div class="empty">正在加载…</div></div>
+    </div>
+  </div>
+
+</div>
+
+<script src="cities.js"></script>
+<script src="app.js"></script>
+<script>
+// 城市下拉数据
+const datalist = document.getElementById('cityList');
+(window.CITIES || []).forEach(c => {
+  const opt = document.createElement('option');
+  opt.value = c.name;
+  datalist.appendChild(opt);
+});
+
+// 登录/注册切换
+function switchTab(mode) {
+  document.getElementById('tabLogin').classList.toggle('active', mode === 'login');
+  document.getElementById('tabReg').classList.toggle('active', mode === 'reg');
+  document.getElementById('loginForm').style.display = mode === 'login' ? '' : 'none';
+  document.getElementById('regForm').style.display = mode === 'reg' ? '' : 'none';
+}
+
+async function doLogin(e) {
+  e.preventDefault();
+  const msg = document.getElementById('loginMsg');
+  msg.className = 'msg error';
+  try {
+    const data = await api('/login', {
+      method: 'POST',
+      body: JSON.stringify({ nickname: loginNick.value.trim(), password: loginPass.value }),
+    });
+    saveSession(data);
+    enterUserView();
+  } catch (err) { msg.textContent = err.message; }
+  return false;
+}
+
+async function doRegister(e) {
+  e.preventDefault();
+  const msg = document.getElementById('regMsg');
+  msg.className = 'msg error';
+  if (regPass.value !== regPass2.value) { msg.textContent = '两次密码不一致'; return false; }
+  try {
+    const data = await api('/register', {
+      method: 'POST',
+      body: JSON.stringify({ nickname: regNick.value.trim(), password: regPass.value }),
+    });
+    saveSession(data);
+    enterUserView();
+  } catch (err) { msg.textContent = err.message; }
+  return false;
+}
+
+// 日期切换
+function toggleDate() {
+  document.getElementById('visitDate').disabled = document.getElementById('forgotDate').checked;
+  if (document.getElementById('forgotDate').checked) document.getElementById('visitDate').value = '';
+}
+
+function enterUserView() {
+  document.getElementById('authView').style.display = 'none';
+  document.getElementById('userView').style.display = '';
+  const s = getSession();
+  document.getElementById('welcomeText').textContent = '你好，' + (s ? s.nickname : '') + ' 👋';
+  loadVisits();
+}
+
+let myVisits = [];
+
+async function loadVisits() {
+  const list = document.getElementById('visitList');
+  try {
+    const data = await api('/my-visits');
+    myVisits = data.visits;
+    if (!myVisits.length) { list.innerHTML = '<div class="empty">还没有足迹，添加第一座城市吧 ✈️</div>'; return; }
+    list.innerHTML = '';
+    for (const v of myVisits) {
+      const item = document.createElement('div');
+      item.className = 'visit-item';
+      item.innerHTML = `
+        <span class="visit-dot" style="background:${(getSession() || {}).color || '#2563eb'}"></span>
+        <div class="visit-main">
+          <div class="visit-city">${escapeHtml(v.city)}</div>
+          <div class="visit-meta">${escapeHtml(fmtDate(v.visit_date))}</div>
+          ${v.note ? `<div class="visit-note">${escapeHtml(v.note)}</div>` : ''}
+        </div>
+        <div class="visit-actions">
+          <button class="btn btn-ghost btn-sm" onclick="startEdit(${v.id})">编辑</button>
+          <button class="btn btn-danger btn-sm" onclick="delVisit(${v.id})">删除</button>
+        </div>`;
+      list.appendChild(item);
+    }
+  } catch (err) {
+    list.innerHTML = '<div class="empty">加载失败：' + escapeHtml(err.message) + '</div>';
+  }
+}
+
+let editingId = null;
+const submitBtn = () => document.querySelector('#addForm .btn-primary');
+
+async function addVisit(e) {
+  e.preventDefault();
+  const msg = document.getElementById('addMsg');
+  msg.className = 'msg error';
+  const name = document.getElementById('visitCity').value.trim();
+  const c = findCity(name);
+  if (!c) { msg.textContent = '未找到该城市，请从下拉列表选择'; return false; }
+
+  const payload = {
+    city: name,
+    lat: c.lat,
+    lng: c.lng,
+    visit_date: document.getElementById('visitDate').value || null,
+    note: document.getElementById('visitNote').value.trim(),
+  };
+
+  try {
+    if (editingId) {
+      await api('/visits/' + editingId, { method: 'PUT', body: JSON.stringify(payload) });
+      msg.textContent = '已保存修改 ✅';
+      resetForm();
+    } else {
+      await api('/visits', { method: 'POST', body: JSON.stringify(payload) });
+      msg.textContent = '已添加 ✅';
+      document.getElementById('visitCity').value = '';
+      document.getElementById('visitNote').value = '';
+    }
+    msg.className = 'msg ok';
+    loadVisits();
+  } catch (err) { msg.textContent = err.message; }
+  return false;
+}
+
+function startEdit(id) {
+  const v = myVisits.find(x => x.id === id);
+  if (!v) return;
+  editingId = id;
+  document.getElementById('visitCity').value = v.city;
+  document.getElementById('visitNote').value = v.note || '';
+  if (v.visit_date) {
+    document.getElementById('forgotDate').checked = false;
+    document.getElementById('visitDate').value = v.visit_date;
+    document.getElementById('visitDate').disabled = false;
+  } else {
+    document.getElementById('forgotDate').checked = true;
+    document.getElementById('visitDate').value = '';
+    document.getElementById('visitDate').disabled = true;
+  }
+  const btn = submitBtn();
+  btn.textContent = '保存修改';
+  document.getElementById('formTitle').textContent = '✏️ 编辑足迹';
+  document.getElementById('addMsg').textContent = '正在编辑：' + v.city;
+  document.getElementById('addMsg').className = 'msg ok';
+  document.querySelector('.card').scrollIntoView({ behavior: 'smooth' });
+}
+
+function resetForm() {
+  editingId = null;
+  document.getElementById('visitCity').value = '';
+  document.getElementById('visitDate').value = '';
+  document.getElementById('forgotDate').checked = false;
+  document.getElementById('visitDate').disabled = false;
+  document.getElementById('visitNote').value = '';
+  submitBtn().textContent = '添加';
+  document.getElementById('formTitle').textContent = '✈️ 添加足迹';
+  document.getElementById('addMsg').textContent = '';
+}
+
+async function delVisit(id) {
+  if (!confirm('确定删除这条足迹吗？')) return;
+  try {
+    await api('/visits/' + id, { method: 'DELETE' });
+    loadVisits();
+  } catch (err) { alert(err.message); }
+}
+
+function escapeHtml(t) {
+  const d = document.createElement('div');
+  d.textContent = t || '';
+  return d.innerHTML;
+}
+
+// 初始化
+if (getSession()) {
+  enterUserView();
+}
+</script>
+</body>
+</html>
