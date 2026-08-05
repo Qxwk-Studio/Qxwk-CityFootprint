@@ -63,6 +63,8 @@ function generateToken() {
 
 export async function createSession(DB, userId) {
   const token = generateToken();
+  // 登录/注册时清理该用户的旧会话，只保留最新一条（旧 token 立即失效）
+  await DB.prepare('DELETE FROM sessions WHERE user_id = ?').bind(userId).run();
   await DB.prepare('INSERT INTO sessions (token, user_id) VALUES (?, ?)')
     .bind(token, userId).run();
   return token;
