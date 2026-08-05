@@ -97,6 +97,15 @@ async function handleApi(request, env) {
     return json({ token, userId: user.id, nickname: user.nickname, color: user.color });
   }
 
+  // GET /api/me（登录：返回当前用户信息，供每次访问网站时验证凭证是否仍有效）
+  if (method === 'GET' && path === '/api/me') {
+    const userId = await getUserId(DB, request);
+    if (!userId) return error('未登录', 401);
+    const user = await DB.prepare('SELECT id, nickname, color FROM users WHERE id = ?').bind(userId).first();
+    if (!user) return error('用户不存在', 401);
+    return json({ userId: user.id, nickname: user.nickname, color: user.color });
+  }
+
   // GET /api/cities（公开：地图数据）
   if (method === 'GET' && path === '/api/cities') {
     const rows = await DB.prepare(

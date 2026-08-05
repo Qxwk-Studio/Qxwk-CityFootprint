@@ -10,7 +10,17 @@ async function api(path, options = {}) {
   if (token) headers['Authorization'] = 'Bearer ' + token;
   const res = await fetch(API_BASE + path, { ...options, headers });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || '请求失败 (' + res.status + ')');
+  if (!res.ok) {
+    // 登录态失效（token 过期/无效）：清除本地会话；管理页自动回到登录界面
+    if (res.status === 401 && token) {
+      localStorage.removeItem(LS_TOKEN);
+      localStorage.removeItem(LS_USER);
+      if (window.location.pathname.endsWith('manage.html')) {
+        window.location.reload();
+      }
+    }
+    throw new Error(data.error || '请求失败 (' + res.status + ')');
+  }
   return data;
 }
 

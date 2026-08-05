@@ -616,9 +616,14 @@ fetch('/api/config').then(r => r.json()).then(cfg => {
   }
 }).catch(() => { /* 后端不可达时默认强制邀请码 */ });
 
-// 初始化
+// 每次访问网站时验证本地凭证是否仍有效
 if (getSession()) {
-  enterUserView();
+  api('/me')
+    .then(() => enterUserView())
+    .catch(() => {
+      // token 失效：app.js 的 401 处理已清除本地会话并刷新回登录界面；
+      // 其他错误（如网络异常）不清除凭证，停留在登录视图
+    });
 }
 </script>
 </body>

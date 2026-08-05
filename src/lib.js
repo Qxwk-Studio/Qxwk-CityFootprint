@@ -1,17 +1,11 @@
 // 认证与工具（Worker 版）
 // 密码哈希使用 Web Crypto PBKDF2，无需外部依赖
 
+// 30 种 Material 调色板，保证新用户颜色不重复（直到池子占满）
 export const USER_COLORS = [
-  '#2563eb', // 蓝
-  '#dc2626', // 红
-  '#16a34a', // 绿
-  '#d97706', // 橙
-  '#7c3aed', // 紫
-  '#db2777', // 粉
-  '#0891b2', // 青
-  '#65a30d', // 黄绿
-  '#ea580c', // 橙红
-  '#4f46e5', // 靛
+  '#2563eb', '#dc2626', '#16a34a', '#d97706', '#7c3aed', '#db2777', '#0891b2', '#65a30d', '#ea580c', '#4f46e5',
+  '#0ea5e9', '#f43f5e', '#22c55e', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16', '#fb7185', '#6366f1',
+  '#14b8a6', '#ef4444', '#a3e635', '#f97316', '#a855f7', '#d946ef', '#10b981', '#eab308', '#f472b6', '#3b82f6',
 ];
 
 export function json(data, status = 200) {
@@ -83,8 +77,15 @@ export async function getUserId(DB, request) {
   return row ? row.user_id : null;
 }
 
-// 注册时分配颜色
+// 注册时分配颜色：优先从池中挑一个未被任何用户使用的颜色（不重复）
 export async function assignColor(DB) {
+  const rows = await DB.prepare('SELECT color FROM users').all();
+  const used = new Set(rows.results.map(r => r.color));
+  const available = USER_COLORS.filter(c => !used.has(c));
+  if (available.length > 0) {
+    return available[Math.floor(Math.random() * available.length)];
+  }
+  // 池子已被占满（超过 30 个用户）：按用户数取模兜底
   const { count } = await DB.prepare('SELECT COUNT(*) as count FROM users').first();
   return USER_COLORS[count % USER_COLORS.length];
 }
