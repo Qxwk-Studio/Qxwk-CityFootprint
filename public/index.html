@@ -6,7 +6,7 @@
 <title>City Footprint - 青翔未阔工作室</title>
 <meta name="description" content="City Footprint 城市足迹地图 —— 记录每个人去过的城市，点亮属于自己的颜色，与朋友们一起拼出一张五彩斑斓的足迹大地图。">
 <link rel="icon" type="image/webp" href="/favicon.webp">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="vendor/leaflet.css">
 <style>
   /* ========= Reset & Base ========= */
   *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
@@ -132,7 +132,7 @@
   .brand-logo {
     width: 34px;
     height: 34px;
-    border-radius: 9px;
+    border-radius: 50%;
     flex-shrink: 0;
     object-fit: cover;
     box-shadow: 0 2px 10px rgba(37, 99, 235, 0.25);
@@ -169,8 +169,7 @@
   /* ========= 图例 ========= */
   .legend {
     position: fixed;
-    /* 左上角；+72px 避开上方的空态提示（Leaflet topleft 控制） */
-    top: calc(var(--nav-height) + 72px);
+    top: calc(var(--nav-height) + 16px);
     left: 16px;
     right: auto;
     z-index: 1000;
@@ -317,14 +316,16 @@
 
 <div class="map-badge">City Footprint</div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="vendor/leaflet.js"></script>
 <script src="cities.js"></script>
 <script src="app.js"></script>
 <script>
 const map = L.map('map').setView([35.5, 105], 4);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+// 高德免 Key 瓦片（国内加载快），style=8 街道图
+L.tileLayer('https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}', {
+  subdomains: ['1', '2', '3', '4'],
   maxZoom: 18,
-  attribution: '&copy; OpenStreetMap',
+  attribution: '&copy; <a href="https://www.amap.com/" target="_blank" rel="noopener">高德地图</a>',
 }).addTo(map);
 
 let markers = [];
@@ -337,6 +338,8 @@ function render(data) {
   document.getElementById('loading').remove();
 
   if (!data.cities.length) {
+    // 空态：隐藏图例面板，仅保留左上角的空态提示，避免两者重叠
+    document.getElementById('legend').style.display = 'none';
     const empty = L.control({ position: 'topleft' });
     empty.onAdd = () => {
       const div = L.DomUtil.create('div');

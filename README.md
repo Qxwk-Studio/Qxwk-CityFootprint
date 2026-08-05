@@ -145,7 +145,8 @@ Worker 会在 `localhost:8787` 同时提供页面和 API。
 - 编辑 `public/cities.js`，往对应省份数组里加 `{ name, province, lat, lng }` 即可
 
 **2. 更换地图瓦片**
-- 默认 OpenStreetMap，无需 Key；国内访问较慢可换成高德/腾讯地图（需申请 Key）
+- 默认使用**高德免 Key 瓦片**（国内加载快），Leaflet 库也已自托管到 `public/vendor/`（与站点同源，走 Cloudflare CDN）
+- 如需换回 OpenStreetMap 或其他官方瓦片源，修改 `public/index.html` 里 `L.tileLayer` 的 URL 即可（高德/腾讯官方瓦片需申请 Key）
 
 **3. 查看免费额度**
 - Workers 每天 10 万次请求、D1 5GB 存储，个人使用完全足够

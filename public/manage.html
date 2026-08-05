@@ -81,11 +81,14 @@
   .brand-logo {
     width: 30px;
     height: 30px;
-    border-radius: 8px;
+    border-radius: 50%;
     flex-shrink: 0;
     object-fit: cover;
     box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
   }
+  .brand-text { line-height: 1.25; }
+  .brand-text b { display: block; font-size: 16px; font-weight: 600; letter-spacing: 0.3px; }
+  .brand-text span { font-size: 11px; color: var(--text-tertiary); }
   .back-link {
     display: inline-flex;
     align-items: center;
@@ -110,6 +113,7 @@
 
   /* ========= Main ========= */
   .main { flex: 1; padding: 36px 24px 60px; }
+  /* 内容区（页头+表单卡片）保持适中宽度；导航栏仍为 1100px 与 webs 一致 */
   .container { max-width: 640px; margin: 0 auto; }
   .page-header { display: flex; align-items: center; margin-bottom: 28px; }
   .page-header h1 { font-size: clamp(1.4rem, 3vw, 1.8rem); font-weight: 700; color: var(--text-primary); }
@@ -235,6 +239,9 @@
   .msg.error { color: #dc2626; }
   .msg.ok { color: #16a34a; }
 
+  .date-selects { display: flex; gap: 8px; }
+  .date-selects select { flex: 1; }
+
   .check-row { display: flex; align-items: center; gap: 8px; }
   .check-row input[type=checkbox] { width: auto; }
   .check-row label { margin-bottom: 0; }
@@ -269,7 +276,7 @@
   <div class="navbar-inner">
     <a href="index.html" class="navbar-brand">
       <img class="brand-logo" src="/favicon.webp" alt="City Footprint">
-      <span>City Footprint</span>
+      <span class="brand-text"><b>City Footprint</b><span>我们走过的城市</span></span>
     </a>
     <a href="index.html" class="back-link">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
@@ -337,7 +344,10 @@
           <div class="row">
             <div>
               <label>时间</label>
-              <input id="visitDate" placeholder="如 2024-08" autocomplete="off">
+              <div class="date-selects">
+                <select id="visitYear"></select>
+                <select id="visitMonth"></select>
+              </div>
             </div>
             <div class="check-row" style="align-self:flex-end;padding-bottom:10px;">
               <input type="checkbox" id="forgotDate" onchange="toggleDate()">
@@ -376,6 +386,27 @@ const datalist = document.getElementById('cityList');
   opt.value = c.name;
   datalist.appendChild(opt);
 });
+
+// 时间下拉（年 + 月），防止手输格式错误
+(function() {
+  const yearSel = document.getElementById('visitYear');
+  const monthSel = document.getElementById('visitMonth');
+  const currentYear = new Date().getFullYear();
+  yearSel.innerHTML = '<option value="">年份</option>';
+  for (let y = currentYear; y >= 2000; y--) {
+    const opt = document.createElement('option');
+    opt.value = String(y);
+    opt.textContent = y + ' 年';
+    yearSel.appendChild(opt);
+  }
+  monthSel.innerHTML = '<option value="">仅年份</option>';
+  for (let m = 1; m <= 12; m++) {
+    const opt = document.createElement('option');
+    opt.value = String(m).padStart(2, '0');
+    opt.textContent = m + ' 月';
+    monthSel.appendChild(opt);
+  }
+})();
 
 // 登录/注册切换
 function switchTab(mode) {
@@ -420,10 +451,25 @@ async function doRegister(e) {
   return false;
 }
 
-// 日期切换
+// 日期切换（记不清：禁用年月下拉并清空）
 function toggleDate() {
-  document.getElementById('visitDate').disabled = document.getElementById('forgotDate').checked;
-  if (document.getElementById('forgotDate').checked) document.getElementById('visitDate').value = '';
+  const forgot = document.getElementById('forgotDate').checked;
+  const yearSel = document.getElementById('visitYear');
+  const monthSel = document.getElementById('visitMonth');
+  yearSel.disabled = forgot;
+  monthSel.disabled = forgot;
+  if (forgot) {
+    yearSel.value = '';
+    monthSel.value = '';
+  }
+}
+
+// 从年/月下拉组合日期值（'2024' 或 '2024-08'），未选年返回 null
+function getVisitDate() {
+  const y = document.getElementById('visitYear').value;
+  const m = document.getElementById('visitMonth').value;
+  if (!y) return null;
+  return m ? y + '-' + m : y;
 }
 
 function enterUserView() {
@@ -479,7 +525,7 @@ async function addVisit(e) {
     city: name,
     lat: c.lat,
     lng: c.lng,
-    visit_date: document.getElementById('visitDate').value || null,
+    visit_date: getVisitDate(),
     note: document.getElementById('visitNote').value.trim(),
   };
 
@@ -506,14 +552,21 @@ function startEdit(id) {
   editingId = id;
   document.getElementById('visitCity').value = v.city;
   document.getElementById('visitNote').value = v.note || '';
+  const yearSel = document.getElementById('visitYear');
+  const monthSel = document.getElementById('visitMonth');
   if (v.visit_date) {
     document.getElementById('forgotDate').checked = false;
-    document.getElementById('visitDate').value = v.visit_date;
-    document.getElementById('visitDate').disabled = false;
+    const parts = String(v.visit_date).split('-');
+    yearSel.value = parts[0] || '';
+    monthSel.value = parts[1] || '';
+    yearSel.disabled = false;
+    monthSel.disabled = false;
   } else {
     document.getElementById('forgotDate').checked = true;
-    document.getElementById('visitDate').value = '';
-    document.getElementById('visitDate').disabled = true;
+    yearSel.value = '';
+    monthSel.value = '';
+    yearSel.disabled = true;
+    monthSel.disabled = true;
   }
   const btn = submitBtn();
   btn.textContent = '保存修改';
@@ -525,10 +578,14 @@ function startEdit(id) {
 
 function resetForm() {
   editingId = null;
+  const yearSel = document.getElementById('visitYear');
+  const monthSel = document.getElementById('visitMonth');
   document.getElementById('visitCity').value = '';
-  document.getElementById('visitDate').value = '';
+  yearSel.value = '';
+  monthSel.value = '';
   document.getElementById('forgotDate').checked = false;
-  document.getElementById('visitDate').disabled = false;
+  yearSel.disabled = false;
+  monthSel.disabled = false;
   document.getElementById('visitNote').value = '';
   submitBtn().textContent = '添加';
   document.getElementById('formTitle').textContent = '✈️ 添加足迹';
