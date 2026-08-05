@@ -3,6 +3,11 @@ main = "src/worker.js"
 compatibility_date = "2026-08-05"
 compatibility_flags = ["nodejs_compat"]
 
+# 注册限制（一次性邀请码）
+# ADMIN_PASSWORD：生成邀请码用的管理接口密码。线上可在 CF 控制台单独修改
+[vars]
+ADMIN_PASSWORD = "Qxwk-CityFootprint"
+
 # 静态资源目录（public/）
 [assets]
 directory = "public"

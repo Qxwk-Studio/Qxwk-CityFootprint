@@ -6,6 +6,18 @@ import {
   isValidNickname, isValidPassword,
 } from './lib.js';
 
+// ---------- 邀请码工具 ----------
+
+// 生成一次性邀请码：8 位大写字母+数字，剔除易混淆的 0O1Il
+const INVITE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+function generateInviteCode() {
+  const arr = new Uint8Array(8);
+  crypto.getRandomValues(arr);
+  let code = '';
+  for (let i = 0; i < arr.length; i++) code += INVITE_CHARS[arr[i] % INVITE_CHARS.length];
+  return code;
+}
+
 // ---------- API 处理 ----------
 
 async function handleApi(request, env) {
@@ -14,25 +26,59 @@ async function handleApi(request, env) {
   const method = request.method;
   const DB = env.DB;
 
-  // POST /api/register
+  // POST /api/register（需一次性邀请码）
   if (method === 'POST' && path === '/api/register') {
     const body = await request.json().catch(() => ({}));
     const nickname = String(body.nickname || '').trim();
     const password = String(body.password || '');
+    const inviteCode = String(body.invite_code || '').trim();
 
     if (!isValidNickname(nickname)) return error('昵称需为 1-20 个字符');
     if (!isValidPassword(password)) return error('密码需为 4-50 个字符');
+    if (!inviteCode) return error('请填写邀请码');
 
     const existing = await DB.prepare('SELECT id FROM users WHERE nickname = ?').bind(nickname).first();
     if (existing) return error('昵称已被占用，换一个吧', 409);
+
+    // 原子消耗一次性邀请码（用后即焚，防止并发重复使用）
+    const consume = await DB.prepare(
+      `UPDATE invite_codes SET used_at = datetime('now'), used_by = NULL
+       WHERE code = ? AND used_at IS NULL`
+    ).bind(inviteCode).run();
+    if (consume.meta.changes === 0) return error('邀请码无效或已被使用', 403);
 
     const passwordHash = await hashPassword(password);
     const color = await assignColor(DB);
     const res = await DB.prepare('INSERT INTO users (nickname, password_hash, color) VALUES (?, ?, ?)')
       .bind(nickname, passwordHash, color).run();
     const userId = res.meta.last_row_id;
+    // 回填实际用户 id
+    await DB.prepare('UPDATE invite_codes SET used_by = ? WHERE code = ?')
+      .bind(userId, inviteCode).run();
     const token = await createSession(DB, userId);
     return json({ token, userId, nickname, color });
+  }
+
+  // POST /api/invites（管理员：生成一次性邀请码）
+  if (method === 'POST' && path === '/api/invites') {
+    const body = await request.json().catch(() => ({}));
+    if (body.admin_pass !== env.ADMIN_PASSWORD) return error('管理员密码错误', 401);
+
+    const count = Math.max(1, Math.min(20, Number(body.count) || 1));
+    const codes = [];
+    const inserts = [];
+    for (let i = 0; i < count; i++) {
+      const code = generateInviteCode();
+      codes.push(code);
+      inserts.push(DB.prepare('INSERT OR IGNORE INTO invite_codes (code) VALUES (?)').bind(code));
+    }
+    await DB.batch(inserts);
+    return json({ codes });
+  }
+
+  // GET /api/config（公开：注册配置，供前端决定是否显示邀请码输入框）
+  if (method === 'GET' && path === '/api/config') {
+    return json({ inviteCodeRequired: true });
   }
 
   // POST /api/login

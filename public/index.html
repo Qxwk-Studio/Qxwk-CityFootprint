@@ -2,100 +2,239 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>拾光迹 · CityFootprint</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>拾光迹 · 城市足迹地图 - 青翔未阔工作室</title>
+<meta name="description" content="拾光迹 CityFootprint 城市足迹地图 —— 记录每个人去过的城市，点亮属于自己的颜色，与朋友们一起拼出一张五彩斑斓的足迹大地图。">
+<link rel="icon" type="image/webp" href="/favicon.webp">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  html, body { height: 100%; }
-  body { font-family: system-ui, -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif; }
-
-  #map { position: absolute; inset: 0; z-index: 0; background: #eef2f6; }
-
-  /* 顶部浮条 */
-  .topbar {
-    position: fixed; top: 16px; left: 16px; z-index: 1000;
-    display: flex; align-items: center; gap: 12px;
-    background: rgba(255,255,255,0.92);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(226,232,240,0.8);
-    border-radius: 14px;
-    padding: 10px 16px;
-    box-shadow: 0 8px 30px rgba(0,0,0,0.10);
+  /* ========= Reset & Base ========= */
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --primary: #2563eb;
+    --primary-hover: #1d4ed8;
+    --primary-light: #eff6ff;
+    --secondary: #0d9488;
+    --surface: #ffffff;
+    --bg: #f8fafc;
+    --text-primary: #0f172a;
+    --text-secondary: #64748b;
+    --text-tertiary: #94a3b8;
+    --border: #e2e8f0;
+    --navbar-bg: rgba(255, 255, 255, 0.8);
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
+    --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.12);
+    --radius-sm: 8px;
+    --radius-md: 14px;
+    --radius-lg: 20px;
+    --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+    --container: 1100px;
+    --nav-height: 64px;
   }
-  .topbar .logo {
-    width: 34px; height: 34px; border-radius: 9px;
-    background: linear-gradient(135deg, #2563eb, #0d9488);
-    display: flex; align-items: center; justify-content: center;
-    color: #fff; font-weight: 700; font-size: 16px;
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: var(--font-sans);
+    background: var(--bg);
+    color: var(--text-primary);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
   }
-  .topbar .title { line-height: 1.2; }
-  .topbar .title b { font-size: 16px; display: block; }
-  .topbar .title span { font-size: 11px; color: #94a3b8; }
 
-  .topbar .btn {
-    text-decoration: none; color: #fff;
-    background: linear-gradient(135deg, #2563eb, #0d9488);
-    border: none; border-radius: 8px;
-    padding: 7px 14px; font-size: 13px; font-weight: 500; cursor: pointer;
-    transition: transform .15s, box-shadow .15s;
+  /* ========= Navbar ========= */
+  .navbar {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    height: var(--nav-height);
+    background: var(--navbar-bg);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border);
+  }
+  .navbar-inner {
+    max-width: var(--container);
+    margin: 0 auto;
+    padding: 0 24px;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .navbar-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-decoration: none;
+    color: var(--text-primary);
+    flex-shrink: 0;
+    transition: opacity var(--transition);
+  }
+  .navbar-brand:hover { opacity: 0.85; }
+  .brand-logo {
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+    flex-shrink: 0;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    color: #fff;
+    font-weight: 700;
+    font-size: 17px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 10px rgba(37, 99, 235, 0.25);
+  }
+  .brand-text { line-height: 1.25; }
+  .brand-text b { display: block; font-size: 16px; font-weight: 600; letter-spacing: 0.3px; }
+  .brand-text span { font-size: 11px; color: var(--text-tertiary); }
+
+  .btn-nav {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 9px 20px;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    color: #fff;
+    text-decoration: none;
+    border-radius: 40px;
+    font-size: 0.88rem;
+    font-weight: 600;
+    transition: all var(--transition);
     white-space: nowrap;
+    flex-shrink: 0;
+    font-family: inherit;
   }
-  .topbar .btn:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(37,99,235,.3); }
+  .btn-nav:hover {
+    background: linear-gradient(135deg, var(--primary-hover), #0f766e);
+    transform: scale(1.02);
+    box-shadow: var(--shadow-md);
+  }
 
-  /* 用户图例 */
+  /* ========= Map ========= */
+  #map { flex: 1; background: #eef2f6; z-index: 1; }
+
+  /* ========= 图例 ========= */
   .legend {
-    position: fixed; top: 16px; right: 16px; z-index: 1000;
-    background: rgba(255,255,255,0.92);
+    position: fixed;
+    top: calc(var(--nav-height) + 16px);
+    right: 16px;
+    z-index: 1000;
+    background: rgba(255, 255, 255, 0.92);
     backdrop-filter: blur(12px);
-    border: 1px solid rgba(226,232,240,0.8);
-    border-radius: 14px;
-    padding: 12px 16px;
-    box-shadow: 0 8px 30px rgba(0,0,0,0.10);
-    max-height: calc(100vh - 80px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md);
+    padding: 14px 18px;
+    max-height: calc(100vh - var(--nav-height) - 48px);
     overflow-y: auto;
-    min-width: 160px;
+    min-width: 170px;
   }
-  .legend h4 { font-size: 12px; color: #94a3b8; margin-bottom: 8px; letter-spacing: .5px; }
+  .legend h4 {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    margin-bottom: 10px;
+  }
   .legend .user {
-    display: flex; align-items: center; gap: 8px;
-    font-size: 13px; color: #334155; padding: 4px 0;
-    cursor: pointer; user-select: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.86rem;
+    color: var(--text-secondary);
+    padding: 5px 4px;
+    cursor: pointer;
+    user-select: none;
+    border-radius: 6px;
+    transition: color var(--transition);
   }
+  .legend .user:hover { color: var(--text-primary); }
   .legend .dot {
     width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0;
-    box-shadow: 0 0 0 2px #fff, 0 1px 3px rgba(0,0,0,.2);
+    box-shadow: 0 0 0 2px #fff, 0 1px 3px rgba(0, 0, 0, 0.2);
   }
-  .legend .count { margin-left: auto; font-size: 11px; color: #94a3b8; }
-  .legend .user.active { font-weight: 600; }
-  .legend .empty { font-size: 12px; color: #94a3b8; text-align: center; padding: 6px 0; }
+  .legend .count {
+    margin-left: auto;
+    font-size: 0.74rem;
+    color: var(--text-tertiary);
+    background: var(--bg);
+    padding: 1px 8px;
+    border-radius: 40px;
+  }
+  .legend .user.active { font-weight: 600; color: var(--primary); }
+  .legend .empty { font-size: 0.8rem; color: var(--text-tertiary); text-align: center; padding: 8px 0; }
 
-  /* 加载 / 空态 */
+  /* ========= 加载 / 空态 ========= */
   .overlay-msg {
-    position: fixed; inset: 0; z-index: 1500;
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    background: #f8fafc; color: #94a3b8; font-size: 14px; gap: 12px;
+    position: fixed;
+    inset: 0;
+    z-index: 1500;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    background: var(--bg);
+    color: var(--text-tertiary);
+    font-size: 0.9rem;
     transition: opacity .4s ease;
   }
   .spinner {
-    width: 26px; height: 26px; border-radius: 50%;
-    border: 3px solid #e2e8f0; border-top-color: #2563eb;
+    width: 28px; height: 28px; border-radius: 50%;
+    border: 3px solid var(--border);
+    border-top-color: var(--primary);
     animation: spin .8s linear infinite;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  /* Leaflet 弹窗美化 */
-  .leaflet-popup-content-wrapper { border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,.15); }
-  .leaflet-popup-content { margin: 14px 16px; }
-  .popup-title { font-size: 15px; font-weight: 600; margin-bottom: 8px; color: #0f172a; }
-  .popup-person { display: flex; align-items: baseline; gap: 6px; font-size: 13px; padding: 3px 0; color: #475569; }
+  /* ========= Leaflet 弹窗美化 ========= */
+  .leaflet-container { font-family: var(--font-sans); }
+  .leaflet-popup-content-wrapper { border-radius: var(--radius-md); box-shadow: var(--shadow-lg); }
+  .leaflet-popup-content { margin: 14px 18px; }
+  .popup-title { font-size: 1rem; font-weight: 700; margin-bottom: 8px; color: var(--text-primary); }
+  .popup-person {
+    display: flex; align-items: baseline; gap: 6px;
+    font-size: 0.84rem; padding: 3px 0; color: var(--text-secondary);
+  }
   .popup-person .name { font-weight: 600; }
-  .popup-person .meta { color: #94a3b8; font-size: 12px; }
-  .popup-person .note { color: #64748b; }
+  .popup-person .meta { color: var(--text-tertiary); font-size: 0.78rem; }
+  .popup-person .note { color: var(--text-secondary); }
 
-  @media (max-width: 600px) {
+  /* ========= 地图底部角标 ========= */
+  .map-badge {
+    position: fixed;
+    left: 16px;
+    bottom: 16px;
+    z-index: 1000;
+    font-size: 0.74rem;
+    color: var(--text-tertiary);
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid var(--border);
+    border-radius: 40px;
+    padding: 4px 12px;
+    pointer-events: none;
+  }
+
+  /* ========= Responsive ========= */
+  @media (max-width: 640px) {
+    .navbar-inner { padding: 0 16px; }
+    .brand-text span { display: none; }
     .legend { display: none; }
-    .topbar { top: 12px; left: 12px; }
+    .map-badge { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
   }
 </style>
 </head>
@@ -103,14 +242,18 @@
 
 <div class="overlay-msg" id="loading"><div class="spinner"></div><div>正在绘制足迹地图…</div></div>
 
-<div class="topbar">
-  <div class="logo">迹</div>
-  <div class="title">
-    <b>拾光迹</b>
-    <span>CityFootprint · 我们走过的城市</span>
+<header class="navbar">
+  <div class="navbar-inner">
+    <a href="#" class="navbar-brand" onclick="return false;">
+      <span class="brand-logo">迹</span>
+      <span class="brand-text"><b>拾光迹</b><span>CityFootprint · 我们走过的城市</span></span>
+    </a>
+    <a class="btn-nav" href="manage.html">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+      管理我的足迹
+    </a>
   </div>
-  <a class="btn" href="manage.html">管理我的足迹</a>
-</div>
+</header>
 
 <div class="legend" id="legend">
   <h4>谁的足迹</h4>
@@ -118,6 +261,8 @@
 </div>
 
 <div id="map"></div>
+
+<div class="map-badge">拾光迹 · CityFootprint</div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="cities.js"></script>
@@ -143,7 +288,7 @@ function render(data) {
     empty.onAdd = () => {
       const div = L.DomUtil.create('div');
       div.className = 'leaflet-control';
-      div.style.cssText = 'background:#fff;padding:14px 18px;border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,.12);font-size:14px;color:#64748b;';
+      div.style.cssText = 'background:#fff;padding:16px 20px;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,.12);font-size:14px;color:#64748b;border:1px solid #e2e8f0;';
       div.textContent = '还没有足迹，去添加第一座城市吧 ✈️';
       return div;
     };
