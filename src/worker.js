@@ -148,8 +148,9 @@ async function handleApi(request, env) {
   if (method === 'GET' && path === '/api/my-visits') {
     const userId = await getUserId(DB, request);
     if (!userId) return error('未登录', 401);
+    // 倒序：最新的足迹排在上面（id 自增，越大越新）
     const visits = await DB.prepare(
-      'SELECT id, city, lat, lng, visit_date, note FROM visits WHERE user_id = ? ORDER BY created_at ASC'
+      'SELECT id, city, lat, lng, visit_date, note FROM visits WHERE user_id = ? ORDER BY id DESC'
     ).bind(userId).all();
     return json({ visits: visits.results });
   }
