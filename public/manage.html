@@ -225,8 +225,18 @@
   }
   .visit-item:last-child { border-bottom: none; }
   .visit-dot {
-    width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0;
-    box-shadow: 0 0 0 2px #fff, 0 1px 3px rgba(0, 0, 0, 0.15);
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text-tertiary);
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
   }
   .visit-main { flex: 1; min-width: 0; }
   .visit-city { font-weight: 600; font-size: 0.98rem; }
@@ -246,6 +256,14 @@
   .check-row input[type=checkbox] { width: auto; }
   .check-row label { margin-bottom: 0; }
   .hint { font-size: 0.78rem; color: var(--text-tertiary); margin-top: 4px; }
+
+  /* 用户 UID 显示 */
+  .user-uid {
+    margin-top: 4px;
+    font-size: 0.78rem;
+    color: var(--text-tertiary);
+    font-family: 'Consolas', 'Courier New', monospace;
+  }
 
   /* 欢迎卡片足迹统计 */
   .visit-stats {
@@ -353,6 +371,7 @@
           <div style="font-size:14px;font-weight:600;" id="welcomeText"></div>
           <button class="btn btn-ghost btn-sm" onclick="logout()">退出登录</button>
         </div>
+        <div class="user-uid" id="userUid"></div>
         <div class="visit-stats" id="visitStats"></div>
       </div>
 
@@ -528,6 +547,8 @@ function enterUserView() {
   document.getElementById('userView').style.display = '';
   const s = getSession();
   document.getElementById('welcomeText').textContent = '你好，' + (s ? s.nickname : '') + ' 👋';
+  const uidEl = document.getElementById('userUid');
+  if (uidEl && s) uidEl.textContent = 'UID：' + s.userId;
   loadVisits();
 }
 
@@ -551,11 +572,12 @@ async function loadVisits() {
     updateVisitStats();
     if (!myVisits.length) { list.innerHTML = '<div class="empty">还没有足迹，添加第一座城市吧 ✈️</div>'; return; }
     list.innerHTML = '';
-    for (const v of myVisits) {
+    for (let i = 0; i < myVisits.length; i++) {
+      const v = myVisits[i];
       const item = document.createElement('div');
       item.className = 'visit-item';
       item.innerHTML = `
-        <span class="visit-dot" style="background:${(getSession() || {}).color || '#2563eb'}"></span>
+        <span class="visit-dot">${i + 1}</span>
         <div class="visit-main">
           <div class="visit-city">${escapeHtml(v.city)}</div>
           <div class="visit-meta">${escapeHtml(fmtDate(v.visit_date))}</div>

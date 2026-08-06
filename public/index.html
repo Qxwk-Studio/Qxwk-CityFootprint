@@ -247,8 +247,6 @@
     border-bottom: 1px solid var(--border);
     margin-bottom: 6px;
     padding-bottom: 6px;
-    color: var(--text-primary);
-    font-weight: 500;
   }
   .legend .empty { font-size: 0.8rem; color: var(--text-tertiary); text-align: center; padding: 8px 0; }
 
@@ -368,10 +366,28 @@ const offset = 0.15;         // 同城多点错开距离
 const geoCache = new Map();  // adcode -> Promise<geojson|null>，边界缓存
 let renderSeq = 0;           // 渲染批次号，避免异步竞态
 
+// 边界请求并发控制：最多同时发起 GEO_CONCURRENCY 个，避免几十个城市同时请求
+const GEO_CONCURRENCY = 6;
+let geoActive = 0;
+const geoQueue = [];
+function geoFetch(url) {
+  return new Promise((resolve, reject) => {
+    const run = () => {
+      geoActive++;
+      fetch(url).then(resolve).catch(reject).finally(() => {
+        geoActive--;
+        if (geoQueue.length) geoQueue.shift()();
+      });
+    };
+    if (geoActive < GEO_CONCURRENCY) run();
+    else geoQueue.push(run);
+  });
+}
+
 // 加载城市边界（经 Worker 代理请求 DataV，规避浏览器跨域/来源限制），带缓存；失败返回 null
 function loadCityGeo(adcode) {
   if (!geoCache.has(adcode)) {
-    geoCache.set(adcode, fetch(`/api/geo/${adcode}`)
+    geoCache.set(adcode, geoFetch(`/api/geo/${adcode}`)
       .then(r => {
         if (!r.ok) return null; // 404/错误 → 回退圆点
         return r.json().then(g => {
@@ -513,10 +529,10 @@ function buildPopupHtml(c, people) {
     </div>`).join('');
 }
 
-// 渲染市辖区半透明多边形（weight:0 消除区县间描边，hover 提亮）
+// 渲染市辖区半透明多边形（weight:1 显示全市边界轮廓，hover 提亮）
 function addPolygon(geo, color, popupHtml) {
   const layer = L.geoJSON(geo, {
-    style: { color, weight: 0, fillColor: color, fillOpacity: 0.4 },
+    style: { color, weight: 1, fillColor: color, fillOpacity: 0.4 },
   });
   layer.on('mouseover', () => layer.setStyle({ fillOpacity: 0.6 }));
   layer.on('mouseout', () => layer.setStyle({ fillOpacity: 0.4 }));

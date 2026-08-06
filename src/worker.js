@@ -57,10 +57,17 @@ async function handleApi(request, env) {
   if (method === 'GET' && geoMatch) {
     const adcode = geoMatch[1];
     try {
-      // 优先取完整边界（_full，含区县）；部分市无 _full（如东莞、台湾），回退到本级边界
-      let resp = await fetch(`https://geo.datav.aliyun.com/areas_v3/bound/${adcode}_full.json`);
-      if (resp.status === 404) {
-        resp = await fetch(`https://geo.datav.aliyun.com/areas_v3/bound/${adcode}.json`);
+      // 市本级边界（覆盖全市辖区，单 feature，比 _full 含区县小约 75%）
+      const upstream = `https://geo.datav.aliyun.com/areas_v3/bound/${adcode}.json`;
+      const cacheKey = new Request(upstream);
+      let resp = await caches.default.match(cacheKey);
+      if (!resp) {
+        resp = await fetch(upstream);
+        if (resp.ok) {
+          const clone = new Response(resp.body, resp);
+          clone.headers.set('Cache-Control', 'public, max-age=86400'); // 缓存 24h
+          await caches.default.put(cacheKey, clone);
+        }
       }
       if (!resp.ok) return error('边界获取失败', resp.status);
       return json(await resp.json());

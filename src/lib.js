@@ -79,15 +79,8 @@ export async function getUserId(DB, request) {
   return row ? row.user_id : null;
 }
 
-// 注册时分配颜色：优先从池中挑一个未被任何用户使用的颜色（不重复）
+// 注册时分配颜色：按注册顺序（用户数）取色，第 N 个用户取第 N 色，超过 30 色循环
 export async function assignColor(DB) {
-  const rows = await DB.prepare('SELECT color FROM users').all();
-  const used = new Set(rows.results.map(r => r.color));
-  const available = USER_COLORS.filter(c => !used.has(c));
-  if (available.length > 0) {
-    return available[Math.floor(Math.random() * available.length)];
-  }
-  // 池子已被占满（超过 30 个用户）：按用户数取模兜底
   const { count } = await DB.prepare('SELECT COUNT(*) as count FROM users').first();
   return USER_COLORS[count % USER_COLORS.length];
 }
