@@ -113,7 +113,7 @@
 
   /* ========= Main ========= */
   .main { flex: 1; padding: 36px 24px 60px; }
-  .container { max-width: 760px; margin: 0 auto; }
+  .container { max-width: var(--container); margin: 0 auto; }
   .page-header { display: flex; align-items: center; margin-bottom: 28px; }
   .page-header h1 { font-size: clamp(1.4rem, 3vw, 1.8rem); font-weight: 700; color: var(--text-primary); }
 
@@ -263,6 +263,23 @@
       </div>
     </div>
 
+    <!-- 用户条款 -->
+    <div class="card">
+      <h3>📜 用户条款</h3>
+      <div class="notice-item">
+        <span class="notice-badge">关于数据</span>
+        <div class="notice-text">本网站托管于 Cloudflare，您的足迹、备注等数据将存储于其境外服务器，数据安全性由其负责（只是一些行程数据也不需要什么保密吧）。使用本网站即视为您已知悉并接受这一点。如不同意，请勿使用本网站，并联系管理员删除您的数据。</div>
+      </div>
+      <div class="notice-item">
+        <span class="notice-badge">地图来源</span>
+        <div class="notice-text">地图瓦片与行政边界数据来自第三方服务（高德地图、阿里 DataV），相关版权归其各自所有者所有。</div>
+      </div>
+      <div class="notice-item">
+        <span class="notice-badge">免责声明</span>
+        <div class="notice-text">我们将尽力保障您的数据安全与服务的稳定运行。如因不可抗力导致网站停运（比如没钱运营了），我们会尽力通知您，并将您的数据交还给您。使用本网站即视为您同意自行承担相应风险，本站不对因使用本服务产生的任何直接或间接损失承担责任。</div>
+      </div>
+    </div>
+
     <!-- 更新日志 -->
     <div class="card">
       <h3>📝 更新日志</h3>
@@ -270,7 +287,23 @@
 
         <div class="timeline-item">
           <div class="timeline-date">2026-08-06</div>
-          <span class="timeline-tag">v0.5.0</span>
+          <span class="timeline-tag">v0.3.1</span>
+          <div class="timeline-content">
+            <ul>
+              <li>新增公告与更新日志页（含免责声明）</li>
+              <li>新增全站统计页：总行程、总城市、城市次数排名 Top30</li>
+              <li>个人中心改版：两列布局、成就系统、行程记录默认折叠</li>
+              <li>「行程管理」更名为「个人中心」</li>
+              <li>汉堡菜单改为独立按钮散开</li>
+              <li>弹窗优化：只显示最新 10 条足迹</li>
+              <li>各页面顶栏元素统一</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-date">2026-08-06</div>
+          <span class="timeline-tag">v0.3.0</span>
           <div class="timeline-content">
             <ul>
               <li>地图改为市辖区半透明色块渲染（阿里 DataV 边界）</li>
@@ -285,7 +318,7 @@
 
         <div class="timeline-item">
           <div class="timeline-date">2026-08-05</div>
-          <span class="timeline-tag">v0.4.0</span>
+          <span class="timeline-tag">v0.2.0</span>
           <div class="timeline-content">
             <ul>
               <li>注册改为一次性邀请码机制</li>
@@ -299,7 +332,7 @@
 
         <div class="timeline-item">
           <div class="timeline-date">2026-08-04</div>
-          <span class="timeline-tag">v0.3.0</span>
+          <span class="timeline-tag">v0.1.0</span>
           <div class="timeline-content">
             <ul>
               <li>上线足迹大地图（Leaflet + 高德瓦片）</li>

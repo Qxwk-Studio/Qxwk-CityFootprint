@@ -72,9 +72,12 @@
   .navbar-brand {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
     text-decoration: none;
     color: var(--text-primary);
+    font-weight: 600;
+    font-size: 1.15rem;
+    letter-spacing: 0.3px;
     flex-shrink: 0;
     transition: opacity var(--transition);
   }
@@ -131,49 +134,42 @@
     box-shadow: var(--shadow-lg);
   }
 
-  /* 汉堡菜单弹出卡片 */
-  .fab-menu {
+  /* 汉堡菜单独立按钮（从汉堡位置向上散开） */
+  .fab-item {
     position: fixed;
     right: 16px;
-    bottom: 84px;
     z-index: 1000;
-    min-width: 190px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: var(--radius-md);
-    box-shadow: var(--shadow-lg);
-    padding: 8px;
-    opacity: 0;
-    visibility: hidden;
-    transform: translateY(8px) scale(0.97);
-    transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
-    transform-origin: bottom right;
-  }
-  .fab-menu.open {
-    opacity: 1;
-    visibility: visible;
-    transform: translateY(0) scale(1);
-  }
-  .fab-menu-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 11px 14px;
-    border-radius: var(--radius-sm);
+    border-radius: 40px;
     color: var(--text-primary);
     text-decoration: none;
-    font-size: 0.9rem;
+    font-size: 0.88rem;
     font-weight: 500;
-    transition: background var(--transition), color var(--transition);
+    box-shadow: var(--shadow-md);
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(8px);
+    transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
   }
-  .fab-menu-item:hover { background: var(--primary-light); color: var(--primary); }
+  .fab-item:hover { background: var(--primary-light); color: var(--primary); }
+  .fab-item.open {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+  }
   .brand-logo {
-    width: 34px;
-    height: 34px;
+    width: 30px;
+    height: 30px;
     border-radius: 50%;
     flex-shrink: 0;
     object-fit: cover;
-    box-shadow: 0 2px 10px rgba(37, 99, 235, 0.25);
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
   }
   .brand-text { line-height: 1.25; }
   .brand-text b { display: block; font-size: 16px; font-weight: 600; letter-spacing: 0.3px; }
@@ -375,21 +371,19 @@
   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
 </button>
 
-<div class="fab-menu" id="fabMenu">
-  <a class="fab-menu-item" href="manage.html">
-    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-    个人中心
-  </a>
-  <a class="fab-menu-item" href="news.html">
-    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-    公告与更新日志
-  </a>
-  <a class="fab-menu-item" href="stats.html">
-    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-    全站统计
-  </a>
-  <!-- 后续新功能在此添加菜单项 -->
-</div>
+<a class="fab-item" href="manage.html" style="bottom:76px">
+  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+  个人中心
+</a>
+<a class="fab-item" href="news.html" style="bottom:132px">
+  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+  公告与更新日志
+</a>
+<a class="fab-item" href="stats.html" style="bottom:188px">
+  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+  全站统计
+</a>
+<!-- 后续新功能在此添加按钮 -->
 
 <div id="map"></div>
 
@@ -551,25 +545,23 @@ function toggleLegend() {
   document.getElementById('legend').classList.toggle('collapsed');
 }
 
-// 汉堡菜单开关
+// 汉堡菜单开关（独立按钮展开/收起）
 function toggleFabMenu() {
-  document.getElementById('fabMenu').classList.toggle('open');
-  document.getElementById('fabBtn').classList.toggle('active');
+  const open = document.getElementById('fabBtn').classList.toggle('active');
+  document.querySelectorAll('.fab-item').forEach(item => item.classList.toggle('open', open));
 }
-// 点击外部关闭汉堡菜单
+// 点击外部收起
 document.addEventListener('click', (e) => {
-  const menu = document.getElementById('fabMenu');
-  const btn = document.getElementById('fabBtn');
-  if (!menu.contains(e.target) && !btn.contains(e.target)) {
-    menu.classList.remove('open');
-    btn.classList.remove('active');
+  if (!e.target.closest('.fab-btn') && !e.target.closest('.fab-item')) {
+    document.getElementById('fabBtn').classList.remove('active');
+    document.querySelectorAll('.fab-item').forEach(i => i.classList.remove('open'));
   }
 });
-// 点击菜单项后关闭
-document.querySelectorAll('.fab-menu-item').forEach(item => {
+// 点击按钮后收起
+document.querySelectorAll('.fab-item').forEach(item => {
   item.addEventListener('click', () => {
-    document.getElementById('fabMenu').classList.remove('open');
     document.getElementById('fabBtn').classList.remove('active');
+    document.querySelectorAll('.fab-item').forEach(i => i.classList.remove('open'));
   });
 });
 

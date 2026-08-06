@@ -113,7 +113,7 @@
 
   /* ========= Main ========= */
   .main { flex: 1; padding: 36px 24px 60px; }
-  .container { max-width: 760px; margin: 0 auto; }
+  .container { max-width: var(--container); margin: 0 auto; }
   .page-header { display: flex; align-items: center; margin-bottom: 28px; }
   .page-header h1 { font-size: clamp(1.4rem, 3vw, 1.8rem); font-weight: 700; color: var(--text-primary); }
 
@@ -275,7 +275,8 @@ fetch('/api/stats')
       return;
     }
     list.innerHTML = '';
-    data.cityRank.forEach((c, i) => {
+    const top = data.cityRank.slice(0, 30); // 只显示前 30 名
+    top.forEach((c, i) => {
       const item = document.createElement('div');
       item.className = 'rank-item';
       item.innerHTML = `
@@ -285,6 +286,12 @@ fetch('/api/stats')
         <span class="rank-count">${c.count} 次</span>`;
       list.appendChild(item);
     });
+    if (data.cityRank.length > 30) {
+      const more = document.createElement('div');
+      more.className = 'empty';
+      more.textContent = '… 共 ' + data.cityRank.length + ' 座城市，仅显示前 30 名';
+      list.appendChild(more);
+    }
   })
   .catch(() => {
     document.getElementById('cityRankList').innerHTML = '<div class="empty">统计加载失败，请稍后重试</div>';

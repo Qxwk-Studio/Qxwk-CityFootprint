@@ -113,8 +113,8 @@
 
   /* ========= Main ========= */
   .main { flex: 1; padding: 36px 24px 60px; }
-  /* 内容区（页头+表单卡片）保持适中宽度；导航栏仍为 1100px 与 webs 一致 */
-  .container { max-width: 640px; margin: 0 auto; }
+  /* 内容区与主站一致（1100px） */
+  .container { max-width: var(--container); margin: 0 auto; }
   .page-header { display: flex; align-items: center; margin-bottom: 28px; }
   .page-header h1 { font-size: clamp(1.4rem, 3vw, 1.8rem); font-weight: 700; color: var(--text-primary); }
 
@@ -304,18 +304,21 @@
   .visit-list-card.collapsed .card-toggle { transform: rotate(-90deg); }
   .visit-list-card.collapsed #visitList { display: none; }
 
-  /* 成就卡片 */
+  /* 成就卡片（单列列表，每行一个成就） */
   .achievement-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
-    gap: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
   }
   .achievement {
+    display: flex;
+    align-items: center;
+    gap: 10px;
     background: var(--bg);
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
-    padding: 12px 8px;
-    text-align: center;
+    padding: 8px 12px;
+    text-align: left;
     opacity: 0.45;
     transition: all var(--transition);
   }
@@ -324,9 +327,9 @@
     border-color: rgba(37, 99, 235, 0.4);
     background: var(--primary-light);
   }
-  .achievement .icon { font-size: 1.4rem; }
-  .achievement .name { font-size: 0.78rem; font-weight: 600; margin-top: 4px; }
-  .achievement .desc { font-size: 0.68rem; color: var(--text-tertiary); margin-top: 2px; }
+  .achievement .icon { font-size: 1.1rem; flex-shrink: 0; }
+  .achievement .name { font-size: 0.85rem; font-weight: 600; flex-shrink: 0; }
+  .achievement .desc { font-size: 0.75rem; color: var(--text-tertiary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
   /* ========= Footer ========= */
   .footer {
