@@ -276,15 +276,25 @@
   /* ========= Leaflet 弹窗美化 ========= */
   .leaflet-container { font-family: var(--font-sans); }
   .leaflet-popup-content-wrapper { border-radius: var(--radius-md); box-shadow: var(--shadow-lg); }
-  .leaflet-popup-content { max-width: 280px; margin: 14px 18px; }
+  .leaflet-popup-content {
+    /* 弹性：内容少时自适应，最多 360px，且不超过屏幕宽度 */
+    max-width: min(360px, calc(100vw - 48px));
+    margin: 14px 18px;
+  }
   .popup-title { font-size: 1rem; font-weight: 700; margin-bottom: 8px; color: var(--text-primary); }
-  .popup-person { padding: 4px 0; font-size: 0.84rem; }
-  .popup-person-head { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
-  .popup-person .name { font-weight: 600; }
-  .popup-person .meta { color: var(--text-tertiary); font-size: 0.78rem; }
+  /* 每行一个人：名字 + 日期 + 备注同一行，备注占剩余宽度并自动换行 */
+  .popup-person {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    padding: 3px 0;
+    font-size: 0.84rem;
+  }
+  .popup-person .name { font-weight: 600; flex-shrink: 0; }
+  .popup-person .meta { color: var(--text-tertiary); font-size: 0.78rem; flex-shrink: 0; }
   .popup-person .note {
-    margin-top: 2px;
-    font-size: 0.8rem;
+    flex: 1;
+    min-width: 0;
     color: var(--text-secondary);
     word-break: break-word;
     overflow-wrap: break-word;
@@ -523,15 +533,13 @@ function updateSelectAllState() {
   allCb.indeterminate = checkedCount > 0 && checkedCount < cbs.length;
 }
 
-// 弹窗内容：城市名 + 所有去过的人（备注单独一行，长文本自动换行）
+// 弹窗内容：城市名 + 所有去过的人（每人一行：名字 日期 备注，长备注自动换行）
 function buildPopupHtml(c, people) {
   return `<div class="popup-title">${escapeHtml(c.city)}</div>` + people.map(q => `
     <div class="popup-person">
-      <div class="popup-person-head">
-        <span class="name" style="color:${q.color}">${escapeHtml(q.nickname)}</span>
-        <span class="meta">${escapeHtml(fmtDate(q.visit_date))}</span>
-      </div>
-      ${q.note ? `<div class="note">${escapeHtml(q.note)}</div>` : ''}
+      <span class="name" style="color:${q.color}">${escapeHtml(q.nickname)}</span>
+      <span class="meta">${escapeHtml(fmtDate(q.visit_date))}</span>
+      ${q.note ? `<span class="note">${escapeHtml(q.note)}</span>` : ''}
     </div>`).join('');
 }
 
