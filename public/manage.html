@@ -257,6 +257,8 @@
   .check-row label { margin-bottom: 0; }
   .hint { font-size: 0.78rem; color: var(--text-tertiary); margin-top: 4px; }
 
+  .note-count { font-size: 0.78rem; color: var(--text-tertiary); }
+
   /* 用户 UID 显示 */
   .user-uid {
     margin-top: 4px;
@@ -397,8 +399,11 @@
             </div>
           </div>
           <div class="field">
-            <label>备注（可选）</label>
-            <input id="visitNote" maxlength="200" placeholder="一句话留下回忆…" autocomplete="off">
+            <div style="display:flex;justify-content:space-between;align-items:baseline;">
+              <label>备注（可选）</label>
+              <span class="note-count" id="noteCount">0/100</span>
+            </div>
+            <input id="visitNote" maxlength="100" placeholder="一句话留下回忆…" autocomplete="off" oninput="updateNoteCount()">
           </div>
           <button class="btn btn-primary" type="submit">添加</button>
           <div class="msg" id="addMsg"></div>
@@ -554,6 +559,13 @@ function enterUserView() {
 
 let myVisits = [];
 
+// 更新备注字数提醒（x/100）
+function updateNoteCount() {
+  const el = document.getElementById('noteCount');
+  const input = document.getElementById('visitNote');
+  if (el && input) el.textContent = input.value.length + '/100';
+}
+
 // 更新欢迎卡片统计：去过几座城市（去重）+ 足迹总数
 function updateVisitStats() {
   const el = document.getElementById('visitStats');
@@ -577,7 +589,7 @@ async function loadVisits() {
       const item = document.createElement('div');
       item.className = 'visit-item';
       item.innerHTML = `
-        <span class="visit-dot">${i + 1}</span>
+        <span class="visit-dot">${myVisits.length - i}</span>
         <div class="visit-main">
           <div class="visit-city">${escapeHtml(v.city)}</div>
           <div class="visit-meta">${escapeHtml(fmtDate(v.visit_date))}</div>
@@ -636,6 +648,7 @@ function startEdit(id) {
   editingId = id;
   document.getElementById('visitCity').value = v.city;
   document.getElementById('visitNote').value = v.note || '';
+  updateNoteCount();
   const yearSel = document.getElementById('visitYear');
   const monthSel = document.getElementById('visitMonth');
   if (v.visit_date) {
@@ -671,6 +684,7 @@ function resetForm() {
   yearSel.disabled = false;
   monthSel.disabled = false;
   document.getElementById('visitNote').value = '';
+  updateNoteCount();
   submitBtn().textContent = '添加';
   document.getElementById('formTitle').textContent = '✈️ 添加足迹';
   document.getElementById('addMsg').textContent = '';

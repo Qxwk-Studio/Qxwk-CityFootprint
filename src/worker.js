@@ -62,11 +62,24 @@ async function handleApi(request, env) {
       const cacheKey = new Request(upstream);
       let resp = await caches.default.match(cacheKey);
       if (!resp) {
-        resp = await fetch(upstream);
+        // 超时控制：DataV 挂起时不无限等待
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 10000);
+        try {
+          resp = await fetch(upstream, { signal: controller.signal });
+        } catch (e) {
+          clearTimeout(timer);
+          return error('边界获取超时', 504);
+        }
+        clearTimeout(timer);
         if (resp.ok) {
-          const clone = new Response(resp.body, resp);
-          clone.headers.set('Cache-Control', 'public, max-age=86400'); // 缓存 24h
-          await caches.default.put(cacheKey, clone);
+          // 用 clone 缓存（独立 body 流），避免与下方读取 resp.body 冲突
+          const clone = resp.clone();
+          const headers = new Headers(clone.headers);
+          headers.set('Cache-Control', 'public, max-age=86400'); // 缓存 24h
+          await caches.default.put(cacheKey, new Response(clone.body, {
+            status: clone.status, statusText: clone.statusText, headers,
+          }));
         }
       }
       if (!resp.ok) return error('边界获取失败', resp.status);
@@ -181,7 +194,7 @@ async function handleApi(request, env) {
     const lat = Number(body.lat);
     const lng = Number(body.lng);
     const visitDate = body.visit_date || null;
-    const note = String(body.note || '').trim().slice(0, 200);
+    const note = String(body.note || '').trim().slice(0, 100);
 
     if (!city || city.length > 30) return error('请选择城市');
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) return error('城市坐标无效');
@@ -214,7 +227,7 @@ async function handleApi(request, env) {
     const lat = Number(body.lat);
     const lng = Number(body.lng);
     const visitDate = body.visit_date || null;
-    const note = String(body.note || '').trim().slice(0, 200);
+    const note = String(body.note || '').trim().slice(0, 100);
 
     if (!city || city.length > 30) return error('请选择城市');
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) return error('城市坐标无效');

@@ -276,15 +276,19 @@
   /* ========= Leaflet 弹窗美化 ========= */
   .leaflet-container { font-family: var(--font-sans); }
   .leaflet-popup-content-wrapper { border-radius: var(--radius-md); box-shadow: var(--shadow-lg); }
-  .leaflet-popup-content { margin: 14px 18px; }
+  .leaflet-popup-content { max-width: 280px; margin: 14px 18px; }
   .popup-title { font-size: 1rem; font-weight: 700; margin-bottom: 8px; color: var(--text-primary); }
-  .popup-person {
-    display: flex; align-items: baseline; gap: 6px;
-    font-size: 0.84rem; padding: 3px 0; color: var(--text-secondary);
-  }
+  .popup-person { padding: 4px 0; font-size: 0.84rem; }
+  .popup-person-head { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
   .popup-person .name { font-weight: 600; }
   .popup-person .meta { color: var(--text-tertiary); font-size: 0.78rem; }
-  .popup-person .note { color: var(--text-secondary); }
+  .popup-person .note {
+    margin-top: 2px;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    word-break: break-word;
+    overflow-wrap: break-word;
+  }
 
   /* ========= 地图底部角标 ========= */
   .map-badge {
@@ -519,13 +523,15 @@ function updateSelectAllState() {
   allCb.indeterminate = checkedCount > 0 && checkedCount < cbs.length;
 }
 
-// 弹窗内容：城市名 + 所有去过的人
+// 弹窗内容：城市名 + 所有去过的人（备注单独一行，长文本自动换行）
 function buildPopupHtml(c, people) {
   return `<div class="popup-title">${escapeHtml(c.city)}</div>` + people.map(q => `
     <div class="popup-person">
-      <span class="name" style="color:${q.color}">${escapeHtml(q.nickname)}</span>
-      <span class="meta">${escapeHtml(fmtDate(q.visit_date))}</span>
-      ${q.note ? `<span class="note">· ${escapeHtml(q.note)}</span>` : ''}
+      <div class="popup-person-head">
+        <span class="name" style="color:${q.color}">${escapeHtml(q.nickname)}</span>
+        <span class="meta">${escapeHtml(fmtDate(q.visit_date))}</span>
+      </div>
+      ${q.note ? `<div class="note">${escapeHtml(q.note)}</div>` : ''}
     </div>`).join('');
 }
 
