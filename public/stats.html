@@ -153,7 +153,7 @@
     box-shadow: var(--shadow-sm);
     margin-bottom: 20px;
   }
-  .card h3 { font-size: 1.02rem; font-weight: 600; margin-bottom: 16px; }
+  .card h3 { font-size: 1.15rem; font-weight: 600; margin-bottom: 16px; }
   .rank-item {
     display: flex;
     align-items: center;
@@ -196,11 +196,13 @@
     border-bottom: 1px solid var(--border);
   }
   .ach-count-item:last-child { border-bottom: none; }
-  .ach-count-icon { font-size: 1rem; flex-shrink: 0; }
-  .ach-count-name { flex: 1; font-size: 0.88rem; font-weight: 500; min-width: 0; }
-  .ach-count-num { font-size: 0.85rem; font-weight: 600; color: var(--text-tertiary); flex-shrink: 0; }
+  .ach-count-icon { font-size: 1.1rem; flex-shrink: 0; }
+  .ach-count-name { flex: 1; font-size: 1rem; font-weight: 600; min-width: 0; }
+  .ach-count-desc { font-size: 0.78rem; font-weight: 400; color: var(--text-tertiary); margin-left: 6px; }
+  .ach-count-num { font-size: 0.9rem; font-weight: 600; color: var(--text-tertiary); flex-shrink: 0; }
   .ach-count-num.done { color: var(--primary); }
-  .rank-city { flex: 1; font-weight: 600; font-size: 0.92rem; min-width: 0; }
+  .rank-city { flex: 1; font-weight: 600; font-size: 1.05rem; min-width: 0; }
+  .rank-province { font-size: 0.78rem; font-weight: 400; color: var(--text-tertiary); margin-left: 6px; }
   .rank-meta { font-size: 0.8rem; color: var(--text-tertiary); flex-shrink: 0; }
   .rank-count { font-size: 0.9rem; font-weight: 600; color: var(--primary); flex-shrink: 0; min-width: 34px; text-align: right; }
 
@@ -320,7 +322,7 @@ fetch('/api/stats')
       const province = findProvince(c.city);
       item.innerHTML = `
         <span class="rank-no${i < 3 ? ' top' : ''}">${i + 1}</span>
-        <span class="rank-city">${c.city}${province ? ' | ' + province : ''}</span>
+        <span class="rank-city">${c.city}${province ? '<span class="rank-province">· ' + province + '</span>' : ''}</span>
         <span class="rank-meta">去过 ${c.people} 人</span>
         <span class="rank-count">${c.count} 次</span>`;
       list.appendChild(item);
@@ -356,7 +358,7 @@ fetch('/api/stats')
         const n = achCount[a.name] || 0;
         item.innerHTML = `
           <span class="ach-count-icon">${a.icon}</span>
-          <span class="ach-count-name">${a.name}</span>
+          <span class="ach-count-name">${a.name}${a.desc ? '<span class="ach-count-desc">' + a.desc + '</span>' : ''}</span>
           <span class="ach-count-num ${n > 0 ? 'done' : ''}">${n} 人</span>`;
         achList.appendChild(item);
       });

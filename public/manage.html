@@ -321,6 +321,7 @@
     text-align: left;
     opacity: 0.45;
     transition: all var(--transition);
+    overflow: hidden; /* 防止个别长文本在旧浏览器下把行撑出卡片 */
   }
   .achievement.done {
     opacity: 1;
@@ -329,7 +330,14 @@
   }
   .achievement .icon { font-size: 1.1rem; flex-shrink: 0; }
   .achievement .name { font-size: 0.85rem; font-weight: 600; flex-shrink: 0; }
-  .achievement .desc { font-size: 0.75rem; color: var(--text-tertiary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .achievement .desc { font-size: 0.75rem; color: var(--text-tertiary); flex: 1 1 0; min-width: 0; max-width: 100%; line-height: 1.45; overflow-wrap: anywhere; word-break: break-word; }
+
+  /* 每个成就之间的间隔（成就在分类 body 内逐行渲染） */
+  .category-body {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
 
   /* 成就分类折叠 */
   .achievement-category { margin-bottom: 14px; }
