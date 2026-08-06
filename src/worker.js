@@ -6,18 +6,6 @@ import {
   isValidNickname, isValidPassword,
 } from './lib.js';
 
-// ---------- 邀请码工具 ----------
-
-// 生成一次性邀请码：8 位大写字母+数字，剔除易混淆的 0O1Il
-const INVITE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-function generateInviteCode() {
-  const arr = new Uint8Array(8);
-  crypto.getRandomValues(arr);
-  let code = '';
-  for (let i = 0; i < arr.length; i++) code += INVITE_CHARS[arr[i] % INVITE_CHARS.length];
-  return code;
-}
-
 // ---------- API 处理 ----------
 
 async function handleApi(request, env) {
@@ -59,23 +47,6 @@ async function handleApi(request, env) {
     return json({ token, userId, nickname, color });
   }
 
-  // POST /api/invites（管理员：生成一次性邀请码）
-  if (method === 'POST' && path === '/api/invites') {
-    const body = await request.json().catch(() => ({}));
-    if (body.admin_pass !== env.ADMIN_PASSWORD) return error('管理员密码错误', 401);
-
-    const count = Math.max(1, Math.min(20, Number(body.count) || 1));
-    const codes = [];
-    const inserts = [];
-    for (let i = 0; i < count; i++) {
-      const code = generateInviteCode();
-      codes.push(code);
-      inserts.push(DB.prepare('INSERT OR IGNORE INTO invite_codes (code) VALUES (?)').bind(code));
-    }
-    await DB.batch(inserts);
-    return json({ codes });
-  }
-
   // GET /api/config（公开：注册配置，供前端决定是否显示邀请码输入框）
   if (method === 'GET' && path === '/api/config') {
     return json({ inviteCodeRequired: true });
@@ -86,11 +57,11 @@ async function handleApi(request, env) {
   if (method === 'GET' && geoMatch) {
     const adcode = geoMatch[1];
     try {
-      // 台湾(710000)无 _full 数据，用非 full 接口取全岛边界
-      const url = adcode === '710000'
-        ? 'https://geo.datav.aliyun.com/areas_v3/bound/710000.json'
-        : `https://geo.datav.aliyun.com/areas_v3/bound/${adcode}_full.json`;
-      const resp = await fetch(url);
+      // 优先取完整边界（_full，含区县）；部分市无 _full（如东莞、台湾），回退到本级边界
+      let resp = await fetch(`https://geo.datav.aliyun.com/areas_v3/bound/${adcode}_full.json`);
+      if (resp.status === 404) {
+        resp = await fetch(`https://geo.datav.aliyun.com/areas_v3/bound/${adcode}.json`);
+      }
       if (!resp.ok) return error('边界获取失败', resp.status);
       return json(await resp.json());
     } catch (e) {

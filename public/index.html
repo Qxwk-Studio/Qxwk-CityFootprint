@@ -365,7 +365,13 @@ let renderSeq = 0;           // 渲染批次号，避免异步竞态
 function loadCityGeo(adcode) {
   if (!geoCache.has(adcode)) {
     geoCache.set(adcode, fetch(`/api/geo/${adcode}`)
-      .then(r => r.json())
+      .then(r => {
+        if (!r.ok) return null; // 404/错误 → 回退圆点
+        return r.json().then(g => {
+          // 校验是合法 GeoJSON，避免把错误对象传给 Leaflet
+          return (g && g.type === 'FeatureCollection' && Array.isArray(g.features)) ? g : null;
+        }).catch(() => null);
+      })
       .catch(() => null));
   }
   return geoCache.get(adcode);

@@ -87,32 +87,22 @@ Pages 项目 → **自定义域**（Custom domains）→ 添加你的域名（�
 
 ### 🔑 注册邀请码
 
-部署后注册必须使用**一次性邀请码**，一个码只能注册一次，用后即焚。
+部署后注册必须使用**一次性邀请码**，一个码只能注册一次，用后即焚。邀请码直接在 D1 数据库 `invite_codes` 表生成（无需环境变量）：
 
-**1. 设置管理员密码**
+在 D1 控制台（或 `npx wrangler d1 execute qxwk-cityfootprint --remote --command "..."`）执行：
 
-`ADMIN_PASSWORD` 属于**机密**，不要写进 `wrangler.toml`（文件会被提交到仓库，密码会泄露）：
+```sql
+-- 插入指定码
+INSERT INTO invite_codes (code) VALUES ('ABC12345');
 
-- **线上**：CF 控制台 → Worker → **设置** → **变量与机密** → **机密** → 新增 `ADMIN_PASSWORD`
-- **本地**：填入 `.dev.vars` 文件（已被 `.gitignore` 排除，不会提交）
+-- 或一次插入多个
+INSERT INTO invite_codes (code) VALUES ('AAA11111'), ('BBB22222');
 
-改密码时不必重新部署，直接在 CF 控制台修改机密值即可。
-
-**2. 生成邀请码**
-
-```bash
-curl -X POST https://你的域名/api/invites \
-  -H "Content-Type: application/json" \
-  -d '{"admin_pass":"你的密码","count":5}'
+-- 查看所有邀请码及使用状态（used_at 为 NULL = 未使用）
+SELECT code, used_at FROM invite_codes;
 ```
 
-返回：
-
-```json
-{ "codes": ["KX8Q3M7Z", "P2TD6FNA", ...] }
-```
-
-把生成的码发给朋友，每人用一个，注册成功即失效。
+把码发给朋友，每人用一个，注册成功即失效。
 
 ### 💻 本地开发
 
@@ -131,7 +121,6 @@ Worker 会在 `localhost:8787` 同时提供页面和 API。
 | POST | `/api/register` | 无 | 注册（需一次性邀请码），返回 token |
 | POST | `/api/login` | 无 | 登录，返回 token（密码为 NULL 时返回需设置新密码信号） |
 | POST | `/api/set-password` | 无 | 密码为 NULL 时设置新密码（管理员清空后重置用） |
-| POST | `/api/invites` | 管理员密码 | 生成一次性邀请码（count 1-20） |
 | GET | `/api/config` | 无 | 注册配置（前端判断是否显示邀请码） |
 | GET | `/api/cities` | 无 | 所有城市 + 谁去过（地图用） |
 | GET | `/api/user/:nickname` | 无 | 某人的足迹明细 |

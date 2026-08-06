@@ -4,9 +4,7 @@ compatibility_date = "2026-08-05"
 compatibility_flags = ["nodejs_compat"]
 
 # 注册限制（一次性邀请码）
-# 管理员密码 ADMIN_PASSWORD 是机密，不写进本文件（避免提交到仓库泄露）：
-#   - 线上：CF 控制台 → Worker → 设置 → 变量与机密 → 机密 新增 ADMIN_PASSWORD
-#   - 本地：填入 .dev.vars（已被 .gitignore 排除，不会提交）
+# 邀请码在数据库 invite_codes 表直接生成（见 README「注册邀请码」），无需环境变量
 
 # 静态资源目录（public/）
 [assets]
