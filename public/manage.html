@@ -247,6 +247,19 @@
   .check-row label { margin-bottom: 0; }
   .hint { font-size: 0.78rem; color: var(--text-tertiary); margin-top: 4px; }
 
+  /* 欢迎卡片足迹统计 */
+  .visit-stats {
+    display: flex;
+    gap: 20px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+  }
+  .visit-stats .stat { display: flex; align-items: baseline; gap: 5px; }
+  .visit-stats .stat b { font-size: 1.15rem; color: var(--primary); font-weight: 600; }
+
   /* ========= Footer ========= */
   .footer {
     background: #0f172a;
@@ -340,6 +353,7 @@
           <div style="font-size:14px;font-weight:600;" id="welcomeText"></div>
           <button class="btn btn-ghost btn-sm" onclick="logout()">退出登录</button>
         </div>
+        <div class="visit-stats" id="visitStats"></div>
       </div>
 
       <div class="card">
@@ -519,11 +533,22 @@ function enterUserView() {
 
 let myVisits = [];
 
+// 更新欢迎卡片统计：去过几座城市（去重）+ 足迹总数
+function updateVisitStats() {
+  const el = document.getElementById('visitStats');
+  if (!el) return;
+  const cityCount = new Set(myVisits.map(v => v.city)).size;
+  el.innerHTML = `
+    <span class="stat">✈️ 去过 <b>${cityCount}</b> 座城市</span>
+    <span class="stat">📍 足迹 <b>${myVisits.length}</b> 条</span>`;
+}
+
 async function loadVisits() {
   const list = document.getElementById('visitList');
   try {
     const data = await api('/my-visits');
     myVisits = data.visits;
+    updateVisitStats();
     if (!myVisits.length) { list.innerHTML = '<div class="empty">还没有足迹，添加第一座城市吧 ✈️</div>'; return; }
     list.innerHTML = '';
     for (const v of myVisits) {

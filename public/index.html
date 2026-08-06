@@ -243,6 +243,13 @@
     cursor: pointer;
     flex-shrink: 0;
   }
+  .legend .user-all {
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 6px;
+    padding-bottom: 6px;
+    color: var(--text-primary);
+    font-weight: 500;
+  }
   .legend .empty { font-size: 0.8rem; color: var(--text-tertiary); text-align: center; padding: 8px 0; }
 
   /* ========= 加载 / 空态 ========= */
@@ -406,6 +413,24 @@ function render(data) {
   // 图例（复选框多选，默认全选）
   const legendList = document.getElementById('legendList');
   legendList.innerHTML = '';
+  // 全选行
+  const allLabel = document.createElement('label');
+  allLabel.className = 'user user-all';
+  const allCb = document.createElement('input');
+  allCb.type = 'checkbox';
+  allCb.id = 'selectAll';
+  allCb.checked = true;
+  allCb.addEventListener('change', () => {
+    const checked = allCb.checked;
+    legendList.querySelectorAll('.user-check').forEach(cb => { cb.checked = checked; });
+    updateSelectAllState();
+    renderFilter();
+  });
+  const allTxt = document.createElement('span');
+  allTxt.textContent = '全选';
+  allLabel.append(allCb, allTxt);
+  legendList.appendChild(allLabel);
+  // 用户行
   for (const [name, color] of userInfo) {
     const label = document.createElement('label');
     label.className = 'user';
@@ -414,7 +439,7 @@ function render(data) {
     cb.className = 'user-check';
     cb.checked = true;
     cb.dataset.nick = name;
-    cb.addEventListener('change', renderFilter);
+    cb.addEventListener('change', () => { updateSelectAllState(); renderFilter(); });
     const dot = document.createElement('span');
     dot.className = 'dot';
     dot.style.background = color;
@@ -466,6 +491,16 @@ function renderFilter() {
 // 收起/展开图例面板
 function toggleLegend() {
   document.getElementById('legend').classList.toggle('collapsed');
+}
+
+// 同步"全选"复选框状态（全选 / 半选 / 全不选）
+function updateSelectAllState() {
+  const cbs = document.querySelectorAll('#legendList .user-check');
+  const allCb = document.getElementById('selectAll');
+  if (!allCb || !cbs.length) return;
+  const checkedCount = [...cbs].filter(cb => cb.checked).length;
+  allCb.checked = checkedCount === cbs.length;
+  allCb.indeterminate = checkedCount > 0 && checkedCount < cbs.length;
 }
 
 // 弹窗内容：城市名 + 所有去过的人
