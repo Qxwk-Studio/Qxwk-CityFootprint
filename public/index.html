@@ -105,32 +105,68 @@
     transform: scale(1.02);
   }
 
-  /* 右下角：管理我的足迹 */
-  .btn-manage {
+  /* 右下角：汉堡菜单按钮 */
+  .fab-btn {
     position: fixed;
     right: 16px;
     bottom: 16px;
     z-index: 1000;
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-    padding: 12px 24px;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
     background: linear-gradient(135deg, var(--primary), var(--secondary));
     color: #fff;
-    text-decoration: none;
-    border-radius: 40px;
-    font-size: 0.92rem;
-    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     box-shadow: var(--shadow-md);
     transition: all var(--transition);
-    white-space: nowrap;
     font-family: inherit;
   }
-  .btn-manage:hover {
+  .fab-btn:hover, .fab-btn.active {
     background: linear-gradient(135deg, var(--primary-hover), #0f766e);
     transform: translateY(-1px);
     box-shadow: var(--shadow-lg);
   }
+
+  /* 汉堡菜单弹出卡片 */
+  .fab-menu {
+    position: fixed;
+    right: 16px;
+    bottom: 84px;
+    z-index: 1000;
+    min-width: 190px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    padding: 8px;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(8px) scale(0.97);
+    transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
+    transform-origin: bottom right;
+  }
+  .fab-menu.open {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0) scale(1);
+  }
+  .fab-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 11px 14px;
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: background var(--transition), color var(--transition);
+  }
+  .fab-menu-item:hover { background: var(--primary-light); color: var(--primary); }
   .brand-logo {
     width: 34px;
     height: 34px;
@@ -227,14 +263,6 @@
     width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0;
     box-shadow: 0 0 0 2px #fff, 0 1px 3px rgba(0, 0, 0, 0.2);
   }
-  .legend .count {
-    margin-left: auto;
-    font-size: 0.74rem;
-    color: var(--text-tertiary);
-    background: var(--bg);
-    padding: 1px 8px;
-    border-radius: 40px;
-  }
   .legend .user-check {
     width: 14px;
     height: 14px;
@@ -299,23 +327,15 @@
     word-break: break-word;
     overflow-wrap: break-word;
   }
-
-  /* ========= 地图底部角标 ========= */
-  .map-badge {
-    position: fixed;
-    left: 16px;
-    bottom: 16px;
-    z-index: 1000;
-    font-size: 0.74rem;
+  .popup-more {
+    margin-top: 6px;
+    padding-top: 6px;
+    border-top: 1px solid var(--border);
+    font-size: 0.78rem;
     color: var(--text-tertiary);
-    background: rgba(255, 255, 255, 0.85);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    border: 1px solid var(--border);
-    border-radius: 40px;
-    padding: 4px 12px;
-    pointer-events: none;
+    text-align: center;
   }
+
 
   /* ========= Responsive ========= */
   @media (max-width: 640px) {
@@ -351,14 +371,27 @@
   <div id="legendList"><div class="empty">正在加载…</div></div>
 </div>
 
-<a class="btn-manage" href="manage.html">
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-  管理我的足迹
-</a>
+<button class="fab-btn" id="fabBtn" onclick="toggleFabMenu()" aria-label="菜单">
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+</button>
+
+<div class="fab-menu" id="fabMenu">
+  <a class="fab-menu-item" href="manage.html">
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+    个人中心
+  </a>
+  <a class="fab-menu-item" href="news.html">
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+    公告与更新日志
+  </a>
+  <a class="fab-menu-item" href="stats.html">
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+    全站统计
+  </a>
+  <!-- 后续新功能在此添加菜单项 -->
+</div>
 
 <div id="map"></div>
-
-<div class="map-badge">City Footprint</div>
 
 <script src="vendor/leaflet.js"></script>
 <script src="cities.js"></script>
@@ -375,7 +408,6 @@ L.tileLayer('https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scal
 
 let markers = [];
 const userInfo = new Map(); // nickname -> { color }
-const userCount = new Map(); // nickname -> 足迹数
 const offset = 0.15;         // 同城多点错开距离
 const geoCache = new Map();  // adcode -> Promise<geojson|null>，边界缓存
 let renderSeq = 0;           // 渲染批次号，避免异步竞态
@@ -436,7 +468,6 @@ function render(data) {
   for (const c of data.cities) {
     for (const p of c.people) {
       userInfo.set(p.nickname, p.color);
-      userCount.set(p.nickname, (userCount.get(p.nickname) || 0) + 1);
     }
   }
 
@@ -475,10 +506,7 @@ function render(data) {
     dot.style.background = color;
     const txt = document.createElement('span');
     txt.textContent = name; // textContent 自动转义，安全
-    const cnt = document.createElement('span');
-    cnt.className = 'count';
-    cnt.textContent = userCount.get(name);
-    label.append(cb, dot, txt, cnt);
+    label.append(cb, dot, txt);
     legendList.appendChild(label);
   }
   if (!userInfo.size) legendList.innerHTML = '<div class="empty">暂无数据</div>';
@@ -523,6 +551,28 @@ function toggleLegend() {
   document.getElementById('legend').classList.toggle('collapsed');
 }
 
+// 汉堡菜单开关
+function toggleFabMenu() {
+  document.getElementById('fabMenu').classList.toggle('open');
+  document.getElementById('fabBtn').classList.toggle('active');
+}
+// 点击外部关闭汉堡菜单
+document.addEventListener('click', (e) => {
+  const menu = document.getElementById('fabMenu');
+  const btn = document.getElementById('fabBtn');
+  if (!menu.contains(e.target) && !btn.contains(e.target)) {
+    menu.classList.remove('open');
+    btn.classList.remove('active');
+  }
+});
+// 点击菜单项后关闭
+document.querySelectorAll('.fab-menu-item').forEach(item => {
+  item.addEventListener('click', () => {
+    document.getElementById('fabMenu').classList.remove('open');
+    document.getElementById('fabBtn').classList.remove('active');
+  });
+});
+
 // 同步"全选"复选框状态（全选 / 半选 / 全不选）
 function updateSelectAllState() {
   const cbs = document.querySelectorAll('#legendList .user-check');
@@ -533,14 +583,19 @@ function updateSelectAllState() {
   allCb.indeterminate = checkedCount > 0 && checkedCount < cbs.length;
 }
 
-// 弹窗内容：城市名 + 所有去过的人（每人一行：名字 日期 备注，长备注自动换行）
+// 弹窗内容：城市名 + 去过的人（只显示最新 10 条，长备注自动换行）
 function buildPopupHtml(c, people) {
-  return `<div class="popup-title">${escapeHtml(c.city)}</div>` + people.map(q => `
+  const total = people.length;
+  const shown = people.slice(-10); // 数组按添加时间从旧到新，取末尾=最近添加
+  let html = `<div class="popup-title">${escapeHtml(c.city)}</div>`;
+  html += shown.map(q => `
     <div class="popup-person">
       <span class="name" style="color:${q.color}">${escapeHtml(q.nickname)}</span>
       <span class="meta">${escapeHtml(fmtDate(q.visit_date))}</span>
       ${q.note ? `<span class="note">${escapeHtml(q.note)}</span>` : ''}
     </div>`).join('');
+  if (total > 10) html += `<div class="popup-more">… 共 ${total} 人去过</div>`;
+  return html;
 }
 
 // 渲染市辖区半透明多边形（weight:1 显示全市边界轮廓，hover 提亮）

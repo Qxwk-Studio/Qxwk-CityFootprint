@@ -159,6 +159,16 @@ async function handleApi(request, env) {
     return json({ cities: [...cityMap.values()] });
   }
 
+  // GET /api/stats（公开：全站统计）
+  if (method === 'GET' && path === '/api/stats') {
+    const totalVisits = (await DB.prepare('SELECT COUNT(*) as c FROM visits').first()).c;
+    const totalCities = (await DB.prepare('SELECT COUNT(DISTINCT city) as c FROM visits').first()).c;
+    const cityRank = await DB.prepare(
+      'SELECT city, COUNT(*) as count, COUNT(DISTINCT user_id) as people FROM visits GROUP BY city ORDER BY count DESC, city ASC'
+    ).all();
+    return json({ totalVisits, totalCities, cityRank: cityRank.results });
+  }
+
   // GET /api/user/:nickname（公开：某人足迹）
   const userMatch = path.match(/^\/api\/user\/([^/]+)$/);
   if (method === 'GET' && userMatch) {

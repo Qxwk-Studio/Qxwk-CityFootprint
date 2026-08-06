@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>全站统计 · City Footprint - 青翔未阔工作室</title>
+<meta name="description" content="City Footprint 全站统计：总行程、总城市、去过的城市次数排名。">
+<link rel="icon" type="image/webp" href="/favicon.webp">
+<style>
+  /* ========= Reset & Base ========= */
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --primary: #2563eb;
+    --primary-hover: #1d4ed8;
+    --primary-light: #eff6ff;
+    --secondary: #0d9488;
+    --surface: #ffffff;
+    --bg: #f8fafc;
+    --text-primary: #0f172a;
+    --text-secondary: #64748b;
+    --text-tertiary: #94a3b8;
+    --border: #e2e8f0;
+    --navbar-bg: rgba(255, 255, 255, 0.8);
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
+    --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.12);
+    --radius-sm: 8px;
+    --radius-md: 14px;
+    --radius-lg: 20px;
+    --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+    --container: 1100px;
+    --nav-height: 64px;
+  }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: var(--font-sans);
+    background: var(--bg);
+    color: var(--text-primary);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ========= Navbar ========= */
+  .navbar {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    height: var(--nav-height);
+    background: var(--navbar-bg);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border);
+  }
+  .navbar-inner {
+    max-width: var(--container);
+    margin: 0 auto;
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 100%;
+    gap: 12px;
+  }
+  .navbar-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    color: var(--text-primary);
+    font-weight: 600;
+    font-size: 1.15rem;
+    letter-spacing: 0.3px;
+    transition: opacity var(--transition);
+    flex-shrink: 0;
+  }
+  .navbar-brand:hover { opacity: 0.85; }
+  .brand-logo {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    object-fit: cover;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+  }
+  .brand-text { line-height: 1.25; }
+  .brand-text b { display: block; font-size: 16px; font-weight: 600; letter-spacing: 0.3px; }
+  .brand-text span { font-size: 11px; color: var(--text-tertiary); }
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 18px;
+    background: rgba(37, 99, 235, 0.15);
+    color: var(--text-primary);
+    text-decoration: none;
+    border-radius: 40px;
+    font-size: 0.88rem;
+    font-weight: 500;
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(147, 197, 253, 0.35);
+    transition: all var(--transition);
+    white-space: nowrap;
+  }
+  .back-link:hover {
+    background: rgba(37, 99, 235, 0.3);
+    border-color: rgba(147, 197, 253, 0.6);
+    transform: scale(1.02);
+  }
+
+  /* ========= Main ========= */
+  .main { flex: 1; padding: 36px 24px 60px; }
+  .container { max-width: 760px; margin: 0 auto; }
+  .page-header { display: flex; align-items: center; margin-bottom: 28px; }
+  .page-header h1 { font-size: clamp(1.4rem, 3vw, 1.8rem); font-weight: 700; color: var(--text-primary); }
+
+  /* ========= 统计大数字卡片 ========= */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 20px;
+    text-align: center;
+    box-shadow: var(--shadow-sm);
+  }
+  .stat-card .value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--primary);
+    line-height: 1.2;
+  }
+  .stat-card .label {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    margin-top: 4px;
+  }
+
+  /* ========= 城市排名 ========= */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 24px;
+    box-shadow: var(--shadow-sm);
+  }
+  .card h3 { font-size: 1.02rem; font-weight: 600; margin-bottom: 16px; }
+  .rank-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 4px;
+    border-bottom: 1px solid var(--border);
+  }
+  .rank-item:last-child { border-bottom: none; }
+  .rank-no {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .rank-no.top { background: linear-gradient(135deg, var(--primary), var(--secondary)); color: #fff; border: none; }
+  .rank-city { flex: 1; font-weight: 600; font-size: 0.92rem; min-width: 0; }
+  .rank-meta { font-size: 0.8rem; color: var(--text-tertiary); flex-shrink: 0; }
+  .rank-count { font-size: 0.9rem; font-weight: 600; color: var(--primary); flex-shrink: 0; min-width: 34px; text-align: right; }
+
+  /* ========= Footer ========= */
+  .footer {
+    background: #0f172a;
+    text-align: center;
+    padding: 28px 24px;
+    color: var(--text-tertiary);
+    font-size: 0.82rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+  }
+  .footer-copy { opacity: 0.6; }
+
+  /* ========= 加载/空态 ========= */
+  .loading, .empty {
+    text-align: center;
+    color: var(--text-tertiary);
+    padding: 40px 0;
+    font-size: 0.9rem;
+  }
+
+  /* ========= Responsive ========= */
+  @media (max-width: 640px) {
+    .navbar-inner { padding: 0 16px; }
+    .main { padding: 24px 16px 40px; }
+    .card { padding: 18px; }
+    .back-link { padding: 7px 14px; font-size: 0.84rem; }
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  }
+</style>
+</head>
+<body>
+
+<header class="navbar">
+  <div class="navbar-inner">
+    <a href="index.html" class="navbar-brand">
+      <img class="brand-logo" src="/favicon.webp" alt="City Footprint">
+      <span class="brand-text"><b>City Footprint</b><span>我们走过的城市</span></span>
+    </a>
+    <a href="index.html" class="back-link">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
+      返回地图
+    </a>
+  </div>
+</header>
+
+<div class="main">
+  <div class="container">
+    <div class="page-header">
+      <h1>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-4px;margin-right:8px;"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        全站统计
+      </h1>
+    </div>
+
+    <!-- 总览 -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="value" id="totalVisits">-</div>
+        <div class="label">✈️ 总行程</div>
+      </div>
+      <div class="stat-card">
+        <div class="value" id="totalCities">-</div>
+        <div class="label">🏙️ 总城市</div>
+      </div>
+    </div>
+
+    <!-- 城市次数排名 -->
+    <div class="card">
+      <h3>🏆 去过的城市次数排名</h3>
+      <div id="cityRankList"><div class="loading">正在加载统计…</div></div>
+    </div>
+
+  </div>
+</div>
+
+<footer class="footer">
+  <div class="footer-copy">2026 青翔未阔工作室 · City Footprint</div>
+</footer>
+
+<script>
+// 拉取全站统计
+fetch('/api/stats')
+  .then(r => r.json())
+  .then(data => {
+    document.getElementById('totalVisits').textContent = data.totalVisits;
+    document.getElementById('totalCities').textContent = data.totalCities;
+
+    const list = document.getElementById('cityRankList');
+    if (!data.cityRank.length) {
+      list.innerHTML = '<div class="empty">还没有任何足迹，去添加第一座城市吧 ✈️</div>';
+      return;
+    }
+    list.innerHTML = '';
+    data.cityRank.forEach((c, i) => {
+      const item = document.createElement('div');
+      item.className = 'rank-item';
+      item.innerHTML = `
+        <span class="rank-no${i < 3 ? ' top' : ''}">${i + 1}</span>
+        <span class="rank-city">${c.city}</span>
+        <span class="rank-meta">去过 ${c.people} 人</span>
+        <span class="rank-count">${c.count} 次</span>`;
+      list.appendChild(item);
+    });
+  })
+  .catch(() => {
+    document.getElementById('cityRankList').innerHTML = '<div class="empty">统计加载失败，请稍后重试</div>';
+  });
+</script>
+</body>
+</html>

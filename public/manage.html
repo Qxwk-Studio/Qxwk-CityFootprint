@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>管理足迹 · City Footprint - 青翔未阔工作室</title>
+<title>个人中心 · City Footprint - 青翔未阔工作室</title>
 <meta name="description" content="登录 City Footprint，添加、修改、删除自己的城市足迹，记录去过的城市、访问时间与回忆备注。">
 <link rel="icon" type="image/webp" href="/favicon.webp">
 <style>
@@ -280,6 +280,54 @@
   .visit-stats .stat { display: flex; align-items: baseline; gap: 5px; }
   .visit-stats .stat b { font-size: 1.15rem; color: var(--primary); font-weight: 600; }
 
+  /* 个人中心两列布局（电脑端左资料+创建 / 右记录+成就；手机端单列） */
+  .personal-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    align-items: start;
+  }
+  .personal-col { display: flex; flex-direction: column; gap: 20px; }
+  .personal-col .card { margin-bottom: 0; }
+
+  /* 可折叠卡片 */
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    user-select: none;
+    margin-bottom: 12px;
+  }
+  .card-header h3 { margin-bottom: 0; }
+  .card-toggle { color: var(--text-tertiary); transition: transform 0.2s ease; flex-shrink: 0; }
+  .visit-list-card.collapsed .card-toggle { transform: rotate(-90deg); }
+  .visit-list-card.collapsed #visitList { display: none; }
+
+  /* 成就卡片 */
+  .achievement-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: 10px;
+  }
+  .achievement {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px 8px;
+    text-align: center;
+    opacity: 0.45;
+    transition: all var(--transition);
+  }
+  .achievement.done {
+    opacity: 1;
+    border-color: rgba(37, 99, 235, 0.4);
+    background: var(--primary-light);
+  }
+  .achievement .icon { font-size: 1.4rem; }
+  .achievement .name { font-size: 0.78rem; font-weight: 600; margin-top: 4px; }
+  .achievement .desc { font-size: 0.68rem; color: var(--text-tertiary); margin-top: 2px; }
+
   /* ========= Footer ========= */
   .footer {
     background: #0f172a;
@@ -292,6 +340,9 @@
   .footer-copy { opacity: 0.6; }
 
   /* ========= Responsive ========= */
+  @media (max-width: 768px) {
+    .personal-layout { grid-template-columns: 1fr; }
+  }
   @media (max-width: 640px) {
     .navbar-inner { padding: 0 16px; }
     .main { padding: 24px 16px 40px; }
@@ -324,7 +375,7 @@
     <div class="page-header">
       <h1>
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-4px;margin-right:8px;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-        管理我的足迹
+        个人中心
       </h1>
     </div>
 
@@ -368,51 +419,67 @@
 
     <!-- 已登录 -->
     <div id="userView" style="display:none">
-      <div class="card">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-          <div style="font-size:14px;font-weight:600;" id="welcomeText"></div>
-          <button class="btn btn-ghost btn-sm" onclick="logout()">退出登录</button>
-        </div>
-        <div class="user-uid" id="userUid"></div>
-        <div class="visit-stats" id="visitStats"></div>
-      </div>
-
-      <div class="card">
-        <h3 id="formTitle">✈️ 添加足迹</h3>
-        <form id="addForm" onsubmit="return addVisit(event)">
-          <div class="field">
-            <label>城市</label>
-            <input list="cityList" id="visitCity" placeholder="输入城市名选择" required autocomplete="off">
-            <datalist id="cityList"></datalist>
+      <div class="personal-layout">
+        <!-- 左列：个人资料 + 创建行程 -->
+        <div class="personal-col">
+          <div class="card">
+            <h3>👤 个人资料</h3>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+              <div style="font-size:14px;font-weight:600;" id="welcomeText"></div>
+              <button class="btn btn-ghost btn-sm" onclick="logout()">退出登录</button>
+            </div>
+            <div class="user-uid" id="userUid"></div>
+            <div class="visit-stats" id="visitStats"></div>
           </div>
-          <div class="row">
-            <div>
-              <label>时间</label>
-              <div class="date-selects">
-                <select id="visitYear"></select>
-                <select id="visitMonth"></select>
+
+          <div class="card">
+            <h3 id="formTitle">✈️ 创建行程</h3>
+            <form id="addForm" onsubmit="return addVisit(event)">
+              <div class="field">
+                <label>城市</label>
+                <input list="cityList" id="visitCity" placeholder="输入城市名选择" required autocomplete="off">
+                <datalist id="cityList"></datalist>
               </div>
-            </div>
-            <div class="check-row" style="align-self:flex-end;padding-bottom:10px;">
-              <input type="checkbox" id="forgotDate" onchange="toggleDate()">
-              <label for="forgotDate">记不清了</label>
-            </div>
+              <div class="row">
+                <div>
+                  <label>时间</label>
+                  <div class="date-selects">
+                    <select id="visitYear"></select>
+                    <select id="visitMonth"></select>
+                  </div>
+                </div>
+                <div class="check-row" style="align-self:flex-end;padding-bottom:10px;">
+                  <input type="checkbox" id="forgotDate" onchange="toggleDate()">
+                  <label for="forgotDate">记不清了</label>
+                </div>
+              </div>
+              <div class="field">
+                <div style="display:flex;justify-content:space-between;align-items:baseline;">
+                  <label>备注（可选）</label>
+                  <span class="note-count" id="noteCount">0/100</span>
+                </div>
+                <input id="visitNote" maxlength="100" placeholder="一句话留下回忆…" autocomplete="off" oninput="updateNoteCount()">
+              </div>
+              <button class="btn btn-primary" type="submit">添加</button>
+              <div class="msg" id="addMsg"></div>
+            </form>
           </div>
-          <div class="field">
-            <div style="display:flex;justify-content:space-between;align-items:baseline;">
-              <label>备注（可选）</label>
-              <span class="note-count" id="noteCount">0/100</span>
-            </div>
-            <input id="visitNote" maxlength="100" placeholder="一句话留下回忆…" autocomplete="off" oninput="updateNoteCount()">
-          </div>
-          <button class="btn btn-primary" type="submit">添加</button>
-          <div class="msg" id="addMsg"></div>
-        </form>
-      </div>
+        </div>
 
-      <div class="card">
-        <h3>📍 我的足迹</h3>
-        <div id="visitList"><div class="empty">正在加载…</div></div>
+        <!-- 右列：行程记录 + 成就 -->
+        <div class="personal-col">
+          <div class="card visit-list-card collapsed" id="visitListCard">
+            <div class="card-header" onclick="toggleVisitList()">
+              <h3>📍 行程记录</h3>
+              <svg class="card-toggle" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+            <div id="visitList"><div class="empty">正在加载…</div></div>
+          </div>
+          <div class="card">
+            <h3>🏆 成就</h3>
+            <div class="achievement-grid" id="achievementGrid"><div class="empty">正在加载…</div></div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -566,6 +633,40 @@ function updateNoteCount() {
   if (el && input) el.textContent = input.value.length + '/100';
 }
 
+// 行程记录折叠开关
+function toggleVisitList() {
+  document.getElementById('visitListCard').classList.toggle('collapsed');
+}
+
+// 城市→省份（成就统计用）
+function findProvince(city) {
+  const c = (window.CITIES || []).find(x => x.name === city);
+  return c ? c.province : '未知';
+}
+
+// 渲染成就卡片
+function renderAchievements() {
+  const el = document.getElementById('achievementGrid');
+  if (!el) return;
+  const cityCount = new Set(myVisits.map(v => v.city)).size;
+  const visitCount = myVisits.length;
+  const provinces = new Set(myVisits.map(v => findProvince(v.city))).size;
+  const list = [
+    { icon: '🚀', name: '初次启程', desc: '添加第一条足迹', done: visitCount >= 1 },
+    { icon: '🏙️', name: '城市漫游', desc: '去过 5 座城市', done: cityCount >= 5 },
+    { icon: '🗺️', name: '足迹猎手', desc: '去过 10 座城市', done: cityCount >= 10 },
+    { icon: '🌍', name: '环游达人', desc: '去过 20 座城市', done: cityCount >= 20 },
+    { icon: '✈️', name: '旅行常客', desc: '累计 30 条足迹', done: visitCount >= 30 },
+    { icon: '🧭', name: '跨省探索', desc: '到过 3 个省份', done: provinces >= 3 },
+  ];
+  el.innerHTML = list.map(a => `
+    <div class="achievement${a.done ? ' done' : ''}">
+      <div class="icon">${a.icon}</div>
+      <div class="name">${a.name}</div>
+      <div class="desc">${a.desc}</div>
+    </div>`).join('');
+}
+
 // 更新欢迎卡片统计：去过几座城市（去重）+ 足迹总数
 function updateVisitStats() {
   const el = document.getElementById('visitStats');
@@ -582,6 +683,7 @@ async function loadVisits() {
     const data = await api('/my-visits');
     myVisits = data.visits;
     updateVisitStats();
+    renderAchievements();
     if (!myVisits.length) { list.innerHTML = '<div class="empty">还没有足迹，添加第一座城市吧 ✈️</div>'; return; }
     list.innerHTML = '';
     for (let i = 0; i < myVisits.length; i++) {
@@ -667,7 +769,7 @@ function startEdit(id) {
   }
   const btn = submitBtn();
   btn.textContent = '保存修改';
-  document.getElementById('formTitle').textContent = '✏️ 编辑足迹';
+  document.getElementById('formTitle').textContent = '✏️ 编辑行程';
   document.getElementById('addMsg').textContent = '正在编辑：' + v.city;
   document.getElementById('addMsg').className = 'msg ok';
   document.getElementById('addForm').scrollIntoView({ behavior: 'smooth' });
@@ -686,7 +788,7 @@ function resetForm() {
   document.getElementById('visitNote').value = '';
   updateNoteCount();
   submitBtn().textContent = '添加';
-  document.getElementById('formTitle').textContent = '✈️ 添加足迹';
+  document.getElementById('formTitle').textContent = '✈️ 创建行程';
   document.getElementById('addMsg').textContent = '';
 }
 

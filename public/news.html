@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>公告与更新日志 · City Footprint - 青翔未阔工作室</title>
+<meta name="description" content="City Footprint 的公告与更新日志，了解最新动态与版本历史。">
+<link rel="icon" type="image/webp" href="/favicon.webp">
+<style>
+  /* ========= Reset & Base ========= */
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --primary: #2563eb;
+    --primary-hover: #1d4ed8;
+    --primary-light: #eff6ff;
+    --secondary: #0d9488;
+    --surface: #ffffff;
+    --bg: #f8fafc;
+    --text-primary: #0f172a;
+    --text-secondary: #64748b;
+    --text-tertiary: #94a3b8;
+    --border: #e2e8f0;
+    --navbar-bg: rgba(255, 255, 255, 0.8);
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
+    --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.12);
+    --radius-sm: 8px;
+    --radius-md: 14px;
+    --radius-lg: 20px;
+    --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+    --container: 1100px;
+    --nav-height: 64px;
+  }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: var(--font-sans);
+    background: var(--bg);
+    color: var(--text-primary);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ========= Navbar ========= */
+  .navbar {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    height: var(--nav-height);
+    background: var(--navbar-bg);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border);
+  }
+  .navbar-inner {
+    max-width: var(--container);
+    margin: 0 auto;
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 100%;
+    gap: 12px;
+  }
+  .navbar-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    color: var(--text-primary);
+    font-weight: 600;
+    font-size: 1.15rem;
+    letter-spacing: 0.3px;
+    transition: opacity var(--transition);
+    flex-shrink: 0;
+  }
+  .navbar-brand:hover { opacity: 0.85; }
+  .brand-logo {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    object-fit: cover;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+  }
+  .brand-text { line-height: 1.25; }
+  .brand-text b { display: block; font-size: 16px; font-weight: 600; letter-spacing: 0.3px; }
+  .brand-text span { font-size: 11px; color: var(--text-tertiary); }
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 18px;
+    background: rgba(37, 99, 235, 0.15);
+    color: var(--text-primary);
+    text-decoration: none;
+    border-radius: 40px;
+    font-size: 0.88rem;
+    font-weight: 500;
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(147, 197, 253, 0.35);
+    transition: all var(--transition);
+    white-space: nowrap;
+  }
+  .back-link:hover {
+    background: rgba(37, 99, 235, 0.3);
+    border-color: rgba(147, 197, 253, 0.6);
+    transform: scale(1.02);
+  }
+
+  /* ========= Main ========= */
+  .main { flex: 1; padding: 36px 24px 60px; }
+  .container { max-width: 760px; margin: 0 auto; }
+  .page-header { display: flex; align-items: center; margin-bottom: 28px; }
+  .page-header h1 { font-size: clamp(1.4rem, 3vw, 1.8rem); font-weight: 700; color: var(--text-primary); }
+
+  /* ========= Card ========= */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 24px;
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 20px;
+  }
+  .card h3 { font-size: 1.02rem; font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+
+  /* ========= 公告 ========= */
+  .notice-item {
+    display: flex;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .notice-item:last-child { border-bottom: none; }
+  .notice-badge {
+    flex-shrink: 0;
+    align-self: flex-start;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    color: #fff;
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 40px;
+    margin-top: 2px;
+  }
+  .notice-text { font-size: 0.9rem; color: var(--text-primary); }
+
+  /* ========= 更新日志时间线 ========= */
+  .timeline { position: relative; padding-left: 24px; }
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 6px;
+    top: 4px;
+    bottom: 4px;
+    width: 2px;
+    background: var(--border);
+    border-radius: 2px;
+  }
+  .timeline-item { position: relative; padding-bottom: 22px; }
+  .timeline-item:last-child { padding-bottom: 0; }
+  .timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -24px;
+    top: 5px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--surface);
+    border: 2.5px solid var(--primary);
+    box-shadow: 0 0 0 3px var(--primary-light);
+  }
+  .timeline-date {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--primary);
+    margin-bottom: 4px;
+  }
+  .timeline-tag {
+    display: inline-block;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 1px 8px;
+    margin-bottom: 6px;
+  }
+  .timeline-content ul { padding-left: 18px; }
+  .timeline-content li {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    margin: 3px 0;
+  }
+
+  /* ========= Footer ========= */
+  .footer {
+    background: #0f172a;
+    text-align: center;
+    padding: 28px 24px;
+    color: var(--text-tertiary);
+    font-size: 0.82rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+  }
+  .footer-copy { opacity: 0.6; }
+
+  /* ========= Responsive ========= */
+  @media (max-width: 640px) {
+    .navbar-inner { padding: 0 16px; }
+    .main { padding: 24px 16px 40px; }
+    .card { padding: 18px; }
+    .back-link { padding: 7px 14px; font-size: 0.84rem; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  }
+</style>
+</head>
+<body>
+
+<header class="navbar">
+  <div class="navbar-inner">
+    <a href="index.html" class="navbar-brand">
+      <img class="brand-logo" src="/favicon.webp" alt="City Footprint">
+      <span class="brand-text"><b>City Footprint</b><span>我们走过的城市</span></span>
+    </a>
+    <a href="index.html" class="back-link">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
+      返回地图
+    </a>
+  </div>
+</header>
+
+<div class="main">
+  <div class="container">
+    <div class="page-header">
+      <h1>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-4px;margin-right:8px;"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        公告与更新日志
+      </h1>
+    </div>
+
+    <!-- 公告 -->
+    <div class="card">
+      <h3>📢 公告</h3>
+      <div class="notice-item">
+        <span class="notice-badge">欢迎</span>
+        <div class="notice-text">欢迎使用 City Footprint！记录你走过的每一座城市，点亮属于你的足迹地图。</div>
+      </div>
+      <div class="notice-item">
+        <span class="notice-badge">邀请码</span>
+        <div class="notice-text">注册需要一次性邀请码，请联系管理员索取。一个邀请码只能注册一次。</div>
+      </div>
+      <div class="notice-item">
+        <span class="notice-badge">颜色</span>
+        <div class="notice-text">每个用户拥有专属颜色（按注册顺序分配），地图上可多选筛选不同人的足迹。</div>
+      </div>
+    </div>
+
+    <!-- 更新日志 -->
+    <div class="card">
+      <h3>📝 更新日志</h3>
+      <div class="timeline">
+
+        <div class="timeline-item">
+          <div class="timeline-date">2026-08-06</div>
+          <span class="timeline-tag">v0.5.0</span>
+          <div class="timeline-content">
+            <ul>
+              <li>地图改为市辖区半透明色块渲染（阿里 DataV 边界）</li>
+              <li>「谁的足迹」图例支持多选筛选、全选、收起</li>
+              <li>右下角改为汉堡菜单（管理、公告入口）</li>
+              <li>弹窗优化：每人一行展示，最多显示最新 10 条</li>
+              <li>性能优化：边界数据量减少 75%、缓存、并发控制</li>
+              <li>支持港澳台城市</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-date">2026-08-05</div>
+          <span class="timeline-tag">v0.4.0</span>
+          <div class="timeline-content">
+            <ul>
+              <li>注册改为一次性邀请码机制</li>
+              <li>忘记密码：管理员清空密码后可在登录页重置</li>
+              <li>管理页重构：日期下拉选择、UID 显示、足迹统计</li>
+              <li>备注限制 100 字并带字数提醒</li>
+              <li>会话清理：登录时自动清除旧会话</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-date">2026-08-04</div>
+          <span class="timeline-tag">v0.3.0</span>
+          <div class="timeline-content">
+            <ul>
+              <li>上线足迹大地图（Leaflet + 高德瓦片）</li>
+              <li>支持注册、登录、足迹增删改</li>
+              <li>同城多人足迹自动散开</li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<footer class="footer">
+  <div class="footer-copy">2026 青翔未阔工作室 · City Footprint</div>
+</footer>
+
+</body>
+</html>
