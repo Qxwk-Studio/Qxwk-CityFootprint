@@ -79,12 +79,12 @@
   }
   .navbar-brand:hover { opacity: 0.85; }
   .brand-logo {
-    width: 30px;
-    height: 30px;
+    width: 34px;
+    height: 34px;
     border-radius: 50%;
     flex-shrink: 0;
     object-fit: cover;
-    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+    box-shadow: 0 2px 10px rgba(37, 99, 235, 0.25);
   }
   .brand-text { line-height: 1.25; }
   .brand-text b { display: block; font-size: 16px; font-weight: 600; letter-spacing: 0.3px; }
@@ -151,6 +151,7 @@
     border-radius: var(--radius-md);
     padding: 24px;
     box-shadow: var(--shadow-sm);
+    margin-bottom: 20px;
   }
   .card h3 { font-size: 1.02rem; font-weight: 600; margin-bottom: 16px; }
   .rank-item {
@@ -176,6 +177,29 @@
     flex-shrink: 0;
   }
   .rank-no.top { background: linear-gradient(135deg, var(--primary), var(--secondary)); color: #fff; border: none; }
+
+  /* 成就达成人数 */
+  .ach-count-cat {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 14px 0 6px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+  }
+  .ach-count-cat:first-child { border-top: none; margin-top: 0; padding-top: 0; }
+  .ach-count-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 4px;
+    border-bottom: 1px solid var(--border);
+  }
+  .ach-count-item:last-child { border-bottom: none; }
+  .ach-count-icon { font-size: 1rem; flex-shrink: 0; }
+  .ach-count-name { flex: 1; font-size: 0.88rem; font-weight: 500; min-width: 0; }
+  .ach-count-num { font-size: 0.85rem; font-weight: 600; color: var(--text-tertiary); flex-shrink: 0; }
+  .ach-count-num.done { color: var(--primary); }
   .rank-city { flex: 1; font-weight: 600; font-size: 0.92rem; min-width: 0; }
   .rank-meta { font-size: 0.8rem; color: var(--text-tertiary); flex-shrink: 0; }
   .rank-count { font-size: 0.9rem; font-weight: 600; color: var(--primary); flex-shrink: 0; min-width: 34px; text-align: right; }
@@ -254,6 +278,12 @@
       <div id="cityRankList"><div class="loading">正在加载统计…</div></div>
     </div>
 
+    <!-- 成就达成人数 -->
+    <div class="card">
+      <h3>🏅 成就达成人数</h3>
+      <div id="achievementCountList"><div class="loading">正在加载统计…</div></div>
+    </div>
+
   </div>
 </div>
 
@@ -261,7 +291,15 @@
   <div class="footer-copy">2026 青翔未阔工作室 · City Footprint</div>
 </footer>
 
+<script src="cities.js"></script>
+<script src="achievements.js"></script>
 <script>
+// 城市→省份（从内置城市数据查询）
+function findProvince(city) {
+  const c = (window.CITIES || []).find(x => x.name === city);
+  return c ? c.province : '';
+}
+
 // 拉取全站统计
 fetch('/api/stats')
   .then(r => r.json())
@@ -279,9 +317,10 @@ fetch('/api/stats')
     top.forEach((c, i) => {
       const item = document.createElement('div');
       item.className = 'rank-item';
+      const province = findProvince(c.city);
       item.innerHTML = `
         <span class="rank-no${i < 3 ? ' top' : ''}">${i + 1}</span>
-        <span class="rank-city">${c.city}</span>
+        <span class="rank-city">${c.city}${province ? ' | ' + province : ''}</span>
         <span class="rank-meta">去过 ${c.people} 人</span>
         <span class="rank-count">${c.count} 次</span>`;
       list.appendChild(item);
@@ -292,6 +331,36 @@ fetch('/api/stats')
       more.textContent = '… 共 ' + data.cityRank.length + ' 座城市，仅显示前 30 名';
       list.appendChild(more);
     }
+
+    // 成就达成人数：统计每个成就被多少用户达成
+    const achCount = {};
+    for (const u of (data.users || [])) {
+      const cities = (u.cities || '').split(',').filter(Boolean);
+      const cats = getAchievements(cities);
+      for (const cat of cats) {
+        for (const a of cat.items) {
+          if (a.done) achCount[a.name] = (achCount[a.name] || 0) + 1;
+        }
+      }
+    }
+    const achList = document.getElementById('achievementCountList');
+    achList.innerHTML = '';
+    getAchievements([]).forEach(cat => {
+      const catEl = document.createElement('div');
+      catEl.className = 'ach-count-cat';
+      catEl.textContent = cat.title;
+      achList.appendChild(catEl);
+      cat.items.forEach(a => {
+        const item = document.createElement('div');
+        item.className = 'ach-count-item';
+        const n = achCount[a.name] || 0;
+        item.innerHTML = `
+          <span class="ach-count-icon">${a.icon}</span>
+          <span class="ach-count-name">${a.name}</span>
+          <span class="ach-count-num ${n > 0 ? 'done' : ''}">${n} 人</span>`;
+        achList.appendChild(item);
+      });
+    });
   })
   .catch(() => {
     document.getElementById('cityRankList').innerHTML = '<div class="empty">统计加载失败，请稍后重试</div>';

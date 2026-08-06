@@ -26,9 +26,13 @@ const ETHNIC = '(?:汉|壮|满|回|苗|维吾尔|土家|彝|蒙古|藏|布依|�
 
 // 名称归一化：去掉行政后缀与民族词（如"大理白族自治州"→"大理"），便于匹配
 function normalize(name) {
-  return String(name || '')
-    .replace(new RegExp('(?:' + ETHNIC + ')+自治州|自治县|地区|盟|特别行政区|市|省|县|区', 'g'), '')
+  let s = String(name || '')
+    .replace(new RegExp('(?:' + ETHNIC + ')+自治州|(?:' + ETHNIC + ')+自治县|自治州|自治县|地区|盟|特别行政区|市|省|县|区|林区', 'g'), '')
+    .replace(new RegExp('(?:' + ETHNIC + ')+', 'g'), '') // 去残余民族词（如"柯尔克孜"）
     .trim();
+  if (s === '陵') s = '陵水';    // 陵水黎族自治县
+  if (s === '海南') s = '海南州'; // 青海海南藏族自治州，避免与海南省混淆
+  return s;
 }
 
 async function main() {
@@ -74,7 +78,7 @@ async function main() {
   }
 
   // 港澳台补充映射（DataV 不提供台湾省市县，但可用省级/整体边界）
-  const EXTRA_CODES = { '台湾': 710000, '香港': 810000, '澳门': 820000 };
+  const EXTRA_CODES = { '台湾': 710000, '香港': 810000, '澳门': 820000, '大兴安岭': 232700, '克孜勒苏': 653000, '文昌': 469005, '那曲': 540600, '伊犁': 654000, '博尔塔拉': 652700, '巴音郭楞': 652800 };
   Object.assign(codes, EXTRA_CODES);
 
   // 输出

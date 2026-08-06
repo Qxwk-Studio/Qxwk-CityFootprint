@@ -37,6 +37,9 @@ const CITIES = [
   { name: '吕梁', province: '山西', lat: 37.518, lng: 111.143 },
 
   // ── 内蒙古 ──
+  { name: '兴安', province: '内蒙古', lat: 46.076268, lng: 122.070317 },
+  { name: '锡林郭勒', province: '内蒙古', lat: 43.944018, lng: 116.090996 },
+  { name: '阿拉善', province: '内蒙古', lat: 38.844814, lng: 105.706422 },
   { name: '呼和浩特', province: '内蒙古', lat: 40.842, lng: 111.750 },
   { name: '包头', province: '内蒙古', lat: 40.657, lng: 109.840 },
   { name: '乌海', province: '内蒙古', lat: 39.655, lng: 106.794 },
@@ -177,6 +180,7 @@ const CITIES = [
   { name: '菏泽', province: '山东', lat: 35.233, lng: 115.481 },
 
   // ── 河南 ──
+  { name: '济源', province: '河南', lat: 35.090378, lng: 112.590047 },
   { name: '郑州', province: '河南', lat: 34.747, lng: 113.625 },
   { name: '开封', province: '河南', lat: 34.798, lng: 114.308 },
   { name: '洛阳', province: '河南', lat: 34.620, lng: 112.454 },
@@ -196,6 +200,11 @@ const CITIES = [
   { name: '驻马店', province: '河南', lat: 33.014, lng: 114.022 },
 
   // ── 湖北 ──
+  { name: '仙桃', province: '湖北', lat: 30.364953, lng: 113.453974 },
+  { name: '天门', province: '湖北', lat: 30.653061, lng: 113.165862 },
+  { name: '恩施', province: '湖北', lat: 30.283114, lng: 109.48699 },
+  { name: '潜江', province: '湖北', lat: 30.421215, lng: 112.896866 },
+  { name: '神农架', province: '湖北', lat: 31.744449, lng: 110.671525 },
   { name: '武汉', province: '湖北', lat: 30.593, lng: 114.305 },
   { name: '黄石', province: '湖北', lat: 30.200, lng: 115.039 },
   { name: '十堰', province: '湖北', lat: 32.629, lng: 110.798 },
@@ -210,6 +219,7 @@ const CITIES = [
   { name: '随州', province: '湖北', lat: 31.690, lng: 113.383 },
 
   // ── 湖南 ──
+  { name: '湘西', province: '湖南', lat: 28.314296, lng: 109.739735 },
   { name: '长沙', province: '湖南', lat: 28.228, lng: 112.939 },
   { name: '株洲', province: '湖南', lat: 27.827, lng: 113.134 },
   { name: '湘潭', province: '湖南', lat: 27.829, lng: 112.944 },
@@ -264,12 +274,29 @@ const CITIES = [
   { name: '崇左', province: '广西', lat: 22.377, lng: 107.365 },
 
   // ── 海南 ──
+  { name: '万宁', province: '海南', lat: 18.796216, lng: 110.388793 },
+  { name: '东方', province: '海南', lat: 19.10198, lng: 108.653789 },
+  { name: '临高', province: '海南', lat: 19.908293, lng: 109.687697 },
+  { name: '乐东', province: '海南', lat: 18.74758, lng: 109.175444 },
+  { name: '五指山', province: '海南', lat: 18.776921, lng: 109.516662 },
+  { name: '保亭', province: '海南', lat: 18.636371, lng: 109.70245 },
+  { name: '定安', province: '海南', lat: 19.684966, lng: 110.349235 },
+  { name: '屯昌', province: '海南', lat: 19.362916, lng: 110.102773 },
+  { name: '昌江', province: '海南', lat: 19.260968, lng: 109.053351 },
+  { name: '澄迈', province: '海南', lat: 19.737095, lng: 110.007147 },
+  { name: '琼中', province: '海南', lat: 19.03557, lng: 109.839996 },
+  { name: '琼海', province: '海南', lat: 19.246011, lng: 110.466785 },
+  { name: '白沙', province: '海南', lat: 19.224584, lng: 109.452606 },
+  { name: '陵水', province: '海南', lat: 18.505006, lng: 110.037218 },
   { name: '海口', province: '海南', lat: 20.044, lng: 110.199 },
   { name: '三亚', province: '海南', lat: 18.253, lng: 109.512 },
   { name: '三沙', province: '海南', lat: 16.831, lng: 112.339 },
   { name: '儋州', province: '海南', lat: 19.521, lng: 109.581 },
 
   // ── 四川 ──
+  { name: '凉山', province: '四川', lat: 27.886762, lng: 102.258746 },
+  { name: '甘孜', province: '四川', lat: 30.050663, lng: 101.963815 },
+  { name: '阿坝', province: '四川', lat: 31.899792, lng: 102.221374 },
   { name: '成都', province: '四川', lat: 30.573, lng: 104.067 },
   { name: '自贡', province: '四川', lat: 29.339, lng: 104.778 },
   { name: '攀枝花', province: '四川', lat: 26.582, lng: 101.719 },
@@ -292,6 +319,9 @@ const CITIES = [
   { name: '康定', province: '四川', lat: 29.998, lng: 101.958 }, // 甘孜州府
 
   // ── 贵州 ──
+  { name: '黔东南', province: '贵州', lat: 26.583352, lng: 107.977488 },
+  { name: '黔南', province: '贵州', lat: 26.258219, lng: 107.517156 },
+  { name: '黔西南', province: '贵州', lat: 25.08812, lng: 104.897971 },
   { name: '贵阳', province: '贵州', lat: 26.647, lng: 106.630 },
   { name: '六盘水', province: '贵州', lat: 26.593, lng: 104.831 },
   { name: '遵义', province: '贵州', lat: 27.725, lng: 106.927 },
@@ -300,6 +330,9 @@ const CITIES = [
   { name: '铜仁', province: '贵州', lat: 27.718, lng: 109.190 },
 
   // ── 云南 ──
+  { name: '德宏', province: '云南', lat: 24.436694, lng: 98.578363 },
+  { name: '怒江', province: '云南', lat: 25.850949, lng: 98.854304 },
+  { name: '迪庆', province: '云南', lat: 27.826853, lng: 99.706463 },
   { name: '昆明', province: '云南', lat: 25.038, lng: 102.718 },
   { name: '曲靖', province: '云南', lat: 25.490, lng: 103.796 },
   { name: '玉溪', province: '云南', lat: 24.355, lng: 102.547 },
@@ -315,6 +348,10 @@ const CITIES = [
   { name: '西双版纳', province: '云南', lat: 22.009, lng: 100.797 }, // 景洪
 
   // ── 西藏 ──
+  { name: '山南', province: '西藏', lat: 29.236023, lng: 91.766529 },
+  { name: '昌都', province: '西藏', lat: 31.136875, lng: 97.178452 },
+  { name: '林芝', province: '西藏', lat: 29.654693, lng: 94.362348 },
+  { name: '阿里', province: '西藏', lat: 32.503187, lng: 80.105498 },
   { name: '拉萨', province: '西藏', lat: 29.646, lng: 91.140 },
   { name: '日喀则', province: '西藏', lat: 29.267, lng: 88.880 },
 
@@ -347,6 +384,12 @@ const CITIES = [
   { name: '甘南', province: '甘肃', lat: 34.992, lng: 102.911 }, // 合作
 
   // ── 青海 ──
+  { name: '果洛', province: '青海', lat: 34.4736, lng: 100.242143 },
+  { name: '海北', province: '青海', lat: 36.959435, lng: 100.901059 },
+  { name: '海南州', province: '青海', lat: 36.280353, lng: 100.619542 },
+  { name: '海西', province: '青海', lat: 37.374663, lng: 97.370785 },
+  { name: '玉树', province: '青海', lat: 33.004049, lng: 97.008522 },
+  { name: '黄南', province: '青海', lat: 35.517744, lng: 102.019988 },
   { name: '西宁', province: '青海', lat: 36.617, lng: 101.778 },
   { name: '海东', province: '青海', lat: 36.502, lng: 102.104 },
   { name: '格尔木', province: '青海', lat: 36.402, lng: 94.903 },
@@ -359,6 +402,21 @@ const CITIES = [
   { name: '中卫', province: '宁夏', lat: 37.500, lng: 105.196 },
 
   // ── 新疆 ──
+  { name: '五家渠', province: '新疆', lat: 44.167401, lng: 87.526884 },
+  { name: '伊犁', province: '新疆', lat: 43.92186, lng: 81.317946 },
+  { name: '北屯', province: '新疆', lat: 47.353177, lng: 87.824932 },
+  { name: '博尔塔拉', province: '新疆', lat: 44.903258, lng: 82.074778 },
+  { name: '双河', province: '新疆', lat: 44.840524, lng: 82.353656 },
+  { name: '可克达拉', province: '新疆', lat: 43.6832, lng: 80.63579 },
+  { name: '图木舒克', province: '新疆', lat: 39.867316, lng: 79.077978 },
+  { name: '塔城', province: '新疆', lat: 46.746301, lng: 82.985732 },
+  { name: '巴音郭楞', province: '新疆', lat: 41.768552, lng: 86.150969 },
+  { name: '昆玉', province: '新疆', lat: 37.207994, lng: 79.287372 },
+  { name: '昌吉', province: '新疆', lat: 44.014577, lng: 87.304012 },
+  { name: '胡杨河', province: '新疆', lat: 44.69288853, lng: 84.8275959 },
+  { name: '铁门关', province: '新疆', lat: 41.827251, lng: 85.501218 },
+  { name: '阿勒泰', province: '新疆', lat: 47.848393, lng: 88.13963 },
+  { name: '阿拉尔', province: '新疆', lat: 40.541914, lng: 81.285884 },
   { name: '乌鲁木齐', province: '新疆', lat: 43.826, lng: 87.617 },
   { name: '克拉玛依', province: '新疆', lat: 45.580, lng: 84.889 },
   { name: '吐鲁番', province: '新疆', lat: 42.951, lng: 89.190 },
@@ -385,6 +443,13 @@ const CITIES = [
   // ── 香港 / 澳门（有边界色块）──
   { name: '香港', province: '香港', lat: 22.319, lng: 114.169 },
   { name: '澳门', province: '澳门', lat: 22.198, lng: 113.544 },
+
+  // ── 补充：地理极点与特殊成就城市 ──
+  { name: '大兴安岭', province: '黑龙江', lat: 50.411, lng: 124.118 }, // 加格达奇（极北）
+  { name: '克孜勒苏', province: '新疆', lat: 39.715, lng: 76.168 },    // 阿图什（极西）
+  { name: '文昌', province: '海南', lat: 19.613, lng: 110.753 },       // 卫星发射中心
+  { name: '那曲', province: '西藏', lat: 31.476, lng: 92.051 },        // 海拔最高的地级行政区
+
 ];
 
 // 供前端使用

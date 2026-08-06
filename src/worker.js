@@ -166,7 +166,13 @@ async function handleApi(request, env) {
     const cityRank = await DB.prepare(
       'SELECT city, COUNT(*) as count, COUNT(DISTINCT user_id) as people FROM visits GROUP BY city ORDER BY count DESC, city ASC'
     ).all();
-    return json({ totalVisits, totalCities, cityRank: cityRank.results });
+    // 每用户去重城市列表（成就统计用）
+    const users = await DB.prepare(
+      `SELECT u.nickname, u.color, COALESCE(GROUP_CONCAT(DISTINCT v.city), '') as cities
+       FROM users u LEFT JOIN visits v ON v.user_id = u.id
+       GROUP BY u.id ORDER BY u.id`
+    ).all();
+    return json({ totalVisits, totalCities, cityRank: cityRank.results, users: users.results });
   }
 
   // GET /api/user/:nickname（公开：某人足迹）
