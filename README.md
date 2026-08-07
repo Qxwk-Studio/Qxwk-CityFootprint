@@ -49,7 +49,8 @@
 │   ├── 0001_init.sql       # 建表：users / visits / sessions
 │   ├── 0002_invite_codes.sql # 邀请码表
 │   ├── 0003_visits_private.sql # visits 增加 is_private（不公开行程）
-│   └── 0004_admin.sql      # users 增加 is_admin（管理员）
+│   ├── 0004_admin.sql      # users 增加 is_admin（管理员）
+│   └── 0005_invite_created_by_settings.sql # 邀请码溯源 + 系统设置表（生成/注册开关）
 ├── src/
 │   ├── worker.js           # Worker 入口（/api/* 接口 + 静态资源回退）
 │   └── lib.js              # 密码哈希、会话、工具
@@ -112,24 +113,41 @@ Pages 项目 → **自定义域**（Custom domains）→ 添加你的域名（�
 
 ### 🔑 注册邀请码
 
-部署后注册必须使用**一次性邀请码**，一个码只能注册一次，用后即焚。邀请码直接在 D1 数据库 `invite_codes` 表生成（无需环境变量）：
+部署后注册必须使用**一次性邀请码**，一个码只能注册一次，用后即焚。
 
-在 D1 控制台（或 `npx wrangler d1 execute qxwk-cityfootprint --remote --command "..."`）执行：
+**用户获取（自动生成 + 溯源）**：个人中心邀请码栏调用 `GET /api/invite-code`，后端逻辑为——
+- 查询该用户未使用的邀请码：**有则直接返回**（同一用户始终同一个码，便于溯源）
+- **没有则后端自动生成一个**，并把 `created_by`（生成人）记为当前用户
+
+**管理员手工补码**（此时 `created_by` 为 NULL）：在 D1 控制台（或 `npx wrangler d1 execute qxwk-cityfootprint --remote --command "..."`）执行：
 
 ```sql
 -- 插入指定码
 INSERT INTO invite_codes (code) VALUES ('ABC12345');
 
--- 或一次插入多个
-INSERT INTO invite_codes (code) VALUES ('AAA11111'), ('BBB22222');
-
--- 查看所有邀请码及使用状态（used_at 为 NULL = 未使用）
-SELECT code, used_at FROM invite_codes;
+-- 查看所有邀请码：来源（created_by）与使用情况（used_at / used_by）
+SELECT code, created_by, used_by, used_at FROM invite_codes;
 ```
 
-把码发给朋友，每人用一个，注册成功即失效。
+> 💡 **可溯源**：每个邀请码都能查到「谁生成的（`created_by`）」和「谁用掉的（`used_by`、`used_at`）」。新用户注册时使用的是别人的码，`used_by` 会记为这个新用户。
 
-> 💡 **用户邀请制**：个人中心会向所有登录用户展示当前可用的邀请码（`GET /api/invite-code`），老用户可直接复制发给朋友注册。管理员只需定期往 `invite_codes` 表补码即可。
+**⏸️ 暂停邀请码生成 / 暂停注册**（两个独立开关，直接改数据库键值）：
+- `invite_generate_enabled`：邀请码生成开关（`'0'` 暂停生成 → 邀请码栏显示"已暂停生成"，不再发新码）
+- `invite_register_enabled`：注册开关（`'0'` 暂停注册 → 新注册被拒绝、注册表单禁用）
+
+用 D1 控制台或 `npx wrangler d1 execute qxwk-cityfootprint --remote --command "..."` 修改：
+
+```sql
+-- 暂停邀请码生成（已有未用的码仍可被使用注册）
+UPDATE settings SET value = '0' WHERE key = 'invite_generate_enabled';
+-- 恢复邀请码生成
+UPDATE settings SET value = '1' WHERE key = 'invite_generate_enabled';
+
+-- 暂停注册（完全停止新注册）
+UPDATE settings SET value = '0' WHERE key = 'invite_register_enabled';
+-- 恢复注册
+UPDATE settings SET value = '1' WHERE key = 'invite_register_enabled';
+```
 
 ### 👑 管理员
 
@@ -161,12 +179,12 @@ Worker 会在 `localhost:8787` 同时提供页面和 API。
 | POST | `/api/register` | 无 | 注册（需一次性邀请码），返回 token |
 | POST | `/api/login` | 无 | 登录，返回 token（密码为空字符串时返回需设置新密码信号） |
 | POST | `/api/set-password` | 无 | 密码为空字符串时设置新密码（管理员重置后使用） |
-| GET | `/api/config` | 无 | 注册配置（前端判断是否显示邀请码） |
+| GET | `/api/config` | 无 | 注册配置（含 inviteGenerateEnabled / inviteRegisterEnabled） |
 | GET | `/api/me` | Bearer | 当前用户信息（含 is_admin） |
 | GET | `/api/cities` | 可选 Bearer | 城市 + 谁去过（地图用；登录可见本人私密，管理员可见全部） |
 | GET | `/api/user/:nickname` | 可选 Bearer | 某人足迹明细（管理员可见其私密） |
 | GET | `/api/stats` | 可选 Bearer | 全站统计（管理员含私密行程） |
-| GET | `/api/invite-code` | Bearer | 当前可用的邀请码（所有登录用户可见） |
+| GET | `/api/invite-code` | Bearer | 本人未使用的邀请码（没有则自动生成，记录生成人；暂停生成时返回 paused） |
 | GET | `/api/my-visits` | Bearer | 自己的足迹（含 is_private） |
 | POST | `/api/visits` | Bearer | 添加足迹（可带 is_private） |
 | PUT | `/api/visits/:id` | Bearer | 修改（仅本人，可改 is_private） |

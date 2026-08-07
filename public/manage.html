@@ -470,8 +470,9 @@
           <div class="field" id="inviteField">
             <label>邀请码</label>
             <input id="regInvite" maxlength="20" required placeholder="请输入邀请码" autocomplete="off">
-            <div class="hint">邀请码：向管理员索取，一个邀请码只能注册一次</div>
+            <div class="hint">邀请码：找已注册的朋友要一个，一个邀请码只能注册一次</div>
           </div>
+          <div class="msg error" id="invitePausedNotice" style="display:none;">⚠️ 注册已暂停，暂不接受新注册</div>
           <button class="btn btn-primary" type="submit">注册并登录</button>
           <div class="msg" id="regMsg"></div>
         </form>
@@ -550,7 +551,7 @@
               <code id="inviteCodeText" class="invite-code">加载中…</code>
               <button class="btn btn-ghost btn-sm" id="copyInviteBtn" onclick="copyInviteCode()">复制</button>
             </div>
-            <div class="hint">分享给朋友注册用，一个码只能注册一次</div>
+            <div class="hint" id="inviteHint">分享给朋友注册用，一个码只能注册一次</div>
           </div>
 
           <div class="card">
@@ -769,15 +770,25 @@ function updateVisitStats() {
     <span class="stat">📍 足迹 <b>${myVisits.length}</b> 条</span>`;
 }
 
-// 加载最上面一个可用的邀请码（所有登录用户可见；未登录 401 时自动隐藏卡片）
+// 加载本人邀请码（所有登录用户可见；未登录 401 时自动隐藏卡片）
 async function loadInviteCode() {
   const card = document.getElementById('inviteCodeCard');
   const codeEl = document.getElementById('inviteCodeText');
+  const hintEl = document.getElementById('inviteHint');
+  const copyBtn = document.getElementById('copyInviteBtn');
   if (!card || !codeEl) return;
   try {
     const data = await api('/invite-code');
     card.style.display = '';
-    codeEl.textContent = (data && data.code) ? data.code : '暂无可用邀请码';
+    if (data && data.paused) {
+      codeEl.textContent = '邀请码生成已暂停';
+      if (copyBtn) copyBtn.style.display = 'none';
+      if (hintEl) hintEl.textContent = '管理员已暂停邀请码生成，暂无法获取新邀请码';
+    } else {
+      codeEl.textContent = (data && data.code) ? data.code : '暂无可用邀请码';
+      if (copyBtn) copyBtn.style.display = '';
+      if (hintEl) hintEl.textContent = '分享给朋友注册用，一个码只能注册一次';
+    }
   } catch (err) {
     card.style.display = 'none'; // 未登录
   }
@@ -928,13 +939,19 @@ function escapeHtml(t) {
   return d.innerHTML;
 }
 
-// 邀请码注册开关：后端强制时显示并必填，未强制时隐藏
+// 邀请码注册开关：后端强制时显示并必填，未强制时隐藏；暂停注册时禁用
 fetch('/api/config').then(r => r.json()).then(cfg => {
   if (cfg && cfg.inviteCodeRequired === false) {
     const field = document.getElementById('inviteField');
     const input = document.getElementById('regInvite');
     field.style.display = 'none';
     input.required = false;
+  }
+  if (cfg && cfg.inviteRegisterEnabled === false) {
+    const notice = document.getElementById('invitePausedNotice');
+    if (notice) notice.style.display = '';
+    const regBtn = document.querySelector('#regForm .btn-primary');
+    if (regBtn) regBtn.disabled = true;
   }
 }).catch(() => { /* 后端不可达时默认强制邀请码 */ });
 

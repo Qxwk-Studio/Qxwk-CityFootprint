@@ -16,6 +16,22 @@ async function getViewer(DB, request) {
   return { userId, isAdmin: !!(u && u.is_admin) };
 }
 
+// 生成一次性邀请码：8 位，去易混淆字符（I/O/0/1），32 字符表可整除 256 → 无偏
+function generateInviteCode() {
+  const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  const bytes = new Uint8Array(8);
+  crypto.getRandomValues(bytes);
+  let code = '';
+  for (let i = 0; i < 8; i++) code += ALPHABET[bytes[i] % ALPHABET.length];
+  return code;
+}
+
+// 读取系统设置（settings 键值表），无记录时返回默认值
+async function getSetting(DB, key, def) {
+  const row = await DB.prepare('SELECT value FROM settings WHERE key = ?').bind(key).first();
+  return row ? row.value : def;
+}
+
 async function handleApi(request, env) {
   const url = new URL(request.url);
   const path = url.pathname;
@@ -32,6 +48,7 @@ async function handleApi(request, env) {
     if (!isValidNickname(nickname)) return error('昵称需为 1-20 个字符');
     if (!isValidPassword(password)) return error('密码需为 4-50 个字符');
     if (!inviteCode) return error('请填写邀请码');
+    if ((await getSetting(DB, 'invite_register_enabled', '1')) !== '1') return error('注册已暂停，暂不接受新注册', 403);
 
     const existing = await DB.prepare('SELECT id FROM users WHERE nickname = ?').bind(nickname).first();
     if (existing) return error('昵称已被占用，换一个吧', 409);
@@ -57,17 +74,40 @@ async function handleApi(request, env) {
 
   // GET /api/config（公开：注册配置，供前端决定是否显示邀请码输入框）
   if (method === 'GET' && path === '/api/config') {
-    return json({ inviteCodeRequired: true });
+    const inviteGenerateEnabled = (await getSetting(DB, 'invite_generate_enabled', '1')) === '1';
+    const inviteRegisterEnabled = (await getSetting(DB, 'invite_register_enabled', '1')) === '1';
+    return json({ inviteCodeRequired: true, inviteGenerateEnabled, inviteRegisterEnabled });
   }
 
-  // GET /api/invite-code（登录用户：取最上面一个可用的邀请码，供用户邀请朋友注册）
+  // GET /api/invite-code（登录用户：取本人未使用的邀请码，没有则自动生成一个，便于溯源）
   if (method === 'GET' && path === '/api/invite-code') {
     const userId = await getUserId(DB, request);
     if (!userId) return error('未登录', 401);
-    const row = await DB.prepare(
-      'SELECT code FROM invite_codes WHERE used_at IS NULL ORDER BY rowid ASC LIMIT 1'
-    ).first();
-    return json({ code: row ? row.code : null });
+    // 暂停邀请码生成时不再发码
+    if ((await getSetting(DB, 'invite_generate_enabled', '1')) !== '1') {
+      return json({ paused: true, code: null });
+    }
+    // 1) 查该用户未使用的邀请码
+    let row = await DB.prepare(
+      'SELECT code FROM invite_codes WHERE used_at IS NULL AND created_by = ? ORDER BY rowid ASC LIMIT 1'
+    ).bind(userId).first();
+    // 2) 没有则生成一个（写入 created_by 记录生成人，便于溯源）
+    if (!row) {
+      let code = generateInviteCode();
+      let inserted = false;
+      for (let i = 0; i < 5 && !inserted; i++) {
+        try {
+          await DB.prepare('INSERT INTO invite_codes (code, created_by) VALUES (?, ?)')
+            .bind(code, userId).run();
+          inserted = true;
+        } catch (e) {
+          code = generateInviteCode(); // 撞码（PRIMARY KEY 冲突）时换一个重试
+        }
+      }
+      if (!inserted) return error('邀请码生成失败，请重试', 500);
+      row = { code };
+    }
+    return json({ paused: false, code: row.code });
   }
 
   // GET /api/geo/:adcode（代理 DataV 边界接口，规避浏览器跨域/来源限制）
