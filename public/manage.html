@@ -240,6 +240,18 @@
   }
   .visit-main { flex: 1; min-width: 0; }
   .visit-city { font-weight: 600; font-size: 0.98rem; }
+  .visit-private-badge {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 1px 6px;
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: var(--text-tertiary);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    vertical-align: 1px;
+  }
   .visit-meta { font-size: 0.78rem; color: var(--text-tertiary); margin-top: 2px; }
   .visit-note { font-size: 0.84rem; color: var(--text-secondary); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .visit-actions { display: flex; gap: 6px; flex-shrink: 0; }
@@ -494,6 +506,10 @@
                 </div>
                 <input id="visitNote" maxlength="100" placeholder="一句话留下回忆…" autocomplete="off" oninput="updateNoteCount()">
               </div>
+              <div class="check-row" style="margin-bottom:16px;">
+                <input type="checkbox" id="visitPrivate">
+                <label for="visitPrivate">不公开行程（仅自己可见）</label>
+              </div>
               <button class="btn btn-primary" type="submit">添加</button>
               <div class="msg" id="addMsg"></div>
             </form>
@@ -738,7 +754,7 @@ async function loadVisits() {
       item.innerHTML = `
         <span class="visit-dot">${myVisits.length - i}</span>
         <div class="visit-main">
-          <div class="visit-city">${escapeHtml(v.city)}</div>
+          <div class="visit-city">${escapeHtml(v.city)}${v.is_private ? '<span class="visit-private-badge" title="不公开行程，仅自己可见">🔒 不公开</span>' : ''}</div>
           <div class="visit-meta">${escapeHtml(fmtDate(v.visit_date))}</div>
           ${v.note ? `<div class="visit-note">${escapeHtml(v.note)}</div>` : ''}
         </div>
@@ -770,6 +786,7 @@ async function addVisit(e) {
     lng: c.lng,
     visit_date: getVisitDate(),
     note: document.getElementById('visitNote').value.trim(),
+    is_private: document.getElementById('visitPrivate').checked,
   };
 
   try {
@@ -782,6 +799,7 @@ async function addVisit(e) {
       msg.textContent = '已添加 ✅';
       document.getElementById('visitCity').value = '';
       document.getElementById('visitNote').value = '';
+      document.getElementById('visitPrivate').checked = false;
     }
     msg.className = 'msg ok';
     loadVisits();
@@ -795,6 +813,7 @@ function startEdit(id) {
   editingId = id;
   document.getElementById('visitCity').value = v.city;
   document.getElementById('visitNote').value = v.note || '';
+  document.getElementById('visitPrivate').checked = !!v.is_private;
   updateNoteCount();
   const yearSel = document.getElementById('visitYear');
   const monthSel = document.getElementById('visitMonth');
@@ -831,6 +850,7 @@ function resetForm() {
   yearSel.disabled = false;
   monthSel.disabled = false;
   document.getElementById('visitNote').value = '';
+  document.getElementById('visitPrivate').checked = false;
   updateNoteCount();
   submitBtn().textContent = '添加';
   document.getElementById('formTitle').textContent = '✈️ 创建行程';

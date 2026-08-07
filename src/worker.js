@@ -141,6 +141,7 @@ async function handleApi(request, env) {
       `SELECT v.id, v.city, v.lat, v.lng, v.visit_date, v.note,
               u.id AS user_id, u.nickname, u.color
        FROM visits v JOIN users u ON v.user_id = u.id
+       WHERE v.is_private = 0
        ORDER BY v.created_at ASC`
     ).all();
 
@@ -161,15 +162,15 @@ async function handleApi(request, env) {
 
   // GET /api/stats（公开：全站统计）
   if (method === 'GET' && path === '/api/stats') {
-    const totalVisits = (await DB.prepare('SELECT COUNT(*) as c FROM visits').first()).c;
-    const totalCities = (await DB.prepare('SELECT COUNT(DISTINCT city) as c FROM visits').first()).c;
+    const totalVisits = (await DB.prepare('SELECT COUNT(*) as c FROM visits WHERE is_private = 0').first()).c;
+    const totalCities = (await DB.prepare('SELECT COUNT(DISTINCT city) as c FROM visits WHERE is_private = 0').first()).c;
     const cityRank = await DB.prepare(
-      'SELECT city, COUNT(*) as count, COUNT(DISTINCT user_id) as people FROM visits GROUP BY city ORDER BY count DESC, city ASC'
+      'SELECT city, COUNT(*) as count, COUNT(DISTINCT user_id) as people FROM visits WHERE is_private = 0 GROUP BY city ORDER BY count DESC, city ASC'
     ).all();
-    // 每用户去重城市列表（成就统计用）
+    // 每用户去重城市列表（成就统计用，只统计公开行程）
     const users = await DB.prepare(
       `SELECT u.nickname, u.color, COALESCE(GROUP_CONCAT(DISTINCT v.city), '') as cities
-       FROM users u LEFT JOIN visits v ON v.user_id = u.id
+       FROM users u LEFT JOIN visits v ON v.user_id = u.id AND v.is_private = 0
        GROUP BY u.id ORDER BY u.id`
     ).all();
     return json({ totalVisits, totalCities, cityRank: cityRank.results, users: users.results });
@@ -184,7 +185,7 @@ async function handleApi(request, env) {
     if (!user) return error('用户不存在', 404);
 
     const visits = await DB.prepare(
-      'SELECT id, city, lat, lng, visit_date, note FROM visits WHERE user_id = ? ORDER BY created_at ASC'
+      'SELECT id, city, lat, lng, visit_date, note FROM visits WHERE user_id = ? AND is_private = 0 ORDER BY created_at ASC'
     ).bind(user.id).all();
     return json({ user: { id: user.id, nickname: user.nickname, color: user.color, created_at: user.created_at }, visits: visits.results });
   }
@@ -195,7 +196,7 @@ async function handleApi(request, env) {
     if (!userId) return error('未登录', 401);
     // 倒序：最新的足迹排在上面（id 自增，越大越新）
     const visits = await DB.prepare(
-      'SELECT id, city, lat, lng, visit_date, note FROM visits WHERE user_id = ? ORDER BY id DESC'
+      'SELECT id, city, lat, lng, visit_date, note, is_private FROM visits WHERE user_id = ? ORDER BY id DESC'
     ).bind(userId).all();
     return json({ visits: visits.results });
   }
@@ -211,15 +212,16 @@ async function handleApi(request, env) {
     const lng = Number(body.lng);
     const visitDate = body.visit_date || null;
     const note = String(body.note || '').trim().slice(0, 100);
+    const isPrivate = body.is_private ? 1 : 0;
 
     if (!city || city.length > 30) return error('请选择城市');
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) return error('城市坐标无效');
     if (visitDate !== null && !/^\d{4}(-\d{2})?$/.test(visitDate)) return error('日期格式应为 2024 或 2024-08');
 
     const res = await DB.prepare(
-      'INSERT INTO visits (user_id, city, lat, lng, visit_date, note) VALUES (?, ?, ?, ?, ?, ?)'
-    ).bind(userId, city, lat, lng, visitDate, note).run();
-    return json({ id: res.meta.last_row_id, city, lat, lng, visit_date: visitDate, note }, 201);
+      'INSERT INTO visits (user_id, city, lat, lng, visit_date, note, is_private) VALUES (?, ?, ?, ?, ?, ?, ?)'
+    ).bind(userId, city, lat, lng, visitDate, note, isPrivate).run();
+    return json({ id: res.meta.last_row_id, city, lat, lng, visit_date: visitDate, note, is_private: isPrivate }, 201);
   }
 
   // PUT/DELETE /api/visits/:id（登录：仅本人）
@@ -244,14 +246,15 @@ async function handleApi(request, env) {
     const lng = Number(body.lng);
     const visitDate = body.visit_date || null;
     const note = String(body.note || '').trim().slice(0, 100);
+    const isPrivate = body.is_private ? 1 : 0;
 
     if (!city || city.length > 30) return error('请选择城市');
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) return error('城市坐标无效');
     if (visitDate !== null && !/^\d{4}(-\d{2})?$/.test(visitDate)) return error('日期格式应为 2024 或 2024-08');
 
-    await DB.prepare('UPDATE visits SET city = ?, lat = ?, lng = ?, visit_date = ?, note = ? WHERE id = ?')
-      .bind(city, lat, lng, visitDate, note, id).run();
-    return json({ id, city, lat, lng, visit_date: visitDate, note });
+    await DB.prepare('UPDATE visits SET city = ?, lat = ?, lng = ?, visit_date = ?, note = ?, is_private = ? WHERE id = ?')
+      .bind(city, lat, lng, visitDate, note, isPrivate, id).run();
+    return json({ id, city, lat, lng, visit_date: visitDate, note, is_private: isPrivate });
   }
 
   return null; // 不是已知 API 路由
