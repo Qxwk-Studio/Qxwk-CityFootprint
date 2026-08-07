@@ -144,6 +144,21 @@
     margin-top: 4px;
   }
 
+  /* 管理员视图提示 */
+  .admin-view-note {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+    padding: 10px 16px;
+    border-radius: var(--radius-sm);
+    background: #fffbeb;
+    border: 1px solid #fcd34d;
+    color: #92400e;
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+
   /* ========= 城市排名 ========= */
   .card {
     background: var(--surface);
@@ -262,6 +277,8 @@
       </h1>
     </div>
 
+    <div id="adminViewNote" class="admin-view-note" style="display:none;">👑 管理员视图 · 正在统计全部行程（含私密）</div>
+
     <!-- 总览 -->
     <div class="stats-grid">
       <div class="stat-card">
@@ -294,6 +311,7 @@
 </footer>
 
 <script src="cities.js"></script>
+<script src="app.js"></script>
 <script src="achievements.js"></script>
 <script>
 // 城市→省份（从内置城市数据查询）
@@ -302,10 +320,13 @@ function findProvince(city) {
   return c ? c.province : '';
 }
 
-// 拉取全站统计
-fetch('/api/stats')
-  .then(r => r.json())
+// 拉取全站统计（api() 自动携带登录凭证，管理员能看到含私密的完整统计）
+api('/stats')
   .then(data => {
+    // 管理员视图提示（数据来自后端 isAdmin，始终与所见一致）
+    const adminNote = document.getElementById('adminViewNote');
+    if (adminNote) adminNote.style.display = data.isAdmin ? '' : 'none';
+
     document.getElementById('totalVisits').textContent = data.totalVisits;
     document.getElementById('totalCities').textContent = data.totalCities;
 

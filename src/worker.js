@@ -8,6 +8,14 @@ import {
 
 // ---------- API 处理 ----------
 
+// 当前请求用户：返回 { userId(未登录=0), isAdmin }
+async function getViewer(DB, request) {
+  const userId = (await getUserId(DB, request)) || 0;
+  if (!userId) return { userId: 0, isAdmin: false };
+  const u = await DB.prepare('SELECT is_admin FROM users WHERE id = ?').bind(userId).first();
+  return { userId, isAdmin: !!(u && u.is_admin) };
+}
+
 async function handleApi(request, env) {
   const url = new URL(request.url);
   const path = url.pathname;
@@ -106,7 +114,7 @@ async function handleApi(request, env) {
     if (!ok) return error('昵称或密码不正确', 401);
 
     const token = await createSession(DB, user.id);
-    return json({ token, userId: user.id, nickname: user.nickname, color: user.color });
+    return json({ token, userId: user.id, nickname: user.nickname, color: user.color, is_admin: user.is_admin });
   }
 
   // POST /api/set-password（仅当密码字段为 NULL 时可设置；管理员清空后用于重置）
@@ -130,20 +138,21 @@ async function handleApi(request, env) {
   if (method === 'GET' && path === '/api/me') {
     const userId = await getUserId(DB, request);
     if (!userId) return error('未登录', 401);
-    const user = await DB.prepare('SELECT id, nickname, color FROM users WHERE id = ?').bind(userId).first();
+    const user = await DB.prepare('SELECT id, nickname, color, is_admin FROM users WHERE id = ?').bind(userId).first();
     if (!user) return error('用户不存在', 401);
-    return json({ userId: user.id, nickname: user.nickname, color: user.color });
+    return json({ userId: user.id, nickname: user.nickname, color: user.color, is_admin: user.is_admin });
   }
 
-  // GET /api/cities（公开：地图数据）
+  // GET /api/cities（公开：地图数据；已登录用户可见自己的私密行程，管理员可见全部）
   if (method === 'GET' && path === '/api/cities') {
-    const rows = await DB.prepare(
-      `SELECT v.id, v.city, v.lat, v.lng, v.visit_date, v.note,
-              u.id AS user_id, u.nickname, u.color
-       FROM visits v JOIN users u ON v.user_id = u.id
-       WHERE v.is_private = 0
-       ORDER BY v.created_at ASC`
-    ).all();
+    const { userId, isAdmin } = await getViewer(DB, request);
+    // 管理员：全部行程（含所有私密）；否则：公开 + 本人私密
+    const sql = `SELECT v.id, v.city, v.lat, v.lng, v.visit_date, v.note, v.is_private,
+                        u.id AS user_id, u.nickname, u.color
+                 FROM visits v JOIN users u ON v.user_id = u.id
+                 ${isAdmin ? '' : 'WHERE v.is_private = 0 OR v.user_id = ?'}
+                 ORDER BY v.created_at ASC`;
+    const rows = await DB.prepare(sql).bind(...(isAdmin ? [] : [userId])).all();
 
     const cityMap = new Map();
     for (const r of rows.results) {
@@ -155,25 +164,30 @@ async function handleApi(request, env) {
         color: r.color,
         visit_date: r.visit_date,
         note: r.note,
+        is_private: r.is_private,
       });
     }
-    return json({ cities: [...cityMap.values()] });
+    return json({ cities: [...cityMap.values()], isAdmin });
   }
 
-  // GET /api/stats（公开：全站统计）
+  // GET /api/stats（公开：全站统计；管理员统计全部行程含私密）
   if (method === 'GET' && path === '/api/stats') {
-    const totalVisits = (await DB.prepare('SELECT COUNT(*) as c FROM visits WHERE is_private = 0').first()).c;
-    const totalCities = (await DB.prepare('SELECT COUNT(DISTINCT city) as c FROM visits WHERE is_private = 0').first()).c;
+    const { isAdmin } = await getViewer(DB, request);
+    // 管理员统计全部（含私密），普通用户只统计公开行程
+    const visFilter = isAdmin ? '' : 'WHERE is_private = 0';
+    const joinFilter = isAdmin ? '' : 'AND v.is_private = 0';
+    const totalVisits = (await DB.prepare(`SELECT COUNT(*) as c FROM visits ${visFilter}`).first()).c;
+    const totalCities = (await DB.prepare(`SELECT COUNT(DISTINCT city) as c FROM visits ${visFilter}`).first()).c;
     const cityRank = await DB.prepare(
-      'SELECT city, COUNT(*) as count, COUNT(DISTINCT user_id) as people FROM visits WHERE is_private = 0 GROUP BY city ORDER BY count DESC, city ASC'
+      `SELECT city, COUNT(*) as count, COUNT(DISTINCT user_id) as people FROM visits ${visFilter} GROUP BY city ORDER BY count DESC, city ASC`
     ).all();
-    // 每用户去重城市列表（成就统计用，只统计公开行程）
+    // 每用户去重城市列表（成就统计用，管理员含私密）
     const users = await DB.prepare(
       `SELECT u.nickname, u.color, COALESCE(GROUP_CONCAT(DISTINCT v.city), '') as cities
-       FROM users u LEFT JOIN visits v ON v.user_id = u.id AND v.is_private = 0
+       FROM users u LEFT JOIN visits v ON v.user_id = u.id ${joinFilter}
        GROUP BY u.id ORDER BY u.id`
     ).all();
-    return json({ totalVisits, totalCities, cityRank: cityRank.results, users: users.results });
+    return json({ totalVisits, totalCities, cityRank: cityRank.results, users: users.results, isAdmin });
   }
 
   // GET /api/user/:nickname（公开：某人足迹）
@@ -184,8 +198,9 @@ async function handleApi(request, env) {
       .bind(nickname).first();
     if (!user) return error('用户不存在', 404);
 
+    const isAdmin = (await getViewer(DB, request)).isAdmin;
     const visits = await DB.prepare(
-      'SELECT id, city, lat, lng, visit_date, note FROM visits WHERE user_id = ? AND is_private = 0 ORDER BY created_at ASC'
+      `SELECT id, city, lat, lng, visit_date, note FROM visits WHERE user_id = ? ${isAdmin ? '' : 'AND is_private = 0'} ORDER BY created_at ASC`
     ).bind(user.id).all();
     return json({ user: { id: user.id, nickname: user.nickname, color: user.color, created_at: user.created_at }, visits: visits.results });
   }

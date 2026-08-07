@@ -30,6 +30,7 @@ function saveSession(data) {
     userId: data.userId,
     nickname: data.nickname,
     color: data.color,
+    is_admin: !!data.is_admin,
   }));
 }
 

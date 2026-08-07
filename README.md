@@ -104,6 +104,21 @@ SELECT code, used_at FROM invite_codes;
 
 把码发给朋友，每人用一个，注册成功即失效。
 
+### 👑 管理员
+
+管理员登录后，地图和统计页面可查看**所有人的行程（含私密行程）**。用 D1 控制台（或 `npx wrangler d1 execute qxwk-cityfootprint --remote --command "..."`）执行：
+
+```sql
+-- 把某用户设为管理员
+UPDATE users SET is_admin = 1 WHERE nickname = '你的昵称';
+
+-- 取消管理员
+UPDATE users SET is_admin = 0 WHERE nickname = '你的昵称';
+
+-- 查看所有管理员
+SELECT id, nickname, is_admin FROM users WHERE is_admin = 1;
+```
+
 ### 💻 本地开发
 
 ```bash

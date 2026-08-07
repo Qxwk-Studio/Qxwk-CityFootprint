@@ -471,7 +471,10 @@
           <div class="card">
             <h3>👤 个人资料</h3>
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-              <div style="font-size:14px;font-weight:600;" id="welcomeText"></div>
+              <div style="display:flex;align-items:center;gap:8px;min-width:0;">
+                <span style="font-size:14px;font-weight:600;" id="welcomeText"></span>
+                <span id="adminBadge" style="display:none;flex-shrink:0;font-size:11px;font-weight:600;color:#fff;background:linear-gradient(135deg,#f59e0b,#d97706);border-radius:6px;padding:2px 8px;">👑 管理员</span>
+              </div>
               <button class="btn btn-ghost btn-sm" onclick="logout()">退出登录</button>
             </div>
             <div class="user-uid" id="userUid"></div>
@@ -670,6 +673,8 @@ function enterUserView() {
   document.getElementById('userView').style.display = '';
   const s = getSession();
   document.getElementById('welcomeText').textContent = '你好，' + (s ? s.nickname : '') + ' 👋';
+  const badge = document.getElementById('adminBadge');
+  if (badge) badge.style.display = (s && s.is_admin) ? '' : 'none';
   const uidEl = document.getElementById('userUid');
   if (uidEl && s) uidEl.textContent = 'UID：' + s.userId;
   loadVisits();
