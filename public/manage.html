@@ -547,11 +547,17 @@
         <div class="personal-col">
           <div class="card" id="inviteCodeCard" style="display:none;">
             <h3>🎫 邀请码</h3>
-            <div class="invite-code-row">
-              <code id="inviteCodeText" class="invite-code">加载中…</code>
-              <button class="btn btn-ghost btn-sm" id="copyInviteBtn" onclick="copyInviteCode()">复制</button>
+            <div id="inviteCodeEmpty">
+              <p class="hint" style="margin-bottom:8px;">点击生成邀请码，分享给朋友注册</p>
+              <button class="btn btn-primary" id="generateInviteBtn" onclick="loadInviteCode()">生成邀请码</button>
             </div>
-            <div class="hint" id="inviteHint">分享给朋友注册用，一个码只能注册一次</div>
+            <div id="inviteCodeResult" style="display:none;">
+              <div class="invite-code-row">
+                <code id="inviteCodeText" class="invite-code">加载中…</code>
+                <button class="btn btn-ghost btn-sm" id="copyInviteBtn" onclick="copyInviteCode()">复制</button>
+              </div>
+              <div class="hint" id="inviteHint">分享给朋友注册用，一个码只能注册一次</div>
+            </div>
           </div>
 
           <div class="card">
@@ -703,7 +709,9 @@ function enterUserView() {
   if (badge) badge.style.display = (s && s.is_admin) ? '' : 'none';
   const uidEl = document.getElementById('userUid');
   if (uidEl && s) uidEl.textContent = 'UID：' + s.userId;
-  loadInviteCode(); // 加载可用邀请码栏（所有登录用户可见）
+  // 显示邀请码卡片（空态：点击"生成邀请码"才请求后端，不随页面自动生成）
+  const inviteCard = document.getElementById('inviteCodeCard');
+  if (inviteCard) inviteCard.style.display = '';
   loadVisits();
 }
 
@@ -770,16 +778,22 @@ function updateVisitStats() {
     <span class="stat">📍 足迹 <b>${myVisits.length}</b> 条</span>`;
 }
 
-// 加载本人邀请码（所有登录用户可见；未登录 401 时自动隐藏卡片）
+// 点击"生成邀请码"后向后端请求（登录用户可见；未登录 401 时隐藏卡片）
 async function loadInviteCode() {
-  const card = document.getElementById('inviteCodeCard');
+  const emptyEl = document.getElementById('inviteCodeEmpty');
+  const resultEl = document.getElementById('inviteCodeResult');
   const codeEl = document.getElementById('inviteCodeText');
   const hintEl = document.getElementById('inviteHint');
   const copyBtn = document.getElementById('copyInviteBtn');
-  if (!card || !codeEl) return;
+  if (!resultEl || !codeEl) return;
+  // 切到结果区（先显示加载中）
+  if (emptyEl) emptyEl.style.display = 'none';
+  resultEl.style.display = '';
+  codeEl.textContent = '加载中…';
+  if (copyBtn) copyBtn.style.display = '';
+  if (hintEl) hintEl.textContent = '';
   try {
     const data = await api('/invite-code');
-    card.style.display = '';
     if (data && data.paused) {
       codeEl.textContent = '邀请码生成已暂停';
       if (copyBtn) copyBtn.style.display = 'none';
@@ -790,7 +804,9 @@ async function loadInviteCode() {
       if (hintEl) hintEl.textContent = '分享给朋友注册用，一个码只能注册一次';
     }
   } catch (err) {
-    card.style.display = 'none'; // 未登录
+    // 出错（如未登录）：回到空态，可重新点击重试
+    if (emptyEl) emptyEl.style.display = '';
+    resultEl.style.display = 'none';
   }
 }
 
