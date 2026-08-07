@@ -442,18 +442,79 @@ function geoFetch(url) {
   });
 }
 
-// 加载城市边界（经 Worker 代理请求 DataV，规避浏览器跨域/来源限制），带缓存；失败返回 null
+// ---------- 边界 IndexedDB 缓存（跨刷新生效，24h 过期，与服务端 Cache-Control 一致） ----------
+const GEO_DB_NAME = 'cityfootprint-geo';
+const GEO_STORE = 'boundaries';
+const GEO_MAX_AGE = 24 * 60 * 60 * 1000; // 24h
+
+let geoDBPromise = null;
+// 打开数据库（复用同一连接；不支持/失败时返回 null → 退化为无缓存）
+function getGeoDB() {
+  if (!geoDBPromise) {
+    geoDBPromise = new Promise((resolve) => {
+      try {
+        const req = indexedDB.open(GEO_DB_NAME, 1);
+        req.onupgradeneeded = () => {
+          if (!req.result.objectStoreNames.contains(GEO_STORE)) {
+            req.result.createObjectStore(GEO_STORE, { keyPath: 'adcode' });
+          }
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => resolve(null);
+      } catch { resolve(null); }
+    });
+  }
+  return geoDBPromise;
+}
+
+// 读缓存：命中且未过期返回 geojson，否则 null
+async function geoDBRead(adcode) {
+  const db = await getGeoDB();
+  if (!db) return null;
+  return new Promise((resolve) => {
+    try {
+      const tx = db.transaction(GEO_STORE, 'readonly');
+      const get = tx.objectStore(GEO_STORE).get(adcode);
+      get.onsuccess = () => {
+        const row = get.result;
+        resolve(row && Date.now() - row.ts < GEO_MAX_AGE ? row.data : null);
+      };
+      get.onerror = () => resolve(null);
+    } catch { resolve(null); }
+  });
+}
+
+// 写缓存（异步，失败静默）
+async function geoDBWrite(adcode, data) {
+  const db = await getGeoDB();
+  if (!db) return;
+  try {
+    const tx = db.transaction(GEO_STORE, 'readwrite');
+    tx.objectStore(GEO_STORE).put({ adcode, data, ts: Date.now() });
+  } catch { /* 忽略 */ }
+}
+
+// 加载城市边界（经 Worker 代理请求 DataV，规避浏览器跨域/来源限制）
+// 命中顺序：内存缓存 → IndexedDB → 网络（并发受控）；失败返回 null（回退圆点）
 function loadCityGeo(adcode) {
   if (!geoCache.has(adcode)) {
-    geoCache.set(adcode, geoFetch(`/api/geo/${adcode}`)
-      .then(r => {
-        if (!r.ok) return null; // 404/错误 → 回退圆点
-        return r.json().then(g => {
-          // 校验是合法 GeoJSON，避免把错误对象传给 Leaflet
-          return (g && g.type === 'FeatureCollection' && Array.isArray(g.features)) ? g : null;
-        }).catch(() => null);
-      })
-      .catch(() => null));
+    const p = (async () => {
+      // 1) IndexedDB 缓存
+      const cached = await geoDBRead(adcode);
+      if (cached) return cached;
+      // 2) 网络请求（经 geoFetch 并发控制）
+      const r = await geoFetch(`/api/geo/${adcode}`);
+      if (!r.ok) return null; // 404/错误 → 回退圆点
+      let g = null;
+      try {
+        g = await r.json();
+        // 校验是合法 GeoJSON，避免把错误对象传给 Leaflet
+        if (!(g && g.type === 'FeatureCollection' && Array.isArray(g.features))) g = null;
+      } catch { g = null; }
+      if (g) geoDBWrite(adcode, g); // 写入 IndexedDB，下次打开直接命中
+      return g;
+    })();
+    geoCache.set(adcode, p);
   }
   return geoCache.get(adcode);
 }
