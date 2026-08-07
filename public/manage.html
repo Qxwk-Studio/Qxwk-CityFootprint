@@ -292,6 +292,21 @@
   .visit-stats .stat { display: flex; align-items: baseline; gap: 5px; }
   .visit-stats .stat b { font-size: 1.15rem; color: var(--primary); font-weight: 600; }
 
+  /* 邀请码栏（管理员可见） */
+  .invite-code-row { display: flex; align-items: center; gap: 10px; }
+  .invite-code {
+    flex: 1;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: var(--primary);
+    background: var(--primary-light);
+    border: 1px dashed rgba(37, 99, 235, 0.4);
+    border-radius: var(--radius-sm);
+    padding: 8px 12px;
+    text-align: center;
+  }
+
   /* 个人中心两列布局（电脑端左资料+创建 / 右记录+成就；手机端单列） */
   .personal-layout {
     display: grid;
@@ -466,7 +481,7 @@
     <!-- 已登录 -->
     <div id="userView" style="display:none">
       <div class="personal-layout">
-        <!-- 左列：个人资料 + 创建行程 -->
+        <!-- 左列：个人资料 + 创建行程 + 行程记录 -->
         <div class="personal-col">
           <div class="card">
             <h3>👤 个人资料</h3>
@@ -517,10 +532,7 @@
               <div class="msg" id="addMsg"></div>
             </form>
           </div>
-        </div>
 
-        <!-- 右列：行程记录 + 成就 -->
-        <div class="personal-col">
           <div class="card visit-list-card collapsed" id="visitListCard">
             <div class="card-header" onclick="toggleVisitList()">
               <h3>📍 行程记录</h3>
@@ -528,6 +540,19 @@
             </div>
             <div id="visitList"><div class="empty">正在加载…</div></div>
           </div>
+        </div>
+
+        <!-- 右列：邀请码 + 成就 -->
+        <div class="personal-col">
+          <div class="card" id="inviteCodeCard" style="display:none;">
+            <h3>🎫 邀请码</h3>
+            <div class="invite-code-row">
+              <code id="inviteCodeText" class="invite-code">加载中…</code>
+              <button class="btn btn-ghost btn-sm" id="copyInviteBtn" onclick="copyInviteCode()">复制</button>
+            </div>
+            <div class="hint">分享给朋友注册用，一个码只能注册一次</div>
+          </div>
+
           <div class="card">
             <h3>🏆 成就</h3>
             <div class="achievement-grid" id="achievementGrid"><div class="empty">正在加载…</div></div>
@@ -677,6 +702,7 @@ function enterUserView() {
   if (badge) badge.style.display = (s && s.is_admin) ? '' : 'none';
   const uidEl = document.getElementById('userUid');
   if (uidEl && s) uidEl.textContent = 'UID：' + s.userId;
+  loadInviteCode(); // 加载可用邀请码栏（所有登录用户可见）
   loadVisits();
 }
 
@@ -741,6 +767,32 @@ function updateVisitStats() {
   el.innerHTML = `
     <span class="stat">✈️ 去过 <b>${cityCount}</b> 座城市</span>
     <span class="stat">📍 足迹 <b>${myVisits.length}</b> 条</span>`;
+}
+
+// 加载最上面一个可用的邀请码（所有登录用户可见；未登录 401 时自动隐藏卡片）
+async function loadInviteCode() {
+  const card = document.getElementById('inviteCodeCard');
+  const codeEl = document.getElementById('inviteCodeText');
+  if (!card || !codeEl) return;
+  try {
+    const data = await api('/invite-code');
+    card.style.display = '';
+    codeEl.textContent = (data && data.code) ? data.code : '暂无可用邀请码';
+  } catch (err) {
+    card.style.display = 'none'; // 未登录
+  }
+}
+
+// 复制邀请码
+function copyInviteCode() {
+  const codeEl = document.getElementById('inviteCodeText');
+  const text = codeEl.textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copyInviteBtn');
+    const old = btn.textContent;
+    btn.textContent = '已复制 ✅';
+    setTimeout(() => { btn.textContent = old; }, 1500);
+  }).catch(() => alert('复制失败，请手动复制'));
 }
 
 async function loadVisits() {

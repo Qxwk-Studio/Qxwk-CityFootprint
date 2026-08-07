@@ -2,7 +2,7 @@
 CREATE TABLE IF NOT EXISTS users (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   nickname TEXT UNIQUE NOT NULL,
-  password_hash TEXT NOT NULL,          -- 格式：salt:hash
+  password_hash TEXT NOT NULL,          -- 格式：salt:hash；空字符串表示"待设置新密码"（管理员重置密码用）
   color TEXT NOT NULL,                  -- 地图打点颜色
   created_at TEXT DEFAULT (datetime('now'))
 );

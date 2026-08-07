@@ -60,6 +60,16 @@ async function handleApi(request, env) {
     return json({ inviteCodeRequired: true });
   }
 
+  // GET /api/invite-code（登录用户：取最上面一个可用的邀请码，供用户邀请朋友注册）
+  if (method === 'GET' && path === '/api/invite-code') {
+    const userId = await getUserId(DB, request);
+    if (!userId) return error('未登录', 401);
+    const row = await DB.prepare(
+      'SELECT code FROM invite_codes WHERE used_at IS NULL ORDER BY rowid ASC LIMIT 1'
+    ).first();
+    return json({ code: row ? row.code : null });
+  }
+
   // GET /api/geo/:adcode（代理 DataV 边界接口，规避浏览器跨域/来源限制）
   const geoMatch = path.match(/^\/api\/geo\/(\d+)$/);
   if (method === 'GET' && geoMatch) {

@@ -10,16 +10,30 @@
 - **公开浏览**：所有访客无需登录即可查看完整地图
 - **专属颜色**：每个用户一种标记色，同城多点自动散开
 - **按人筛选**：点击图例中的昵称，只看某一个人的足迹
+- **私密行程**：本人登录时可见自己的不公开足迹（弹窗带 🔒），他人不可见
+- **管理员视图**：管理员可查看所有人的行程（含私密），右上角显示 👑 标识
 
 ### 👤 个人足迹管理 (`manage.html`)
-- **注册登录**：昵称 + 密码即可使用
+- **注册登录**：昵称 + 密码即可使用（邀请码制）
 - **足迹增删改**：添加 / 修改 / 删除自己的城市足迹
-- **隐私足迹**：可以创建仅自己可见的足迹
+- **不公开行程**：可勾选"仅自己可见"，不出现在公开地图与统计中
 - **时间与备注**：记录访问时间，留一句话回忆
+- **邀请码栏**：所有登录用户可见当前可用邀请码，方便邀请朋友注册（用户邀请制）
+
+### 🏆 成就系统（`manage.html` / `stats.html`）
+- **4 大分类**：足迹丰碑 / 巡游四方 / 城市打卡 / 极限挑战
+- **自动判定**：根据足迹自动解锁，分类可折叠、显示进度
+- **成就统计**：统计页展示每个成就的达成人数
+
+### 📊 全站统计 (`stats.html`)
+- 总行程、总城市、城市次数排名 Top30
+- 成就达成人数
+- 管理员登录时统计全部行程（含私密）
 
 ### 🛡️ 安全设计
 - **密码加密**：PBKDF2（10 万次迭代 + 随机盐）哈希存储，不落明文
 - **会话鉴权**：Bearer Token，只能操作自己的足迹
+- **私密数据**：不公开行程在接口层过滤，仅本人（或管理员）可见
 
 ## 🧱 技术栈
 
@@ -32,15 +46,22 @@
 
 ```
 ├── migrations/
-│   └── 0001_init.sql       # 建表 SQL
+│   ├── 0001_init.sql       # 建表：users / visits / sessions
+│   ├── 0002_invite_codes.sql # 邀请码表
+│   ├── 0003_visits_private.sql # visits 增加 is_private（不公开行程）
+│   └── 0004_admin.sql      # users 增加 is_admin（管理员）
 ├── src/
 │   ├── worker.js           # Worker 入口（/api/* 接口 + 静态资源回退）
 │   └── lib.js              # 密码哈希、会话、工具
 ├── public/                 # 静态前端
 │   ├── index.html          # 足迹大地图
-│   ├── manage.html         # 个人管理（登录/注册/增删改）
+│   ├── manage.html         # 个人管理（登录/注册/增删改/成就/邀请码）
+│   ├── stats.html          # 全站统计
+│   ├── news.html           # 公告与更新日志
+│   ├── achievements.js     # 成就定义与判定
 │   ├── app.js              # API 客户端 + 会话
-│   └── cities.js           # 国内地级市坐标数据
+│   ├── cities.js           # 国内地级市坐标数据
+│   └── city-codes.js       # 城市 adcode（地图边界用）
 ├── wrangler.toml           # Worker 配置（D1 绑定在这填 database_id）
 └── README.md
 ```
@@ -56,13 +77,16 @@ Cloudflare 控制台 → **Workers & Pages** → **D1** → **创建数据库**�
 - 名字填：`qxwk-cityfootprint`
 - 创建后复制 **database_id**（一串 UUID）
 
-### 2️⃣ 建表
+### 2️⃣ 建表（迁移）
 
-在 D1 页面点进 `qxwk-cityfootprint` → **控制台**（Console）→ 依次把
-`migrations/0001_init.sql` 和 `migrations/0002_invite_codes.sql` 的内容
-整个复制进去 → 各点一次 **运行**（Run）
+在项目根目录执行（会自动按顺序应用 `migrations/` 下所有迁移）：
 
-（会创建 `users` / `visits` / `sessions` 三张业务表 + `invite_codes` 邀请码表）
+```bash
+npx wrangler d1 migrations apply qxwk-cityfootprint --remote
+```
+
+或者用 D1 控制台，把每个迁移文件的内容依次复制进去运行。
+（会创建 `users` / `visits` / `sessions` / `invite_codes` 表，并加上 `is_private`、`is_admin` 列）
 
 ### 3️⃣ 填入 database_id 并部署
 
@@ -105,6 +129,8 @@ SELECT code, used_at FROM invite_codes;
 
 把码发给朋友，每人用一个，注册成功即失效。
 
+> 💡 **用户邀请制**：个人中心会向所有登录用户展示当前可用的邀请码（`GET /api/invite-code`），老用户可直接复制发给朋友注册。管理员只需定期往 `invite_codes` 表补码即可。
+
 ### 👑 管理员
 
 ```sql
@@ -133,14 +159,17 @@ Worker 会在 `localhost:8787` 同时提供页面和 API。
 | 方法 | 路径 | 鉴权 | 说明 |
 |------|------|------|------|
 | POST | `/api/register` | 无 | 注册（需一次性邀请码），返回 token |
-| POST | `/api/login` | 无 | 登录，返回 token（密码为 NULL 时返回需设置新密码信号） |
-| POST | `/api/set-password` | 无 | 密码为 NULL 时设置新密码（管理员清空后重置用） |
+| POST | `/api/login` | 无 | 登录，返回 token（密码为空字符串时返回需设置新密码信号） |
+| POST | `/api/set-password` | 无 | 密码为空字符串时设置新密码（管理员重置后使用） |
 | GET | `/api/config` | 无 | 注册配置（前端判断是否显示邀请码） |
-| GET | `/api/cities` | 无 | 所有城市 + 谁去过（地图用） |
-| GET | `/api/user/:nickname` | 无 | 某人的足迹明细 |
-| GET | `/api/my-visits` | Bearer | 自己的足迹 |
-| POST | `/api/visits` | Bearer | 添加足迹 |
-| PUT | `/api/visits/:id` | Bearer | 修改（仅本人） |
+| GET | `/api/me` | Bearer | 当前用户信息（含 is_admin） |
+| GET | `/api/cities` | 可选 Bearer | 城市 + 谁去过（地图用；登录可见本人私密，管理员可见全部） |
+| GET | `/api/user/:nickname` | 可选 Bearer | 某人足迹明细（管理员可见其私密） |
+| GET | `/api/stats` | 可选 Bearer | 全站统计（管理员含私密行程） |
+| GET | `/api/invite-code` | Bearer | 当前可用的邀请码（所有登录用户可见） |
+| GET | `/api/my-visits` | Bearer | 自己的足迹（含 is_private） |
+| POST | `/api/visits` | Bearer | 添加足迹（可带 is_private） |
+| PUT | `/api/visits/:id` | Bearer | 修改（仅本人，可改 is_private） |
 | DELETE | `/api/visits/:id` | Bearer | 删除（仅本人） |
 
 ## 🔧 自定义指南
@@ -154,11 +183,17 @@ Worker 会在 `localhost:8787` 同时提供页面和 API。
 
 **3. 查看免费额度**
 - Workers 每天 10 万次请求、D1 5GB 存储，个人使用完全足够
+- 注意 D1 单查询上限为 10 万行读取；`visits` 达到数万条后再考虑加接口缓存 / 预计算
 
-**4. 重置用户密码（忘记密码）**
-- 在 D1 控制台把该用户的 `password_hash` 改成 `NULL`：
+**4. 不公开行程（`is_private`）**
+- 勾选"不公开行程"的足迹仅本人可见，接口层通过 `is_private` 字段过滤
+- 公开接口（地图 `/api/cities`、统计 `/api/stats`、公开资料 `/api/user/:nickname`）默认不含私密；登录用户在地图上可见自己的私密行程，管理员可见全部
+- 地图边界数据已做浏览器 IndexedDB 缓存（24h 过期），重复打开不重复请求
+
+**5. 重置用户密码（忘记密码）**
+- 在 D1 控制台把该用户的 `password_hash` 改成**空字符串**（该列是 `NOT NULL`，不能写 `NULL`）：
   ```sql
-  UPDATE users SET password_hash = NULL WHERE nickname = '用户名';
+  UPDATE users SET password_hash = '' WHERE nickname = '用户名';
   ```
 - 该用户下次登录时会提示"设置新密码"，设置后即可正常登录
 - ⚠️ 注意：此时任何知道该昵称的人都能设置密码，请仅在信任本人时操作
