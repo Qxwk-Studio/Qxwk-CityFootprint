@@ -344,6 +344,7 @@
     position: relative;
     height: 100%;
     overflow: hidden;
+    background: #e2e2ec;
   }
   .setup-frame {
     width: 100%;
@@ -399,6 +400,7 @@
     .main { padding: 24px 16px 40px; }
     .card { padding: 18px; }
     .back-link { padding: 7px 14px; font-size: 0.84rem; }
+    .theme-toggle { width: 40px; height: 40px; }
   }
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
@@ -429,7 +431,7 @@
 </script>
 <style>
   /* ===== 黑夜模式：主题切换按钮 ===== */
-  .theme-toggle { display:inline-flex; align-items:center; justify-content:center; width:32px; height:32px; padding:0; background:none; border:none; border-radius:50%; color:var(--text-primary); cursor:pointer; transition:background var(--transition), color var(--transition); }
+  .theme-toggle { display:inline-flex; align-items:center; justify-content:center; width:32px; height:32px; padding:0; background:none; border:none; border-radius:50%; color:var(--text-primary); cursor:pointer; transition:background var(--transition), color var(--transition); position:relative; z-index:5; touch-action:manipulation; }
   .theme-toggle:hover { background:var(--primary-subtle); color:var(--primary); }
   .theme-toggle svg { width:22px; height:22px; }
   .theme-toggle .icon-sun { display:none; }
@@ -453,6 +455,7 @@
 
   /* ===== 黑夜模式：页面元素覆盖 ===== */
   :root[data-theme="dark"] .auth-right { background: var(--surface); }
+  :root[data-theme="dark"] .auth-left { background: #0f172a; }
   :root[data-theme="dark"] .profile-card {
     background: linear-gradient(135deg, color-mix(in srgb, var(--user-color, #2563eb) 18%, #0f172a), var(--surface) 80%);
     border-color: color-mix(in srgb, var(--user-color, #2563eb) 28%, #334155);
