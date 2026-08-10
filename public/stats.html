@@ -247,7 +247,6 @@
     .main { padding: 24px 16px 40px; }
     .card { padding: 18px; }
     .back-link { padding: 7px 14px; font-size: 0.84rem; }
-    .theme-toggle { width: 40px; height: 40px; }
     .stats-grid { grid-template-columns: repeat(2, 1fr); }
   }
   @media (prefers-reduced-motion: reduce) {
@@ -267,14 +266,15 @@
   function current() { return stored() || system(); }
   apply(current());
   function toggle() { var next = current() === 'dark' ? 'light' : 'dark'; apply(next); try { localStorage.setItem(KEY, next); } catch (e) {} }
-  function bind() {
+  // 按钮轮询绑定（不依赖 DOMContentLoaded，避免被外部脚本阻塞导致按钮长时间无效）
+  (function tryBind() {
     var btn = document.getElementById('themeToggle');
     if (btn) btn.addEventListener('click', toggle);
-    if (mq.addEventListener) mq.addEventListener('change', function (e) { if (!stored()) apply(e.matches ? 'dark' : 'light'); });
-    else if (mq.addListener) mq.addListener(function (e) { if (!stored()) apply(e.matches ? 'dark' : 'light'); });
-    window.addEventListener('storage', function (e) { if (e.key === KEY) apply(current()); });
-  }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bind); else bind();
+    else setTimeout(tryBind, 50);
+  })();
+  if (mq.addEventListener) mq.addEventListener('change', function (e) { if (!stored()) apply(e.matches ? 'dark' : 'light'); });
+  else if (mq.addListener) mq.addListener(function (e) { if (!stored()) apply(e.matches ? 'dark' : 'light'); });
+  window.addEventListener('storage', function (e) { if (e.key === KEY) apply(current()); });
 })();
 </script>
 <style>
