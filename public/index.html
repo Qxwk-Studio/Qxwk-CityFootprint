@@ -242,6 +242,13 @@
   }
   .legend.collapsed .legend-toggle { transform: rotate(-90deg); }
   .legend.collapsed #legendList { display: none; }
+  .legend.collapsed {
+    padding: 6px 10px;
+    min-width: auto;
+    max-height: none;
+    overflow: hidden;
+  }
+  .legend.collapsed .legend-header { margin-bottom: 0; }
   .legend .user {
     display: flex;
     align-items: center;
@@ -357,6 +364,67 @@
     *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
   }
 </style>
+<meta name="color-scheme" content="light dark">
+<script>
+/* 主题切换：localStorage('theme') 优先，其次跟随系统 prefers-color-scheme；同步写入 <html> 的 data-theme 防闪烁 */
+(function () {
+  var KEY = 'theme';
+  var root = document.documentElement;
+  var mq = window.matchMedia('(prefers-color-scheme: dark)');
+  function system() { return mq.matches ? 'dark' : 'light'; }
+  function stored() { try { var v = localStorage.getItem(KEY); return (v === 'dark' || v === 'light') ? v : null; } catch (e) { return null; } }
+  function apply(t) { root.setAttribute('data-theme', t); }
+  function current() { return stored() || system(); }
+  apply(current());
+  function toggle() { var next = current() === 'dark' ? 'light' : 'dark'; apply(next); try { localStorage.setItem(KEY, next); } catch (e) {} }
+  function bind() {
+    var btn = document.getElementById('themeToggle');
+    if (btn) btn.addEventListener('click', toggle);
+    if (mq.addEventListener) mq.addEventListener('change', function (e) { if (!stored()) apply(e.matches ? 'dark' : 'light'); });
+    else if (mq.addListener) mq.addListener(function (e) { if (!stored()) apply(e.matches ? 'dark' : 'light'); });
+    window.addEventListener('storage', function (e) { if (e.key === KEY) apply(current()); });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bind); else bind();
+})();
+</script>
+<style>
+  /* ===== 黑夜模式：主题切换按钮 ===== */
+  .theme-toggle { display:inline-flex; align-items:center; justify-content:center; width:32px; height:32px; padding:0; background:none; border:none; border-radius:50%; color:var(--text-primary); cursor:pointer; transition:background var(--transition), color var(--transition); }
+  .theme-toggle:hover { background:var(--primary-subtle); color:var(--primary); }
+  .theme-toggle svg { width:22px; height:22px; }
+  .theme-toggle .icon-sun { display:none; }
+  :root[data-theme="dark"] .theme-toggle .icon-sun { display:block; }
+  :root[data-theme="dark"] .theme-toggle .icon-moon { display:none; }
+
+  /* ===== 黑夜模式：深色变量 ===== */
+  :root { color-scheme: light; --primary-subtle: rgba(37,99,235,0.08); }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --primary-light: rgba(59,130,246,0.16);
+    --primary-subtle: rgba(59,130,246,0.16);
+    --surface:#1e293b; --bg:#0f172a;
+    --text-primary:#e2e8f0; --text-secondary:#94a3b8; --text-tertiary:#64748b;
+    --border:#334155; --navbar-bg:rgba(15,23,42,0.8);
+    --shadow-sm:0 1px 3px rgba(0,0,0,0.4); --shadow-md:0 4px 16px rgba(0,0,0,0.5); --shadow-lg:0 12px 40px rgba(0,0,0,0.6);
+  }
+  :root[data-theme="dark"] .back-link { background:rgba(59,130,246,0.16); border-color:rgba(96,165,250,0.35); }
+  :root[data-theme="dark"] .back-link:hover { background:rgba(59,130,246,0.30); border-color:rgba(96,165,250,0.60); }
+
+  /* ===== 黑夜模式：地图页元素覆盖 ===== */
+  :root[data-theme="dark"] #map { background:#0f172a; }
+  :root[data-theme="dark"] .legend { background:rgba(15,23,42,0.92); }
+  :root[data-theme="dark"] .legend .dot { box-shadow:0 0 0 2px #0f172a, 0 1px 3px rgba(0,0,0,0.5); }
+  /* Leaflet 控件深色 */
+  :root[data-theme="dark"] .leaflet-bar a { background:#1e293b; color:#e2e8f0; border-color:#334155; }
+  :root[data-theme="dark"] .leaflet-bar a:hover { background:#0f172a; }
+  :root[data-theme="dark"] .leaflet-control-attribution { background:rgba(15,23,42,0.8); color:#94a3b8; }
+  :root[data-theme="dark"] .leaflet-popup-content-wrapper { background:#1e293b; color:#e2e8f0; }
+  :root[data-theme="dark"] .leaflet-popup-tip { background:#1e293b; }
+  /* 深色模式：瓦片暗化滤镜（只作用于瓦片，不影响标记/控件） */
+  :root[data-theme="dark"] .leaflet-tile {
+    filter: brightness(0.55);
+  }
+</style>
 </head>
 <body>
 
@@ -368,10 +436,16 @@
       <img class="brand-logo" src="/favicon.webp" alt="City Footprint">
       <span class="brand-text"><b>City Footprint</b><span>我们走过的城市</span></span>
     </a>
-    <a class="back-link" href="https://home.qxwkstudio.top/">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-      返回主页
-    </a>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <button class="theme-toggle" id="themeToggle" type="button" aria-label="切换主题" title="切换主题">
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+      <a class="back-link" href="https://home.qxwkstudio.top/">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        返回主页
+      </a>
+    </div>
   </div>
 </header>
 
@@ -387,15 +461,19 @@
   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
 </button>
 
-<a class="fab-item" href="manage.html" style="bottom:76px">
+<a class="fab-item" href="account.html" style="bottom:76px">
   <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
   个人中心
 </a>
-<a class="fab-item" href="news.html" style="bottom:132px">
-  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-  公告与更新日志
+<a class="fab-item" href="visits.html" style="bottom:132px">
+  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+  足迹管理
 </a>
-<a class="fab-item" href="stats.html" style="bottom:188px">
+<a class="fab-item" href="news.html" style="bottom:188px">
+  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+  公告与更新
+</a>
+<a class="fab-item" href="stats.html" style="bottom:244px">
   <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
   全站统计
 </a>
@@ -533,7 +611,7 @@ function render(data) {
     empty.onAdd = () => {
       const div = L.DomUtil.create('div');
       div.className = 'leaflet-control';
-      div.style.cssText = 'background:#fff;padding:16px 20px;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,.12);font-size:14px;color:#64748b;border:1px solid #e2e8f0;';
+      div.style.cssText = 'background:var(--surface);padding:16px 20px;border-radius:12px;box-shadow:var(--shadow-md);font-size:14px;color:var(--text-secondary);border:1px solid var(--border);';
       div.textContent = '还没有足迹，去添加第一座城市吧 ✈️';
       return div;
     };

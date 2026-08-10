@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>个人中心 · City Footprint - 青翔未阔工作室</title>
+<meta name="description" content="登录 City Footprint 个人中心，管理账号、获取邀请码，进入足迹管理。">
+<link rel="icon" type="image/webp" href="/favicon.webp">
+<style>
+  /* ========= Reset & Base ========= */
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --primary: #2563eb;
+    --primary-hover: #1d4ed8;
+    --primary-light: #eff6ff;
+    --secondary: #0d9488;
+    --surface: #ffffff;
+    --bg: #f8fafc;
+    --text-primary: #0f172a;
+    --text-secondary: #64748b;
+    --text-tertiary: #94a3b8;
+    --border: #e2e8f0;
+    --navbar-bg: rgba(255, 255, 255, 0.8);
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
+    --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.12);
+    --radius-sm: 8px;
+    --radius-md: 14px;
+    --radius-lg: 20px;
+    --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+    --container: 1100px;
+    --nav-height: 64px;
+  }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: var(--font-sans);
+    background: var(--bg);
+    color: var(--text-primary);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  /* 未登录时禁止 body 滚动（只允许 authView 内部滚动） */
+  body.no-scroll { overflow: hidden; }
+
+  /* ========= Navbar ========= */
+  .navbar {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    height: var(--nav-height);
+    background: var(--navbar-bg);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border);
+  }
+  .navbar-inner {
+    max-width: var(--container);
+    margin: 0 auto;
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 100%;
+    gap: 12px;
+  }
+  .navbar-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    color: var(--text-primary);
+    font-weight: 600;
+    font-size: 1.15rem;
+    letter-spacing: 0.3px;
+    transition: opacity var(--transition);
+    flex-shrink: 0;
+  }
+  .navbar-brand:hover { opacity: 0.85; }
+  .brand-logo {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    object-fit: cover;
+    box-shadow: 0 2px 10px rgba(37, 99, 235, 0.25);
+  }
+  .brand-text { line-height: 1.25; }
+  .brand-text b { display: block; font-size: 16px; font-weight: 600; letter-spacing: 0.3px; }
+  .brand-text span { font-size: 11px; color: var(--text-tertiary); }
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 18px;
+    background: rgba(37, 99, 235, 0.15);
+    color: var(--text-primary);
+    text-decoration: none;
+    border-radius: 40px;
+    font-size: 0.88rem;
+    font-weight: 500;
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(147, 197, 253, 0.35);
+    transition: all var(--transition);
+    white-space: nowrap;
+  }
+  .back-link:hover {
+    background: rgba(37, 99, 235, 0.3);
+    border-color: rgba(147, 197, 253, 0.6);
+    transform: scale(1.02);
+  }
+
+  /* ========= Main ========= */
+  .main { flex: 1; padding: 36px 24px 60px; }
+  .container { max-width: var(--container); margin: 0 auto; }
+  .page-header { display: flex; align-items: center; margin-bottom: 28px; }
+  .page-header h1 { font-size: clamp(1.4rem, 3vw, 1.8rem); font-weight: 700; color: var(--text-primary); }
+
+  /* ========= Card ========= */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 24px;
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 20px;
+  }
+  .card h3 { font-size: 1.02rem; font-weight: 600; margin-bottom: 16px; }
+
+  /* ========= Tabs ========= */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 20px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    padding: 4px;
+    border-radius: var(--radius-sm);
+  }
+  .tab {
+    flex: 1;
+    text-align: center;
+    padding: 9px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    background: transparent;
+    border: none;
+    transition: all var(--transition);
+    font-family: inherit;
+  }
+  .tab:hover { color: var(--text-primary); }
+  .tab.active {
+    background: var(--surface);
+    color: var(--primary);
+    box-shadow: var(--shadow-sm);
+    font-weight: 600;
+  }
+
+  /* ========= Form ========= */
+  label { display: block; font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500; }
+  input, select, textarea {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 0.9rem;
+    font-family: inherit;
+    color: var(--text-primary);
+    background: var(--surface);
+    transition: border-color var(--transition), box-shadow var(--transition);
+  }
+  input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--primary-light);
+  }
+  .field { margin-bottom: 16px; }
+
+  /* ========= Buttons ========= */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    border: none;
+    border-radius: 40px;
+    padding: 11px 18px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition);
+    font-family: inherit;
+    text-decoration: none;
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    color: #fff;
+    width: 100%;
+  }
+  .btn-primary:hover {
+    background: linear-gradient(135deg, var(--primary-hover), #0f766e);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
+  }
+  .btn-ghost { background: var(--bg); color: var(--text-secondary); border: 1px solid var(--border); }
+  .btn-ghost:hover { background: var(--border); color: var(--text-primary); }
+  .btn-sm { padding: 6px 12px; font-size: 0.8rem; border-radius: 6px; }
+
+  .msg { font-size: 0.84rem; margin-top: 10px; }
+  .msg.error { color: #dc2626; }
+  .msg.ok { color: #16a34a; }
+
+  .hint { font-size: 0.78rem; color: var(--text-tertiary); margin-top: 4px; }
+
+  /* 用户 UID 显示 */
+  .user-uid {
+    margin-top: 4px;
+    font-size: 0.78rem;
+    color: var(--text-tertiary);
+    font-family: 'Consolas', 'Courier New', monospace;
+  }
+
+  /* 专属颜色 + 注册时间 */
+  .user-extra {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+    font-size: 0.84rem;
+    color: var(--text-secondary);
+  }
+  .user-color-dot {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 1px var(--border);
+    flex-shrink: 0;
+  }
+  .user-regtime {
+    margin-top: 6px;
+    font-size: 0.78rem;
+    color: var(--text-tertiary);
+  }
+
+  /* ===== 已登录个人中心：大元素 + 层次 ===== */
+  #userView .card { padding: 28px; }
+  .profile-card {
+    background: linear-gradient(135deg, color-mix(in srgb, var(--user-color, #2563eb) 15%, #ffffff), var(--surface) 80%);
+    border-color: color-mix(in srgb, var(--user-color, #2563eb) 22%, #e2e8f0);
+  }
+  .profile-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 18px;
+  }
+  .profile-avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 20px;
+    flex-shrink: 0;
+    background: var(--primary);
+    color: #fff;
+    font-size: 1.8rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 6px 20px rgba(37, 99, 235, 0.28);
+  }
+  .profile-info { flex: 1; min-width: 0; }
+  .profile-name { font-size: 1.5rem; font-weight: 700; margin-bottom: 6px; }
+  .profile-meta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+  }
+  .profile-color {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 18px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+  }
+  .profile-color .user-color-dot { width: 22px; height: 22px; }
+  .action-card { text-align: left; }
+  .action-card h3 { font-size: 1.15rem; margin-bottom: 8px; }
+  .action-card .btn, #inviteCodeCard .btn-primary { margin-top: 16px; padding: 14px 20px; font-size: 1rem; }
+  #inviteCodeCard h3 { font-size: 1.15rem; }
+  #inviteCodeCard .invite-code { font-size: 1.2rem; padding: 12px 16px; }
+
+  /* 邀请码栏 */
+  .invite-code-row { display: flex; align-items: center; gap: 10px; }
+  .invite-code {
+    flex: 1;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: var(--primary);
+    background: var(--primary-light);
+    border: 1px dashed rgba(37, 99, 235, 0.4);
+    border-radius: var(--radius-sm);
+    padding: 8px 12px;
+    text-align: center;
+  }
+
+  /* 个人中心两列布局（电脑端两列；手机端单列） */
+  .personal-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    align-items: start;
+  }
+  .personal-col { display: flex; flex-direction: column; gap: 20px; }
+  .personal-col .card { margin-bottom: 0; }
+
+  /* ========= 未登录：左半屏 setup 动画 + 右半屏白色登录注册 ========= */
+  #authView {
+    position: fixed;
+    left: 0; right: 0;
+    top: var(--nav-height);
+    bottom: 0;
+    z-index: 900;
+    display: grid;
+    grid-template-columns: 60% 40%;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+  .auth-left {
+    position: relative;
+    height: 100%;
+    overflow: hidden;
+  }
+  .setup-frame {
+    width: 100%;
+    height: 100%;
+    border: 0;
+    display: block;
+  }
+  .auth-right {
+    background: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 24px;
+  }
+  .auth-form {
+    width: 100%;
+    max-width: 380px;
+    margin: 0;
+  }
+  .auth-title {
+    font-size: 1.7rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+  }
+  .auth-subtitle {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-bottom: 28px;
+  }
+
+  /* ========= Footer ========= */
+  .footer {
+    background: #0f172a;
+    text-align: center;
+    padding: 28px 24px;
+    color: var(--text-tertiary);
+    font-size: 0.82rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+  }
+  .footer-copy { opacity: 0.6; }
+
+  /* ========= Responsive ========= */
+  @media (max-width: 768px) {
+    .personal-layout { grid-template-columns: 1fr; }
+    #authView { grid-template-columns: 1fr; grid-template-rows: 30vh 1fr; }
+    .auth-left { height: 30vh; }
+    .auth-right { align-items: flex-start; padding: 56px 16px 40px; }
+    .auth-form { max-width: 100%; }
+  }
+  @media (max-width: 640px) {
+    .navbar-inner { padding: 0 16px; }
+    .main { padding: 24px 16px 40px; }
+    .card { padding: 18px; }
+    .back-link { padding: 7px 14px; font-size: 0.84rem; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  }
+</style>
+<meta name="color-scheme" content="light dark">
+<script>
+/* 主题切换：localStorage('theme') 优先，其次跟随系统 prefers-color-scheme；同步写入 <html> 的 data-theme 防闪烁 */
+(function () {
+  var KEY = 'theme';
+  var root = document.documentElement;
+  var mq = window.matchMedia('(prefers-color-scheme: dark)');
+  function system() { return mq.matches ? 'dark' : 'light'; }
+  function stored() { try { var v = localStorage.getItem(KEY); return (v === 'dark' || v === 'light') ? v : null; } catch (e) { return null; } }
+  function apply(t) { root.setAttribute('data-theme', t); }
+  function current() { return stored() || system(); }
+  apply(current());
+  function toggle() { var next = current() === 'dark' ? 'light' : 'dark'; apply(next); try { localStorage.setItem(KEY, next); } catch (e) {} }
+  function bind() {
+    var btn = document.getElementById('themeToggle');
+    if (btn) btn.addEventListener('click', toggle);
+    if (mq.addEventListener) mq.addEventListener('change', function (e) { if (!stored()) apply(e.matches ? 'dark' : 'light'); });
+    else if (mq.addListener) mq.addListener(function (e) { if (!stored()) apply(e.matches ? 'dark' : 'light'); });
+    window.addEventListener('storage', function (e) { if (e.key === KEY) apply(current()); });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bind); else bind();
+})();
+</script>
+<style>
+  /* ===== 黑夜模式：主题切换按钮 ===== */
+  .theme-toggle { display:inline-flex; align-items:center; justify-content:center; width:32px; height:32px; padding:0; background:none; border:none; border-radius:50%; color:var(--text-primary); cursor:pointer; transition:background var(--transition), color var(--transition); }
+  .theme-toggle:hover { background:var(--primary-subtle); color:var(--primary); }
+  .theme-toggle svg { width:22px; height:22px; }
+  .theme-toggle .icon-sun { display:none; }
+  :root[data-theme="dark"] .theme-toggle .icon-sun { display:block; }
+  :root[data-theme="dark"] .theme-toggle .icon-moon { display:none; }
+
+  /* ===== 黑夜模式：深色变量 ===== */
+  :root { color-scheme: light; --primary-subtle: rgba(37,99,235,0.08); }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --primary-light: rgba(59,130,246,0.16);
+    --primary-subtle: rgba(59,130,246,0.16);
+    --surface:#1e293b; --bg:#0f172a;
+    --text-primary:#e2e8f0; --text-secondary:#94a3b8; --text-tertiary:#64748b;
+    --border:#334155; --navbar-bg:rgba(15,23,42,0.8);
+    --shadow-sm:0 1px 3px rgba(0,0,0,0.4); --shadow-md:0 4px 16px rgba(0,0,0,0.5); --shadow-lg:0 12px 40px rgba(0,0,0,0.6);
+  }
+  :root[data-theme="dark"] .footer { background:#111827; }
+  :root[data-theme="dark"] .back-link { background:rgba(59,130,246,0.16); border-color:rgba(96,165,250,0.35); }
+  :root[data-theme="dark"] .back-link:hover { background:rgba(59,130,246,0.30); border-color:rgba(96,165,250,0.60); }
+
+  /* ===== 黑夜模式：页面元素覆盖 ===== */
+  :root[data-theme="dark"] .auth-right { background: var(--surface); }
+  :root[data-theme="dark"] .profile-card {
+    background: linear-gradient(135deg, color-mix(in srgb, var(--user-color, #2563eb) 18%, #0f172a), var(--surface) 80%);
+    border-color: color-mix(in srgb, var(--user-color, #2563eb) 28%, #334155);
+  }
+  :root[data-theme="dark"] .user-color-dot { border-color: #0f172a; }
+</style>
+</head>
+<body class="no-scroll">
+
+<header class="navbar">
+  <div class="navbar-inner">
+    <a href="index.html" class="navbar-brand">
+      <img class="brand-logo" src="/favicon.webp" alt="City Footprint">
+      <span class="brand-text"><b>City Footprint</b><span>我们走过的城市</span></span>
+    </a>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <button class="theme-toggle" id="themeToggle" type="button" aria-label="切换主题" title="切换主题">
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+      <a href="index.html" class="back-link">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
+        返回地图
+      </a>
+    </div>
+  </div>
+</header>
+
+<!-- 未登录（全屏 setup 背景） -->
+<div id="authView">
+  <div class="auth-left">
+    <iframe src="setup.html" class="setup-frame" title="欢迎" loading="lazy"></iframe>
+  </div>
+  <div class="auth-right">
+    <div class="auth-form">
+      <h2 class="auth-title">👋 欢迎回来</h2>
+      <p class="auth-subtitle">登录 City Footprint，点亮你的足迹地图</p>
+      <div class="tabs">
+        <div class="tab active" id="tabLogin" onclick="switchTab('login')">登录</div>
+        <div class="tab" id="tabReg" onclick="switchTab('reg')">注册</div>
+      </div>
+
+          <form id="loginForm" onsubmit="return doLogin(event)">
+            <div class="field"><label>昵称</label><input id="loginNick" maxlength="20" required></div>
+            <div class="field"><label id="passLabel">密码</label><input id="loginPass" type="password" maxlength="50" required></div>
+            <div class="field" id="pass2Field" style="display:none">
+              <label>确认新密码</label>
+              <input id="loginPass2" type="password" minlength="4" maxlength="50" disabled>
+            </div>
+            <button class="btn btn-primary" type="submit" id="loginBtn">登录</button>
+            <div class="msg" id="loginMsg"></div>
+          </form>
+
+          <form id="regForm" style="display:none" onsubmit="return doRegister(event)">
+            <div class="field">
+              <label>昵称</label>
+              <input id="regNick" maxlength="20" required>
+              <div class="hint">昵称注册后不可修改</div>
+            </div>
+            <div class="field"><label>密码</label><input id="regPass" type="password" minlength="4" maxlength="50" required></div>
+            <div class="field"><label>确认密码</label><input id="regPass2" type="password" required></div>
+            <div class="field" id="inviteField">
+              <label>邀请码</label>
+              <input id="regInvite" maxlength="20" required placeholder="请输入邀请码" autocomplete="off">
+              <div class="hint">邀请码：找已注册的朋友要一个，一个邀请码只能注册一次</div>
+            </div>
+            <div class="msg error" id="invitePausedNotice" style="display:none;">⚠️ 注册已暂停，暂不接受新注册</div>
+            <button class="btn btn-primary" type="submit">注册并登录</button>
+            <div class="msg" id="regMsg"></div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+<div class="main" id="mainContent" style="display:none">
+  <div class="container">
+    <div class="page-header">
+      <h1>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-4px;margin-right:8px;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        个人中心
+      </h1>
+    </div>
+
+    <!-- 已登录 -->
+    <div id="userView">
+      <div class="personal-layout">
+        <div class="personal-col">
+          <!-- 主卡：个人资料 -->
+          <div class="card profile-card">
+            <div class="profile-head">
+              <div class="profile-avatar" id="profileAvatar"></div>
+              <div class="profile-info">
+                <h2 class="profile-name" id="welcomeText"></h2>
+                <div class="profile-meta">
+                  <span id="adminBadge" style="display:none;flex-shrink:0;font-size:11px;font-weight:600;color:#fff;background:linear-gradient(135deg,#f59e0b,#d97706);border-radius:6px;padding:2px 8px;">👑 管理员</span>
+                  <span class="user-uid" id="userUid"></span>
+                </div>
+                <div class="user-regtime" id="userRegTime"></div>
+              </div>
+              <button class="btn btn-ghost btn-sm" onclick="logout()">退出登录</button>
+            </div>
+            <div class="profile-color">
+              <span class="user-color-dot" id="userColor" style="background:#ccc;"></span>
+              <span class="profile-color-text">专属地图颜色</span>
+            </div>
+          </div>
+
+          <!-- 管理足迹 -->
+          <div class="card action-card">
+            <h3>✈️ 管理我的足迹</h3>
+            <p class="hint">管理你去过的城市、行程时间与回忆备注</p>
+            <a href="visits.html" class="btn btn-primary">进入足迹管理</a>
+          </div>
+        </div>
+
+        <div class="personal-col">
+          <!-- 邀请好友 -->
+          <div class="card" id="inviteCodeCard" style="display:none;">
+            <h3>🎫 邀请好友</h3>
+            <div id="inviteCodeEmpty">
+              <p class="hint" style="margin-bottom:12px;">点击生成邀请码，分享给朋友注册</p>
+              <button class="btn btn-primary" id="generateInviteBtn" onclick="loadInviteCode()">生成邀请码</button>
+            </div>
+            <div id="inviteCodeResult" style="display:none;">
+              <div class="invite-code-row">
+                <code id="inviteCodeText" class="invite-code">加载中…</code>
+                <button class="btn btn-ghost btn-sm" id="copyInviteBtn" onclick="copyInviteCode()">复制</button>
+              </div>
+              <div class="hint" id="inviteHint">分享给朋友注册用，一个码只能注册一次</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<footer class="footer">
+  <div class="footer-copy">2026 青翔未阔工作室 · City Footprint</div>
+</footer>
+
+<script src="app.js"></script>
+<script>
+// 登录/注册切换
+function switchTab(mode) {
+  document.getElementById('tabLogin').classList.toggle('active', mode === 'login');
+  document.getElementById('tabReg').classList.toggle('active', mode === 'reg');
+  document.getElementById('loginForm').style.display = mode === 'login' ? '' : 'none';
+  document.getElementById('regForm').style.display = mode === 'reg' ? '' : 'none';
+}
+
+let setPwdMode = false;
+
+async function doLogin(e) {
+  e.preventDefault();
+  const msg = document.getElementById('loginMsg');
+  msg.className = 'msg error';
+  if (setPwdMode && loginPass.value !== loginPass2.value) {
+    msg.textContent = '两次输入的新密码不一致';
+    return false;
+  }
+  try {
+    const endpoint = setPwdMode ? '/set-password' : '/login';
+    const data = await api(endpoint, {
+      method: 'POST',
+      body: JSON.stringify({ nickname: loginNick.value.trim(), password: loginPass.value }),
+    });
+    if (data.needSetPassword) {
+      enterSetPasswordMode();
+      return false;
+    }
+    saveSession(data);
+    enterUserView();
+  } catch (err) { msg.textContent = err.message; }
+  return false;
+}
+
+// 进入"设置新密码"模式（账号密码被管理员清空后，首次登录时触发）
+function enterSetPasswordMode() {
+  setPwdMode = true;
+  document.getElementById('passLabel').textContent = '设置新密码';
+  const pass2 = document.getElementById('loginPass2');
+  pass2.disabled = false;
+  pass2.required = true;
+  document.getElementById('pass2Field').style.display = '';
+  document.getElementById('loginPass').value = '';
+  pass2.value = '';
+  document.getElementById('loginBtn').textContent = '设置密码并登录';
+  const msg = document.getElementById('loginMsg');
+  msg.className = 'msg ok';
+  msg.textContent = '该账号尚未设置密码，请设置新密码后即可登录';
+  document.getElementById('loginPass').focus();
+}
+
+async function doRegister(e) {
+  e.preventDefault();
+  const msg = document.getElementById('regMsg');
+  msg.className = 'msg error';
+  if (regPass.value !== regPass2.value) { msg.textContent = '两次密码不一致'; return false; }
+  try {
+    const data = await api('/register', {
+      method: 'POST',
+      body: JSON.stringify({
+        nickname: regNick.value.trim(),
+        password: regPass.value,
+        invite_code: regInvite.value.trim(),
+      }),
+    });
+    saveSession(data);
+    enterUserView();
+  } catch (err) { msg.textContent = err.message; }
+  return false;
+}
+
+function enterUserView() {
+  document.getElementById('authView').style.display = 'none';
+  document.body.classList.remove('no-scroll');
+  const mainEl = document.getElementById('mainContent');
+  if (mainEl) mainEl.style.display = '';
+  document.getElementById('userView').style.display = '';
+  const s = getSession();
+  // 专属颜色驱动主卡渐变背景
+  if (s && s.color) document.documentElement.style.setProperty('--user-color', s.color);
+  document.getElementById('welcomeText').textContent = (s ? s.nickname : '') + '，欢迎回来 👋';
+  const badge = document.getElementById('adminBadge');
+  if (badge) badge.style.display = (s && s.is_admin) ? '' : 'none';
+  const uidEl = document.getElementById('userUid');
+  if (uidEl && s) uidEl.textContent = 'UID：' + s.userId;
+  // 大头像：昵称首字 + 专属颜色
+  const avatar = document.getElementById('profileAvatar');
+  if (avatar && s) {
+    avatar.textContent = (s.nickname || '?').charAt(0).toUpperCase();
+    avatar.style.background = s.color || 'var(--primary)';
+    avatar.style.boxShadow = '0 6px 20px ' + (s.color || '#2563eb') + '55';
+  }
+  // 专属颜色（地图打点色）
+  const colorDot = document.getElementById('userColor');
+  if (colorDot && s && s.color) {
+    colorDot.style.background = s.color;
+    colorDot.style.boxShadow = '0 0 0 3px ' + s.color + '40';
+  }
+  // 注册时间（来自 /api/me 的 created_at）
+  const regEl = document.getElementById('userRegTime');
+  if (regEl && window._regTime) regEl.textContent = '注册于 ' + window._regTime;
+  // 显示邀请码卡片（空态：点击"生成邀请码"才请求后端，不随页面自动生成）
+  const inviteCard = document.getElementById('inviteCodeCard');
+  if (inviteCard) inviteCard.style.display = '';
+}
+
+// 点击"生成邀请码"后向后端请求（登录用户可见；未登录 401 时隐藏卡片）
+async function loadInviteCode() {
+  const emptyEl = document.getElementById('inviteCodeEmpty');
+  const resultEl = document.getElementById('inviteCodeResult');
+  const codeEl = document.getElementById('inviteCodeText');
+  const hintEl = document.getElementById('inviteHint');
+  const copyBtn = document.getElementById('copyInviteBtn');
+  if (!resultEl || !codeEl) return;
+  if (emptyEl) emptyEl.style.display = 'none';
+  resultEl.style.display = '';
+  codeEl.textContent = '加载中…';
+  if (copyBtn) copyBtn.style.display = '';
+  if (hintEl) hintEl.textContent = '';
+  try {
+    const data = await api('/invite-code');
+    if (data && data.paused) {
+      codeEl.textContent = '邀请码生成已暂停';
+      if (copyBtn) copyBtn.style.display = 'none';
+      if (hintEl) hintEl.textContent = '管理员已暂停邀请码生成，暂无法获取新邀请码';
+    } else {
+      codeEl.textContent = (data && data.code) ? data.code : '暂无可用邀请码';
+      if (copyBtn) copyBtn.style.display = '';
+      if (hintEl) hintEl.textContent = '分享给朋友注册用，一个码只能注册一次';
+    }
+  } catch (err) {
+    if (emptyEl) emptyEl.style.display = '';
+    resultEl.style.display = 'none';
+  }
+}
+
+// 复制邀请码
+function copyInviteCode() {
+  const codeEl = document.getElementById('inviteCodeText');
+  const text = codeEl.textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copyInviteBtn');
+    const old = btn.textContent;
+    btn.textContent = '已复制 ✅';
+    setTimeout(() => { btn.textContent = old; }, 1500);
+  }).catch(() => alert('复制失败，请手动复制'));
+}
+
+// 邀请码注册开关：后端强制时显示并必填，未强制时隐藏；暂停注册时禁用
+fetch('/api/config').then(r => r.json()).then(cfg => {
+  if (cfg && cfg.inviteCodeRequired === false) {
+    const field = document.getElementById('inviteField');
+    const input = document.getElementById('regInvite');
+    field.style.display = 'none';
+    input.required = false;
+  }
+  if (cfg && cfg.inviteRegisterEnabled === false) {
+    const notice = document.getElementById('invitePausedNotice');
+    if (notice) notice.style.display = '';
+    const regBtn = document.querySelector('#regForm .btn-primary');
+    if (regBtn) regBtn.disabled = true;
+  }
+}).catch(() => { /* 后端不可达时默认强制邀请码 */ });
+
+// 每次访问网站时验证本地凭证是否仍有效
+if (getSession()) {
+  api('/me')
+    .then(data => {
+      if (data && data.created_at) {
+        const s = String(data.created_at);
+        const d = new Date(s.replace(' ', 'T'));
+        window._regTime = isNaN(d.getTime()) ? s.slice(0, 10) : d.toLocaleDateString('zh-CN');
+      }
+      enterUserView();
+    })
+    .catch(() => {
+      // token 失效：app.js 的 401 处理已清除本地会话并刷新回登录界面；
+      // 其他错误（如网络异常）不清除凭证，停留在登录视图
+    });
+}
+</script>
+</body>
+</html>

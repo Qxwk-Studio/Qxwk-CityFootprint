@@ -188,9 +188,9 @@ async function handleApi(request, env) {
   if (method === 'GET' && path === '/api/me') {
     const userId = await getUserId(DB, request);
     if (!userId) return error('未登录', 401);
-    const user = await DB.prepare('SELECT id, nickname, color, is_admin FROM users WHERE id = ?').bind(userId).first();
+    const user = await DB.prepare('SELECT id, nickname, color, is_admin, created_at FROM users WHERE id = ?').bind(userId).first();
     if (!user) return error('用户不存在', 401);
-    return json({ userId: user.id, nickname: user.nickname, color: user.color, is_admin: user.is_admin });
+    return json({ userId: user.id, nickname: user.nickname, color: user.color, is_admin: user.is_admin, created_at: user.created_at });
   }
 
   // GET /api/cities（公开：地图数据；已登录用户可见自己的私密行程，管理员可见全部）

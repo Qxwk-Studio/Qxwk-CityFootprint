@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>个人中心 · City Footprint - 青翔未阔工作室</title>
-<meta name="description" content="登录 City Footprint，添加、修改、删除自己的城市足迹，记录去过的城市、访问时间与回忆备注。">
+<title>足迹管理 · City Footprint - 青翔未阔工作室</title>
+<meta name="description" content="管理你在 City Footprint 的城市足迹：添加、修改、删除行程，查看成就进度。">
 <link rel="icon" type="image/webp" href="/favicon.webp">
 <style>
   /* ========= Reset & Base ========= */
@@ -113,7 +113,6 @@
 
   /* ========= Main ========= */
   .main { flex: 1; padding: 36px 24px 60px; }
-  /* 内容区与主站一致（1100px） */
   .container { max-width: var(--container); margin: 0 auto; }
   .page-header { display: flex; align-items: center; margin-bottom: 28px; }
   .page-header h1 { font-size: clamp(1.4rem, 3vw, 1.8rem); font-weight: 700; color: var(--text-primary); }
@@ -128,38 +127,6 @@
     margin-bottom: 20px;
   }
   .card h3 { font-size: 1.02rem; font-weight: 600; margin-bottom: 16px; }
-
-  /* ========= Tabs ========= */
-  .tabs {
-    display: flex;
-    gap: 4px;
-    margin-bottom: 20px;
-    background: var(--bg);
-    border: 1px solid var(--border);
-    padding: 4px;
-    border-radius: var(--radius-sm);
-  }
-  .tab {
-    flex: 1;
-    text-align: center;
-    padding: 9px 10px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 0.9rem;
-    font-weight: 500;
-    color: var(--text-secondary);
-    background: transparent;
-    border: none;
-    transition: all var(--transition);
-    font-family: inherit;
-  }
-  .tab:hover { color: var(--text-primary); }
-  .tab.active {
-    background: var(--surface);
-    color: var(--primary);
-    box-shadow: var(--shadow-sm);
-    font-weight: 600;
-  }
 
   /* ========= Form ========= */
   label { display: block; font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500; }
@@ -182,7 +149,6 @@
   .field { margin-bottom: 16px; }
   .row { display: flex; gap: 12px; }
   .row > div { flex: 1; }
-  textarea { resize: vertical; min-height: 52px; }
 
   /* ========= Buttons ========= */
   .btn {
@@ -191,7 +157,7 @@
     justify-content: center;
     gap: 6px;
     border: none;
-    border-radius: var(--radius-sm);
+    border-radius: 40px;
     padding: 11px 18px;
     font-size: 0.9rem;
     font-weight: 600;
@@ -271,43 +237,26 @@
 
   .note-count { font-size: 0.78rem; color: var(--text-tertiary); }
 
-  /* 用户 UID 显示 */
-  .user-uid {
-    margin-top: 4px;
-    font-size: 0.78rem;
-    color: var(--text-tertiary);
-    font-family: 'Consolas', 'Courier New', monospace;
-  }
-
-  /* 欢迎卡片足迹统计 */
+  /* 足迹统计卡 */
   .visit-stats {
-    display: flex;
-    gap: 20px;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px 16px;
     margin-top: 10px;
-    padding-top: 10px;
+    padding-top: 14px;
     border-top: 1px solid var(--border);
-    font-size: 0.85rem;
-    color: var(--text-secondary);
   }
-  .visit-stats .stat { display: flex; align-items: baseline; gap: 5px; }
-  .visit-stats .stat b { font-size: 1.15rem; color: var(--primary); font-weight: 600; }
-
-  /* 邀请码栏（管理员可见） */
-  .invite-code-row { display: flex; align-items: center; gap: 10px; }
-  .invite-code {
-    flex: 1;
-    font-size: 1rem;
-    font-weight: 700;
-    letter-spacing: 1px;
-    color: var(--primary);
-    background: var(--primary-light);
-    border: 1px dashed rgba(37, 99, 235, 0.4);
-    border-radius: var(--radius-sm);
-    padding: 8px 12px;
-    text-align: center;
+  .visit-stats .stat {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
   }
+  .visit-stats .stat b { font-size: 1.3rem; font-weight: 700; color: var(--primary); line-height: 1.15; }
+  .visit-stats .stat b.date-range { font-size: 1.02rem; }
+  .stat-label { font-size: 0.82rem; font-weight: 600; color: var(--text-secondary); }
 
-  /* 个人中心两列布局（电脑端左资料+创建 / 右记录+成就；手机端单列） */
+  /* 个人中心两列布局（电脑端两列；手机端单列） */
   .personal-layout {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -330,8 +279,11 @@
   .card-toggle { color: var(--text-tertiary); transition: transform 0.2s ease; flex-shrink: 0; }
   .visit-list-card.collapsed .card-toggle { transform: rotate(-90deg); }
   .visit-list-card.collapsed #visitList { display: none; }
+  .achievement-card .card-header { margin-bottom: 18px; }
+  .achievement-card.collapsed .card-toggle { transform: rotate(-90deg); }
+  .achievement-card.collapsed .achievement-grid { display: none; }
 
-  /* 成就卡片（单列列表，每行一个成就） */
+  /* 成就卡片 */
   .achievement-grid {
     display: flex;
     flex-direction: column;
@@ -348,7 +300,7 @@
     text-align: left;
     opacity: 0.45;
     transition: all var(--transition);
-    overflow: hidden; /* 防止个别长文本在旧浏览器下把行撑出卡片 */
+    overflow: hidden;
   }
   .achievement.done {
     opacity: 1;
@@ -359,7 +311,6 @@
   .achievement .name { font-size: 0.85rem; font-weight: 600; flex-shrink: 0; }
   .achievement .desc { font-size: 0.75rem; color: var(--text-tertiary); flex: 1 1 0; min-width: 0; max-width: 100%; line-height: 1.45; overflow-wrap: anywhere; word-break: break-word; }
 
-  /* 每个成就之间的间隔（成就在分类 body 内逐行渲染） */
   .category-body {
     display: flex;
     flex-direction: column;
@@ -415,6 +366,57 @@
     *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
   }
 </style>
+<meta name="color-scheme" content="light dark">
+<script>
+/* 主题切换：localStorage('theme') 优先，其次跟随系统 prefers-color-scheme；同步写入 <html> 的 data-theme 防闪烁 */
+(function () {
+  var KEY = 'theme';
+  var root = document.documentElement;
+  var mq = window.matchMedia('(prefers-color-scheme: dark)');
+  function system() { return mq.matches ? 'dark' : 'light'; }
+  function stored() { try { var v = localStorage.getItem(KEY); return (v === 'dark' || v === 'light') ? v : null; } catch (e) { return null; } }
+  function apply(t) { root.setAttribute('data-theme', t); }
+  function current() { return stored() || system(); }
+  apply(current());
+  function toggle() { var next = current() === 'dark' ? 'light' : 'dark'; apply(next); try { localStorage.setItem(KEY, next); } catch (e) {} }
+  function bind() {
+    var btn = document.getElementById('themeToggle');
+    if (btn) btn.addEventListener('click', toggle);
+    if (mq.addEventListener) mq.addEventListener('change', function (e) { if (!stored()) apply(e.matches ? 'dark' : 'light'); });
+    else if (mq.addListener) mq.addListener(function (e) { if (!stored()) apply(e.matches ? 'dark' : 'light'); });
+    window.addEventListener('storage', function (e) { if (e.key === KEY) apply(current()); });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bind); else bind();
+})();
+</script>
+<style>
+  /* ===== 黑夜模式：主题切换按钮 ===== */
+  .theme-toggle { display:inline-flex; align-items:center; justify-content:center; width:32px; height:32px; padding:0; background:none; border:none; border-radius:50%; color:var(--text-primary); cursor:pointer; transition:background var(--transition), color var(--transition); }
+  .theme-toggle:hover { background:var(--primary-subtle); color:var(--primary); }
+  .theme-toggle svg { width:22px; height:22px; }
+  .theme-toggle .icon-sun { display:none; }
+  :root[data-theme="dark"] .theme-toggle .icon-sun { display:block; }
+  :root[data-theme="dark"] .theme-toggle .icon-moon { display:none; }
+
+  /* ===== 黑夜模式：深色变量 ===== */
+  :root { color-scheme: light; --primary-subtle: rgba(37,99,235,0.08); }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --primary-light: rgba(59,130,246,0.16);
+    --primary-subtle: rgba(59,130,246,0.16);
+    --surface:#1e293b; --bg:#0f172a;
+    --text-primary:#e2e8f0; --text-secondary:#94a3b8; --text-tertiary:#64748b;
+    --border:#334155; --navbar-bg:rgba(15,23,42,0.8);
+    --shadow-sm:0 1px 3px rgba(0,0,0,0.4); --shadow-md:0 4px 16px rgba(0,0,0,0.5); --shadow-lg:0 12px 40px rgba(0,0,0,0.6);
+  }
+  :root[data-theme="dark"] .footer { background:#111827; }
+  :root[data-theme="dark"] .back-link { background:rgba(59,130,246,0.16); border-color:rgba(96,165,250,0.35); }
+  :root[data-theme="dark"] .back-link:hover { background:rgba(59,130,246,0.30); border-color:rgba(96,165,250,0.60); }
+
+  /* ===== 黑夜模式：页面元素覆盖 ===== */
+  :root[data-theme="dark"] .btn-danger { background:rgba(239,68,68,0.16); color:#f87171; }
+  :root[data-theme="dark"] .btn-danger:hover { background:rgba(239,68,68,0.25); }
+</style>
 </head>
 <body>
 
@@ -424,10 +426,16 @@
       <img class="brand-logo" src="/favicon.webp" alt="City Footprint">
       <span class="brand-text"><b>City Footprint</b><span>我们走过的城市</span></span>
     </a>
-    <a href="index.html" class="back-link">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
-      返回地图
-    </a>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <button class="theme-toggle" id="themeToggle" type="button" aria-label="切换主题" title="切换主题">
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+      <a href="index.html" class="back-link">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
+        返回地图
+      </a>
+    </div>
   </div>
 </header>
 
@@ -435,135 +443,74 @@
   <div class="container">
     <div class="page-header">
       <h1>
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-4px;margin-right:8px;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-        个人中心
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-4px;margin-right:8px;"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>
+        足迹管理
       </h1>
     </div>
 
-    <!-- 未登录 -->
-    <div id="authView">
-      <div class="card">
-        <div class="tabs">
-          <div class="tab active" id="tabLogin" onclick="switchTab('login')">登录</div>
-          <div class="tab" id="tabReg" onclick="switchTab('reg')">注册</div>
+    <div class="personal-layout">
+      <div class="personal-col">
+        <div class="card">
+          <h3>📊 足迹统计</h3>
+          <div class="visit-stats" id="visitStats">
+            <span class="stat">✈️ 去过 <b>0</b> 座城市</span>
+            <span class="stat">📍 足迹 <b>0</b> 条</span>
+          </div>
         </div>
 
-        <form id="loginForm" onsubmit="return doLogin(event)">
-          <div class="field"><label>昵称</label><input id="loginNick" maxlength="20" required></div>
-          <div class="field"><label id="passLabel">密码</label><input id="loginPass" type="password" maxlength="50" required></div>
-          <div class="field" id="pass2Field" style="display:none">
-            <label>确认新密码</label>
-            <input id="loginPass2" type="password" minlength="4" maxlength="50" disabled>
-          </div>
-          <button class="btn btn-primary" type="submit" id="loginBtn">登录</button>
-          <div class="msg" id="loginMsg"></div>
-        </form>
+        <div class="card">
+          <h3 id="formTitle">✈️ 创建行程</h3>
+          <form id="addForm" onsubmit="return addVisit(event)">
+            <div class="field">
+              <label>城市</label>
+              <input list="cityList" id="visitCity" placeholder="输入城市名选择" required autocomplete="off">
+              <datalist id="cityList"></datalist>
+            </div>
+            <div class="row">
+              <div>
+                <label>时间</label>
+                <div class="date-selects">
+                  <select id="visitYear"></select>
+                  <select id="visitMonth"></select>
+                </div>
+              </div>
+              <div class="check-row" style="align-self:flex-end;padding-bottom:10px;">
+                <input type="checkbox" id="forgotDate" onchange="toggleDate()">
+                <label for="forgotDate">记不清了</label>
+              </div>
+            </div>
+            <div class="field">
+              <div style="display:flex;justify-content:space-between;align-items:baseline;">
+                <label>备注（可选）</label>
+                <span class="note-count" id="noteCount">0/100</span>
+              </div>
+              <input id="visitNote" maxlength="100" placeholder="一句话留下回忆…" autocomplete="off" oninput="updateNoteCount()">
+            </div>
+            <div class="check-row" style="margin-bottom:16px;">
+              <input type="checkbox" id="visitPrivate">
+              <label for="visitPrivate">不公开行程（仅自己可见）</label>
+            </div>
+            <button class="btn btn-primary" type="submit">添加</button>
+            <div class="msg" id="addMsg"></div>
+          </form>
+        </div>
 
-        <form id="regForm" style="display:none" onsubmit="return doRegister(event)">
-          <div class="field">
-            <label>昵称</label>
-            <input id="regNick" maxlength="20" required>
-            <div class="hint">昵称注册后不可修改</div>
+        <div class="card visit-list-card collapsed" id="visitListCard">
+          <div class="card-header" onclick="toggleVisitList()">
+            <h3>📍 行程记录</h3>
+            <svg class="card-toggle" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
           </div>
-          <div class="field"><label>密码</label><input id="regPass" type="password" minlength="4" maxlength="50" required></div>
-          <div class="field"><label>确认密码</label><input id="regPass2" type="password" required></div>
-          <div class="field" id="inviteField">
-            <label>邀请码</label>
-            <input id="regInvite" maxlength="20" required placeholder="请输入邀请码" autocomplete="off">
-            <div class="hint">邀请码：找已注册的朋友要一个，一个邀请码只能注册一次</div>
-          </div>
-          <div class="msg error" id="invitePausedNotice" style="display:none;">⚠️ 注册已暂停，暂不接受新注册</div>
-          <button class="btn btn-primary" type="submit">注册并登录</button>
-          <div class="msg" id="regMsg"></div>
-        </form>
+          <div id="visitList"><div class="empty">正在加载…</div></div>
+        </div>
       </div>
-    </div>
 
-    <!-- 已登录 -->
-    <div id="userView" style="display:none">
-      <div class="personal-layout">
-        <!-- 左列：个人资料 + 创建行程 + 行程记录 -->
-        <div class="personal-col">
-          <div class="card">
-            <h3>👤 个人资料</h3>
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-              <div style="display:flex;align-items:center;gap:8px;min-width:0;">
-                <span style="font-size:14px;font-weight:600;" id="welcomeText"></span>
-                <span id="adminBadge" style="display:none;flex-shrink:0;font-size:11px;font-weight:600;color:#fff;background:linear-gradient(135deg,#f59e0b,#d97706);border-radius:6px;padding:2px 8px;">👑 管理员</span>
-              </div>
-              <button class="btn btn-ghost btn-sm" onclick="logout()">退出登录</button>
-            </div>
-            <div class="user-uid" id="userUid"></div>
-            <div class="visit-stats" id="visitStats"></div>
-          </div>
-
-          <div class="card">
-            <h3 id="formTitle">✈️ 创建行程</h3>
-            <form id="addForm" onsubmit="return addVisit(event)">
-              <div class="field">
-                <label>城市</label>
-                <input list="cityList" id="visitCity" placeholder="输入城市名选择" required autocomplete="off">
-                <datalist id="cityList"></datalist>
-              </div>
-              <div class="row">
-                <div>
-                  <label>时间</label>
-                  <div class="date-selects">
-                    <select id="visitYear"></select>
-                    <select id="visitMonth"></select>
-                  </div>
-                </div>
-                <div class="check-row" style="align-self:flex-end;padding-bottom:10px;">
-                  <input type="checkbox" id="forgotDate" onchange="toggleDate()">
-                  <label for="forgotDate">记不清了</label>
-                </div>
-              </div>
-              <div class="field">
-                <div style="display:flex;justify-content:space-between;align-items:baseline;">
-                  <label>备注（可选）</label>
-                  <span class="note-count" id="noteCount">0/100</span>
-                </div>
-                <input id="visitNote" maxlength="100" placeholder="一句话留下回忆…" autocomplete="off" oninput="updateNoteCount()">
-              </div>
-              <div class="check-row" style="margin-bottom:16px;">
-                <input type="checkbox" id="visitPrivate">
-                <label for="visitPrivate">不公开行程（仅自己可见）</label>
-              </div>
-              <button class="btn btn-primary" type="submit">添加</button>
-              <div class="msg" id="addMsg"></div>
-            </form>
-          </div>
-
-          <div class="card visit-list-card collapsed" id="visitListCard">
-            <div class="card-header" onclick="toggleVisitList()">
-              <h3>📍 行程记录</h3>
-              <svg class="card-toggle" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-            </div>
-            <div id="visitList"><div class="empty">正在加载…</div></div>
-          </div>
-        </div>
-
-        <!-- 右列：邀请码 + 成就 -->
-        <div class="personal-col">
-          <div class="card" id="inviteCodeCard" style="display:none;">
-            <h3>🎫 邀请码</h3>
-            <div id="inviteCodeEmpty">
-              <p class="hint" style="margin-bottom:8px;">点击生成邀请码，分享给朋友注册</p>
-              <button class="btn btn-primary" id="generateInviteBtn" onclick="loadInviteCode()">生成邀请码</button>
-            </div>
-            <div id="inviteCodeResult" style="display:none;">
-              <div class="invite-code-row">
-                <code id="inviteCodeText" class="invite-code">加载中…</code>
-                <button class="btn btn-ghost btn-sm" id="copyInviteBtn" onclick="copyInviteCode()">复制</button>
-              </div>
-              <div class="hint" id="inviteHint">分享给朋友注册用，一个码只能注册一次</div>
-            </div>
-          </div>
-
-          <div class="card">
+      <div class="personal-col">
+        <div class="card achievement-card" id="achievementCard">
+          <div class="card-header" onclick="toggleAchievement()">
             <h3>🏆 成就</h3>
-            <div class="achievement-grid" id="achievementGrid"><div class="empty">正在加载…</div></div>
+            <svg class="card-toggle" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
           </div>
+          <div class="achievement-grid" id="achievementGrid"><div class="empty">正在加载…</div></div>
         </div>
       </div>
     </div>
@@ -579,6 +526,11 @@
 <script src="app.js"></script>
 <script src="achievements.js"></script>
 <script>
+// 未登录跳转个人中心（登录页）
+if (!getSession()) {
+  location.href = 'account.html';
+}
+
 // 城市下拉数据
 const datalist = document.getElementById('cityList');
 (window.CITIES || []).forEach(c => {
@@ -608,76 +560,7 @@ const datalist = document.getElementById('cityList');
   }
 })();
 
-// 登录/注册切换
-function switchTab(mode) {
-  document.getElementById('tabLogin').classList.toggle('active', mode === 'login');
-  document.getElementById('tabReg').classList.toggle('active', mode === 'reg');
-  document.getElementById('loginForm').style.display = mode === 'login' ? '' : 'none';
-  document.getElementById('regForm').style.display = mode === 'reg' ? '' : 'none';
-}
-
-let setPwdMode = false;
-
-async function doLogin(e) {
-  e.preventDefault();
-  const msg = document.getElementById('loginMsg');
-  msg.className = 'msg error';
-  if (setPwdMode && loginPass.value !== loginPass2.value) {
-    msg.textContent = '两次输入的新密码不一致';
-    return false;
-  }
-  try {
-    const endpoint = setPwdMode ? '/set-password' : '/login';
-    const data = await api(endpoint, {
-      method: 'POST',
-      body: JSON.stringify({ nickname: loginNick.value.trim(), password: loginPass.value }),
-    });
-    if (data.needSetPassword) {
-      enterSetPasswordMode();
-      return false;
-    }
-    saveSession(data);
-    enterUserView();
-  } catch (err) { msg.textContent = err.message; }
-  return false;
-}
-
-// 进入"设置新密码"模式（账号密码被管理员清空后，首次登录时触发）
-function enterSetPasswordMode() {
-  setPwdMode = true;
-  document.getElementById('passLabel').textContent = '设置新密码';
-  const pass2 = document.getElementById('loginPass2');
-  pass2.disabled = false;
-  pass2.required = true;
-  document.getElementById('pass2Field').style.display = '';
-  document.getElementById('loginPass').value = '';
-  pass2.value = '';
-  document.getElementById('loginBtn').textContent = '设置密码并登录';
-  const msg = document.getElementById('loginMsg');
-  msg.className = 'msg ok';
-  msg.textContent = '该账号尚未设置密码，请设置新密码后即可登录';
-  document.getElementById('loginPass').focus();
-}
-
-async function doRegister(e) {
-  e.preventDefault();
-  const msg = document.getElementById('regMsg');
-  msg.className = 'msg error';
-  if (regPass.value !== regPass2.value) { msg.textContent = '两次密码不一致'; return false; }
-  try {
-    const data = await api('/register', {
-      method: 'POST',
-      body: JSON.stringify({
-        nickname: regNick.value.trim(),
-        password: regPass.value,
-        invite_code: regInvite.value.trim(),
-      }),
-    });
-    saveSession(data);
-    enterUserView();
-  } catch (err) { msg.textContent = err.message; }
-  return false;
-}
+let myVisits = [];
 
 // 日期切换（记不清：禁用年月下拉并清空）
 function toggleDate() {
@@ -700,23 +583,6 @@ function getVisitDate() {
   return m ? y + '-' + m : y;
 }
 
-function enterUserView() {
-  document.getElementById('authView').style.display = 'none';
-  document.getElementById('userView').style.display = '';
-  const s = getSession();
-  document.getElementById('welcomeText').textContent = '你好，' + (s ? s.nickname : '') + ' 👋';
-  const badge = document.getElementById('adminBadge');
-  if (badge) badge.style.display = (s && s.is_admin) ? '' : 'none';
-  const uidEl = document.getElementById('userUid');
-  if (uidEl && s) uidEl.textContent = 'UID：' + s.userId;
-  // 显示邀请码卡片（空态：点击"生成邀请码"才请求后端，不随页面自动生成）
-  const inviteCard = document.getElementById('inviteCodeCard');
-  if (inviteCard) inviteCard.style.display = '';
-  loadVisits();
-}
-
-let myVisits = [];
-
 // 更新备注字数提醒（x/100）
 function updateNoteCount() {
   const el = document.getElementById('noteCount');
@@ -729,10 +595,38 @@ function toggleVisitList() {
   document.getElementById('visitListCard').classList.toggle('collapsed');
 }
 
-// 城市→省份（成就统计用）
+// 更新足迹统计：去过几座城市（去重）+ 足迹总数
+// 城市 → 省份
 function findProvince(city) {
   const c = (window.CITIES || []).find(x => x.name === city);
   return c ? c.province : '未知';
+}
+
+function updateVisitStats() {
+  const el = document.getElementById('visitStats');
+  if (!el) return;
+  const cityCount = new Set(myVisits.map(v => v.city)).size;
+  const provinceCount = new Set(myVisits.map(v => findProvince(v.city))).size;
+  const dates = myVisits.map(v => v.visit_date).filter(Boolean).sort();
+  const first = dates[0] || '—';
+  const last = dates[dates.length - 1] || '—';
+  el.innerHTML = `
+    <div class="stat">
+      <span class="stat-label">✈️ 去过城市</span>
+      <b>${cityCount}</b>
+    </div>
+    <div class="stat">
+      <span class="stat-label">📍 足迹</span>
+      <b>${myVisits.length}</b>
+    </div>
+    <div class="stat">
+      <span class="stat-label">🗺️ 省份</span>
+      <b>${provinceCount}</b>
+    </div>
+    <div class="stat">
+      <span class="stat-label">⏳ 最早 · 最近</span>
+      <b class="date-range">${first} → ${last}</b>
+    </div>`;
 }
 
 // 渲染成就卡片（4 分类，每类可折叠）
@@ -741,15 +635,13 @@ function renderAchievements() {
   if (!el) return;
   // 判定逻辑在 achievements.js 的 getAchievements
   const CATEGORIES = getAchievements(myVisits.map(v => v.city));
-  // 渲染分类（默认展开）
   el.innerHTML = CATEGORIES.map(cat => {
     const doneCount = cat.items.filter(a => a.done).length;
     return `
       <div class="achievement-category">
-        <div class="category-header" onclick="toggleCategory(this)">
+        <div class="category-header">
           <span class="category-title">${cat.title}</span>
           <span class="category-progress">${doneCount}/${cat.items.length}</span>
-          <svg class="category-toggle" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
         <div class="category-body">
           ${cat.items.map(a => `
@@ -763,63 +655,9 @@ function renderAchievements() {
   }).join('');
 }
 
-// 成就分类折叠开关
-function toggleCategory(header) {
-  header.closest('.achievement-category').classList.toggle('collapsed');
-}
-
-// 更新欢迎卡片统计：去过几座城市（去重）+ 足迹总数
-function updateVisitStats() {
-  const el = document.getElementById('visitStats');
-  if (!el) return;
-  const cityCount = new Set(myVisits.map(v => v.city)).size;
-  el.innerHTML = `
-    <span class="stat">✈️ 去过 <b>${cityCount}</b> 座城市</span>
-    <span class="stat">📍 足迹 <b>${myVisits.length}</b> 条</span>`;
-}
-
-// 点击"生成邀请码"后向后端请求（登录用户可见；未登录 401 时隐藏卡片）
-async function loadInviteCode() {
-  const emptyEl = document.getElementById('inviteCodeEmpty');
-  const resultEl = document.getElementById('inviteCodeResult');
-  const codeEl = document.getElementById('inviteCodeText');
-  const hintEl = document.getElementById('inviteHint');
-  const copyBtn = document.getElementById('copyInviteBtn');
-  if (!resultEl || !codeEl) return;
-  // 切到结果区（先显示加载中）
-  if (emptyEl) emptyEl.style.display = 'none';
-  resultEl.style.display = '';
-  codeEl.textContent = '加载中…';
-  if (copyBtn) copyBtn.style.display = '';
-  if (hintEl) hintEl.textContent = '';
-  try {
-    const data = await api('/invite-code');
-    if (data && data.paused) {
-      codeEl.textContent = '邀请码生成已暂停';
-      if (copyBtn) copyBtn.style.display = 'none';
-      if (hintEl) hintEl.textContent = '管理员已暂停邀请码生成，暂无法获取新邀请码';
-    } else {
-      codeEl.textContent = (data && data.code) ? data.code : '暂无可用邀请码';
-      if (copyBtn) copyBtn.style.display = '';
-      if (hintEl) hintEl.textContent = '分享给朋友注册用，一个码只能注册一次';
-    }
-  } catch (err) {
-    // 出错（如未登录）：回到空态，可重新点击重试
-    if (emptyEl) emptyEl.style.display = '';
-    resultEl.style.display = 'none';
-  }
-}
-
-// 复制邀请码
-function copyInviteCode() {
-  const codeEl = document.getElementById('inviteCodeText');
-  const text = codeEl.textContent;
-  navigator.clipboard.writeText(text).then(() => {
-    const btn = document.getElementById('copyInviteBtn');
-    const old = btn.textContent;
-    btn.textContent = '已复制 ✅';
-    setTimeout(() => { btn.textContent = old; }, 1500);
-  }).catch(() => alert('复制失败，请手动复制'));
+// 成就卡片整体折叠开关
+function toggleAchievement() {
+  document.getElementById('achievementCard').classList.toggle('collapsed');
 }
 
 async function loadVisits() {
@@ -955,30 +793,11 @@ function escapeHtml(t) {
   return d.innerHTML;
 }
 
-// 邀请码注册开关：后端强制时显示并必填，未强制时隐藏；暂停注册时禁用
-fetch('/api/config').then(r => r.json()).then(cfg => {
-  if (cfg && cfg.inviteCodeRequired === false) {
-    const field = document.getElementById('inviteField');
-    const input = document.getElementById('regInvite');
-    field.style.display = 'none';
-    input.required = false;
-  }
-  if (cfg && cfg.inviteRegisterEnabled === false) {
-    const notice = document.getElementById('invitePausedNotice');
-    if (notice) notice.style.display = '';
-    const regBtn = document.querySelector('#regForm .btn-primary');
-    if (regBtn) regBtn.disabled = true;
-  }
-}).catch(() => { /* 后端不可达时默认强制邀请码 */ });
-
-// 每次访问网站时验证本地凭证是否仍有效
+// 验证本地凭证仍有效后加载足迹（token 失效由 app.js 401 跳转登录页）
 if (getSession()) {
   api('/me')
-    .then(() => enterUserView())
-    .catch(() => {
-      // token 失效：app.js 的 401 处理已清除本地会话并刷新回登录界面；
-      // 其他错误（如网络异常）不清除凭证，停留在登录视图
-    });
+    .then(() => loadVisits())
+    .catch(() => {});
 }
 </script>
 </body>

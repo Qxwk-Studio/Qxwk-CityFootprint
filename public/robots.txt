@@ -1,8 +1,9 @@
 # City Footprint · 青翔未阔工作室
 # 公开页面可收录：地图 /、公告与更新日志 /news.html、全站统计 /stats.html
-# 不收录：个人中心 /manage.html（需登录）、接口 /api/
+# 不收录：个人中心 /account.html、足迹管理 /visits.html（均需登录）、接口 /api/
 
 User-agent: *
 Allow: /
 Disallow: /api/
-Disallow: /manage.html
+Disallow: /account.html
+Disallow: /visits.html

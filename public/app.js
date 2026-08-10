@@ -11,12 +11,16 @@ async function api(path, options = {}) {
   const res = await fetch(API_BASE + path, { ...options, headers });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    // 登录态失效（token 过期/无效）：清除本地会话；管理页自动回到登录界面
+    // 登录态失效（token 过期/无效）：清除本地会话；
+    // 个人中心回到登录界面，足迹管理跳转到登录页
     if (res.status === 401 && token) {
       localStorage.removeItem(LS_TOKEN);
       localStorage.removeItem(LS_USER);
-      if (window.location.pathname.endsWith('manage.html')) {
-        window.location.reload();
+      const p = window.location.pathname;
+      if (p.endsWith('account.html')) {
+        window.location.reload();          // 个人中心：回到登录视图
+      } else if (p.endsWith('visits.html')) {
+        window.location.href = 'account.html'; // 足迹管理：跳转登录页
       }
     }
     throw new Error(data.error || '请求失败 (' + res.status + ')');

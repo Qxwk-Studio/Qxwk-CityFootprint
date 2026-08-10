@@ -59,6 +59,7 @@ function getAchievements(cityNames) {
       title: '📍 城市打卡',
       items: [
         { icon: '🎯', name: '优势在我', desc: '到访过 徐州', done: citySet.has('徐州') },
+        { icon: '☀️', name: '\\o/\\o/', desc: '到访过 丹东', done: citySet.has('丹东') },
         { icon: '🏘️', name: '国际庄', desc: '到访过 石家庄', done: citySet.has('石家庄') },
         { icon: '🗽', name: 'New York', desc: '到访过 新乡', done: citySet.has('新乡') },
         { icon: '🪐', name: '宇宙中心', desc: '到访过 菏泽', done: citySet.has('菏泽') },
