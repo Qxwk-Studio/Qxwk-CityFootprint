@@ -4,7 +4,6 @@
 
 // 通行证地址（本地 dev 改 http://localhost:8787）
 const PASSPORT_URL = 'https://account.qxwkstudio.top';
-const TOKEN_CACHE_TTL = 120; // 秒：按 token 缓存通行证验证结果，避免每请求都打通行证
 
 export function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -18,14 +17,10 @@ export function error(message, status = 400) {
 }
 
 // 用 Bearer token 去通行证 /api/me 验证，返回 {userId, nickname, color} 或 null
-// 结果按 token 缓存 TOKEN_CACHE_TTL 秒，token 在通行证侧注销后最多残留该时长
 async function getPassportUser(request) {
   const auth = request.headers.get('Authorization') || '';
   const token = auth.startsWith('Bearer ') ? auth.slice(7).trim() : '';
   if (!token) return null;
-  const cacheKey = new Request(`https://cf-auth-cache.local/${token}`);
-  const cached = await caches.default.get(cacheKey);
-  if (cached) return await cached.json();
   try {
     const r = await fetch(`${PASSPORT_URL}/api/me`, {
       headers: { Authorization: 'Bearer ' + token },
@@ -33,14 +28,7 @@ async function getPassportUser(request) {
     if (!r.ok) return null;
     const u = await r.json();
     if (!u || !u.userId) return null;
-    const body = { userId: u.userId, nickname: u.nickname, color: u.color };
-    await caches.default.put(
-      cacheKey,
-      new Response(JSON.stringify(body), {
-        headers: { 'Content-Type': 'application/json', 'Cache-Control': `private, max-age=${TOKEN_CACHE_TTL}` },
-      })
-    );
-    return body;
+    return { userId: u.userId, nickname: u.nickname, color: u.color };
   } catch {
     return null;
   }
