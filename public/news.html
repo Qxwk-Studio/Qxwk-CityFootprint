@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -203,7 +203,7 @@
   .footer {
     background: #0f172a;
     text-align: center;
-    padding: 28px 24px;
+    padding: 14px 24px;
     color: var(--text-tertiary);
     font-size: 0.82rem;
     border-top: 1px solid rgba(255, 255, 255, 0.06);
@@ -308,8 +308,8 @@
         <div class="notice-text">欢迎使用 City Footprint！记录你走过的每一座城市，点亮属于你的足迹地图。</div>
       </div>
       <div class="notice-item">
-        <span class="notice-badge">邀请码</span>
-        <div class="notice-text">注册需要一次性邀请码，请前往个人中心获取。一个邀请码只能注册一次。</div>
+        <span class="notice-badge">通行证</span>
+        <div class="notice-text">本站已接入青翔未阔通行证（account.qxwkstudio.top）统一认证，注册、登录、邀请码等均在通行证中心完成。一次登录，全工作室站点通行。</div>
       </div>
       <div class="notice-item">
         <span class="notice-badge">颜色</span>
@@ -340,6 +340,20 @@
       <div class="timeline">
 
         <div class="timeline-item">
+          <div class="timeline-date">2026-08-26</div>
+          <span class="timeline-tag">v0.8.0</span>
+          <div class="timeline-content">
+            <ul>
+              <li>接入通行证 SSO：认证统一由 account.qxwkstudio.top 管理，本站不再持有密码/会话</li>
+              <li>移除自认证：注册、登录、邀请码、密码重置等功能全部移交通行证中心</li>
+              <li>数据库瘦身：删除 sessions / invite_codes / settings 表及 password_hash 列</li>
+              <li>个人中心改为通行证登录入口，支持深色模式</li>
+              <li>足迹列表按创建时间倒序（最新行程置顶）</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="timeline-item">
           <div class="timeline-date">2026-08-10</div>
           <span class="timeline-tag">v0.7.0</span>
           <div class="timeline-content">
@@ -348,7 +362,7 @@
               <li>登录页全新视觉：未登录左右分屏（左 setup 欢迎动画 / 右登录注册），动画页支持夜间同步</li>
               <li>全站夜间模式：6 个页面跟随系统自动切换 + 导航栏手动切换，深色下地图瓦片自动暗化</li>
               <li>个人中心增强：专属颜色大头像、注册时间、专属色渐变主卡、放大布局</li>
-              <li>足迹管理增强：统计新增覆盖省份与最早·最近行程，成就卡整体折叠，新增「去过丹东」成就</li>
+              <li>足迹管理增强：统计新增覆盖省份与最早·最近行程，成就卡整体折叠，新增「\o/\o/」成就</li>
               <li>全站统计升级：新增总用户、覆盖省份，4 卡网格（电脑一行 / 手机两行）</li>
             </ul>
           </div>
