@@ -73,10 +73,11 @@
   .profile-card { background: linear-gradient(135deg, color-mix(in srgb, var(--user-color, #2563eb) 15%, #ffffff), var(--surface) 80%);
     border-color: color-mix(in srgb, var(--user-color, #2563eb) 22%, #e2e8f0); }
   .profile-head { display: flex; align-items: flex-start; gap: 18px; }
-  .profile-avatar { width: 64px; height: 64px; border-radius: 20px; flex-shrink: 0;
+  .profile-avatar { width: 64px; height: 64px; border-radius: 20px; flex-shrink: 0; overflow: hidden;
     background: var(--primary); color: #fff; font-size: 1.8rem; font-weight: 700;
     display: flex; align-items: center; justify-content: center;
     box-shadow: 0 6px 20px rgba(37, 99, 235, 0.28); }
+  .profile-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
   .profile-info { flex: 1; min-width: 0; }
   .profile-name { font-size: 1.5rem; font-weight: 700; margin-bottom: 6px; }
   .profile-meta { display: flex; align-items: center; gap: 10px; font-size: 0.9rem;
@@ -263,6 +264,7 @@
 <footer class="footer">
   <div class="footer-copy">2026 青翔未阔工作室 · City Footprint</div>
 </footer>
+<script src="avatar.js"></script>
 <script src="app.js"></script>
 <script>
 // 通行证登录入口：跳通行证 login.html，登录后回跳本页（app.js handleSsoLanding 负责落地）
@@ -284,12 +286,11 @@ function enterUserView() {
   if (badge) badge.style.display = (s && s.is_admin) ? '' : 'none';
   const uidEl = document.getElementById('userUid');
   if (uidEl && s) uidEl.textContent = 'UID：' + s.userId;
-  // 大头像：昵称首字 + 专属颜色
+  // 大头像：邮箱 WeAvatar 图片，无邮箱回退昵称首字 + 专属颜色
   const avatar = document.getElementById('profileAvatar');
   if (avatar && s) {
-    avatar.textContent = (s.nickname || '?').charAt(0).toUpperCase();
-    avatar.style.background = s.color || 'var(--primary)';
-    avatar.style.boxShadow = '0 6px 20px ' + (s.color || '#2563eb') + '55';
+    setAvatar(avatar, s.email, s.nickname, s.color);
+
   }
   // 专属颜色（地图打点色）
   const colorDot = document.getElementById('userColor');
@@ -321,6 +322,7 @@ function enterUserView() {
             nickname: data.nickname,
             color: data.color,
             is_admin: !!data.is_admin,
+            email: data.email || null,
           }));
         }
         enterUserView();

@@ -24,7 +24,7 @@ async function handleApi(request, env) {
     const v = await resolveViewer(DB, request);
     if (!v) return error('未登录', 401);
     const u = await DB.prepare('SELECT created_at FROM users WHERE id = ?').bind(v.id).first();
-    return json({ userId: v.id, nickname: v.nickname, color: v.color, is_admin: v.isAdmin, created_at: u && u.created_at });
+    return json({ userId: v.id, nickname: v.nickname, color: v.color, is_admin: v.isAdmin, created_at: u && u.created_at, email: v.email });
   }
   // GET /api/geo/:adcode（代理 DataV 边界接口，规避浏览器跨域/来源限制）
   const geoMatch = path.match(/^\/api\/geo\/(\d+)$/);
