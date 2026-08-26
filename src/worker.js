@@ -1,4 +1,4 @@
-﻿// Qxwk-CityFootprint · 拾光迹 Worker
+// Qxwk-CityFootprint · 拾光迹 Worker
 // 一个 Worker 同时处理 /api/* 接口和静态资源（public/）
 // 认证由通行证 account.qxwkstudio.top 统一管理（SSO），本站不再持有密码/会话
 import { json, error, getUserId, resolveViewer } from './lib.js';
@@ -204,6 +204,13 @@ export default {
     }
 
     // 其余：静态资源（public/）
+    // 无扩展名的路径自动补 .html（如 /account -> /account.html）
+    if (url.pathname !== '/' && !/\.[^/]+$/.test(url.pathname)) {
+      const tryUrl = new URL(request.url);
+      tryUrl.pathname = tryUrl.pathname.replace(/\/$/, '') + '.html';
+      const tryResp = await env.ASSETS.fetch(new Request(tryUrl.toString(), request));
+      if (tryResp.ok) return tryResp;
+    }
     return env.ASSETS.fetch(request);
   },
 };
