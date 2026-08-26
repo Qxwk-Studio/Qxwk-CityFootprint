@@ -1,4 +1,4 @@
-// Qxwk-CityFootprint · 拾光迹 Worker
+﻿// Qxwk-CityFootprint · 拾光迹 Worker
 // 一个 Worker 同时处理 /api/* 接口和静态资源（public/）
 // 认证由通行证 account.qxwkstudio.top 统一管理（SSO），本站不再持有密码/会话
 import { json, error, getUserId, resolveViewer } from './lib.js';
@@ -123,7 +123,7 @@ async function handleApi(request, env) {
     const userId = await getUserId(DB, request);
     if (!userId) return error('未登录', 401);
     const visits = await DB.prepare(
-      'SELECT id, city, lat, lng, visit_date, note, is_private FROM visits WHERE user_id = ? ORDER BY id DESC'
+      'SELECT id, city, lat, lng, visit_date, note, is_private FROM visits WHERE user_id = ? ORDER BY created_at DESC, id DESC'
     ).bind(userId).all();
     return json({ visits: visits.results });
   }
@@ -203,14 +203,14 @@ export default {
       }
     }
 
-    // 其余：静态资源（public/）
-    // 无扩展名的路径自动补 .html（如 /account -> /account.html）
+    // 无扩展名的路径 302 跳转到 .html（如 /account -> /account.html）
     if (url.pathname !== '/' && !/\.[^/]+$/.test(url.pathname)) {
-      const tryUrl = new URL(request.url);
-      tryUrl.pathname = tryUrl.pathname.replace(/\/$/, '') + '.html';
-      const tryResp = await env.ASSETS.fetch(new Request(tryUrl.toString(), request));
-      if (tryResp.ok) return tryResp;
+      const redirectUrl = new URL(request.url);
+      redirectUrl.pathname = redirectUrl.pathname.replace(/\/$/, '') + '.html';
+      return Response.redirect(redirectUrl.toString(), 302);
     }
+
+    // 其余：静态资源（public/）
     return env.ASSETS.fetch(request);
   },
 };

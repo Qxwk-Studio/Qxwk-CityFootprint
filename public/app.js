@@ -1,4 +1,4 @@
-﻿// 共享前端逻辑：API 客户端 + SSO 会话管理
+// 共享前端逻辑：API 客户端 + SSO 会话管理
 // 认证由通行证 account.qxwkstudio.top 统一管理，本站只存 token
 
 const API_BASE = '/api';
@@ -95,4 +95,4 @@ function findCity(name) {
 }
 
 // 页面加载时尝试 SSO 落地（各页内联脚本可在 DOMContentLoaded 前调用以避免闪烁）
-handleSsoLanding();
+window._ssoLanding = handleSsoLanding();

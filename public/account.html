@@ -87,7 +87,7 @@
   .profile-color .user-color-dot { width: 22px; height: 22px; }
   .action-card { text-align: left; }
   .action-card h3 { font-size: 1.15rem; margin-bottom: 8px; }
-  .action-card .btn { margin-top: 16px; padding: 14px 20px; font-size: 1rem; }
+  .action-card .btn { margin-top: 16px; }
   .personal-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
   .personal-col { display: flex; flex-direction: column; gap: 20px; }
   .personal-col .card { margin-bottom: 0; }
@@ -232,7 +232,7 @@
                 </div>
                 <div class="user-regtime" id="userRegTime"></div>
               </div>
-              <button class="btn btn-ghost btn-sm" onclick="logout()">退出登录</button>
+              <button class="btn btn-ghost" onclick="logout()">退出登录</button>
             </div>
             <div class="profile-color">
               <span class="user-color-dot" id="userColor" style="background:#ccc;"></span>
@@ -306,31 +306,31 @@ function enterUserView() {
 // 1) app.js 的 handleSsoLanding() 已在 DOM 解析时执行，URL 带 token 时已落地
 // 2) 本脚本执行时本地可能已有 session（SSO 落地后 / 直接访问且有 token）
 //    有 token 验证 /api/me，成功进 userView，失败清掉跳通行证登录
-if (getSession()) {
-  api('/me')
-    .then(data => {
-      if (data && data.created_at) {
-        const s = String(data.created_at);
-        const d = new Date(s.replace(' ', 'T'));
-        window._regTime = isNaN(d.getTime()) ? s.slice(0, 10) : d.toLocaleDateString('zh-CN');
-      }
-      // 同步通行证返回的最新 nickname/color/is_admin 到本地缓存
-      if (data && data.userId) {
-        localStorage.setItem('qxwf_user', JSON.stringify({
-          userId: data.userId,
-          nickname: data.nickname,
-          color: data.color,
-          is_admin: !!data.is_admin,
-        }));
-      }
-      enterUserView();
-    })
-    .catch(() => { /* 401 由 app.js 跳通行证登录 */ });
-} else if (!new URLSearchParams(location.search).get('token')) {
-  // 无 token 且 URL 也没带 token：直接停在登录入口页（authView 已默认显示）
-  document.body.classList.remove('no-scroll');
-}
-// 若 URL 还带 token 但 getSession() 还没拿到，等 handleSsoLanding 完成后 reload 触发上面的流程
+(window._ssoLanding || Promise.resolve()).then(() => {
+  if (getSession()) {
+    api('/me')
+      .then(data => {
+        if (data && data.created_at) {
+          const s = String(data.created_at);
+          const d = new Date(s.replace(' ', 'T'));
+          window._regTime = isNaN(d.getTime()) ? s.slice(0, 10) : d.toLocaleDateString('zh-CN');
+        }
+        if (data && data.userId) {
+          localStorage.setItem('qxwf_user', JSON.stringify({
+            userId: data.userId,
+            nickname: data.nickname,
+            color: data.color,
+            is_admin: !!data.is_admin,
+          }));
+        }
+        enterUserView();
+      })
+      .catch(() => { /* 401 由 app.js 跳通行证登录 */ });
+  } else {
+    // 无 session：停在登录入口页（authView 已默认显示）
+    document.body.classList.remove('no-scroll');
+  }
+});
 </script>
 </body>
 </html>
