@@ -1,22 +1,23 @@
-# 🗺️ City Footprint
+﻿# 🗺️ City Footprint
 
 > 记录每个人去过的城市，在足迹地图上点亮属于自己的颜色。
 >
-> 注册账号后把自己去过的城市打点在地图上，和朋友们一起拼出一张五彩斑斓的足迹大地图。
+> 登录通行证后把自己去过的城市打点在地图上，和朋友们一起拼出一张五彩斑斓的足迹大地图。
 
 ## ✨ 功能一览
 
 ### 🗺️ 足迹大地图 (`index.html`)
 - **公开浏览**：所有访客无需登录即可查看完整地图
-- **专属颜色**：每个用户一种标记色，同城多点自动散开
+- **专属颜色**：每个用户一种标记色（颜色由通行证统一分配），同城多点自动散开
 - **按人筛选**：点击图例中的昵称，只看某一个人的足迹
 - **私密行程**：本人登录时可见自己的不公开足迹（弹窗带 🔒），他人不可见
 - **管理员视图**：管理员可查看所有人的行程（含私密），右上角显示 👑 标识
 
 ### 👤 个人中心 (`account.html`)
-- **注册登录**：昵称 + 密码即可使用（邀请码制），未登录左右分屏展示欢迎动画
+- **通行证登录**：本站不再自建账号体系，登录/注册/改密/邀请码全部移交通行证 account.qxwkstudio.top
+- **一次登录处处通行**：在通行证登录后回跳本站自动落地，本地存 token，后续访问免登录
 - **账户信息**：专属颜色大头像、UID、注册时间、管理员徽章
-- **邀请码**：所有登录用户可见当前可用邀请码，方便邀请朋友注册（用户邀请制）
+- **通行证中心入口**：个人中心右列提供通行证跳转卡，方便改昵称/颜色/密码、生成邀请码、查看最近登录
 
 ### ✈️ 足迹管理 (`visits.html`)
 - **足迹增删改**：添加 / 修改 / 删除自己的城市足迹（城市联想、时间/备注/私密开关）
@@ -34,14 +35,27 @@
 - 深色下地图瓦片自动暗化（滤镜），UI（图例 / FAB / 弹窗 / 表单 / 统计卡）全部深色适配
 
 ### 🛡️ 安全设计
-- **密码加密**：PBKDF2（10 万次迭代 + 随机盐）哈希存储，不落明文
-- **会话鉴权**：Bearer Token，只能操作自己的足迹
+- **统一认证**：本站不再持有密码 / 会话，登录态完全由通行证 account.qxwkstudio.top 签发与撤销
+- **Bearer Token**：业务请求带通行证下发的 token，本站后端拿 token 去问通行证 `/api/me` 验证（结果按 token 缓存 120 秒）
 - **私密数据**：不公开行程在接口层过滤，仅本人（或管理员）可见
+
+## 🔗 通行证 SSO 接入说明
+
+本站是 [Qxwk 通行证](https://account.qxwkstudio.top/) 的接入站点之一，认证流程：
+
+1. 用户访问本站任意页，前端无 token 时引导跳通行证 `login.html?redirect=<回跳地址>`
+2. 用户在通行证完成登录/注册，通行证校验 `redirect` origin 是否在 `apps` 白名单
+3. 命中白名单后，通行证回跳本站并附 `?token=<通行证token>&uid=<通行证uid>&nick=<昵称>`
+4. 本站 `app.js` 的 `handleSsoLanding()` 落地：存 token 到 localStorage、清 URL 参数、调本站 `/api/me` 写本地用户缓存
+5. 后续业务请求带 `Authorization: Bearer <token>`，本站后端 `resolveViewer()` 拿 token 去通行证 `/api/me` 验证，按 nickname 映射到本地 users 表（首次自动建号，颜色随通行证同步）
+
+**本地联调**：CF `lib.js` 与 `app.js` 顶部的 `PASSPORT_URL` 改成 `http://localhost:8787`，通行证本地 DB 需在 `apps` 表插入 `http://localhost:8788` origin。
 
 ## 🧱 技术栈
 
 - **运行时**：Cloudflare Workers + Static Assets
 - **数据库**：D1（SQLite，Cloudflare 原生）
+- **认证**：Qxwk 通行证 SSO（Bearer Token 跨站校验，按 token 缓存）
 - **前端**：原生 HTML / JS + [Leaflet](https://leafletjs.com/) 地图库
 - **托管平台**：Cloudflare Pages 自动部署（`npx wrangler deploy`）
 
@@ -49,23 +63,19 @@
 
 ```
 ├── migrations/
-│   ├── 0001_init.sql       # 建表：users / visits / sessions
-│   ├── 0002_invite_codes.sql # 邀请码表
-│   ├── 0003_visits_private.sql # visits 增加 is_private（不公开行程）
-│   ├── 0004_admin.sql      # users 增加 is_admin（管理员）
-│   └── 0005_invite_created_by_settings.sql # 邀请码溯源 + 系统设置表（生成/注册开关）
+│   ├── 0001_init.sql       # 建表：users / visits
 ├── src/
 │   ├── worker.js           # Worker 入口（/api/* 接口 + 静态资源回退）
-│   └── lib.js              # 密码哈希、会话、工具
+│   └── lib.js              # 通行证 token 验证 + 本地用户映射 + 工具
 ├── public/                 # 静态前端
 │   ├── index.html          # 足迹大地图
-│   ├── account.html        # 个人中心（登录/注册/资料/邀请码）
+│   ├── account.html        # 个人中心（通行证登录入口 + 资料卡）
 │   ├── visits.html         # 足迹管理（增删改/统计/成就）
 │   ├── setup.html          # 欢迎动画页（嵌入 account 未登录左侧，跟随主题同步）
 │   ├── stats.html          # 全站统计
 │   ├── news.html           # 公告与更新日志
 │   ├── achievements.js     # 成就定义与判定
-│   ├── app.js              # API 客户端 + 会话
+│   ├── app.js              # API 客户端 + SSO 会话（落地/跳转/401 兜底）
 │   ├── cities.js           # 国内地级市坐标数据
 │   └── city-codes.js       # 城市 adcode（地图边界用）
 ├── wrangler.toml           # Worker 配置（D1 绑定在这填 database_id）
@@ -91,10 +101,24 @@ Cloudflare 控制台 → **Workers & Pages** → **D1** → **创建数据库**�
 npx wrangler d1 migrations apply qxwk-cityfootprint --remote
 ```
 
-或者用 D1 控制台，把每个迁移文件的内容依次复制进去运行。
-（会创建 `users` / `visits` / `sessions` / `invite_codes` 表，并加上 `is_private`、`is_admin` 列）
+迁移会创建 `users` / `visits` 表，加上 `is_private`、`is_admin` 列，最后由 `0006_sso_cutover.sql` 删除自认证相关的 `sessions` / `invite_codes` / `settings` 表与 `users.password_hash` 列。
 
-### 3️⃣ 填入 database_id 并部署
+### 3️⃣ 在通行证注册本站
+
+本站接入通行证 SSO 必须在通行证的 `apps` 表登记 origin（白名单 + SSO 回跳校验）。在通行证项目执行：
+
+```bash
+cd c:\Code\Qxwk-Account
+npx wrangler d1 execute qxwk-account --remote --command "INSERT OR IGNORE INTO apps (name, origin, homepage) VALUES ('City Footprint', 'https://travel.qxwkstudio.top', 'https://travel.qxwkstudio.top')"
+```
+
+本地联调另插一行 origin（dev 端口 8788）：
+
+```bash
+npx wrangler d1 execute qxwk-account --local --command "INSERT OR IGNORE INTO apps (name, origin, homepage) VALUES ('City Footprint 本地', 'http://localhost:8788', 'http://localhost:8788')"
+```
+
+### 4️⃣ 填入 database_id 并部署
 
 打开 `wrangler.toml`，把 `database_id` 替换成你的 D1 数据库 ID：
 
@@ -105,56 +129,15 @@ database_id = "你的-D1-数据库ID"
 提交并推送。CF Pages 项目会自动执行 `npx wrangler deploy`，正确部署成
 **Worker + 静态资源 + D1 绑定**（绑定写在 wrangler.toml 里，无需再去网页配置）。
 
-> **⚠️ 历史问题备忘**：以下坑已解决，供参考——
-> - `name` 已改为全小写
-> - `main` + `[assets]` 已配置，不再报 "Missing entry-point"
-> - 已删除 `functions/` 目录，不会再被误判成 Pages
-
-### 4️⃣ 自定义域名（可选）
+### 5️⃣ 自定义域名（可选）
 
 Pages 项目 → **自定义域**（Custom domains）→ 添加你的域名（如 `travel.qxwkstudio.top`）
 
 然后在主站对应位置放一个跳转链接指向它即可。
 
-### 🔑 注册邀请码
-
-部署后注册必须使用**一次性邀请码**，一个码只能注册一次，用后即焚。
-
-**用户获取（自动生成 + 溯源）**：个人中心邀请码栏调用 `GET /api/invite-code`，后端逻辑为——
-- 查询该用户未使用的邀请码：**有则直接返回**（同一用户始终同一个码，便于溯源）
-- **没有则后端自动生成一个**，并把 `created_by`（生成人）记为当前用户
-
-**管理员手工补码**（此时 `created_by` 为 NULL）：在 D1 控制台（或 `npx wrangler d1 execute qxwk-cityfootprint --remote --command "..."`）执行：
-
-```sql
--- 插入指定码
-INSERT INTO invite_codes (code) VALUES ('ABC12345');
-
--- 查看所有邀请码：来源（created_by）与使用情况（used_at / used_by）
-SELECT code, created_by, used_by, used_at FROM invite_codes;
-```
-
-> 💡 **可溯源**：每个邀请码都能查到「谁生成的（`created_by`）」和「谁用掉的（`used_by`、`used_at`）」。新用户注册时使用的是别人的码，`used_by` 会记为这个新用户。
-
-**⏸️ 暂停邀请码生成 / 暂停注册**（两个独立开关，直接改数据库键值）：
-- `invite_generate_enabled`：邀请码生成开关（`'0'` 暂停生成 → 邀请码栏显示"已暂停生成"，不再发新码）
-- `invite_register_enabled`：注册开关（`'0'` 暂停注册 → 新注册被拒绝、注册表单禁用）
-
-用 D1 控制台或 `npx wrangler d1 execute qxwk-cityfootprint --remote --command "..."` 修改：
-
-```sql
--- 暂停邀请码生成（已有未用的码仍可被使用注册）
-UPDATE settings SET value = '0' WHERE key = 'invite_generate_enabled';
--- 恢复邀请码生成
-UPDATE settings SET value = '1' WHERE key = 'invite_generate_enabled';
-
--- 暂停注册（完全停止新注册）
-UPDATE settings SET value = '0' WHERE key = 'invite_register_enabled';
--- 恢复注册
-UPDATE settings SET value = '1' WHERE key = 'invite_register_enabled';
-```
-
 ### 👑 管理员
+
+管理员标志存在本站 users 表，由通行证登录后映射到本地用户时保留。直接改 D1：
 
 ```sql
 -- 把某用户设为管理员
@@ -171,29 +154,29 @@ SELECT id, nickname, is_admin FROM users WHERE is_admin = 1;
 
 ```bash
 npm i -g wrangler
-wrangler dev
+wrangler dev --port 8788
 ```
 
 本地会读取 `wrangler.toml` 里的 D1 绑定（需先建库并填 ID），
-Worker 会在 `localhost:8787` 同时提供页面和 API。
+Worker 会在 `localhost:8788` 同时提供页面和 API。
+
+**SSO 本地联调**：把 `src/lib.js` 与 `public/app.js` 顶部 `PASSPORT_URL` 改成 `http://localhost:8787`，另起一个终端跑通行证 `cd c:\Code\Qxwk-Account && npx wrangler dev`（端口 8787），并在通行证本地 DB 插入本站 origin（见 3️⃣）。
 
 ## 🔌 API 接口
 
 | 方法 | 路径 | 鉴权 | 说明 |
 |------|------|------|------|
-| POST | `/api/register` | 无 | 注册（需一次性邀请码），返回 token |
-| POST | `/api/login` | 无 | 登录，返回 token（密码为空字符串时返回需设置新密码信号） |
-| POST | `/api/set-password` | 无 | 密码为空字符串时设置新密码（管理员重置后使用） |
-| GET | `/api/config` | 无 | 注册配置（含 inviteGenerateEnabled / inviteRegisterEnabled） |
-| GET | `/api/me` | Bearer | 当前用户信息（含 is_admin） |
+| GET | `/api/me` | Bearer | 当前用户信息（token 经通行证验证，返回 userId/nickname/color/is_admin/created_at） |
 | GET | `/api/cities` | 可选 Bearer | 城市 + 谁去过（地图用；登录可见本人私密，管理员可见全部） |
 | GET | `/api/user/:nickname` | 可选 Bearer | 某人足迹明细（管理员可见其私密） |
 | GET | `/api/stats` | 可选 Bearer | 全站统计（管理员含私密行程） |
-| GET | `/api/invite-code` | Bearer | 本人未使用的邀请码（没有则自动生成，记录生成人；暂停生成时返回 paused） |
 | GET | `/api/my-visits` | Bearer | 自己的足迹（含 is_private） |
 | POST | `/api/visits` | Bearer | 添加足迹（可带 is_private） |
 | PUT | `/api/visits/:id` | Bearer | 修改（仅本人，可改 is_private） |
 | DELETE | `/api/visits/:id` | Bearer | 删除（仅本人） |
+| GET | `/api/geo/:adcode` | 无 | 代理 DataV 边界接口（规避浏览器跨域，结果缓存 24h） |
+
+> 注册 / 登录 / 改密 / 邀请码 / 最近登录 等账号能力已全部移交通行证 account.qxwkstudio.top，本站不再提供。
 
 ## 🔧 自定义指南
 
@@ -213,17 +196,16 @@ Worker 会在 `localhost:8787` 同时提供页面和 API。
 - 公开接口（地图 `/api/cities`、统计 `/api/stats`、公开资料 `/api/user/:nickname`）默认不含私密；登录用户在地图上可见自己的私密行程，管理员可见全部
 - 地图边界数据已做浏览器 IndexedDB 缓存（24h 过期），重复打开不重复请求
 
-**5. 重置用户密码（忘记密码）**
-- 在 D1 控制台把该用户的 `password_hash` 改成**空字符串**（该列是 `NOT NULL`，不能写 `NULL`）：
-  ```sql
-  UPDATE users SET password_hash = '' WHERE nickname = '用户名';
-  ```
-- 该用户下次登录时会提示"设置新密码"，设置后即可正常登录
-- ⚠️ 注意：此时任何知道该昵称的人都能设置密码，请仅在信任本人时操作
+**5. 用户颜色来源**
+- 本站 users.color 不再独立分配，每次用户访问时由通行证 `/api/me` 返回的 color 同步覆盖
+- 颜色的源头是通行证侧：注册时按用户数 `count % 60` 顺序分配 60 个预设色，用户也可在通行证个人中心自定义
+- 用户在通行证改了颜色，下次访问本站会自动同步过来
 
 ---
 
 🌐 在线地址：[https://travel.qxwkstudio.top](https://travel.qxwkstudio.top/)
+
+🎫 通行证：[https://account.qxwkstudio.top](https://account.qxwkstudio.top/)
 
 📧 联系邮箱：QxwkStudio@outlook.com
 
