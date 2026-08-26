@@ -1,4 +1,4 @@
-// Qxwk-CityFootprint · 拾光迹 Worker
+﻿// Qxwk-CityFootprint · 拾光迹 Worker
 // 一个 Worker 同时处理 /api/* 接口和静态资源（public/）
 // 认证由通行证 account.qxwkstudio.top 统一管理（SSO），本站不再持有密码/会话
 import { json, error, getUserId, resolveViewer } from './lib.js';
@@ -195,8 +195,12 @@ export default {
 
     // API 路由
     if (url.pathname.startsWith('/api/')) {
-      const result = await handleApi(request, env);
-      return result || json({ error: '接口不存在' }, 404);
+      try {
+        const result = await handleApi(request, env);
+        return result || json({ error: '接口不存在' }, 404);
+      } catch (e) {
+        return json({ error: '服务器错误: ' + (e && e.message ? e.message : String(e)) }, 500);
+      }
     }
 
     // 其余：静态资源（public/）
