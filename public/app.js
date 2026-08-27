@@ -1,4 +1,4 @@
-﻿// 共享前端逻辑：API 客户端 + 会话管理
+// 共享前端逻辑：API 客户端 + 会话管理
 
 const API_BASE = '/api';
 const LS_TOKEN = 'qxwf_token';
@@ -35,7 +35,7 @@ function saveSession(data) {
     nickname: data.nickname,
     color: data.color,
     is_admin: !!data.is_admin,
-    email: data.email || null,
+    avatar: data.avatar || null,
   }));
 }
 
@@ -85,10 +85,30 @@ async function handleSsoLanding() {
         nickname: me.nickname,
         color: me.color,
         is_admin: !!me.is_admin,
-        email: me.email || null,
+        avatar: me.avatar || null,
       }));
     }
   } catch { /* /api/me 拉取失败由后续请求触发 401 兜底 */ }
+}
+
+// 直接使用头像链接（由通行证 /api/me 返回的 avatar 字段）设置头像；
+// 无链接或图片加载失败时，回退为昵称首字 + 专属颜色
+function setAvatarFromUrl(el, avatarUrl, nickname, color) {
+  function fallback() {
+    el.textContent = (nickname || '?').charAt(0).toUpperCase();
+    el.style.background = color || 'var(--primary)';
+    el.style.boxShadow = '0 6px 20px ' + (color || '#2563eb') + '55';
+  }
+  if (!avatarUrl) { fallback(); return; }
+  var img = document.createElement('img');
+  img.src = avatarUrl;
+  img.alt = (nickname || '用户') + ' 的头像';
+  img.referrerPolicy = 'no-referrer';
+  img.onerror = fallback;
+  el.textContent = '';
+  el.style.background = 'var(--bg)';
+  el.style.boxShadow = '0 6px 20px ' + (color || '#2563eb') + '55';
+  el.appendChild(img);
 }
 
 // 通行证登录 URL（带 redirect 回跳本页）

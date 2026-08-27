@@ -358,7 +358,16 @@
 
   /* ========= Responsive ========= */
   @media (max-width: 640px) {
-    .navbar-inner { padding: 0 16px; }
+    .navbar-inner { padding: 0 12px; gap: 10px; }
+    .back-link { padding: 6px 12px; font-size: 0.82rem; }
+    .btn-nav { padding: 8px 16px; font-size: 0.84rem; }
+    /* 浮动组件：手机上靠边更紧凑 */
+    .legend { top: calc(var(--nav-height) + 10px); left: 10px; padding: 10px 12px; min-width: 150px; }
+    .legend.collapsed { padding: 5px 8px; }
+    .admin-view-note { right: 10px; top: calc(var(--nav-height) + 8px); padding: 5px 12px; font-size: 0.74rem; }
+    .fab-btn { right: 12px; bottom: 12px; width: 48px; height: 48px; }
+    .fab-item { right: 12px; padding: 8px 14px; font-size: 0.84rem; }
+    .leaflet-popup-content { max-width: min(300px, calc(100vw - 24px)); margin: 12px 14px; }
   }
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
@@ -480,7 +489,7 @@
 </a>
 <!-- 后续新功能在此添加按钮 -->
 
-<div id="adminViewNote" class="admin-view-note" style="display:none;">👑 管理员视图 · 正在显示全部行程（含私密）</div>
+<div id="adminViewNote" class="admin-view-note" style="display:none;">👑 管理员视图</div>
 
 <div id="map"></div>
 

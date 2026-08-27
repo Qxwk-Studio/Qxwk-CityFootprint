@@ -1,4 +1,4 @@
-﻿# 🗺️ City Footprint
+# 🗺️ City Footprint
 
 > 记录每个人去过的城市，在足迹地图上点亮属于自己的颜色。
 >
@@ -16,7 +16,7 @@
 ### 👤 个人中心 (`account.html`)
 - **通行证登录**：本站不再自建账号体系，登录/注册/改密/邀请码全部移交通行证 account.qxwkstudio.top
 - **一次登录处处通行**：在通行证登录后回跳本站自动落地，本地存 token，后续访问免登录
-- **账户信息**：专属颜色大头像、UID、注册时间、管理员徽章
+- **账户信息**：专属颜色大头像（**直接使用通行证返回的 avatar URL，前端不再自己计算邮箱 MD5**）、UID、注册时间、管理员徽章
 - **通行证中心入口**：个人中心右列提供通行证跳转卡，方便改昵称/颜色/密码、生成邀请码、查看最近登录
 
 ### ✈️ 足迹管理 (`visits.html`)
@@ -68,6 +68,7 @@
 │   ├── worker.js           # Worker 入口（/api/* 接口 + 静态资源回退）
 │   └── lib.js              # 通行证 token 验证 + 本地用户映射 + 工具
 ├── public/                 # 静态前端
+│   ├── vendor/             # 自托管前端依赖（Leaflet JS + CSS + 标记图标，避免外链与 CORS）
 │   ├── index.html          # 足迹大地图
 │   ├── account.html        # 个人中心（通行证登录入口 + 资料卡）
 │   ├── visits.html         # 足迹管理（增删改/统计/成就）
@@ -75,7 +76,7 @@
 │   ├── stats.html          # 全站统计
 │   ├── news.html           # 公告与更新日志
 │   ├── achievements.js     # 成就定义与判定
-│   ├── app.js              # API 客户端 + SSO 会话（落地/跳转/401 兜底）
+│   ├── app.js              # API 客户端 + SSO 会话（落地/跳转/401 兜底） + setAvatarFromUrl()（头像渲染）
 │   ├── cities.js           # 国内地级市坐标数据
 │   └── city-codes.js       # 城市 adcode（地图边界用）
 ├── wrangler.toml           # Worker 配置（D1 绑定在这填 database_id）
@@ -101,7 +102,8 @@ Cloudflare 控制台 → **Workers & Pages** → **D1** → **创建数据库**�
 npx wrangler d1 migrations apply qxwk-cityfootprint --remote
 ```
 
-迁移会创建 `users` / `visits` 表，加上 `is_private`、`is_admin` 列，最后由 `0006_sso_cutover.sql` 删除自认证相关的 `sessions` / `invite_codes` / `settings` 表与 `users.password_hash` 列。
+迁移会创建本站所需的全部表：`users`（`is_private` 由 visits 侧携带、`is_admin` 管理员标志、`color` 颜色随通行证同步）与 `visits`（足迹，含 `is_private`）。  
+&gt; 注：本站自 SSO 改造起不再自建账号与密码体系，注册/改密/邀请码等均移交通行证，因此迁移文件中**不包含** sessions / invite_codes / settings 表。
 
 ### 3️⃣ 在通行证注册本站
 
@@ -166,7 +168,7 @@ Worker 会在 `localhost:8788` 同时提供页面和 API。
 
 | 方法 | 路径 | 鉴权 | 说明 |
 |------|------|------|------|
-| GET | `/api/me` | Bearer | 当前用户信息（token 经通行证验证，返回 userId/nickname/color/is_admin/created_at） |
+| GET | `/api/me` | Bearer | 当前用户信息（token 经通行证验证，返回 `userId/nickname/color/avatar/is_admin/created_at`） |
 | GET | `/api/cities` | 可选 Bearer | 城市 + 谁去过（地图用；登录可见本人私密，管理员可见全部） |
 | GET | `/api/user/:nickname` | 可选 Bearer | 某人足迹明细（管理员可见其私密） |
 | GET | `/api/stats` | 可选 Bearer | 全站统计（管理员含私密行程） |
@@ -201,7 +203,36 @@ Worker 会在 `localhost:8788` 同时提供页面和 API。
 - 颜色的源头是通行证侧：注册时按用户数 `count % 60` 顺序分配 60 个预设色，用户也可在通行证个人中心自定义
 - 用户在通行证改了颜色，下次访问本站会自动同步过来
 
+**6. 头像机制（WeAvatar）**
+- 所有头像 URL 由通行证 Account 后端集中计算（基于 `md5(lowercase(trim(email)))` → `https://weavatar.com/avatar/{hash}?s=400&d=404`），本站**不再持有任何 MD5 代码**
+- 消费方式：`public/app.js` 中定义的 `setAvatarFromUrl(el, avatarUrl, nickname, color)`（原 `avatar.js` 已删除并合并入 app.js）——加载失败自动回退到「昵称首字 + 专属颜色」的文字头像
+- SSO 落地与 `/api/me` 接口均返回 `avatar` 字段并存入本地会话 `s.avatar`；更换头像服务（如切到 QQ 官方头像或自托管 Gravatar）**只需改 Account 后端 `getAvatarUrl()` 一处**，本站零改动
+
+**7. 响应式边距规范（设计一致性）**
+全站 6 页（index / account / visits / stats / news / setup）沿用同一套间距规范，新增页面或模块**务必遵守**，避免不同页面在手机/桌面上松紧不一。
+
+| 元素 | 桌面端（默认 CSS） | 手机端 `@media (max-width: 640px)` |
+|---|---|---|
+| `.navbar-inner` 左右内边距 | `0 24px` | `0 12px` |
+| `.main` 上 / 左右 / 下内边距 | `36px 24px 60px` | `20px 12px 32px` |
+| `.card` 内边距（普通卡片） | `24px` | `14px` |
+| `.back-link` 内边距 / 字号 | `8px 18px` / `0.88rem` | `6px 12px` / `0.82rem` |
+| `.footer` 上下 / 左右内边距 | `14px 24px`（所有页面已统一） | `12px 12px` |
+| `.page-header` 底部间距 | `28px` | `20px` |
+
+- 全屏页面（`index.html` 地图）的浮动元素（图例 / 管理员提示 / FAB 菜单 / Leaflet 弹窗）手机端也统一缩小：靠边 10–12px、FAB 直径 48px、弹窗最大宽度 300px
+- **不要用 768px 做手机断点**，全站统一 640px，保证与 account 项目断点对齐
+
+## 🛠 设计说明
+
+- **认证完全移交通行证**：本站不持有密码、不签发会话、不生成 token。所有身份来源都由 `account.qxwkstudio.top` 负责。前端收到 401 直接跳通行证；后端业务接口的 Bearer Token 必须经通行证 `/api/me` 二次验证（结果按 token 缓存 120s，避免一次请求一次跨站验证）。
+- **颜色与头像都由 Account 输出**：`users.color` 和用户头像 URL 都是通行证"单一事实源"，本站每次用户访问时同步覆盖。这样用户在通行证改颜色 / 改邮箱（头像 hash 变化）后，访问本站自动生效，避免两端数据漂移。
+- **私密行程接口层过滤**：`is_private` 过滤在 Worker 侧（`lib.js` / worker 查询）做，而不是前端，防止有人抓接口构造出别人的私密足迹。管理员用 `is_admin=1` 标志绕过过滤查看全部。
+- **成就系统**：判定逻辑在 `achievements.js` 前端执行，按"足迹丰碑 / 巡游四方 / 城市打卡 / 极限挑战"四大类分组。新增成就时在成就定义数组追加即可，判定函数拿到 `stats + myVisits` 上下文。
+- **地图边界与瓦片缓存**：DataV GeoAtlas 边界由 Worker `/api/geo/:adcode` 代理并缓存 24h；浏览器侧再用 IndexedDB 保存 24h，打开地图时只拉取缺省的边界。瓦片用高德免 Key 内网直出、Leaflet 资源自托管到 `public/vendor/`，避免外链失效与 CORS 折腾。
+
 ---
+
 
 🌐 在线地址：[https://travel.qxwkstudio.top](https://travel.qxwkstudio.top/)
 

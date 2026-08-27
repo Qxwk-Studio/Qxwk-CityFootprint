@@ -1,4 +1,4 @@
-﻿// Qxwk-CityFootprint · 拾光迹 Worker
+// Qxwk-CityFootprint · 拾光迹 Worker
 // 一个 Worker 同时处理 /api/* 接口和静态资源（public/）
 // 认证由通行证 account.qxwkstudio.top 统一管理（SSO），本站不再持有密码/会话
 import { json, error, getUserId, resolveViewer } from './lib.js';
@@ -24,7 +24,7 @@ async function handleApi(request, env) {
     const v = await resolveViewer(DB, request);
     if (!v) return error('未登录', 401);
     const u = await DB.prepare('SELECT created_at FROM users WHERE id = ?').bind(v.id).first();
-    return json({ userId: v.id, nickname: v.nickname, color: v.color, is_admin: v.isAdmin, created_at: u && u.created_at, email: v.email });
+    return json({ userId: v.id, nickname: v.nickname, color: v.color, is_admin: v.isAdmin, created_at: u && u.created_at, avatar: v.avatar });
   }
   // GET /api/geo/:adcode（代理 DataV 边界接口，规避浏览器跨域/来源限制）
   const geoMatch = path.match(/^\/api\/geo\/(\d+)$/);

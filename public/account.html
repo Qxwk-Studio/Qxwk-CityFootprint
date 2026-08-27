@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -89,6 +89,68 @@
   .action-card { text-align: left; }
   .action-card h3 { font-size: 1.15rem; margin-bottom: 8px; }
   .action-card .btn { margin-top: 16px; }
+
+  /* ========= 退出登录：大卡片（与通行证 account 一致） ========= */
+  .card-logout {
+    text-align: center;
+    background:
+      radial-gradient(120% 100% at 50% 0%, rgba(220, 38, 38, 0.08) 0%, rgba(220, 38, 38, 0) 60%),
+      var(--surface);
+    border: 1px solid #fecaca;
+    border-radius: var(--radius-md);
+    padding: 32px 26px;
+    box-shadow: var(--shadow-sm);
+  }
+  .card-logout h3 {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 10px;
+  }
+  .card-logout .logout-tip {
+    text-align: center;
+    padding: 0 0 20px;
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    line-height: 1.7;
+  }
+  .btn-logout {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+    padding: 11px 18px;
+    border: none;
+    border-radius: 40px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    color: #fff;
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    transition: all var(--transition);
+  }
+  .btn-logout:hover {
+    background: linear-gradient(135deg, #f87171, #ef4444);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
+  }
+  .btn-logout:active { transform: translateY(0) scale(0.98); }
+  .btn-logout svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+  /* 管理员标签（原退出按钮位置：profile-head 右上角） */
+  .admin-badge-head {
+    flex-shrink: 0;
+    font-size: 11px;
+    font-weight: 600;
+    color: #fff;
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    border-radius: 6px;
+    padding: 4px 10px;
+    align-self: flex-start;
+  }
+
   .personal-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
   .personal-col { display: flex; flex-direction: column; gap: 20px; }
   .personal-col .card { margin-bottom: 0; }
@@ -111,12 +173,18 @@
     .personal-layout { grid-template-columns: 1fr; }
     #authView { grid-template-columns: 1fr; grid-template-rows: 30vh 1fr; }
     .auth-left { height: 30vh; }
-    .auth-right { align-items: flex-start; padding: 56px 16px 40px; }
+    .auth-right { align-items: flex-start; padding: 40px 12px 32px; }
     .auth-form { max-width: 100%; }
   }
   @media (max-width: 640px) {
-    .navbar-inner { padding: 0 16px; } .main { padding: 24px 16px 40px; } .card { padding: 18px; }
-    .back-link { padding: 7px 14px; font-size: 0.84rem; }
+    .navbar-inner { padding: 0 12px; }
+    .main { padding: 20px 12px 32px; }
+    .card { padding: 14px; }
+    .back-link { padding: 6px 12px; font-size: 0.82rem; }
+    .footer { padding: 12px 12px; }
+    .page-header { margin-bottom: 20px; }
+    #userView .card { padding: 20px; }
+    #userView .profile-card { padding: 20px; }
   }
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
@@ -173,6 +241,14 @@
     border-color: color-mix(in srgb, var(--user-color, #2563eb) 28%, #334155);
   }
   :root[data-theme="dark"] .user-color-dot { border-color: #0f172a; }
+  /* 黑夜模式：退出登录卡片 */
+  :root[data-theme="dark"] .card-logout {
+    background:
+      radial-gradient(120% 100% at 50% 0%, rgba(239,68,68,0.12) 0%, rgba(239,68,68,0) 60%),
+      var(--surface);
+    border-color: rgba(239,68,68,0.35);
+  }
+  :root[data-theme="dark"] .card-logout h3 { color: var(--text-primary); }
 </style>
 </head>
 <body class="no-scroll">
@@ -228,12 +304,11 @@
               <div class="profile-info">
                 <h2 class="profile-name" id="welcomeText"></h2>
                 <div class="profile-meta">
-                  <span id="adminBadge" style="display:none;flex-shrink:0;font-size:11px;font-weight:600;color:#fff;background:linear-gradient(135deg,#f59e0b,#d97706);border-radius:6px;padding:2px 8px;">👑 管理员</span>
                   <span class="user-uid" id="userUid"></span>
                 </div>
                 <div class="user-regtime" id="userRegTime"></div>
               </div>
-              <button class="btn btn-ghost" onclick="logout()">退出登录</button>
+              <span id="adminBadge" class="admin-badge-head" style="display:none;">👑 管理员</span>
             </div>
             <div class="profile-color">
               <span class="user-color-dot" id="userColor" style="background:#ccc;"></span>
@@ -254,6 +329,18 @@
             <p class="hint">在通行证中心修改昵称 / 颜色 / 密码、生成邀请码、查看最近登录</p>
             <a href="https://account.qxwkstudio.top/account.html" target="_blank" rel="noopener" class="btn btn-primary">打开通行证中心</a>
           </div>
+
+          <!-- 退出登录：大卡片（右下角独立位置，与通行证 account 一致） -->
+          <div class="card-logout">
+            <h3>退出登录</h3>
+            <div class="logout-tip">
+              退出后在本站及其他已接入的站点都将需要重新登录
+            </div>
+            <button class="btn-logout" onclick="logout()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+              退出登录
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -264,7 +351,6 @@
 <footer class="footer">
   <div class="footer-copy">2026 青翔未阔工作室 · City Footprint</div>
 </footer>
-<script src="avatar.js"></script>
 <script src="app.js"></script>
 <script>
 // 通行证登录入口：跳通行证 login.html，登录后回跳本页（app.js handleSsoLanding 负责落地）
@@ -286,10 +372,10 @@ function enterUserView() {
   if (badge) badge.style.display = (s && s.is_admin) ? '' : 'none';
   const uidEl = document.getElementById('userUid');
   if (uidEl && s) uidEl.textContent = 'UID：' + s.userId;
-  // 大头像：邮箱 WeAvatar 图片，无邮箱回退昵称首字 + 专属颜色
+  // 大头像：直接使用通行证返回的头像链接，无链接或加载失败回退昵称首字 + 专属颜色
   const avatar = document.getElementById('profileAvatar');
   if (avatar && s) {
-    setAvatar(avatar, s.email, s.nickname, s.color);
+    setAvatarFromUrl(avatar, s.avatar, s.nickname, s.color);
 
   }
   // 专属颜色（地图打点色）
@@ -322,7 +408,7 @@ function enterUserView() {
             nickname: data.nickname,
             color: data.color,
             is_admin: !!data.is_admin,
-            email: data.email || null,
+            avatar: data.avatar || null,
           }));
         }
         enterUserView();
