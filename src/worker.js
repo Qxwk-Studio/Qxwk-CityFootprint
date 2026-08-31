@@ -223,7 +223,7 @@ async function handleApi(request, env) {
     const v = await resolveViewer(DB, request);
     if (!v) return error('未登录', 401);
     const rows = await DB.prepare(
-      'SELECT id, title, category, status, review_note, created_at, reviewed_at FROM submissions WHERE user_id = ? ORDER BY id DESC'
+      'SELECT id, title, category, status, body, review_note, created_at, reviewed_at FROM submissions WHERE user_id = ? ORDER BY id DESC'
     ).bind(v.id).all();
     return json({ submissions: rows.results });
   }
