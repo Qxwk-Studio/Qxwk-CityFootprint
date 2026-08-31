@@ -38,11 +38,26 @@ async function getPassportUser(request) {
 async function resolveViewer(DB, request) {
   const p = await getPassportUser(request);
   if (!p) return null;
-  await DB.prepare(
-    "INSERT INTO users (nickname, color) VALUES (?, ?) ON CONFLICT(nickname) DO UPDATE SET color = excluded.color"
-  ).bind(p.nickname, p.color).run();
-  const u = await DB.prepare('SELECT id, nickname, color, is_admin FROM users WHERE nickname = ?')
-    .bind(p.nickname).first();
+  // 昵称缺失/空时用稳定 fallback，避免 NULL 昵称行被反复新建导致 user 计数暴增
+  // （users.nickname 的唯一约束允许多个 NULL）
+  const nickname = (p.nickname && String(p.nickname).trim()) || 'user_' + p.userId;
+  // 优先看本地是否已有该用户；否则仅当真正新用户才 INSERT。
+  // 不能用 `INSERT ... ON CONFLICT DO UPDATE` 做"幂等"：它即使走 UPDATE 分支也会消耗
+  // AUTOINCREMENT 序列，登录页并发多个接口就会让 sqlite_sequence 虚增（users 行数却不变）。
+  let u = await DB.prepare('SELECT id, nickname, color, is_admin FROM users WHERE nickname = ?')
+    .bind(nickname).first();
+  if (!u) {
+    // INSERT OR IGNORE：兜住并发首插竞争；冲突被忽略时不会消耗自增序列
+    await DB.prepare('INSERT OR IGNORE INTO users (nickname, color) VALUES (?, ?)')
+      .bind(nickname, p.color).run();
+    u = await DB.prepare('SELECT id, nickname, color, is_admin FROM users WHERE nickname = ?')
+      .bind(nickname).first();
+    if (!u) return null; // 极端并发下仍失败，放弃本次映射
+  } else if (u.color !== p.color) {
+    // color 同步用 UPDATE，不消耗自增序列
+    await DB.prepare('UPDATE users SET color = ? WHERE id = ?').bind(p.color, u.id).run();
+    u.color = p.color;
+  }
   return u ? { id: u.id, nickname: u.nickname, color: u.color, isAdmin: !!u.is_admin, avatar: p.avatar } : null;
 }
 
