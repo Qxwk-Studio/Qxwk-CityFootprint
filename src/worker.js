@@ -1,4 +1,4 @@
-// Qxwk-CityFootprint · 拾光迹 Worker
+// Qxwk-CityFootprint · Worker
 // 一个 Worker 同时处理 /api/* 接口和静态资源（public/）
 // 认证由通行证 account.qxwkstudio.top 统一管理（SSO），本站不再持有密码/会话
 import { json, error, getUserId, resolveViewer } from './lib.js';

@@ -355,6 +355,165 @@
     text-align: center;
   }
 
+  /* ========= Toast 提示（顶部滑入，与其他项目统一） ========= */
+  .toast {
+    position: fixed;
+    top: -60px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--surface);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+    padding: 12px 24px;
+    border-radius: var(--radius-sm);
+    font-size: 0.9rem;
+    font-weight: 500;
+    z-index: 3000;
+    opacity: 0;
+    pointer-events: none;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: top 0.35s ease, opacity 0.35s ease;
+  }
+  .toast svg { color: var(--primary); flex-shrink: 0; }
+  .toast.show { top: 80px; opacity: 1; }
+
+  /* ========= 快捷添加弹窗 ========= */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    background: rgba(0, 0, 0, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s;
+  }
+  .modal-overlay.show { opacity: 1; visibility: visible; }
+  .modal {
+    width: 100%;
+    max-width: 380px;
+    background: var(--surface);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    padding: 20px 20px 16px;
+    transform: translateY(10px) scale(0.98);
+    transition: transform 0.2s ease;
+  }
+  .modal-overlay.show .modal { transform: translateY(0) scale(1); }
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .modal-header h3 { font-size: 1.05rem; font-weight: 700; }
+  .modal-close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: none;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    font-family: inherit;
+    transition: background var(--transition), color var(--transition);
+  }
+  .modal-close:hover { background: var(--primary-subtle); color: var(--text-primary); }
+  .modal-field { margin-bottom: 14px; }
+  .modal-field label {
+    display: block;
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+  }
+  .modal-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    background: var(--primary-light);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+  .modal-info + .modal-info { margin-top: 8px; }
+  .modal-info svg { color: var(--primary); flex-shrink: 0; }
+  .modal-info .info-date { color: var(--text-secondary); font-weight: 500; margin-left: auto; }
+  .modal-locate { display: flex; gap: 8px; align-items: stretch; }
+  .modal-locate .modal-info { flex: 1; margin: 0; min-width: 0; }
+  .modal-locate .modal-info #quickCity { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .modal-relocate {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 40px;
+    padding: 0 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all var(--transition);
+  }
+  .modal-relocate:hover { color: var(--primary); border-color: var(--primary); }
+  .modal-input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg);
+    color: var(--text-primary);
+    font: inherit;
+    font-size: 0.92rem;
+    transition: border-color var(--transition);
+  }
+  .modal-input:focus { outline: none; border-color: var(--primary); }
+  .modal-input::placeholder { color: var(--text-tertiary); }
+  .modal-check {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    user-select: none;
+  }
+  .modal-check input { width: 16px; height: 16px; accent-color: var(--primary); flex-shrink: 0; }
+  .modal-actions { display: flex; gap: 10px; margin-top: 18px; }
+  .modal-btn {
+    flex: 1;
+    padding: 10px 0;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all var(--transition);
+  }
+  .modal-btn-primary { background: linear-gradient(135deg, var(--primary), var(--secondary)); color: #fff; }
+  .modal-btn-primary:hover { background: linear-gradient(135deg, var(--primary-hover), #0f766e); }
+  .modal-btn-cancel { background: var(--bg); color: var(--text-secondary); border: 1px solid var(--border); }
+  .modal-btn-cancel:hover { color: var(--text-primary); border-color: var(--text-tertiary); }
+  .modal-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+  .modal-msg { font-size: 0.82rem; margin-top: 10px; min-height: 1.2em; }
+  .modal-msg.error { color: #dc2626; }
+  .modal-msg.ok { color: #16a34a; }
 
   /* ========= Responsive ========= */
   @media (max-width: 640px) {
@@ -368,6 +527,9 @@
     .fab-btn { right: 12px; bottom: 12px; width: 48px; height: 48px; }
     .fab-item { right: 12px; padding: 8px 14px; font-size: 0.84rem; }
     .leaflet-popup-content { max-width: min(300px, calc(100vw - 24px)); margin: 12px 14px; }
+    .modal { padding: 18px 16px 14px; }
+    .modal-actions { margin-top: 16px; }
+    .toast { padding: 10px 16px; font-size: 0.85rem; white-space: nowrap; }
   }
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
@@ -479,17 +641,74 @@
   <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
   足迹管理
 </a>
-<a class="fab-item" href="news.html" style="bottom:188px">
+<a class="fab-item" href="javascript:void(0)" onclick="openQuickAdd()" style="bottom:188px">
+  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+  快捷添加
+</a>
+<a class="fab-item" href="news.html" style="bottom:244px">
   <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
   公告与更新
 </a>
-<a class="fab-item" href="stats.html" style="bottom:244px">
+<a class="fab-item" href="stats.html" style="bottom:300px">
   <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
   全站统计
 </a>
 <!-- 后续新功能在此添加按钮 -->
 
 <div id="adminViewNote" class="admin-view-note" style="display:none;">👑 管理员视图</div>
+
+<!-- 快捷添加弹窗 -->
+<div class="modal-overlay" id="quickModal" role="dialog" aria-modal="true" aria-label="快捷添加行程">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>快捷添加行程</h3>
+      <button type="button" class="modal-close" onclick="closeQuickModal()" aria-label="关闭">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-field">
+      <label>地点</label>
+      <div class="modal-locate">
+        <div class="modal-info">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          <span id="quickCity"></span>
+        </div>
+        <button type="button" class="modal-relocate" onclick="relocateCity()" aria-label="重新定位">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="modal-field">
+      <label>日期</label>
+      <div class="modal-info">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        <span id="quickDate"></span>
+        <span class="info-date">今天</span>
+      </div>
+    </div>
+    <div class="modal-field">
+      <label>备注（可选）</label>
+      <input class="modal-input" id="quickNote" maxlength="100" placeholder="一句话留下回忆…" autocomplete="off">
+    </div>
+    <div class="modal-field">
+      <label class="modal-check">
+        <input type="checkbox" id="quickPrivate">
+        <span>不公开行程（仅自己可见）</span>
+      </label>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="modal-btn modal-btn-cancel" onclick="closeQuickModal()">取消</button>
+      <button type="button" class="modal-btn modal-btn-primary" id="quickSubmit" onclick="submitQuickAdd()">添加行程</button>
+    </div>
+    <div class="modal-msg" id="quickMsg"></div>
+  </div>
+</div>
+
+<!-- Toast 提示 -->
+<div class="toast" id="toast">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+  <span id="toastText"></span>
+</div>
 
 <div id="map"></div>
 
@@ -608,7 +827,9 @@ function loadCityGeo(adcode) {
 }
 
 function render(data) {
-  document.getElementById('loading').remove();
+  // 首次加载时移除全屏加载层；快捷添加后的局部刷新无需重复移除
+  const loadingEl = document.getElementById('loading');
+  if (loadingEl) loadingEl.remove();
 
   // 管理员视图提示（数据来自后端 isAdmin，始终与所见一致）
   const adminNote = document.getElementById('adminViewNote');
@@ -789,6 +1010,144 @@ function escapeHtml(t) {
   d.textContent = t || '';
   return d.innerHTML;
 }
+
+// ---------- Toast 提示（与其他项目统一：顶部滑入 + 信息图标） ----------
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  document.getElementById('toastText').textContent = msg;
+  el.classList.add('show');
+  if (window._toastTimer) clearTimeout(window._toastTimer);
+  window._toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
+}
+function hideToast() {
+  document.getElementById('toast').classList.remove('show');
+  if (window._toastTimer) clearTimeout(window._toastTimer);
+}
+
+// ---------- 快捷添加 ----------
+// 打开快捷添加：未登录先提示；已登录请求 GPS 定位反查最近城市
+function openQuickAdd() {
+  if (!getSession()) { showToast('还未登录'); return; }
+  if (!navigator.geolocation) { showToast('浏览器不支持定位'); return; }
+  showToast('正在定位…');
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      hideToast();
+      const city = nearestCity(pos.coords.latitude, pos.coords.longitude);
+      if (!city) { showToast('未找到附近城市'); return; }
+      showQuickModal(city);
+    },
+    (err) => {
+      if (err && err.code === err.PERMISSION_DENIED) showToast('定位权限被拒绝');
+      else if (err && err.code === err.TIMEOUT) showToast('定位超时，请重试');
+      else showToast('无法获取位置');
+    },
+    { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
+  );
+}
+
+// 弹窗内重新定位：更新地点为当前位置最近的城市
+function relocateCity() {
+  if (!navigator.geolocation) { showToast('浏览器不支持定位'); return; }
+  showToast('正在定位…');
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      hideToast();
+      const city = nearestCity(pos.coords.latitude, pos.coords.longitude);
+      if (!city) { showToast('未找到附近城市'); return; }
+      quickCity = city;
+      document.getElementById('quickCity').textContent = city.name;
+    },
+    (err) => {
+      if (err && err.code === err.PERMISSION_DENIED) showToast('定位权限被拒绝');
+      else if (err && err.code === err.TIMEOUT) showToast('定位超时，请重试');
+      else showToast('无法获取位置');
+    },
+    { enableHighAccuracy: false, timeout: 10000, maximumAge: 0 }
+  );
+}
+
+// 在 CITIES 中找离指定坐标最近的城市（城市级反查，忽略坐标系偏移影响）
+function nearestCity(lat, lng) {
+  let best = null, bestD = Infinity;
+  for (const c of window.CITIES) {
+    const d = (c.lat - lat) * (c.lat - lat) + (c.lng - lng) * (c.lng - lng);
+    if (d < bestD) { bestD = d; best = c; }
+  }
+  return best;
+}
+
+// 今天年月（与足迹系统一致的 YYYY-MM 格式）
+function quickTodayStr() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+}
+
+let quickCity = null;
+
+function showQuickModal(city) {
+  quickCity = city;
+  document.getElementById('quickCity').textContent = city.name;
+  document.getElementById('quickDate').textContent = quickTodayStr();
+  document.getElementById('quickNote').value = '';
+  document.getElementById('quickPrivate').checked = false;
+  document.getElementById('quickMsg').textContent = '';
+  document.getElementById('quickSubmit').disabled = false;
+  document.getElementById('quickModal').classList.add('show');
+  document.getElementById('quickNote').focus();
+}
+
+function closeQuickModal() {
+  document.getElementById('quickModal').classList.remove('show');
+  quickCity = null;
+}
+
+async function submitQuickAdd() {
+  if (!quickCity) return;
+  const btn = document.getElementById('quickSubmit');
+  const msg = document.getElementById('quickMsg');
+  btn.disabled = true;
+  msg.className = 'modal-msg error';
+  msg.textContent = '正在添加…';
+
+  const payload = {
+    city: quickCity.name,
+    lat: quickCity.lat,
+    lng: quickCity.lng,
+    visit_date: quickTodayStr(),
+    note: document.getElementById('quickNote').value.trim(),
+    is_private: document.getElementById('quickPrivate').checked,
+  };
+
+  try {
+    await api('/visits', { method: 'POST', body: JSON.stringify(payload) });
+    closeQuickModal();
+    showToast('已添加');
+    reloadMap();
+  } catch (err) {
+    msg.className = 'modal-msg error';
+    msg.textContent = err.message;
+    btn.disabled = false;
+  }
+}
+
+// 添加成功后刷新地图（重新拉取 /api/cities 并渲染）
+function reloadMap() {
+  api('/cities')
+    .then(data => {
+      window.__citiesData = data.cities;
+      render(data);
+    })
+    .catch(err => showToast(err.message));
+}
+
+// 点击遮罩或按 Esc 关闭弹窗
+document.getElementById('quickModal').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) closeQuickModal();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && document.getElementById('quickModal').classList.contains('show')) closeQuickModal();
+});
 
 // 拉数据
 api('/cities')
