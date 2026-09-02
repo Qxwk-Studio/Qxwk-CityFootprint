@@ -515,6 +515,18 @@
   .modal-msg.error { color: #dc2626; }
   .modal-msg.ok { color: #16a34a; }
 
+  /* ========= 我的位置蓝点（定位成功后标在地图上） ========= */
+  .my-loc-wrap { background: none; border: none; }
+  .my-loc-dot {
+    width: 20px;
+    height: 20px;
+    box-sizing: border-box;
+    border-radius: 50%;
+    background: #3b82f6;
+    border: 3px solid #fff;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.45), 0 2px 8px rgba(0, 0, 0, 0.3);
+  }
+
   /* ========= Responsive ========= */
   @media (max-width: 640px) {
     .navbar-inner { padding: 0 12px; gap: 10px; }
@@ -1033,17 +1045,37 @@ function openQuickAdd() {
   navigator.geolocation.getCurrentPosition(
     (pos) => {
       hideToast();
+      updateMyLocation(pos.coords.latitude, pos.coords.longitude);
       const city = nearestCity(pos.coords.latitude, pos.coords.longitude);
       if (!city) { showToast('未找到附近城市'); return; }
       showQuickModal(city);
     },
-    (err) => {
-      if (err && err.code === err.PERMISSION_DENIED) showToast('定位权限被拒绝');
-      else if (err && err.code === err.TIMEOUT) showToast('定位超时，请重试');
-      else showToast('无法获取位置');
-    },
+    (err) => { showToast(geoErrorMsg(err)); },
     { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
   );
+}
+
+// 定位错误 → 差异化提示（GPS 关闭时浏览器多表现为超时，需引导检查定位开关）
+function geoErrorMsg(err) {
+  if (err && err.code === err.PERMISSION_DENIED) return '未获得定位权限，请允许定位';
+  if (err && err.code === err.POSITION_UNAVAILABLE) return '定位失败，请检查 GPS 是否已开启';
+  if (err && err.code === err.TIMEOUT) return '定位超时，请检查定位（GPS）是否已开启';
+  return '定位失败，请重试';
+}
+
+// 我的位置圆点（仅在用户主动定位后显示，不做自动定位），颜色跟随当前登录用户
+let myLocationMarker = null;
+function updateMyLocation(lat, lng) {
+  if (myLocationMarker) map.removeLayer(myLocationMarker);
+  const s = getSession();
+  const color = (s && s.color) || '#3b82f6';
+  const icon = L.divIcon({
+    className: 'my-loc-wrap',
+    html: `<div class="my-loc-dot" style="background:${color};box-shadow:0 0 0 2px ${color}73, 0 2px 8px rgba(0,0,0,.3);"></div>`,
+    iconSize: [20, 20],
+    iconAnchor: [10, 10],
+  });
+  myLocationMarker = L.marker([lat, lng], { icon, zIndexOffset: 1000 }).addTo(map);
 }
 
 // 弹窗内重新定位：更新地点为当前位置最近的城市
@@ -1058,11 +1090,7 @@ function relocateCity() {
       quickCity = city;
       document.getElementById('quickCity').textContent = city.name;
     },
-    (err) => {
-      if (err && err.code === err.PERMISSION_DENIED) showToast('定位权限被拒绝');
-      else if (err && err.code === err.TIMEOUT) showToast('定位超时，请重试');
-      else showToast('无法获取位置');
-    },
+    (err) => { showToast(geoErrorMsg(err)); },
     { enableHighAccuracy: false, timeout: 10000, maximumAge: 0 }
   );
 }
