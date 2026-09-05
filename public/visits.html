@@ -556,10 +556,23 @@
 <script src="app.js"></script>
 <script src="achievements.js"></script>
 <script>
-// 未登录跳转个人中心（登录页）
-if (!getSession()) {
-  location.href = 'account.html';
-}
+// 先等 SSO 落地（微信等整页回跳场景）再初始化：未登录跳个人中心（登录页），已登录校验凭证
+Promise.resolve(window._ssoLanding).then(function () {
+  if (!getSession()) {
+    location.href = 'account.html';
+    return;
+  }
+  api('/me')
+    .then(function () {
+      document.getElementById('loadingView').style.display = 'none';
+      document.getElementById('mainContent').style.display = '';
+      loadVisits();
+    })
+    .catch(function () {
+      // token 失效或校验失败：回登录入口页
+      location.href = 'account.html';
+    });
+});
 
 // 城市下拉数据
 const datalist = document.getElementById('cityList');
@@ -821,20 +834,6 @@ function escapeHtml(t) {
   const d = document.createElement('div');
   d.textContent = t || '';
   return d.innerHTML;
-}
-
-// 有会话先校验凭证：加载期间显示加载界面，校验通过才展示内容（401 由 app.js 跳登录页）
-if (getSession()) {
-  api('/me')
-    .then(function () {
-      document.getElementById('loadingView').style.display = 'none';
-      document.getElementById('mainContent').style.display = '';
-      loadVisits();
-    })
-    .catch(function () {
-      // token 失效或校验失败：回登录入口页
-      location.href = 'account.html';
-    });
 }
 </script>
 </body>

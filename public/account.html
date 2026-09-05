@@ -428,33 +428,36 @@ function enterUserView() {
 // 页面加载顺序：
 // 本脚本执行时本地可能已有 session（登录落地后 / 直接访问且有 token）
 // 有 token 验证 /api/me，成功进 userView，失败清掉跳通行证登录
-if (getSession()) {
-  api('/me')
-    .then(data => {
-      if (data && data.created_at) {
-        const s = String(data.created_at);
-        const d = new Date(s.replace(' ', 'T'));
-        window._regTime = isNaN(d.getTime()) ? s.slice(0, 10) : d.toLocaleDateString('zh-CN');
-      }
-      if (data && data.userId) {
-        localStorage.setItem('qxwf_user', JSON.stringify({
-          userId: data.userId,
-          nickname: data.nickname,
-          color: data.color,
-          is_admin: !!data.is_admin,
-          avatar: data.avatar || null,
-        }));
-      }
-      enterUserView();
-    })
-    .catch(() => {
-      // token 失效：app.js 的 401 处理已清除本地会话并重载回登录视图；其余失败同样回未登录界面
-      showAuthView();
-    });
-} else {
-  // 无 session：直接展示未登录界面（无需请求）
-  showAuthView();
-}
+// 先等 SSO 落地（微信等整页回跳场景：URL 带 token 需先落地再判会话），再进入初始化
+Promise.resolve(window._ssoLanding).then(function () {
+  if (getSession()) {
+    api('/me')
+      .then(data => {
+        if (data && data.created_at) {
+          const s = String(data.created_at);
+          const d = new Date(s.replace(' ', 'T'));
+          window._regTime = isNaN(d.getTime()) ? s.slice(0, 10) : d.toLocaleDateString('zh-CN');
+        }
+        if (data && data.userId) {
+          localStorage.setItem('qxwf_user', JSON.stringify({
+            userId: data.userId,
+            nickname: data.nickname,
+            color: data.color,
+            is_admin: !!data.is_admin,
+            avatar: data.avatar || null,
+          }));
+        }
+        enterUserView();
+      })
+      .catch(() => {
+        // token 失效：app.js 的 401 处理已清除本地会话并重载回登录视图；其余失败同样回未登录界面
+        showAuthView();
+      });
+  } else {
+    // 无 session：直接展示未登录界面（无需请求）
+    showAuthView();
+  }
+});
 </script>
 </body>
 </html>

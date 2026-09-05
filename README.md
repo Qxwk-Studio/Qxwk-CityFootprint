@@ -41,12 +41,12 @@
 
 ## 🔗 通行证 SSO 接入说明
 
-本站是 [Qxwk 通行证](https://account.qxwkstudio.top/) 的接入站点之一。通行证采用**弹窗式 SSO**（旧式整页跳转已移除），认证流程：
+本站是 [Qxwk 通行证](https://account.qxwkstudio.top/) 的接入站点之一。通行证采用**弹窗 + 整页双模式 SSO**：电脑端弹窗登录、手机端（含微信）整页跳转登录带 token 回跳落地。认证流程：
 
-1. 用户点击登录，本站 `passportLogin()` 打开通行证 `login.html?redirect=<本站地址>&popup=1` 弹窗
-2. 通行证通过 `/api/sso/info` 校验 `redirect` 的 origin（须在 `apps` 白名单；未登记站点放行并仅记录登录来源日志）
-3. 用户在弹窗完成登录/注册，登录成功后 `postMessage` 回传 `{type: 'qxwk-sso', token, uid, nick}` 并自动关窗
-4. 本站 `message` 监听（校验来源 origin 为通行证域名）接收 token → 存 localStorage → 调本站 `/api/me` 写本地用户缓存 → 刷新页面
+1. 用户点击登录，本站 `passportLogin()` 按设备分流——电脑端 `window.open` 通行证 `login.html?redirect=<本站地址>&popup=1` 弹窗；手机端 `location.href` 跳转同 URL（不带 `popup=1`）走整页登录
+2. 通行证 `/api/sso/info` 仅校验 redirect 的 http/https 合法性并供登录页展示来源，**不强制 apps 白名单**——未登记站点照常登录回跳，来源 origin 记入登录日志
+3. 弹窗模式：用户登录成功后 `postMessage` 回传 `{type: 'qxwk-sso', token, uid, nick}` 并自动关窗，本站 `message` 监听（校验来源 origin 为通行证域名）接收 token → 存 localStorage → 调本站 `/api/me` 写本地用户缓存
+4. 整页模式（手机端）：通行证登录页带 `?token=` 回跳本站，本站 `_ssoLanding` 读取 token → 清理 URL 参数 → 存 localStorage → 调 `/api/me` 写本地用户缓存
 5. 后续业务请求带 `Authorization: Bearer <token>`，本站后端 `resolveViewer()` 拿 token 去通行证 `/api/me` 验证，按 nickname 映射到本地 users 表（首次自动建号，颜色随通行证同步）
 
 ## 🧱 技术栈
@@ -143,7 +143,7 @@ npx wrangler d1 migrations apply qxwk-cityfootprint --remote
 
 ### 3️⃣ 在通行证注册本站
 
-本站接入通行证 SSO 必须在通行证的 `apps` 表登记 origin（白名单 + SSO 回跳校验）。在通行证项目执行：
+本站接入通行证 SSO 建议在通行证的 `apps` 表登记 origin（仅用于账号中心站点名展示与 `/api/me` 跨域 CORS；未登记站点也能正常登录回跳，仅日志记录来源）。在通行证项目执行：
 
 ```bash
 cd c:\Code\Qxwk-Account
