@@ -28,17 +28,6 @@ async function api(path, options = {}) {
   return data;
 }
 
-function saveSession(data) {
-  localStorage.setItem(LS_TOKEN, data.token);
-  localStorage.setItem(LS_USER, JSON.stringify({
-    userId: data.userId,
-    nickname: data.nickname,
-    color: data.color,
-    is_admin: !!data.is_admin,
-    avatar: data.avatar || null,
-  }));
-}
-
 function getSession() {
   try {
     const u = localStorage.getItem(LS_USER);
@@ -66,31 +55,6 @@ function findCity(name) {
   return c ? { lat: c.lat, lng: c.lng } : null;
 }
 
-// SSO 落地：URL 带 token 时存 localStorage，拉 /api/me 同步用户信息
-async function handleSsoLanding() {
-  const params = new URLSearchParams(location.search);
-  const token = params.get('token');
-  if (!token) return;
-  localStorage.setItem(LS_TOKEN, token);
-  // 清掉 URL 上的 token/uid/nick，避免分享链接泄露
-  const cleanUrl = location.origin + location.pathname;
-  history.replaceState(null, '', cleanUrl);
-  try {
-    const me = await fetch(API_BASE + '/me', {
-      headers: { Authorization: 'Bearer ' + token },
-    }).then(r => r.ok ? r.json() : null).catch(() => null);
-    if (me && me.userId) {
-      localStorage.setItem(LS_USER, JSON.stringify({
-        userId: me.userId,
-        nickname: me.nickname,
-        color: me.color,
-        is_admin: !!me.is_admin,
-        avatar: me.avatar || null,
-      }));
-    }
-  } catch { /* /api/me 拉取失败由后续请求触发 401 兜底 */ }
-}
-
 // 直接使用头像链接（由通行证 /api/me 返回的 avatar 字段）设置头像；
 // 无链接或图片加载失败时，回退为昵称首字 + 专属颜色
 function setAvatarFromUrl(el, avatarUrl, nickname, color) {
@@ -111,12 +75,38 @@ function setAvatarFromUrl(el, avatarUrl, nickname, color) {
   el.appendChild(img);
 }
 
-// 通行证登录 URL（带 redirect 回跳本页）
-function passportLoginUrl() {
+// 通行证弹窗登录：打开 login.html 弹窗（popup=1），登录成功后回传 token 并自动关窗。
+// 通行证已移除旧整页跳转（登录后会留在账号中心），各站须用弹窗模式接收回传。
+function passportLogin() {
   const PASSPORT_URL = 'https://account.qxwkstudio.top';
   const here = location.origin + location.pathname;
-  return PASSPORT_URL + '/login.html?redirect=' + encodeURIComponent(here);
+  const w = window.open(
+    PASSPORT_URL + '/login.html?redirect=' + encodeURIComponent(here) + '&popup=1',
+    'qxwk_sso',
+    'width=420,height=640'
+  );
+  if (!w) alert('请允许浏览器弹出窗口，以便完成通行证登录');
 }
 
-// 页面加载时尝试 SSO 落地，暴露 Promise 供页面内联脚本 await
-window._ssoLanding = handleSsoLanding();
+// 监听通行证弹窗回传：type=qxwk-sso 且 origin 为通行证时落地登录
+window.addEventListener('message', async (e) => {
+  if (e.origin !== 'https://account.qxwkstudio.top') return;
+  const d = e.data || {};
+  if (d.type !== 'qxwk-sso' || !d.token) return;
+  localStorage.setItem(LS_TOKEN, d.token);
+  try {
+    const me = await fetch(API_BASE + '/me', {
+      headers: { Authorization: 'Bearer ' + d.token },
+    }).then(r => r.ok ? r.json() : null);
+    if (me && me.userId) {
+      localStorage.setItem(LS_USER, JSON.stringify({
+        userId: me.userId,
+        nickname: me.nickname,
+        color: me.color,
+        is_admin: !!me.is_admin,
+        avatar: me.avatar || null,
+      }));
+    }
+  } catch { /* /api/me 拉取失败由后续请求触发 401 兜底 */ }
+  location.reload(); // 刷新页面以更新登录态 UI
+});

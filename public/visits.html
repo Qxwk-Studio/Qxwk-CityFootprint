@@ -223,6 +223,27 @@
   .visit-actions { display: flex; gap: 6px; flex-shrink: 0; }
 
   .empty { text-align: center; color: var(--text-tertiary); font-size: 0.9rem; padding: 36px 0; }
+
+  /* ========= 加载中：校验会话时的过渡界面 ========= */
+  .loading-view {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    color: var(--text-secondary);
+    font-size: 0.92rem;
+  }
+  .loading-spinner {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 3px solid var(--border);
+    border-top-color: var(--primary);
+    animation: spin 0.9s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
   .msg { font-size: 0.84rem; margin-top: 10px; }
   .msg.error { color: #dc2626; }
   .msg.ok { color: #16a34a; }
@@ -442,7 +463,13 @@
   </div>
 </header>
 
-<div class="main">
+<!-- 加载中：默认显示，校验本地会话后再展示内容（避免未登录用户先看到表单） -->
+<div class="loading-view" id="loadingView">
+  <div class="loading-spinner"></div>
+  <p>正在加载足迹数据…</p>
+</div>
+
+<div class="main" id="mainContent" style="display:none">
   <div class="container">
     <div class="page-header">
       <h1>
@@ -796,11 +823,18 @@ function escapeHtml(t) {
   return d.innerHTML;
 }
 
-// 验证本地凭证仍有效后加载足迹（token 失效由 app.js 401 跳转登录页）
+// 有会话先校验凭证：加载期间显示加载界面，校验通过才展示内容（401 由 app.js 跳登录页）
 if (getSession()) {
   api('/me')
-    .then(() => loadVisits())
-    .catch(() => {});
+    .then(function () {
+      document.getElementById('loadingView').style.display = 'none';
+      document.getElementById('mainContent').style.display = '';
+      loadVisits();
+    })
+    .catch(function () {
+      // token 失效或校验失败：回登录入口页
+      location.href = 'account.html';
+    });
 }
 </script>
 </body>

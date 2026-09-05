@@ -166,6 +166,28 @@
   .passport-tip { font-size: 0.78rem; color: var(--text-tertiary); margin-top: 14px; text-align: center; }
   .passport-tip a { color: var(--primary); text-decoration: none; }
   .passport-tip a:hover { text-decoration: underline; }
+
+  /* ========= 加载中：校验会话时的过渡界面 ========= */
+  .loading-view {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    color: var(--text-secondary);
+    font-size: 0.92rem;
+  }
+  .loading-spinner {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 3px solid var(--border);
+    border-top-color: var(--primary);
+    animation: spin 0.9s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
   .footer { background: #0f172a; text-align: center; padding: 14px 24px; color: var(--text-tertiary);
     font-size: 0.82rem; border-top: 1px solid rgba(255, 255, 255, 0.06); }
   .footer-copy { opacity: 0.6; }
@@ -272,7 +294,13 @@
   </div>
 </header>
 
-<div id="authView">
+<!-- 加载中：默认显示，校验本地会话后切换（避免已登录用户先看到"未登录"界面） -->
+<div class="loading-view" id="loadingView">
+  <div class="loading-spinner"></div>
+  <p>正在加载账号信息…</p>
+</div>
+
+<div id="authView" style="display:none">
   <div class="auth-left">
     <iframe src="setup.html" class="setup-frame" title="欢迎" loading="lazy"></iframe>
   </div>
@@ -353,12 +381,20 @@
 </footer>
 <script src="app.js"></script>
 <script>
-// 通行证登录入口：跳通行证 login.html，登录后回跳本页（app.js handleSsoLanding 负责落地）
+// 通行证登录入口：弹窗方式打开 login.html（popup=1），登录成功后回传 token 并自动关窗，app.js 监听 message 落地
 document.getElementById('passportLoginBtn').addEventListener('click', function () {
-  location.href = passportLoginUrl();
+  passportLogin();
 });
 
+// 展示未登录界面（无会话，或会话校验失败）
+function showAuthView() {
+  document.getElementById('loadingView').style.display = 'none';
+  document.getElementById('authView').style.display = '';
+  document.body.classList.remove('no-scroll');
+}
+
 function enterUserView() {
+  document.getElementById('loadingView').style.display = 'none';
   document.getElementById('authView').style.display = 'none';
   document.body.classList.remove('no-scroll');
   const mainEl = document.getElementById('mainContent');
@@ -390,35 +426,35 @@ function enterUserView() {
 }
 
 // 页面加载顺序：
-// 1) app.js 的 handleSsoLanding() 已在 DOM 解析时执行，URL 带 token 时已落地
-// 2) 本脚本执行时本地可能已有 session（SSO 落地后 / 直接访问且有 token）
-//    有 token 验证 /api/me，成功进 userView，失败清掉跳通行证登录
-(window._ssoLanding || Promise.resolve()).then(() => {
-  if (getSession()) {
-    api('/me')
-      .then(data => {
-        if (data && data.created_at) {
-          const s = String(data.created_at);
-          const d = new Date(s.replace(' ', 'T'));
-          window._regTime = isNaN(d.getTime()) ? s.slice(0, 10) : d.toLocaleDateString('zh-CN');
-        }
-        if (data && data.userId) {
-          localStorage.setItem('qxwf_user', JSON.stringify({
-            userId: data.userId,
-            nickname: data.nickname,
-            color: data.color,
-            is_admin: !!data.is_admin,
-            avatar: data.avatar || null,
-          }));
-        }
-        enterUserView();
-      })
-      .catch(() => { /* 401 由 app.js 跳通行证登录 */ });
-  } else {
-    // 无 session：停在登录入口页（authView 已默认显示）
-    document.body.classList.remove('no-scroll');
-  }
-});
+// 本脚本执行时本地可能已有 session（登录落地后 / 直接访问且有 token）
+// 有 token 验证 /api/me，成功进 userView，失败清掉跳通行证登录
+if (getSession()) {
+  api('/me')
+    .then(data => {
+      if (data && data.created_at) {
+        const s = String(data.created_at);
+        const d = new Date(s.replace(' ', 'T'));
+        window._regTime = isNaN(d.getTime()) ? s.slice(0, 10) : d.toLocaleDateString('zh-CN');
+      }
+      if (data && data.userId) {
+        localStorage.setItem('qxwf_user', JSON.stringify({
+          userId: data.userId,
+          nickname: data.nickname,
+          color: data.color,
+          is_admin: !!data.is_admin,
+          avatar: data.avatar || null,
+        }));
+      }
+      enterUserView();
+    })
+    .catch(() => {
+      // token 失效：app.js 的 401 处理已清除本地会话并重载回登录视图；其余失败同样回未登录界面
+      showAuthView();
+    });
+} else {
+  // 无 session：直接展示未登录界面（无需请求）
+  showAuthView();
+}
 </script>
 </body>
 </html>
