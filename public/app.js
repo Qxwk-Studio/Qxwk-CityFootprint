@@ -75,24 +75,15 @@ function setAvatarFromUrl(el, avatarUrl, nickname, color) {
   el.appendChild(img);
 }
 
-// 通行证登录：电脑端弹窗登录（popup=1，登录后 postMessage 回传 token 并自动关窗）；
-// 手机端（含微信）无法可靠使用弹窗回传，改整页跳转（登录后带 token 回跳本页，由 _ssoLanding 落地）
+// 通行证登录（index 中控 · 统一分流）：整页跳转通行证主页 ?redirect= 本站，
+// 登录 + 授权确认由中控在弹层内完成，确认后回跳本站；桌面 / 手机 / 微信体验一致，不受弹窗拦截影响。
 function passportLogin() {
   const PASSPORT_URL = 'https://account.qxwkstudio.top';
-  const here = location.origin + location.pathname;
-  if (/(Android|iPhone|iPad|iPod|Mobile)/i.test(navigator.userAgent)) {
-    location.href = PASSPORT_URL + '/login.html?redirect=' + encodeURIComponent(here);
-    return;
-  }
-  const w = window.open(
-    PASSPORT_URL + '/login.html?redirect=' + encodeURIComponent(here) + '&popup=1',
-    'qxwk_sso',
-    'width=420,height=640'
-  );
-  if (!w) alert('请允许浏览器弹出窗口，以便完成通行证登录');
+  const here = location.origin + location.pathname;   // 回跳目标（本站整页）
+  location.href = PASSPORT_URL + '/?redirect=' + encodeURIComponent(here);
 }
 
-// 拉取 /me 并写入本地会话（弹窗回传 / 整页回跳共用）
+// 拉取 /me 并写入本地会话（SSO 落地共用）
 async function applyMe(token) {
   try {
     const me = await fetch(API_BASE + '/me', {
@@ -110,24 +101,14 @@ async function applyMe(token) {
   } catch { /* /api/me 拉取失败由后续请求触发 401 兜底 */ }
 }
 
-// 监听通行证弹窗回传：type=qxwk-sso 且 origin 为通行证时落地登录
-window.addEventListener('message', async (e) => {
-  if (e.origin !== 'https://account.qxwkstudio.top') return;
-  const d = e.data || {};
-  if (d.type !== 'qxwk-sso' || !d.token) return;
-  localStorage.setItem(LS_TOKEN, d.token);
-  await applyMe(d.token);
-  location.reload(); // 刷新页面以更新登录态 UI
-});
-
-// SSO 整页回跳落地（微信等无法弹窗的环境）：URL 带 token 则存入本地会话并清理地址栏。
-// 页面可通过 window._ssoLanding 等待落地完成后再初始化（如 account/visits 页）。
+// SSO 落地：index 中控确认后整页回跳本站，URL 片段带 ...#_t=<token>；
+// 读取后存入本地会话并清理地址栏（页面可用 window._ssoLanding 等待落地后再初始化）。
 window._ssoLanding = (async function ssoLanding() {
-  const params = new URLSearchParams(location.search);
-  const t = params.get('token');
-  if (!t) return;
+  const m = location.hash.match(/[#&]_t=([^&]+)/);
+  if (!m) return;
+  const t = decodeURIComponent(m[1]);
   localStorage.setItem(LS_TOKEN, t);
-  // 清掉 URL 上的 token，避免分享链接泄露登录凭证
-  history.replaceState(null, '', location.origin + location.pathname);
+  // 清掉 URL 片段，避免分享链接泄露登录凭证
+  history.replaceState(null, '', location.pathname + location.search);
   await applyMe(t);
 })();

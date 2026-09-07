@@ -4,6 +4,8 @@
 >
 > 登录通行证后把自己去过的城市打点在地图上，和朋友们一起拼出一张五彩斑斓的足迹大地图。
 
+> **ℹ️ 本仓库专注足迹内容**：未阔月刊（投稿/审核）前端与后端已迁至 [Qxwk-Blog](https://github.com/Qxwk-Studio/Qxwk-Blog)，两站仍共享同一 D1 数据库与通行证 SSO。
+
 ## ✨ 功能一览
 
 ### 🗺️ 足迹大地图 (`index.html`)
@@ -41,13 +43,12 @@
 
 ## 🔗 通行证 SSO 接入说明
 
-本站是 [Qxwk 通行证](https://account.qxwkstudio.top/) 的接入站点之一。通行证采用**弹窗 + 整页双模式 SSO**：电脑端弹窗登录、手机端（含微信）整页跳转登录带 token 回跳落地。认证流程：
+本站是 [Qxwk 通行证](https://account.qxwkstudio.top/) 的接入站点之一。通行证采用**内嵌弹层单模式（index 中控）**：登录与授权确认都在通行证中控的弹层内完成，确认后整页回跳本站落地。认证流程：
 
-1. 用户点击登录，本站 `passportLogin()` 按设备分流——电脑端 `window.open` 通行证 `login.html?redirect=<本站地址>&popup=1` 弹窗；手机端 `location.href` 跳转同 URL（不带 `popup=1`）走整页登录
-2. 通行证 `/api/sso/info` 仅校验 redirect 的 http/https 合法性并供登录页展示来源，**不强制 apps 白名单**——未登记站点照常登录回跳，来源 origin 记入登录日志
-3. 弹窗模式：用户登录成功后 `postMessage` 回传 `{type: 'qxwk-sso', token, uid, nick}` 并自动关窗，本站 `message` 监听（校验来源 origin 为通行证域名）接收 token → 存 localStorage → 调本站 `/api/me` 写本地用户缓存
-4. 整页模式（手机端）：通行证登录页带 `?token=` 回跳本站，本站 `_ssoLanding` 读取 token → 清理 URL 参数 → 存 localStorage → 调 `/api/me` 写本地用户缓存
-5. 后续业务请求带 `Authorization: Bearer <token>`，本站后端 `resolveViewer()` 拿 token 去通行证 `/api/me` 验证，按 nickname 映射到本地 users 表（首次自动建号，颜色随通行证同步）
+1. 用户点击登录，本站 `passportLogin()` 统一整页跳转通行证 `account.qxwkstudio.top/?redirect=<本站地址>`（注意是 **index 中控**入口）：已登录直接弹**授权确认页**，未登录先弹登录页、登录成功后再拉起授权确认
+2. 授权确认页点击「确定」，中控回跳本站（跨域经 URL **片段** `本站#_t=<token>` 交付；同域直达）。`/api/sso/info` 仅校验 redirect 的 http/https 合法性并供展示来源，**不强制 apps 白名单**——未登记站点照常授权登录回跳，来源 origin 记入登录日志
+3. 本站 `_ssoLanding` 落地：读取 URL 片段 `#_t=<token>` → `history.replaceState` 清掉片段（防分享泄露）→ 存 localStorage → 调本站 `/api/me` 写本地用户缓存
+4. 后续业务请求带 `Authorization: Bearer <token>`，本站后端 `resolveViewer()` 拿 token 去通行证 `/api/me` 验证，按 nickname 映射到本地 cf_users 表（首次自动建号，颜色随通行证同步）
 
 ## 🧱 技术栈
 
@@ -61,7 +62,7 @@
 
 ```
 ├── migrations/
-│   ├── 0001_init.sql       # 建表：users / visits
+│   └── 0001_init.sql        # 建表：users（两站共享）/ visits（本站独占）
 ├── src/
 │   ├── worker.js           # Worker 入口（/api/* 接口 + 静态资源回退）
 │   └── lib.js              # 通行证 token 验证 + 本地用户映射 + 工具
@@ -127,7 +128,7 @@
 
 Cloudflare 控制台 → **Workers & Pages** → **D1** → **创建数据库**（Create database）
 
-- 名字填：`qxwk-cityfootprint`
+- 名字填：`qxwk-data`
 - 创建后复制 **database_id**（一串 UUID）
 
 ### 2️⃣ 建表（迁移）
@@ -135,15 +136,15 @@ Cloudflare 控制台 → **Workers & Pages** → **D1** → **创建数据库**�
 在项目根目录执行（会自动按顺序应用 `migrations/` 下所有迁移）：
 
 ```bash
-npx wrangler d1 migrations apply qxwk-cityfootprint --remote
+npx wrangler d1 migrations apply qxwk-data --remote
 ```
 
-迁移会创建本站所需的全部表：`users`（`is_private` 由 visits 侧携带、`is_admin` 管理员标志、`color` 颜色随通行证同步）与 `visits`（足迹，含 `is_private`）。  
+迁移会创建本站所需的全部表：`users`（`is_admin` 管理员标志、`color` 颜色随通行证同步，两站共享）与 `cf_visits`（足迹，含 `is_private`，本站独占）。
 &gt; 注：本站自 SSO 改造起不再自建账号与密码体系，注册/改密/邀请码等均移交通行证，因此迁移文件中**不包含** sessions / invite_codes / settings 表。
 
 ### 3️⃣ 在通行证注册本站
 
-本站接入通行证 SSO 建议在通行证的 `apps` 表登记 origin（仅用于账号中心站点名展示与 `/api/me` 跨域 CORS；未登记站点也能正常登录回跳，仅日志记录来源）。在通行证项目执行：
+本站接入通行证 SSO 建议在通行证的 `apps` 表登记 origin（仅用于账号中心展示站点名；`/api/me` CORS 已全面放行，未登记站点也能正常登录回跳与跨域验证 token，仅日志记录来源）。在通行证项目执行：
 
 ```bash
 cd c:\Code\Qxwk-Account
@@ -211,7 +212,7 @@ Worker 会在 `localhost:8788` 同时提供页面和 API。
 
 **3. 查看免费额度**
 - Workers 每天 10 万次请求、D1 5GB 存储，个人使用完全足够
-- 注意 D1 单查询上限为 10 万行读取；`visits` 达到数万条后再考虑加接口缓存 / 预计算
+- 注意 D1 单查询上限为 10 万行读取；`cf_visits` 达到数万条后再考虑加接口缓存 / 预计算
 
 **4. 不公开行程（`is_private`）**
 - 勾选"不公开行程"的足迹仅本人可见，接口层通过 `is_private` 字段过滤

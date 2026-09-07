@@ -381,7 +381,7 @@
 </footer>
 <script src="app.js"></script>
 <script>
-// 通行证登录入口：弹窗方式打开 login.html（popup=1），登录成功后回传 token 并自动关窗，app.js 监听 message 落地
+// 通行证登录入口：整页跳转通行证 index 中控（?redirect= 本站），登录 + 授权确认后回跳本站，app.js 落地会话
 document.getElementById('passportLoginBtn').addEventListener('click', function () {
   passportLogin();
 });

@@ -1,4 +1,5 @@
-﻿-- 初始建表：用户 / 足迹（已合并 SSO 切接后的最终结构）
+-- 初始建表：用户 / 足迹（已合并 SSO 切接后的最终结构）
+-- 表名最终为 cf_users / cf_visits（与 Qxwk-Blog 的表区分）
 -- 认证（密码/会话/邀请码/系统设置）统一由通行证 account.qxwkstudio.top 处理
 
 CREATE TABLE IF NOT EXISTS users (
@@ -9,7 +10,7 @@ CREATE TABLE IF NOT EXISTS users (
   created_at TEXT DEFAULT (datetime('now'))
 );
 
-CREATE TABLE IF NOT EXISTS visits (
+CREATE TABLE IF NOT EXISTS cf_visits (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id INTEGER NOT NULL,
   city TEXT NOT NULL,
@@ -22,5 +23,5 @@ CREATE TABLE IF NOT EXISTS visits (
   FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_visits_user ON visits(user_id);
-CREATE INDEX IF NOT EXISTS idx_visits_city ON visits(city);
+CREATE INDEX IF NOT EXISTS idx_visits_user ON cf_visits(user_id);
+CREATE INDEX IF NOT EXISTS idx_visits_city ON cf_visits(city);

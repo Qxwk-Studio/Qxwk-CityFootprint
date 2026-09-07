@@ -144,6 +144,11 @@
     color: var(--primary);
     line-height: 1.2;
   }
+  .stat-card .value .stat-loading {
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--text-tertiary);
+  }
 
   /* 管理员视图提示 */
   .admin-view-note {
@@ -345,19 +350,19 @@
     <div class="stats-grid">
       <div class="stat-card">
         <div class="label">✈️ 总行程</div>
-        <div class="value" id="totalVisits">-</div>
+        <div class="value" id="totalVisits"><span class="stat-loading">加载中…</span></div>
       </div>
       <div class="stat-card">
         <div class="label">🏙️ 总城市</div>
-        <div class="value" id="totalCities">-</div>
+        <div class="value" id="totalCities"><span class="stat-loading">加载中…</span></div>
       </div>
       <div class="stat-card">
         <div class="label">🗺️ 覆盖省份</div>
-        <div class="value" id="totalProvinces">-</div>
+        <div class="value" id="totalProvinces"><span class="stat-loading">加载中…</span></div>
       </div>
       <div class="stat-card">
         <div class="label">👥 总用户</div>
-        <div class="value" id="totalUsers">-</div>
+        <div class="value" id="totalUsers"><span class="stat-loading">加载中…</span></div>
       </div>
     </div>
 
