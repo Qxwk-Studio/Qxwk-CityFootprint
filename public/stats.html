@@ -198,6 +198,20 @@
     flex-shrink: 0;
   }
   .rank-no.top { background: linear-gradient(135deg, var(--primary), var(--secondary)); color: #fff; border: none; }
+  .rank-toggle {
+    display: block;
+    margin: 14px auto 0;
+    padding: 8px 18px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--bg);
+    color: var(--primary);
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: background .2s, color .2s;
+  }
+  .rank-toggle:hover:not(:disabled) { background: var(--primary); color: #fff; }
+  .rank-toggle:disabled { color: var(--text-secondary); cursor: default; opacity: .7; }
 
   /* 成就达成人数 */
   .ach-count-cat {
@@ -415,24 +429,37 @@ api('/stats')
       return;
     }
     list.innerHTML = '';
-    const top = data.cityRank.slice(0, 30); // 只显示前 30 名
-    top.forEach((c, i) => {
-      const item = document.createElement('div');
-      item.className = 'rank-item';
-      const province = findProvince(c.city);
-      item.innerHTML = `
+    const RANK_DEFAULT = 10, RANK_EXPAND = 50; // 默认前 10 名，点击展开到前 50 名
+    var expanded = false;
+    function drawCityRank() {
+      const shown = expanded ? RANK_EXPAND : RANK_DEFAULT;
+      list.innerHTML = '';
+      data.cityRank.slice(0, shown).forEach((c, i) => {
+        const item = document.createElement('div');
+        item.className = 'rank-item';
+        const province = findProvince(c.city);
+        item.innerHTML = `
         <span class="rank-no${i < 3 ? ' top' : ''}">${i + 1}</span>
         <span class="rank-city">${c.city}${province ? '<span class="rank-province">· ' + province + '</span>' : ''}</span>
         <span class="rank-meta">去过 ${c.people} 人</span>
         <span class="rank-count">${c.count} 次</span>`;
-      list.appendChild(item);
-    });
-    if (data.cityRank.length > 30) {
-      const more = document.createElement('div');
-      more.className = 'empty';
-      more.textContent = '… 共 ' + data.cityRank.length + ' 座城市，仅显示前 30 名';
+        list.appendChild(item);
+      });
+      const more = document.createElement('button');
+      more.type = 'button';
+      more.className = 'rank-toggle';
+      if (expanded) {
+        more.textContent = '收起（仅显示前 ' + RANK_DEFAULT + ' 名）';
+      } else if (data.cityRank.length > RANK_DEFAULT) {
+        more.textContent = '展开查看前 ' + Math.min(RANK_EXPAND, data.cityRank.length) + ' 名（共 ' + data.cityRank.length + ' 座城市）';
+      } else {
+        more.textContent = '共 ' + data.cityRank.length + ' 座城市';
+        more.disabled = true;
+      }
+      more.addEventListener('click', function () { expanded = !expanded; drawCityRank(); });
       list.appendChild(more);
     }
+    drawCityRank();
 
     // 成就达成人数：统计每个成就被多少用户达成
     const achCount = {};
