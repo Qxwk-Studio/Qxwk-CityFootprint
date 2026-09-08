@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS users (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   nickname TEXT UNIQUE NOT NULL,
   color TEXT NOT NULL,                  -- 地图打点颜色
+  avatar TEXT,                          -- 头像链接（通行证算好的 WeAvatar，登录时同步；无邮箱为 NULL）
   is_admin INTEGER NOT NULL DEFAULT 0,  -- 1 = 管理员
   created_at TEXT DEFAULT (datetime('now'))
 );
