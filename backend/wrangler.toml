@@ -1,0 +1,21 @@
+name = "qxwk-cityfootprint"
+main = "src/worker.js"
+compatibility_date = "2026-08-05"
+compatibility_flags = ["nodejs_compat"]
+
+# 本文件在 backend/ 里，后端命令都在该目录执行（npx wrangler deploy / dev / d1 ...）。
+# 静态资源目录用 ../frontend：wrangler 的相对路径按本文件所在目录解析，不是按命令行当前目录。
+
+# 静态资源目录（前端页面，仓库根的 frontend/）
+# binding = "ASSETS" 不能省：没有它 env.ASSETS 是 undefined，worker.js 末尾对未命中静态文件的
+# 路径调用 env.ASSETS.fetch(request) 会直接抛错（Cloudflare Error 1101），本该 404 的路径变成 500。
+[assets]
+directory = "../frontend"
+binding = "ASSETS"
+
+# D1 数据库绑定
+# 部署前：在 CF 控制台创建 D1 数据库后，把 database_id 替换成你的数据库 ID
+[[d1_databases]]
+binding = "DB"
+database_name = "qxwk-data"
+database_id = "60221417-13f8-486c-9f95-43e5fefe95d5"
