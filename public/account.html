@@ -166,6 +166,24 @@
   .passport-tip { font-size: 0.78rem; color: var(--text-tertiary); margin-top: 14px; text-align: center; }
   .passport-tip a { color: var(--primary); text-decoration: none; }
   .passport-tip a:hover { text-decoration: underline; }
+  /* 登录表单：与 visits 页的表单控件保持同一套间距/圆角/聚焦样式 */
+  .login-form .field { margin-bottom: 16px; }
+  .login-form label { display: block; font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500; }
+  .login-form input {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 0.9rem;
+    font-family: inherit;
+    color: var(--text-primary);
+    background: var(--surface);
+    transition: border-color var(--transition), box-shadow var(--transition);
+  }
+  .login-form input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-light); }
+  .login-form input:disabled { opacity: 0.6; }
+  .form-error { font-size: 0.82rem; color: #dc2626; margin-bottom: 12px; }
+  .form-error a { color: inherit; }
 
   /* ========= 加载中：校验会话时的过渡界面 ========= */
   .loading-view {
@@ -307,9 +325,22 @@
   <div class="auth-right">
     <div class="auth-form">
       <h2 class="auth-title">👋 欢迎来到 City Footprint</h2>
-      <p class="auth-subtitle">由 Qxwk 通行证统一登录，一次登录处处通行</p>
-      <button class="btn btn-primary" id="passportLoginBtn" type="button">前往通行证登录</button>
-      <p class="passport-tip">没有账号？通行证登录页可一键注册 · <a href="https://account.qxwkstudio.top/" target="_blank" rel="noopener">打开通行证</a></p>
+      <p class="auth-subtitle">用 Qxwk 通行证账号登录，一处登录处处通行</p>
+      <!-- 登录表单由本页 JS 直接跨域提交到通行证 /api/login（见 app.js 的 passportLogin）；
+           密码只经本站前端，不经过本站服务器。跨站跳转授权已在通行证侧下线，所以这里是本站自己的表单 -->
+      <form class="login-form" id="loginForm" novalidate>
+        <div class="field">
+          <label for="loginAccount">昵称或邮箱</label>
+          <input type="text" id="loginAccount" name="nickname" autocomplete="username" required>
+        </div>
+        <div class="field">
+          <label for="loginPassword">密码</label>
+          <input type="password" id="loginPassword" name="password" autocomplete="current-password" required>
+        </div>
+        <p class="form-error" id="loginError" style="display:none"></p>
+        <button class="btn btn-primary" id="loginSubmitBtn" type="submit">登录</button>
+      </form>
+      <p class="passport-tip">没有账号，或忘记密码？到通行证注册 / 找回 · <a href="https://account.qxwkstudio.top/login.html" target="_blank" rel="noopener">打开通行证</a></p>
     </div>
   </div>
 </div>
@@ -381,9 +412,41 @@
 </footer>
 <script src="app.js"></script>
 <script>
-// 通行证登录入口：整页跳转通行证 index 中控（?redirect= 本站），登录 + 授权确认后回跳本站，app.js 落地会话
-document.getElementById('passportLoginBtn').addEventListener('click', function () {
-  passportLogin();
+// 登录表单：直接跨域调通行证 /api/login（app.js 的 passportLogin），成功后本地已存好 token，直接进个人中心
+document.getElementById('loginForm').addEventListener('submit', async function (e) {
+  e.preventDefault();
+  const account = document.getElementById('loginAccount').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const errEl = document.getElementById('loginError');
+  const btn = document.getElementById('loginSubmitBtn');
+  const accountEl = document.getElementById('loginAccount');
+  const pwEl = document.getElementById('loginPassword');
+
+  function fail(msg) {
+    errEl.textContent = msg;
+    errEl.style.display = '';
+  }
+  errEl.style.display = 'none';
+  if (!account || !password) return fail('请填写昵称/邮箱和密码');
+
+  // 提交期间禁用控件，避免连点发出多次登录（通行证侧有失败限流，重复请求没意义）
+  btn.disabled = true;
+  accountEl.disabled = true;
+  pwEl.disabled = true;
+  btn.textContent = '登录中…';
+  try {
+    await passportLogin(account, password);
+    // 本地已存好 token；再拉一次本站 /api/me 拿本地用户信息（本地 id / 昵称 / 颜色 / 注册时间）并进入个人中心。
+    // 首次登录时本地那一行也是在这次 /api/me 里建的（后端 resolveViewer）
+    onMeLoaded(await api('/me'));
+  } catch (err) {
+    fail(err && err.message ? err.message : '登录失败，请稍后重试');
+  } finally {
+    btn.disabled = false;
+    accountEl.disabled = false;
+    pwEl.disabled = false;
+    btn.textContent = '登录';
+  }
 });
 
 // 展示未登录界面（无会话，或会话校验失败）
@@ -425,39 +488,33 @@ function enterUserView() {
   if (regEl && window._regTime) regEl.textContent = '注册于 ' + window._regTime;
 }
 
-// 页面加载顺序：
-// 本脚本执行时本地可能已有 session（登录落地后 / 直接访问且有 token）
-// 有 token 验证 /api/me，成功进 userView，失败清掉跳通行证登录
-// 先等 SSO 落地（微信等整页回跳场景：URL 带 token 需先落地再判会话），再进入初始化
-Promise.resolve(window._ssoLanding).then(function () {
-  if (getSession()) {
-    api('/me')
-      .then(data => {
-        if (data && data.created_at) {
-          const s = String(data.created_at);
-          const d = new Date(s.replace(' ', 'T'));
-          window._regTime = isNaN(d.getTime()) ? s.slice(0, 10) : d.toLocaleDateString('zh-CN');
-        }
-        if (data && data.userId) {
-          localStorage.setItem('qxwf_user', JSON.stringify({
-            userId: data.userId,
-            nickname: data.nickname,
-            color: data.color,
-            is_admin: !!data.is_admin,
-            avatar: data.avatar || null,
-          }));
-        }
-        enterUserView();
-      })
-      .catch(() => {
-        // token 失效：app.js 的 401 处理已清除本地会话并重载回登录视图；其余失败同样回未登录界面
-        showAuthView();
-      });
-  } else {
-    // 无 session：直接展示未登录界面（无需请求）
-    showAuthView();
+// /api/me 返回值的落地：写回本地会话缓存 + 记录注册时间，然后渲染已登录界面
+function onMeLoaded(data) {
+  if (data && data.created_at) {
+    const s = String(data.created_at);
+    const d = new Date(s.replace(' ', 'T'));
+    window._regTime = isNaN(d.getTime()) ? s.slice(0, 10) : d.toLocaleDateString('zh-CN');
   }
-});
+  if (data && data.userId) {
+    localStorage.setItem('qxwf_user', JSON.stringify({
+      userId: data.userId,
+      nickname: data.nickname,
+      color: data.color,
+      is_admin: !!data.is_admin,
+      avatar: data.avatar || null,
+    }));
+  }
+  enterUserView();
+}
+
+// 页面加载：本脚本执行时本地可能已有会话（刚在本页登录成功，或之前登录过直接访问）。
+// 有 token 就校验本站 /api/me，成功进个人中心、失败回登录界面
+//（token 失效时 app.js 的 401 处理已清掉本地会话）
+if (getSession()) {
+  api('/me').then(onMeLoaded).catch(function () { showAuthView(); });
+} else {
+  showAuthView();
+}
 </script>
 </body>
 </html>

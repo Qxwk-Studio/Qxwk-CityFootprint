@@ -1,6 +1,7 @@
-// 共享前端逻辑：API 客户端 + 会话管理
+// 共享前端逻辑：API 客户端 + 通行证登录 + 会话管理
 
 const API_BASE = '/api';
+const PASSPORT_URL = 'https://account.qxwkstudio.top';
 const LS_TOKEN = 'qxwf_token';
 const LS_USER = 'qxwf_user';
 
@@ -38,9 +39,18 @@ function getSession() {
 }
 
 function logout() {
+  const token = localStorage.getItem(LS_TOKEN);
   localStorage.removeItem(LS_TOKEN);
   localStorage.removeItem(LS_USER);
-  window.location.reload();
+  // 顺手通知通行证撤销这条会话：只清本地的话，通行证那边仍挂着一个属于本站的登录，
+  // 会出现在账号中心「已授权网站」卡里，直到 90 天无活动才被回收。
+  // 等请求发完再刷新（失败也无所谓，本地 token 已经没了），失败不影响本地登出。
+  const done = () => window.location.reload();
+  if (!token) return done();
+  fetch(PASSPORT_URL + '/api/logout', {
+    method: 'POST',
+    headers: { Authorization: 'Bearer ' + token },
+  }).catch(() => {}).then(done);
 }
 
 // 日期显示：空显示"时间未知"
@@ -75,15 +85,30 @@ function setAvatarFromUrl(el, avatarUrl, nickname, color) {
   el.appendChild(img);
 }
 
-// 通行证登录（index 中控 · 统一分流）：整页跳转通行证主页 ?redirect= 本站，
-// 登录 + 授权确认由中控在弹层内完成，确认后回跳本站；桌面 / 手机 / 微信体验一致，不受弹窗拦截影响。
-function passportLogin() {
-  const PASSPORT_URL = 'https://account.qxwkstudio.top';
-  const here = location.origin + location.pathname;   // 回跳目标（本站整页）
-  location.href = PASSPORT_URL + '/?redirect=' + encodeURIComponent(here);
+// 通行证登录：本站页面直接跨域调通行证 /api/login 换 token。
+// 跨站 SSO / 跳转授权（?redirect= 跳过去、回跳带 #_t=<token>）已在通行证侧整条下线，
+// 本站不再有「跳过去登录再回跳」的流程；密码只经本站前端 JS 发给通行证，不落到本站服务器。
+async function passportLogin(nickname, password) {
+  const res = await fetch(PASSPORT_URL + '/api/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    // client 声明来源站点：通行证拿它的 apps 白名单校验，命中才在「已授权网站」里显示本站站点名，
+    // 未登记则记为「未登记来源」（照样能登录，只是名字认不出来）
+    body: JSON.stringify({ nickname, password, client: location.origin }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || '登录失败（' + res.status + '）');
+  if (!data.token) {
+    // 通行证里的「空哈希账号」（管理员预建、还没设过密码）首次登录会返回 need_set_password 且没有 token，
+    // 不能把 undefined 当凭证存进 localStorage
+    throw new Error(data.need_set_password ? '该账号还没设置密码，请先到通行证设置密码' : '登录失败：没有拿到登录凭证');
+  }
+  localStorage.setItem(LS_TOKEN, data.token);
+  await applyMe(data.token);
+  return data;
 }
 
-// 拉取 /me 并写入本地会话（SSO 落地共用）
+// 拉取本站 /me 并写入本地会话缓存（登录成功后调用）
 async function applyMe(token) {
   try {
     const me = await fetch(API_BASE + '/me', {
@@ -100,15 +125,3 @@ async function applyMe(token) {
     }
   } catch { /* /api/me 拉取失败由后续请求触发 401 兜底 */ }
 }
-
-// SSO 落地：index 中控确认后整页回跳本站，URL 片段带 ...#_t=<token>；
-// 读取后存入本地会话并清理地址栏（页面可用 window._ssoLanding 等待落地后再初始化）。
-window._ssoLanding = (async function ssoLanding() {
-  const m = location.hash.match(/[#&]_t=([^&]+)/);
-  if (!m) return;
-  const t = decodeURIComponent(m[1]);
-  localStorage.setItem(LS_TOKEN, t);
-  // 清掉 URL 片段，避免分享链接泄露登录凭证
-  history.replaceState(null, '', location.pathname + location.search);
-  await applyMe(t);
-})();

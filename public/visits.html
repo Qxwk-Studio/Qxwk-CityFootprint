@@ -556,12 +556,10 @@
 <script src="app.js"></script>
 <script src="achievements.js"></script>
 <script>
-// 先等 SSO 落地（微信等整页回跳场景）再初始化：未登录跳个人中心（登录页），已登录校验凭证
-Promise.resolve(window._ssoLanding).then(function () {
-  if (!getSession()) {
-    location.href = 'account.html';
-    return;
-  }
+// 未登录跳个人中心（那里是登录入口），已登录校验凭证后加载
+if (!getSession()) {
+  location.href = 'account.html';
+} else {
   api('/me')
     .then(function () {
       document.getElementById('loadingView').style.display = 'none';
@@ -572,7 +570,7 @@ Promise.resolve(window._ssoLanding).then(function () {
       // token 失效或校验失败：回登录入口页
       location.href = 'account.html';
     });
-});
+}
 
 // 城市下拉数据
 const datalist = document.getElementById('cityList');

@@ -4,7 +4,7 @@
 >
 > 登录通行证后把自己去过的城市打点在地图上，和朋友们一起拼出一张五彩斑斓的足迹大地图。
 
-> **ℹ️ 本仓库专注足迹内容**：未阔月刊（投稿/审核）前端与后端已迁至 [Qxwk-Blog](https://github.com/Qxwk-Studio/Qxwk-Blog)，两站仍共享同一 D1 数据库与通行证 SSO。
+> **ℹ️ 本仓库专注足迹内容**：未阔月刊（投稿/审核）前端与后端已迁至 [Qxwk-Blog](https://github.com/Qxwk-Studio/Qxwk-Blog)，两站仍共享同一 D1 数据库与通行证统一登录。
 
 ## ✨ 功能一览
 
@@ -16,10 +16,11 @@
 - **管理员视图**：管理员可查看所有人的行程（含私密），右上角显示 👑 标识
 
 ### 👤 个人中心 (`account.html`)
-- **通行证登录**：本站不再自建账号体系，登录/注册/改密/邀请码全部移交通行证 account.qxwkstudio.top
-- **一次登录处处通行**：在通行证登录后回跳本站自动落地，本地存 token，后续访问免登录
-- **账户信息**：专属颜色大头像（**直接使用通行证返回的 avatar URL，前端不再自己计算邮箱 MD5**）、UID、注册时间、管理员徽章
-- **通行证中心入口**：个人中心右列提供通行证跳转卡，方便改昵称/颜色/密码、生成邀请码、查看最近登录
+- **本站登录表单**：未登录视图直接给出「昵称或邮箱 + 密码」表单，提交后由本站前端 JS 跨域调通行证 `/api/login` 换取 token（密码只从浏览器发给通行证，不经过本站服务器）；下方保留「打开通行证」外链用于注册 / 找回密码
+- **本地会话**：登录成功把 token 存 localStorage（键 `qxwf_token`），再调本站 `/api/me` 把用户信息写入 `qxwf_user` 缓存，后续访问免登录
+- **账户信息**：专属颜色大头像（**直接使用通行证返回的 avatar URL，前端不再自己计算邮箱哈希**）、UID、注册时间、管理员徽章
+- **通行证中心入口**：个人中心右列提供通行证外链卡，方便改昵称/颜色/密码、生成邀请码、查看最近登录
+- **退出登录**：清掉本地 token 后，顺带跨域 POST 通行证 `/api/logout` 撤销该会话（请求失败不影响本地登出）
 
 ### ✈️ 足迹管理 (`visits.html`)
 - **足迹增删改**：添加 / 修改 / 删除自己的城市足迹（城市联想、时间/备注/私密开关）
@@ -38,23 +39,26 @@
 
 ### 🛡️ 安全设计
 - **统一认证**：本站不再持有密码 / 会话，登录态完全由通行证 account.qxwkstudio.top 签发与撤销
-- **Bearer Token**：业务请求带通行证下发的 token，本站后端拿 token 去问通行证 `/api/me` 验证（结果按 token 缓存 120 秒）
+- **密码不经本站服务器**：登录由前端 JS 跨域直调通行证 `/api/login`，密码只发往通行证，本站后端全程不接触
+- **Bearer Token**：业务请求带通行证下发的 token，本站后端拿 token 去问通行证 `/api/me` 验证（**无缓存**，每个业务请求都会跨站验证一次）
 - **私密数据**：不公开行程在接口层过滤，仅本人（或管理员）可见
 
-## 🔗 通行证 SSO 接入说明
+## 🔗 通行证登录接入说明
 
-本站是 [Qxwk 通行证](https://account.qxwkstudio.top/) 的接入站点之一。通行证采用**内嵌弹层单模式（index 中控）**：登录与授权确认都在通行证中控的弹层内完成，确认后整页回跳本站落地。认证流程：
+本站是 [Qxwk 通行证](https://account.qxwkstudio.top/) 的接入站点之一。通行证侧的**跨站 SSO / 跳转授权已整条下线**（`/?redirect=` 入口、URL 片段交付 `#_t=<token>`、授权确认页与 `/api/sso/*` 接口均已删除），本站不再有「跳过去登录再回跳落地」的流程，改为**本站前端直调通行证登录接口**换 token：
 
-1. 用户点击登录，本站 `passportLogin()` 统一整页跳转通行证 `account.qxwkstudio.top/?redirect=<本站地址>`（注意是 **index 中控**入口）：已登录直接弹**授权确认页**，未登录先弹登录页、登录成功后再拉起授权确认
-2. 授权确认页点击「确定」，中控回跳本站（跨域经 URL **片段** `本站#_t=<token>` 交付；同域直达）。`/api/sso/info` 仅校验 redirect 的 http/https 合法性并供展示来源，**不强制 apps 白名单**——未登记站点照常授权登录回跳，来源 origin 记入登录日志
-3. 本站 `_ssoLanding` 落地：读取 URL 片段 `#_t=<token>` → `history.replaceState` 清掉片段（防分享泄露）→ 存 localStorage → 调本站 `/api/me` 写本地用户缓存
-4. 后续业务请求带 `Authorization: Bearer <token>`，本站后端 `resolveViewer()` 拿 token 去通行证 `/api/me` 验证，按 nickname 映射到本地 cf_users 表（首次自动建号，颜色随通行证同步）
+1. 用户在 `account.html` 未登录视图的表单填「昵称或邮箱 + 密码」并提交，`public/app.js` 的 `passportLogin(nickname, password)` 跨域 POST 通行证 `https://account.qxwkstudio.top/api/login`，body 为 `{nickname, password, client: location.origin}`（`client` 供通行证侧 `apps` 白名单识别来源站点，未登记也能登录）
+2. 通行证校验通过返回 `token`，本站前端把 token 存进 localStorage（键 `qxwf_token`），再调本站 `/api/me` 把用户信息写入 `qxwf_user` 缓存；失败则把错误信息显示在表单下方
+3. 后续业务请求带 `Authorization: Bearer <token>`，本站后端 `resolveViewer()` 拿 token 去通行证 `/api/me` 验证（**无缓存**），再**按通行证 userId 映射**到本地 `users` 表：先按 `users.passport_id` 查行 → 查不到时把「同昵称且 `passport_id IS NULL`」的存量行回填 `passport_id` 认领（保住该行已有的足迹与 `is_admin` 标志）→ 仍查不到才 `INSERT OR IGNORE` 新建；昵称 / 颜色每次访问同步通行证，昵称撞上本站 `users.nickname` 唯一约束时保留本站旧昵称、只同步颜色
+4. 退出登录：`logout()` 清掉本地 token 后，跨域 POST 通行证 `/api/logout`（带 `Authorization: Bearer <token>`）撤销该会话；请求失败不影响本地登出
+
+> **已知限制**：本地昵称与通行证昵称已经不一致、且该用户此前从没用过新版流程的存量行无法被认领——登录时会新建一行，旧行及其足迹需人工在库里合并。
 
 ## 🧱 技术栈
 
 - **运行时**：Cloudflare Workers + Static Assets
 - **数据库**：D1（SQLite，Cloudflare 原生）
-- **认证**：Qxwk 通行证 SSO（Bearer Token 跨站校验，按 token 缓存）
+- **认证**：Qxwk 通行证统一登录（本站前端直调通行证 `/api/login` 换 token + Bearer Token 跨站校验，无缓存）
 - **前端**：原生 HTML / JS + [Leaflet](https://leafletjs.com/) 地图库
 - **托管平台**：Cloudflare Pages 自动部署（`npx wrangler deploy`）
 
@@ -69,13 +73,13 @@
 ├── public/                 # 静态前端
 │   ├── vendor/             # 自托管前端依赖（Leaflet JS + CSS + 标记图标，避免外链与 CORS）
 │   ├── index.html          # 足迹大地图
-│   ├── account.html        # 个人中心（通行证登录入口 + 资料卡）
+│   ├── account.html        # 个人中心（本站登录表单 + 资料卡）
 │   ├── visits.html         # 足迹管理（增删改/统计/成就）
 │   ├── setup.html          # 欢迎动画页（嵌入 account 未登录左侧，跟随主题同步）
 │   ├── stats.html          # 全站统计
 │   ├── news.html           # 公告与更新日志
 │   ├── achievements.js     # 成就定义与判定
-│   ├── app.js              # API 客户端 + SSO 会话（落地/跳转/401 兜底） + setAvatarFromUrl()（头像渲染）
+│   ├── app.js              # API 客户端 + 通行证登录/会话（直调 /api/login、401 兜底） + setAvatarFromUrl()（头像渲染）
 │   ├── cities.js           # 国内地级市坐标数据
 │   ├── city-codes.js       # 城市 adcode（地图边界用）
 │   └── robots.txt          # 爬虫规则（屏蔽登录页与接口）
@@ -97,11 +101,12 @@
 | DELETE | `/api/visits/:id` | Bearer | 删除（仅本人） |
 | GET | `/api/geo/:adcode` | 无 | 代理 DataV 边界接口（规避浏览器跨域，结果缓存 24h） |
 
-> 注册 / 登录 / 改密 / 邀请码 / 最近登录 等账号能力已全部移交通行证 account.qxwkstudio.top，本站不再提供。
+> 注册 / 改密 / 邀请码 / 最近登录 等账号能力已全部移交通行证 account.qxwkstudio.top；本站的登录表单只是前端直调通行证 `/api/login`，本站后端不自建账号体系。
 
 ## 🛠 设计说明
 
-- **认证完全移交通行证**：本站不持有密码、不签发会话、不生成 token。所有身份来源都由 `account.qxwkstudio.top` 负责。前端收到 401 直接跳通行证；后端业务接口的 Bearer Token 必须经通行证 `/api/me` 二次验证（结果按 token 缓存 120s，避免一次请求一次跨站验证）。
+- **认证完全移交通行证**：本站不持有密码、不签发会话、不生成 token，登录也只由前端跨域直调通行证 `/api/login`（密码不经本站服务器）。所有身份来源都由 `account.qxwkstudio.top` 负责。前端收到 401 清掉本地 token 并回到登录视图；后端业务接口的 Bearer Token 必须经通行证 `/api/me` 二次验证（**无任何缓存**，每个请求都会跨站验证一次）。
+- **本地身份按 `passport_id` 映射**：`resolveViewer()` 用通行证 `/api/me` 返回的 `userId` 认人（`users.passport_id`，唯一索引 `idx_users_passport`）。通行证里改昵称不会改 userId，所以改昵称不会在本站多出一条行；升级前的老行按「同昵称且 `passport_id IS NULL`」自动回填认领，保住原有足迹与管理员标志。
 - **颜色与头像都由 Account 输出**：`users.color` 和用户头像 URL 都是通行证"单一事实源"，本站每次用户访问时同步覆盖。这样用户在通行证改颜色 / 改邮箱（头像 hash 变化）后，访问本站自动生效，避免两端数据漂移。
 - **私密行程接口层过滤**：`is_private` 过滤在 Worker 侧（`lib.js` / worker 查询）做，而不是前端，防止有人抓接口构造出别人的私密足迹。管理员用 `is_admin=1` 标志绕过过滤查看全部。
 - **成就系统**：判定逻辑在 `achievements.js` 前端执行，按"足迹丰碑 / 巡游四方 / 城市打卡 / 极限挑战"四大类分组。新增成就时在成就定义数组追加即可，判定函数拿到 `stats + myVisits` 上下文。
@@ -139,12 +144,28 @@ Cloudflare 控制台 → **Workers & Pages** → **D1** → **创建数据库**�
 npx wrangler d1 migrations apply qxwk-data --remote
 ```
 
-迁移会创建本站所需的全部表：`users`（`is_admin` 管理员标志、`color` 颜色随通行证同步，两站共享）与 `cf_visits`（足迹，含 `is_private`，本站独占）。
-&gt; 注：本站自 SSO 改造起不再自建账号与密码体系，注册/改密/邀请码等均移交通行证，因此迁移文件中**不包含** sessions / invite_codes / settings 表。
+迁移会创建本站所需的全部表：`users`（`is_admin` 管理员标志、`color` 颜色随通行证同步、`passport_id` 通行证 userId，两站共享）与 `cf_visits`（足迹，含 `is_private`，本站独占），并一并建出 `passport_id` 的唯一索引。
+
+> 注：本站自接入通行证起不再自建账号与密码体系，注册/改密/邀请码等均移交通行证，因此迁移文件中**不包含** sessions / invite_codes / settings 表。
+
+#### ⚠️ 线上已有库必须手工补 `passport_id` 列
+
+线上 `users` 表已经存在（且是与 [Qxwk-Blog](https://github.com/Qxwk-Studio/Qxwk-Blog) **共享**的库 `qxwk-data`），`CREATE TABLE IF NOT EXISTS` 和 `npx wrangler d1 migrations apply qxwk-data --remote` **都补不了这个新列**，必须手工执行：
+
+```bash
+# 1) 补 passport_id 列（通行证 userId）
+npx wrangler d1 execute qxwk-data --remote --command "ALTER TABLE users ADD COLUMN passport_id INTEGER"
+
+# 2) 补唯一索引：SQLite 的 ALTER TABLE 加不了 UNIQUE 列约束，
+#    唯一性只能靠显式唯一索引兜住（多行 NULL 是允许的，不影响 Qxwk-Blog 的老行）
+npx wrangler d1 execute qxwk-data --remote --command "CREATE UNIQUE INDEX IF NOT EXISTS idx_users_passport ON users(passport_id)"
+```
+
+漏加这一列会让所有需要登录的接口直接 500。
 
 ### 3️⃣ 在通行证注册本站
 
-本站接入通行证 SSO 建议在通行证的 `apps` 表登记 origin（仅用于账号中心展示站点名；`/api/me` CORS 已全面放行，未登记站点也能正常登录回跳与跨域验证 token，仅日志记录来源）。在通行证项目执行：
+建议在通行证的 `apps` 表登记 origin（仅用于登录时把 `client` 认成本站站点名；通行证 `/api/login`、`/api/me` 的 CORS 已全面放行，未登记站点也能正常登录与跨域验证 token，只是来源会被记为「未登记来源」）。在通行证项目执行：
 
 ```bash
 cd c:\Code\Qxwk-Account
@@ -199,7 +220,7 @@ wrangler dev --port 8788
 本地会读取 `wrangler.toml` 里的 D1 绑定（需先建库并填 ID），
 Worker 会在 `localhost:8788` 同时提供页面和 API。
 
-**SSO 本地联调**：把 `src/lib.js` 与 `public/app.js` 顶部 `PASSPORT_URL` 改成 `http://localhost:8787`，另起一个终端跑通行证 `cd c:\Code\Qxwk-Account && npx wrangler dev`（端口 8787），并在通行证本地 DB 插入本站 origin（见 3️⃣）。
+**通行证登录本地联调**：把 `src/lib.js` 与 `public/app.js` 顶部 `PASSPORT_URL` 改成 `http://localhost:8787`，另起一个终端跑通行证 `cd c:\Code\Qxwk-Account && npx wrangler dev`（端口 8787），并在通行证本地 DB 插入本站 origin（见 3️⃣）。
 
 ## 🔧 自定义指南
 
@@ -225,9 +246,9 @@ Worker 会在 `localhost:8788` 同时提供页面和 API。
 - 用户在通行证改了颜色，下次访问本站会自动同步过来
 
 **6. 头像机制（WeAvatar）**
-- 所有头像 URL 由通行证 Account 后端集中计算（基于 `md5(lowercase(trim(email)))` → `https://weavatar.com/avatar/{hash}?s=400&d=404`），本站**不再持有任何 MD5 代码**
+- 所有头像 URL 由通行证 Account 后端集中计算（基于 `sha256(lowercase(trim(email)))` → `https://weavatar.com/avatar/{hash}?s=400&d=404`），本站**不再持有任何哈希实现**
 - 消费方式：`public/app.js` 中定义的 `setAvatarFromUrl(el, avatarUrl, nickname, color)`（原 `avatar.js` 已删除并合并入 app.js）——加载失败自动回退到「昵称首字 + 专属颜色」的文字头像
-- SSO 落地与 `/api/me` 接口均返回 `avatar` 字段并存入本地会话 `s.avatar`；更换头像服务（如切到 QQ 官方头像或自托管 Gravatar）**只需改 Account 后端 `getAvatarUrl()` 一处**，本站零改动
+- 通行证返回 `token` 后，本站调 `/api/me` 即带回 `avatar` 字段并写入本地用户缓存 `qxwf_user`；更换头像服务（如切到 QQ 官方头像或自托管 Gravatar）**只需改 Account 后端 `getAvatarUrl()` 一处**，本站零改动
 
 ---
 
