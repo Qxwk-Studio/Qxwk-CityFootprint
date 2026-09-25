@@ -89,11 +89,24 @@ jobs:
         working-directory: app
 
       - name: Rename APK
-        # 路径写死 app-release.apk：签名配置没生效时产物叫 app-release-unsigned.apk，
-        # 这一步会直接失败，不会把未签名包当正式包传上去
+        # 文件名用通配符取，不写死。APK 的基名取自 Gradle **工程名**而非目录名：
+        # 本项目是单模块（application 插件直接挂在根项目上），工程名是
+        # settings.gradle.kts 里的 rootProject.name = "CityFootprint"，
+        # 所以产物叫 CityFootprint-release.apk（多模块工程下的 :app 才会是 app-release.apk）。
+        # 写死任一名字，都会在改 rootProject.name 或改成多模块时静默失配，CI 只报
+        # `mv: cannot stat`，看不出是命名问题。
+        #
+        # 守卫保持不变：签名配置没生效时产物叫 CityFootprint-release-unsigned.apk，
+        # 它**不匹配** *-release.apk，取不到就报错退出并打印目录内容（顺便让人看到真名），
+        # 不会把未签名包当正式包传上去。
         run: |
-          mv app/build/outputs/apk/release/app-release.apk \
-             app/build/outputs/apk/release/CityFootprint-${{ github.event.inputs.version_name }}.apk
+          DIR=app/build/outputs/apk/release
+          APK=$(ls "$DIR"/*-release.apk 2>/dev/null) || {
+            echo "::error::没找到已签名的 *-release.apk（签名没生效？），目录实际内容如下："
+            ls -l "$DIR"
+            exit 1
+          }
+          mv "$APK" "$DIR/CityFootprint-${{ github.event.inputs.version_name }}.apk"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
