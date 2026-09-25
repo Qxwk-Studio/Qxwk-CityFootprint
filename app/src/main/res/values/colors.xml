@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 强调色：与工作室其它端（网页 / 班级助理）同一支靛蓝，地图折线、按钮、选中态都用它 -->
+    <color name="accent">#4F46E5</color>
+    <color name="accent_light">#E9EAFF</color>
+
+    <!-- 系统栏配色跟随深浅色（见 themes.xml 的注释） -->
+    <color name="window_bg_light">#F2F2F7</color>
+    <color name="window_bg_dark">#07070C</color>
+
+    <!-- 文字层级：标题 / 正文 / 次要说明。深色模式下由系统反色（Material3 主题自带），
+         所以这里只写浅色模式用的两支，深色模式**不覆盖**（覆盖了反而会让 Material3 的自动反色失效） -->
+    <color name="text_primary">#1C1B1F</color>
+    <color name="text_secondary">#5B5B66</color>
+
+    <!-- 私密标记：不是警告，只是「这条别人看不到」，用中性的灰紫而不是红 -->
+    <color name="private_badge">#8E7CC3</color>
+    <!-- 未达成的成就：图标与文字整体压灰，一眼能看出「还没点亮」 -->
+    <color name="achievement_todo">#9A9AA5</color>
+</resources>

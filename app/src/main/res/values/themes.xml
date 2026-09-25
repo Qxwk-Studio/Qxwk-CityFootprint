@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- 主题名固定为 Theme.CityFootprint（清单里四个 Activity 都指向它）。
+         父主题用 Material3 的 DayNight.NoActionBar：本 app 全部页面自带 Toolbar，
+         不要系统那条 ActionBar（两条件栏叠在一起最难看）。 -->
+    <style name="Theme.CityFootprint" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- 系统栏配色只是**兜底**，跟随系统深浅色（见 colors.xml 的窗口底色）。
+             没有「网页上报主题」这一环 —— 这个 app 没有 WebView，配色全在原生这一侧。 -->
+        <item name="android:statusBarColor">@color/window_bg_light</item>
+        <item name="android:navigationBarColor">@color/window_bg_light</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar" tools:targetApi="27">true</item>
+    </style>
+
+    <!-- ===== 统计页那四块数字 ===== -->
+    <!-- 数字本身：比标签大得多，一屏扫过去先看数再看名 -->
+    <style name="StatValue">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textSize">24sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/accent</item>
+    </style>
+
+    <style name="StatLabel">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginTop">2dp</item>
+        <item name="android:textSize">12sp</item>
+        <item name="android:textColor">@color/text_secondary</item>
+    </style>
+
+    <!-- 卡片小标题（「城市排行」「我的成就」） -->
+    <style name="CardTitle">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/text_primary</item>
+    </style>
+</resources>

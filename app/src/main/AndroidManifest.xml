@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- 只需要联网：足迹接口与通行证登录都在公网。
+         **没有 WAKE_LOCK / 后台服务 / 通知**：这个 app 不常驻后台、不发通知，
+         所有操作都是用户点一下才发生。 -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- 地图瓦片从 OSM 拉，断网时只是没图，不做网络状态判断也就不用 ACCESS_NETWORK_STATE -->
+
+    <application
+        android:allowBackup="false"
+        android:icon="@drawable/ic_launcher"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.CityFootprint"
+        android:usesCleartextTraffic="false">
+        <!-- 两个域名（account.qxwkstudio.top / travel.qxwkstudio.top）都是 HTTPS，
+             所以**刻意没有** network_security_config 的明文例外（模板里那份是为教务系统的 http 开的）。
+             usesCleartextTraffic="false" 在这里只是把「全站禁明文」摆到明面上：
+             targetSdk ≥ 28 起系统本来就默认禁。 -->
+
+        <!-- 登录页：已登录时不会出现在用户眼前（MainActivity 直接进主页） -->
+        <activity
+            android:name=".ui.LoginActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
+        <!-- 主页：底部四个 tab（我的足迹 / 统计 / 地图 / 我的），入口 Activity。
+             singleTop + 不写 configChanges：旋转时重建，四个 Fragment 由 FragmentManager 自己恢复。 -->
+        <activity
+            android:name=".ui.MainActivity"
+            android:exported="true"
+            android:launchMode="singleTop">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- 新增/编辑足迹。parentActivityName 让系统返回箭头能回主页 -->
+        <activity
+            android:name=".ui.VisitEditActivity"
+            android:exported="false"
+            android:parentActivityName=".ui.MainActivity"
+            android:windowSoftInputMode="adjustResize" />
+
+        <!-- 城市选择页：从 assets/cities.json 里搜城市，返回选中的坐标 -->
+        <activity
+            android:name=".ui.CityPickerActivity"
+            android:exported="false"
+            android:parentActivityName=".ui.MainActivity"
+            android:windowSoftInputMode="adjustResize" />
+    </application>
+
+</manifest>

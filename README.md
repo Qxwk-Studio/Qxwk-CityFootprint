@@ -88,11 +88,14 @@
 │   ├── migrations/
 │   │   └── 0001_init.sql   # 建表：users（两站共享）/ visits（本站独占）
 │   └── wrangler.toml       # Worker 配置（D1 绑定 database_id + [assets] 指向 ../frontend 且 binding = "ASSETS"）
-├── app/                    # 安卓 app，见 app/README.md
+├── app/                    # 安卓 app，见 app/README.md（Kotlin + XML View/viewBinding，原生 osmdroid 地图，不用 WebView）
+├── .github/
+│   └── workflows/
+│       └── build-android.yml  # 手动触发的安卓打包（JDK 17 + Secrets 里的签名密钥 → 签名 APK artifact）
 └── README.md
 ```
 
-> **🚧 改造进度（阶段 1a）**：本轮完成目录重构——仓库根按「前端 / 后端 / 安卓 app」三分（`public/` → `frontend/`，`src/`、`migrations/`、`wrangler.toml` → `backend/`），改名走 `git mv`，提交历史保留。功能页（visits / account / setup）本轮**暂不删除**，等安卓 app 可用后再下线（阶段 2 推迟）；后端校验凭证的机制沿用公开 HTTP 调通行证 `/api/me`，已定稿，不做缓存。
+> **🚧 改造进度（阶段 1a 已完成 / 阶段 3 进行中）**：阶段 1a 完成目录重构——仓库根按「前端 / 后端 / 安卓 app」三分（`public/` → `frontend/`，`src/`、`migrations/`、`wrangler.toml` → `backend/`），改名走 `git mv`，提交历史保留。阶段 3 已加入 `app/`（安卓原生客户端）与 `.github/workflows/build-android.yml`，**尚未经 CI 实际构建验证**（本机无 Android SDK / JDK），对应的 apk 也还没发布过。功能页（visits / account / setup）本轮**暂不删除**，等安卓 app 可用后再下线（阶段 2 推迟）；后端校验凭证的机制沿用公开 HTTP 调通行证 `/api/me`，已定稿，不做缓存。
 
 ## 🔌 API 接口
 

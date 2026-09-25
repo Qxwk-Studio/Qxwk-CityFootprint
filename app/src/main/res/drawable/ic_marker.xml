@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 地图上的城市标记。**故意不用 osmdroid 的默认标记**（一个蓝色圆点）：
+     一张点满圆点的地图分不清哪个是「去过的城市」还是底图自带的 POI。
+     这里用强调色定位针 + 中心白点，与地图瓦片对比度足够。
+     尺寸给 36dp：osmdroid 的 Marker 用 drawable 固有尺寸做锚点计算，
+     给 24dp 在高分屏上会偏小。 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="36dp"
+    android:height="36dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#4F46E5"
+        android:pathData="M12,2C8.13,2 5,5.13 5,9c0,5.25 7,13 7,13s7,-7.75 7,-13c0,-3.87 -3.13,-7 -7,-7z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M12,11.5c-1.38,0 -2.5,-1.12 -2.5,-2.5s1.12,-2.5 2.5,-2.5 2.5,1.12 2.5,2.5 -1.12,2.5 -2.5,2.5z" />
+</vector>

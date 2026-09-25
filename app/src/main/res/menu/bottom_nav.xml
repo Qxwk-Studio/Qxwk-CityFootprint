@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 底部导航四个 tab。图标必须是单色矢量：BottomNavigationView 会按选中态自己染色 -->
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/tab_visits"
+        android:icon="@drawable/ic_footprint"
+        android:title="@string/tab_visits" />
+    <item
+        android:id="@+id/tab_stats"
+        android:icon="@drawable/ic_stats"
+        android:title="@string/tab_stats" />
+    <item
+        android:id="@+id/tab_map"
+        android:icon="@drawable/ic_map"
+        android:title="@string/tab_map" />
+    <item
+        android:id="@+id/tab_profile"
+        android:icon="@drawable/ic_person"
+        android:title="@string/tab_profile" />
+</menu>

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 底部导航：「统计」。三根高低不同的柱子（几何是手写的三个矩形，不引用外部图标） -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M4,20 L7,20 L7,10 L4,10 Z M10.5,20 L13.5,20 L13.5,4 L10.5,4 Z M17,20 L20,20 L20,14 L17,14 Z" />
+</vector>

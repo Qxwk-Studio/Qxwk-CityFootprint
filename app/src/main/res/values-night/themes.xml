@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- 深色模式：只覆盖系统栏那条兜底色，其余交给 Material3 的 DayNight 自动反色。
+         不要再往这里加 text_primary / text_secondary 之类的覆盖 —— 一旦覆盖，
+         Material3 按深浅色自动算出来的那套对比度就失效了，屏幕一暗反而看不清。 -->
+    <style name="Theme.CityFootprint" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="android:statusBarColor">@color/window_bg_dark</item>
+        <item name="android:navigationBarColor">@color/window_bg_dark</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar" tools:targetApi="27">false</item>
+    </style>
+</resources>
