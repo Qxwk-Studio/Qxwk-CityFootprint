@@ -47,7 +47,7 @@
 
 1. 用户在 `account.html` 未登录视图的表单填「昵称或邮箱 + 密码」并提交，`docs/app.js` 的 `passportLogin(nickname, password)` 跨域 POST 通行证 `https://account.qxwkstudio.top/api/login`，body 为 `{nickname, password, client: location.origin}`（`client` 供通行证侧 `apps` 白名单识别来源站点，未登记也能登录）
 2. 通行证校验通过返回 `token`，本站前端把 token 存进 localStorage（键 `qxwf_token`），再调本站 `/api/me` 把用户信息写入 `qxwf_user` 缓存；失败则把错误信息显示在表单下方
-3. 后续业务请求带 `Authorization: Bearer <token>`，本站后端 `resolveViewer()` 拿 token 去通行证 `/api/me` 验证（**无缓存**），再**按通行证 userId 映射**到本地 `users` 表：先按 `users.passport_id` 查行 → 查不到时把「同昵称且 `passport_id IS NULL`」的存量行回填 `passport_id` 认领（保住该行已有的足迹与 `is_admin` 标志）→ 仍查不到才 `INSERT OR IGNORE` 新建；昵称 / 颜色每次访问同步通行证，昵称撞上本站 `users.nickname` 唯一约束时保留本站旧昵称、只同步颜色
+3. 后续业务请求带 `Authorization: Bearer <token>`，本站后端 `resolveViewer()` 拿 token 去通行证 `/api/me` 验证（**无缓存**），再**按通行证 userId 映射**到本地 `users` 表：先按 `users.passport_id` 查行 → 查不到时把「同昵称且 `passport_id IS NULL`」的存量行回填 `passport_id` 认领（保住该行已有的足迹与 `is_admin` 标志）→ 仍查不到才 `INSERT OR IGNORE` 新建；昵称 / 颜色 / 头像每次访问同步通行证，昵称撞上本站 `users.nickname` 唯一约束时保留本站旧昵称、只同步颜色与头像
 4. 退出登录：`logout()` 清掉本地 token 后，跨域 POST 通行证 `/api/logout`（带 `Authorization: Bearer <token>`）撤销该会话；请求失败不影响本地登出
 
 > **已知限制**：本地昵称与通行证昵称已经不一致、且该用户此前从没用过新版流程的存量行无法被认领——登录时会新建一行，旧行及其足迹需人工在库里合并。
@@ -171,9 +171,12 @@ npx wrangler d1 execute qxwk-data --remote --command "ALTER TABLE users ADD COLU
 #    唯一性只能靠显式唯一索引兜住（多行 NULL 是允许的，不影响 Qxwk-Blog 的老行）
 npx wrangler d1 execute qxwk-data --remote --command "CREATE UNIQUE INDEX IF NOT EXISTS idx_users_passport ON users(passport_id)"
 
-# ③ 核对结构：两条命令都该各回一行（列名 / 索引名），查不到就是没补上
+# ③ 核对结构：三条命令都该各回一行（列名 / 索引名 / 列名），查不到就是没补上。
+#    avatar 是第三项：本站登录时会写它（把通行证头像同步给共用这张表的 Qxwk-Blog 的 feed），
+#    缺列会让登录 500；线上一般早已由 Qxwk-Blog 侧补过，这里只是顺手确认
 npx wrangler d1 execute qxwk-data --remote --command "SELECT name FROM pragma_table_info('users') WHERE name = 'passport_id'"
 npx wrangler d1 execute qxwk-data --remote --command "SELECT name FROM sqlite_master WHERE type = 'index' AND name = 'idx_users_passport'"
+npx wrangler d1 execute qxwk-data --remote --command "SELECT name FROM pragma_table_info('users') WHERE name = 'avatar'"
 
 # ④ 部署后端（必须在补列之后）
 npx wrangler deploy

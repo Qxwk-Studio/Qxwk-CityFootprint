@@ -8,8 +8,9 @@ CREATE TABLE IF NOT EXISTS users (
   nickname TEXT UNIQUE NOT NULL,
   color TEXT NOT NULL,                  -- 地图打点颜色
   avatar TEXT,                          -- 头像链接（通行证算好的 WeAvatar，无邮箱为 NULL）。
-                                        -- 本站登录路径**不写**这一列（resolver 的 COLS / INSERT 都不含它），
-                                        -- 由 Qxwk-Blog 侧登录时同步；/api/me 的头像直接取自通行证实时返回
+                                        -- 本站登录路径**不读**它（/api/me 直接用通行证实时返回的那份），
+                                        -- 但每次登录都会同步写入 —— 这张 users 表与 Qxwk-Blog 共享，
+                                        -- 博客的 feed 正是读这一列当作者头像
   passport_id INTEGER,                  -- 通行证账号 userId：稳定身份，改昵称不变；早先按 nickname 映射，一改名就多一条本地行
   is_admin INTEGER NOT NULL DEFAULT 0,  -- 1 = 管理员
   created_at TEXT DEFAULT (datetime('now'))

@@ -41,7 +41,7 @@ async function resolveViewer(DB, request) {
   // 昵称缺失/空时用稳定 fallback，避免 NULL 昵称行被反复新建导致 user 计数暴增
   // （users.nickname 的唯一约束允许多个 NULL）
   const nickname = (p.nickname && String(p.nickname).trim()) || 'user_' + p.userId;
-  const COLS = 'id, nickname, color, is_admin';
+  const COLS = 'id, nickname, color, is_admin, avatar';
 
   // ① 首选按通行证 userId 认人：通行证里改昵称不会改 userId，所以这一列才是稳定身份。
   //    早先按 nickname 映射，用户在通行证改一次名，本站就多出一条新行、旧足迹留在旧行。
@@ -73,24 +73,28 @@ async function resolveViewer(DB, request) {
       await DB.prepare('UPDATE users SET nickname = ? WHERE id = ?')
         .bind('user_' + holder.passport_id, holder.id).run();
     }
-    await DB.prepare('INSERT OR IGNORE INTO users (nickname, color, passport_id) VALUES (?, ?, ?)')
-      .bind(nickname, p.color, p.userId).run();
+    await DB.prepare('INSERT OR IGNORE INTO users (nickname, color, passport_id, avatar) VALUES (?, ?, ?, ?)')
+      .bind(nickname, p.color, p.userId, p.avatar).run();
     u = await DB.prepare(`SELECT ${COLS} FROM users WHERE passport_id = ?`).bind(p.userId).first();
     if (!u) return null; // 极端并发下仍失败，放弃本次映射
   }
 
-  // ④ 昵称 / 颜色都由通行证说了算，每次访问同步覆盖，避免两端数据漂移。
-  if (u.nickname !== nickname || u.color !== p.color) {
+  // ④ 昵称 / 颜色 / 头像都由通行证说了算，每次访问同步覆盖，避免两端数据漂移。
+  //    头像本站自己不读（/api/me 直接用通行证实时返回的那份），写进 users.avatar 是为了与
+  //    Qxwk-Blog **共享**的这张 users 表 —— 博客的 feed 直接拿这一列当作者头像，本站不写它，
+  //    只在足迹登录过的用户跑到博客那边就成了文字头像。
+  if (u.nickname !== nickname || u.color !== p.color || u.avatar !== p.avatar) {
     try {
-      await DB.prepare('UPDATE users SET nickname = ?, color = ? WHERE id = ?')
-        .bind(nickname, p.color, u.id).run();
+      await DB.prepare('UPDATE users SET nickname = ?, color = ?, avatar = ? WHERE id = ?')
+        .bind(nickname, p.color, p.avatar, u.id).run();
       u.nickname = nickname;
     } catch {
       // 昵称撞上 users.nickname 的 UNIQUE 约束：新昵称被本站另一行占着（对方也改了名、但还没访问过本站）。
-      // 此时保留本站旧昵称、只同步颜色，不能让一次登录直接 500。
-      await DB.prepare('UPDATE users SET color = ? WHERE id = ?').bind(p.color, u.id).run();
+      // 此时保留本站旧昵称、只同步颜色与头像，不能让一次登录直接 500。
+      await DB.prepare('UPDATE users SET color = ?, avatar = ? WHERE id = ?').bind(p.color, p.avatar, u.id).run();
     }
     u.color = p.color;
+    u.avatar = p.avatar;
   }
   return { id: u.id, nickname: u.nickname, color: u.color, isAdmin: !!u.is_admin, avatar: p.avatar };
 }
