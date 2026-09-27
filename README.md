@@ -79,7 +79,7 @@
 │   ├── app.js              # API 客户端 + 通行证登录/会话（直调 /api/login、401 兜底） + setAvatarFromUrl()（头像渲染）
 │   ├── cities.js           # 国内地级市坐标数据
 │   ├── city-codes.js       # 城市 adcode（地图边界用）
-│   ├── favicon.webp        # 站点图标
+│   ├── favicon.png         # 站点图标（与安卓启动图标同一张源图，见 app/README.md）
 │   └── robots.txt          # 爬虫规则（屏蔽登录页与足迹管理页；接口在另一个域上，这里管不到）
 ├── backend/                # 后端（Cloudflare Worker + D1）；后端命令都在这个目录里执行
 │   ├── src/
