@@ -145,7 +145,8 @@ class MapFragment : Fragment() {
 
     /** 点标记 → 取该城市的边界。每次点新的先清掉上一次的：同一屏只画一座城市（需求就是「只画被点中的」）。 */
     private fun showBoundary(cityName: String) {
-        val b = _binding ?: return
+        // 页面已销毁就不必再发这次边界请求（下面各步还会各自兜一次 null）
+        if (_binding == null) return
         clearBoundary()
 
         // adcode 来自本机城市表（与网页版同源）。县级市在源数据里没有 adcode → 拿不到边界，降级
