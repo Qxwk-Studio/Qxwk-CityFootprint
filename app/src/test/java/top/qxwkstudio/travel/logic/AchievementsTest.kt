@@ -10,7 +10,7 @@ import org.junit.Test
  *
  * 为什么单测要钉这一份：成就是**给人看的荣誉**，阈值算错不会崩、只会悄悄少给或多给一个徽章，
  * 而那是最难被用户发现、也最容易让人怀疑「这 app 是不是在乱算」的一类 bug。
- * 阈值必须与网页版 frontend/achievements.js 完全一致，所以这里的期望值都是从那份 JS 抄下来的。
+ * 阈值必须与网页版 docs/achievements.js 完全一致，所以这里的期望值都是从那份 JS 抄下来的。
  */
 class AchievementsTest {
 

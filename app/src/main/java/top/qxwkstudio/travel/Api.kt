@@ -3,19 +3,23 @@ package top.qxwkstudio.travel
 /**
  * 域名与接口路径的**唯一出处**。改地址只改这里，别在调用处硬编码。
  *
- * 两个域名分工（都是 HTTPS，所以清单里不需要 network_security_config 的明文例外，
+ * 三个域名分工（都是 HTTPS，所以清单里不需要 network_security_config 的明文例外，
  * 只有 INTERNET 权限）：
  *   - ACCOUNT_BASE：「Qxwk 通行证」，管登录/登出/身份（另一个仓库 Qxwk-Account）。
  *     密码只发到这里，**不经过足迹后端** —— 足迹后端只认通行证签发的 Bearer token。
  *   - TRAVEL_BASE：本项目后端（Cloudflare Worker，backend/），管足迹数据与地图边界。
+ *     `travel.qxwkstudio.top` 是页面（GitHub Pages），API 单独挂在 `api.travel.qxwkstudio.top`。
  *
- * 【阶段 2 的切换点】规划里阶段 2 会把 API 挪到 `api.travel.qxwkstudio.top`、页面挪去 Pages。
- * 届时**只改这一行**（TRAVEL_BASE），其余代码全部按相对路径拼，不用动。
+ * 【阶段 2 已完成】页面已挪去 GitHub Pages、API 挪到 `api.travel.qxwkstudio.top`，
+ * 正如当初设计，全程**只改了 TRAVEL_BASE 这一行**，其余代码都按相对路径拼。
  * 注意通行证那个域名不受影响 —— 它是独立服务，不跟着本次迁移走。
+ *
+ * 另外：安卓走原生 HTTP，不带 Origin 头，**不受前后端跨域那套 CORS 规矩约束**
+ * （CORS 是浏览器的限制），所以后端给页面来源配的白名单不需要为 app 额外放行。
  */
 object Api {
     const val ACCOUNT_BASE = "https://account.qxwkstudio.top/api"
-    const val TRAVEL_BASE = "https://travel.qxwkstudio.top/api"
+    const val TRAVEL_BASE = "https://api.travel.qxwkstudio.top/api"
 
     /**
      * 登录时上报的「来源应用名」。安卓没有 Origin 头，通行证只能靠这个字段记来源；

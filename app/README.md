@@ -51,11 +51,14 @@ node app/tools/gen-cities.mjs        # 重新生成城市表（见下）
 `app/src/main/java/top/qxwkstudio/travel/Api.kt` 是域名与接口路径的**唯一出处**：
 
 - `ACCOUNT_BASE = https://account.qxwkstudio.top/api` —— 「Qxwk 通行证」，管登录 / 登出 / 身份。密码只发到这里，**不经过足迹后端**。
-- `TRAVEL_BASE = https://travel.qxwkstudio.top/api` —— 本项目后端，管足迹数据（`/my-visits`、`/visits`、`/stats`）与地图边界（`/geo/{adcode}`）。
+- `TRAVEL_BASE = https://api.travel.qxwkstudio.top/api` —— 本项目后端（Cloudflare Worker），管足迹数据（`/my-visits`、`/visits`、`/stats`）与地图边界（`/geo/{adcode}`）。
 
-两个域名都是 HTTPS，所以清单里只有 `INTERNET` 权限、没有 `network_security_config` 的明文例外。
-**阶段 2 会把 API 挪到 `api.travel.qxwkstudio.top`**（页面挪去 Pages）：届时只改 `TRAVEL_BASE` 这一行，
-其余代码全部按相对路径拼；通行证那个域名不跟着迁移。
+三个域名（通行证 `account.qxwkstudio.top` / 网页 `travel.qxwkstudio.top` / 接口 `api.travel.qxwkstudio.top`）
+都是 HTTPS，所以清单里只有 `INTERNET` 权限、没有 `network_security_config` 的明文例外。
+
+**阶段 2 已完成**（页面搬去 GitHub Pages `travel.qxwkstudio.top`、接口挪到 `api.travel.qxwkstudio.top`）：
+全程只改了这一行 `TRAVEL_BASE`，其余代码都按相对路径拼。前后端分家后网页要过 CORS，
+但**安卓走原生 HTTP、不带 `Origin` 头，不受浏览器那套 CORS 规矩约束** —— 白名单里没有安卓、也不用加。
 
 ### `client` 字符串与通行证登记的关系
 
@@ -84,7 +87,7 @@ node app/tools/gen-cities.mjs        # 重新生成城市表（见下）
 ## 城市表（assets/cities.json 是生成物）
 
 `app/src/main/assets/cities.json` **不要手改**：它由 `app/tools/gen-cities.mjs` 从
-`frontend/cities.js`（名称 / 省份 / 坐标）与 `frontend/city-codes.js`（名称 → adcode）生成，
+`docs/cities.js`（名称 / 省份 / 坐标）与 `docs/city-codes.js`（名称 → adcode）生成，
 零依赖、可重复运行（同样的输入产出逐字节相同的输出，diff 干净）。
 
 ```bash

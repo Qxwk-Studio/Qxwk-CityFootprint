@@ -47,7 +47,7 @@
 
 本站是 [Qxwk 通行证](https://account.qxwkstudio.top/) 的接入站点之一。通行证侧的**跨站 SSO / 跳转授权已整条下线**（`/?redirect=` 入口、URL 片段交付 `#_t=<token>`、授权确认页与 `/api/sso/*` 接口均已删除），本站不再有「跳过去登录再回跳落地」的流程，改为**本站前端直调通行证登录接口**换 token：
 
-1. 用户在 `account.html` 未登录视图的表单填「昵称或邮箱 + 密码」并提交，`frontend/app.js` 的 `passportLogin(nickname, password)` 跨域 POST 通行证 `https://account.qxwkstudio.top/api/login`，body 为 `{nickname, password, client: location.origin}`（`client` 供通行证侧 `apps` 白名单识别来源站点，未登记也能登录）
+1. 用户在 `account.html` 未登录视图的表单填「昵称或邮箱 + 密码」并提交，`docs/app.js` 的 `passportLogin(nickname, password)` 跨域 POST 通行证 `https://account.qxwkstudio.top/api/login`，body 为 `{nickname, password, client: location.origin}`（`client` 供通行证侧 `apps` 白名单识别来源站点，未登记也能登录）
 2. 通行证校验通过返回 `token`，本站前端把 token 存进 localStorage（键 `qxwf_token`），再调本站 `/api/me` 把用户信息写入 `qxwf_user` 缓存；失败则把错误信息显示在表单下方
 3. 后续业务请求带 `Authorization: Bearer <token>`，本站后端 `resolveViewer()` 拿 token 去通行证 `/api/me` 验证（**无缓存**），再**按通行证 userId 映射**到本地 `users` 表：先按 `users.passport_id` 查行 → 查不到时把「同昵称且 `passport_id IS NULL`」的存量行回填 `passport_id` 认领（保住该行已有的足迹与 `is_admin` 标志）→ 仍查不到才 `INSERT OR IGNORE` 新建；昵称 / 颜色每次访问同步通行证，昵称撞上本站 `users.nickname` 唯一约束时保留本站旧昵称、只同步颜色
 4. 退出登录：`logout()` 清掉本地 token 后，跨域 POST 通行证 `/api/logout`（带 `Authorization: Bearer <token>`）撤销该会话；请求失败不影响本地登出
@@ -56,18 +56,18 @@
 
 ## 🧱 技术栈
 
-- **运行时**：Cloudflare Workers + Static Assets
+- **运行时**：Cloudflare Workers（只跑接口，不再托管静态资源）
 - **数据库**：D1（SQLite，Cloudflare 原生）
 - **认证**：Qxwk 通行证统一登录（本站前端直调通行证 `/api/login` 换 token + Bearer Token 跨站校验，无缓存）
 - **前端**：原生 HTML / JS + [Leaflet](https://leafletjs.com/) 地图库
-- **托管平台**：Cloudflare Pages 自动部署（部署命令在 `backend/` 目录执行 `npx wrangler deploy`）
+- **托管平台**：前端 **GitHub Pages**（发布仓库的 `docs/` 目录，域名 `travel.qxwkstudio.top`）+ 后端 **Cloudflare Workers**（域名 `api.travel.qxwkstudio.top`，部署命令在 `backend/` 目录执行 `npx wrangler deploy`）
 
 ## 📁 项目结构
 
-仓库根目录按「前端 / 后端 / 安卓 app」三分：
+仓库根目录按「前端 / 后端 / 安卓 app」三分（前端目录叫 `docs/` 是 GitHub Pages 的要求 —— 它只允许发布仓库根或 `/docs`）：
 
 ```
-├── frontend/               # 静态前端（页面 + JS + 自托管依赖）
+├── docs/                   # 静态前端（GitHub Pages 就发布这个目录）
 │   ├── vendor/             # 自托管前端依赖（Leaflet JS + CSS + 标记图标，避免外链与 CORS）
 │   ├── index.html          # 足迹大地图
 │   ├── account.html        # 个人中心（本站登录表单 + 资料卡）
@@ -80,14 +80,14 @@
 │   ├── cities.js           # 国内地级市坐标数据
 │   ├── city-codes.js       # 城市 adcode（地图边界用）
 │   ├── favicon.webp        # 站点图标
-│   └── robots.txt          # 爬虫规则（屏蔽登录页与接口）
+│   └── robots.txt          # 爬虫规则（屏蔽登录页与足迹管理页；接口在另一个域上，这里管不到）
 ├── backend/                # 后端（Cloudflare Worker + D1）；后端命令都在这个目录里执行
 │   ├── src/
-│   │   ├── worker.js       # Worker 入口（/api/* 接口 + 静态资源回退）
+│   │   ├── worker.js       # Worker 入口（/api/* 接口 + CORS；静态资源回退已删）
 │   │   └── lib.js          # 通行证 token 验证 + 本地用户映射 + 工具
 │   ├── migrations/
 │   │   └── 0001_init.sql   # 建表：users（两站共享）/ visits（本站独占）
-│   └── wrangler.toml       # Worker 配置（D1 绑定 database_id + [assets] 指向 ../frontend 且 binding = "ASSETS"）
+│   └── wrangler.toml       # Worker 配置（只有 D1 绑定；静态资源段已删 —— 页面在 GitHub Pages）
 ├── app/                    # 安卓 app，见 app/README.md（Kotlin + XML View/viewBinding，原生 osmdroid 地图，不用 WebView）
 ├── .github/
 │   └── workflows/
@@ -95,7 +95,7 @@
 └── README.md
 ```
 
-> **🚧 改造进度（阶段 1a 已完成 / 阶段 3 进行中）**：阶段 1a 完成目录重构——仓库根按「前端 / 后端 / 安卓 app」三分（`public/` → `frontend/`，`src/`、`migrations/`、`wrangler.toml` → `backend/`），改名走 `git mv`，提交历史保留。阶段 3 已加入 `app/`（安卓原生客户端）与 `.github/workflows/build-android.yml`，**尚未经 CI 实际构建验证**（本机无 Android SDK / JDK），对应的 apk 也还没发布过。功能页（visits / account / setup）本轮**暂不删除**，等安卓 app 可用后再下线（阶段 2 推迟）；后端校验凭证的机制沿用公开 HTTP 调通行证 `/api/me`，已定稿，不做缓存。
+> **✅ 改造进度（阶段 1a / 2 / 3 均已完成）**：阶段 1a 完成目录重构（`public/` → `frontend/`，`src/`、`migrations/`、`wrangler.toml` → `backend/`，改名走 `git mv`，提交历史保留）；阶段 2 完成前后端分家——页面改由 **GitHub Pages** 发布（`frontend/` → `docs/`，域名 `travel.qxwkstudio.top`），Worker 只留 `/api/*` 并挂到 `api.travel.qxwkstudio.top`，`[assets]` 段与 `env.ASSETS` 回落一并删除，同时补上前端跨域所需的 CORS（含 `OPTIONS` 预检）；阶段 3 已加入 `app/`（安卓原生客户端，包名 `top.qxwkstudio.travel`）与 `.github/workflows/build-android.yml`（手动触发，编译 / R8 / 签名已在 CI 跑通；本机无 Android SDK / JDK，只能靠 CI 验证）。功能页（visits / account / setup）**暂不删除**，等安卓 app 可用后再下线；后端校验凭证的机制沿用公开 HTTP 调通行证 `/api/me`，已定稿，不做缓存。
 
 ## 🔌 API 接口
 
@@ -116,11 +116,12 @@
 ## 🛠 设计说明
 
 - **认证完全移交通行证**：本站不持有密码、不签发会话、不生成 token，登录也只由前端跨域直调通行证 `/api/login`（密码不经本站服务器）。所有身份来源都由 `account.qxwkstudio.top` 负责。前端收到 401 清掉本地 token 并回到登录视图；后端业务接口的 Bearer Token 必须经通行证 `/api/me` 二次验证（**无任何缓存**，每个请求都会跨站验证一次）。
+- **前后端跨域，接口自带 CORS**：页面在 `travel.qxwkstudio.top`（GitHub Pages）、接口在 `api.travel.qxwkstudio.top`（Worker），不同源。前端请求带 `Authorization` / `Content-Type`，浏览器会先发 `OPTIONS` 预检，所以 Worker 必须处理预检并回 `Access-Control-Allow-*`；**4xx/5xx 也要带头**，否则浏览器只报 "CORS error"，前端那套 401 清 token / 回登录视图的逻辑永远触发不了。白名单（`backend/src/worker.js` 的 `ALLOWED_ORIGINS`）只放行前端域与 localhost —— 身份靠 Bearer token、不用 cookie，本就没有「靠 CORS 挡人」的安全边界，但也没必要让任意站点读响应。
 - **本地身份按 `passport_id` 映射**：`resolveViewer()` 用通行证 `/api/me` 返回的 `userId` 认人（`users.passport_id`，唯一索引 `idx_users_passport`）。通行证里改昵称不会改 userId，所以改昵称不会在本站多出一条行；升级前的老行按「同昵称且 `passport_id IS NULL`」自动回填认领，保住原有足迹与管理员标志。
 - **颜色与头像都由 Account 输出**：`users.color` 和用户头像 URL 都是通行证"单一事实源"，本站每次用户访问时同步覆盖。这样用户在通行证改颜色 / 改邮箱（头像 hash 变化）后，访问本站自动生效，避免两端数据漂移。
 - **私密行程接口层过滤**：`is_private` 过滤在 Worker 侧（`lib.js` / worker 查询）做，而不是前端，防止有人抓接口构造出别人的私密足迹。管理员用 `is_admin=1` 标志绕过过滤查看全部。
 - **成就系统**：判定逻辑在 `achievements.js` 前端执行，按"足迹丰碑 / 巡游四方 / 城市打卡 / 极限挑战"四大类分组。新增成就时在成就定义数组追加即可，判定函数拿到 `stats + myVisits` 上下文。
-- **地图边界与瓦片缓存**：DataV GeoAtlas 边界由 Worker `/api/geo/:adcode` 代理并缓存 24h；浏览器侧再用 IndexedDB 保存 24h，打开地图时只拉取缺省的边界。瓦片用高德免 Key 内网直出、Leaflet 资源自托管到 `frontend/vendor/`，避免外链失效与 CORS 折腾。
+- **地图边界与瓦片缓存**：DataV GeoAtlas 边界由 Worker `/api/geo/:adcode` 代理并缓存 24h；浏览器侧再用 IndexedDB 保存 24h，打开地图时只拉取缺省的边界。瓦片用高德免 Key 内网直出、Leaflet 资源自托管到 `docs/vendor/`，避免外链失效与 CORS 折腾。
 - **响应式边距规范**：全站 6 页（index / account / visits / stats / news / setup）沿用同一套间距规范，新增页面或模块**务必遵守**，避免不同页面在手机/桌面上松紧不一。
 
   | 元素 | 桌面端（默认 CSS） | 手机端 `@media (max-width: 640px)` |
@@ -185,10 +186,10 @@ cd c:\Code\Qxwk-Account
 npx wrangler d1 execute qxwk-account --remote --command "INSERT OR IGNORE INTO apps (name, origin, homepage) VALUES ('City Footprint', 'https://travel.qxwkstudio.top', 'https://travel.qxwkstudio.top')"
 ```
 
-本地联调另插一行 origin（dev 端口 8788）：
+本地联调另插一行 origin（填**本地页面**的地址，端口随你用的静态服务器而定；不登记也能登录，只是来源会被记成「未登记来源」）：
 
 ```bash
-npx wrangler d1 execute qxwk-account --local --command "INSERT OR IGNORE INTO apps (name, origin, homepage) VALUES ('City Footprint 本地', 'http://localhost:8788', 'http://localhost:8788')"
+npx wrangler d1 execute qxwk-account --local --command "INSERT OR IGNORE INTO apps (name, origin, homepage) VALUES ('City Footprint 本地', 'http://localhost:8080', 'http://localhost:8080')"
 ```
 
 ### 4️⃣ 填入 database_id 并部署
@@ -199,15 +200,9 @@ npx wrangler d1 execute qxwk-account --local --command "INSERT OR IGNORE INTO ap
 database_id = "你的-D1-数据库ID"
 ```
 
-同一个文件里的静态资源段负责把前端目录挂到 Worker 上（前端页面和后端 `/api` 同源，都在这一个 Worker 里）：
+这个文件里**只有 D1 绑定** —— 页面已搬去 GitHub Pages（`docs/` 目录），所以没有 `[assets]` 静态资源段，Worker 只服务 `/api/*`。
 
-```toml
-[assets]
-directory = "../frontend"   # 相对配置文件所在目录解析（即仓库根的 frontend/），不是命令行当前目录
-binding = "ASSETS"
-```
-
-> **⚠️ `binding = "ASSETS"` 不能省**：没有它 `env.ASSETS` 就是 `undefined`，而 `worker.js` 末尾对未命中静态文件的路径会调用 `env.ASSETS.fetch(request)`，直接抛错（Cloudflare Error 1101）——本该 404 的路径会变成 500。已本地起 `wrangler dev` 实测：带上这个绑定后 `/nope.html`、`/api/nope` 都正常返回 404，`/account.html` 仍 307 跳到 `/account`、`/account` 返回 200。
+> **⚠️ 前端搬走后，`env.ASSETS` 的回落必须一起删**：`worker.js` 末尾原先用 `env.ASSETS.fetch(request)` 兜底静态资源；既然这里不再声明 `[assets]`，`env.ASSETS` 就会是 `undefined`，忘了删那句的话任何未命中路由的请求都会抛错（Cloudflare Error 1101，本该 404 的路径变成 500）。现在那段已改为直接回 JSON 404。
 
 提交并推送，然后在 `backend/` 目录执行部署：
 
@@ -216,15 +211,18 @@ cd backend
 npx wrangler deploy
 ```
 
-部署结果应为 **Worker + 静态资源 + D1 绑定**（绑定都写在 `backend/wrangler.toml` 里，无需再去网页配置）。
+部署结果应为 **Worker + D1 绑定**（D1 绑定都写在 `backend/wrangler.toml` 里，无需再去网页配置）。
 
-> 若用 CF Pages 项目自动部署，构建 / 部署命令的工作目录要指向 `backend/`——`wrangler.toml` 已经不在仓库根目录了，在根目录跑 wrangler 会找不到配置文件。
+> 前端不在 Cloudflare 上：GitHub 仓库 → **Settings → Pages → Source** 选 `Deploy from a branch`，分支 `main` / 目录 `/docs`，保存后 `docs/` 里的页面就发布到 `travel.qxwkstudio.top`。
 
-### 5️⃣ 自定义域名（可选）
+### 5️⃣ 自定义域名
 
-Pages 项目 → **自定义域**（Custom domains）→ 添加你的域名（如 `travel.qxwkstudio.top`）
+前端与后端现在是**两个域**，各配各的：
 
-然后在主站对应位置放一个跳转链接指向它即可。
+- **前端（GitHub Pages）**：仓库 Settings → Pages → Custom domain 填 `travel.qxwkstudio.top`（同时按提示在 DNS 配好 CNAME）
+- **后端（Worker）**：CF 控制台 → 该 Worker → Settings → Domains & Routes → 添加自定义域 `api.travel.qxwkstudio.top`
+
+> **两处必须配对**：`docs/app.js` 的 `API_BASE` 写死指后端域，`backend/src/worker.js` 的 `ALLOWED_ORIGINS` 白名单只放行前端域。以后换域名要同时改这两处，否则浏览器侧会直接报 CORS 错误。
 
 ### 👑 管理员
 
@@ -250,20 +248,21 @@ cd backend
 npx wrangler dev --port 8788
 ```
 
-本地会读取 `backend/wrangler.toml` 里的 D1 绑定（需先建库并填 ID）与 `[assets]` 目录；
-Worker 会在 `localhost:8788` 同时提供页面和 API——前端页面就是 `[assets]` 指向的 `../frontend`，
-所以页面和 `/api` 同源，登录、地图、统计等整条流程在本地都能直接跑通。
+本地会读取 `backend/wrangler.toml` 里的 D1 绑定（需先建库并填 ID）。**本地只起后端** —— 页面已经不在 Worker 上了，
+想看页面就另起一个静态服务器指向仓库的 `docs/`（例如 `npx.cmd -y serve docs`）。`docs/app.js` 的 `API_BASE`
+这时仍指向线上后端，够用；要连本地后端就把它临时改成 `http://localhost:8788/api`，CORS 白名单已放行
+localhost 的任意端口（见 `backend/src/worker.js` 的 `ALLOWED_ORIGINS`）。
 
-**通行证登录本地联调**：把 `backend/src/lib.js` 与 `frontend/app.js` 顶部 `PASSPORT_URL` 改成 `http://localhost:8787`，另起一个终端跑通行证 `cd c:\Code\Qxwk-Account && npx wrangler dev`（端口 8787），并在通行证本地 DB 插入本站 origin（见 3️⃣）。
+**通行证登录本地联调**：把 `backend/src/lib.js` 与 `docs/app.js` 顶部 `PASSPORT_URL` 改成 `http://localhost:8787`，另起一个终端跑通行证 `cd c:\Code\Qxwk-Account && npx wrangler dev`（端口 8787），并在通行证本地 DB 插入本站 origin（见 3️⃣）。
 
 ## 🔧 自定义指南
 
 **1. 补充城市数据**
-- 编辑 `frontend/cities.js`，往对应省份数组里加 `{ name, province, lat, lng }` 即可
+- 编辑 `docs/cities.js`，往对应省份数组里加 `{ name, province, lat, lng }` 即可
 
 **2. 更换地图瓦片**
-- 默认使用**高德免 Key 瓦片**（国内加载快），Leaflet 库也已自托管到 `frontend/vendor/`（与站点同源，走 Cloudflare CDN）
-- 如需换回 OpenStreetMap 或其他官方瓦片源，修改 `frontend/index.html` 里 `L.tileLayer` 的 URL 即可（高德/腾讯官方瓦片需申请 Key）
+- 默认使用**高德免 Key 瓦片**（国内加载快），Leaflet 库也已自托管到 `docs/vendor/`（与站点同源，走 GitHub Pages 的 CDN）
+- 如需换回 OpenStreetMap 或其他官方瓦片源，修改 `docs/index.html` 里 `L.tileLayer` 的 URL 即可（高德/腾讯官方瓦片需申请 Key）
 
 **3. 查看免费额度**
 - Workers 每天 10 万次请求、D1 5GB 存储，个人使用完全足够
@@ -281,7 +280,7 @@ Worker 会在 `localhost:8788` 同时提供页面和 API——前端页面就是
 
 **6. 头像机制（WeAvatar）**
 - 所有头像 URL 由通行证 Account 后端集中计算（基于 `sha256(lowercase(trim(email)))` → `https://weavatar.com/avatar/{hash}?s=400&d=404`），本站**不再持有任何哈希实现**
-- 消费方式：`frontend/app.js` 中定义的 `setAvatarFromUrl(el, avatarUrl, nickname, color)`（原 `avatar.js` 已删除并合并入 app.js）——加载失败自动回退到「昵称首字 + 专属颜色」的文字头像
+- 消费方式：`docs/app.js` 中定义的 `setAvatarFromUrl(el, avatarUrl, nickname, color)`（原 `avatar.js` 已删除并合并入 app.js）——加载失败自动回退到「昵称首字 + 专属颜色」的文字头像
 - 通行证返回 `token` 后，本站调 `/api/me` 即带回 `avatar` 字段并写入本地用户缓存 `qxwf_user`；更换头像服务（如切到 QQ 官方头像或自托管 Gravatar）**只需改 Account 后端 `getAvatarUrl()` 一处**，本站零改动
 
 ---

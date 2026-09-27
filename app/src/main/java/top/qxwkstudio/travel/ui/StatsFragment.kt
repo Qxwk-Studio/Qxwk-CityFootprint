@@ -25,7 +25,7 @@ import top.qxwkstudio.travel.logic.Visit
  * 不是全站统计 —— 成就判定只能按「我去过哪些城市」。所以这一页要发两个请求，
  * 合成一次后台任务（同一个线程里先后发，省一次线程创建）。
  *
- * 排行只画前 10 名：与网页版默认视图一致（frontend/stats.html 的 RANK_DEFAULT=10），
+ * 排行只画前 10 名：与网页版默认视图一致（docs/stats.html 的 RANK_DEFAULT=10），
  * 网页那个「展开到 50」的开关这里没做（要额外一个按钮与文案），名次靠后不影响视图。
  */
 class StatsFragment : Fragment() {

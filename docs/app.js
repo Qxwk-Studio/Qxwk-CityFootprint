@@ -1,6 +1,9 @@
 // 共享前端逻辑：API 客户端 + 通行证登录 + 会话管理
 
-const API_BASE = '/api';
+// 后端 Worker 的绝对地址。页面在 GitHub Pages（travel.qxwkstudio.top）、后端在
+// api.travel.qxwkstudio.top，两者不同源，所以这里**不能**再用相对路径 /api。
+// Worker 侧对本页 origin（以及本地调试用的 localhost 端口）放行，见 backend/src/worker.js 的 ALLOWED_ORIGINS
+const API_BASE = 'https://api.travel.qxwkstudio.top/api';
 const PASSPORT_URL = 'https://account.qxwkstudio.top';
 const LS_TOKEN = 'qxwf_token';
 const LS_USER = 'qxwf_user';

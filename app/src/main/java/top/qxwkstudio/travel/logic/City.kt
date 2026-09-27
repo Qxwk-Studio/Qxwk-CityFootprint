@@ -2,7 +2,7 @@ package top.qxwkstudio.travel.logic
 
 /**
  * 城市数据模型。数据来自 assets/cities.json，那份文件由 tools/gen-cities.mjs 从
- * frontend/cities.js（名称/省份/坐标）与 frontend/city-codes.js（名称 → adcode）生成，可重复运行。
+ * docs/cities.js（名称/省份/坐标）与 docs/city-codes.js（名称 → adcode）生成，可重复运行。
  *
  * adcode 可能是 null：源数据里有县级市（格尔木、伊宁、库尔勒…）在 city-codes.js 里没有记录，
  * 地图上就取不到边界，只能退回「只画标记」这种降级形态（见 ui/MapFragment）。

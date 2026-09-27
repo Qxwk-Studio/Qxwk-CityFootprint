@@ -7,7 +7,7 @@ import top.qxwkstudio.travel.logic.City
 /**
  * 城市数据（assets/cities.json）。
  *
- * 这份 JSON 是**生成物**：tools/gen-cities.mjs 从 frontend/cities.js + frontend/city-codes.js
+ * 这份 JSON 是**生成物**：tools/gen-cities.mjs 从 docs/cities.js + docs/city-codes.js
  * 导出来，跟着仓库一起提交。app 运行时不联网取城市表、也不解析前端的 JS ——
  * 前端改了城市数据就重跑一次脚本（见 README），两端因此永远同源。
  *

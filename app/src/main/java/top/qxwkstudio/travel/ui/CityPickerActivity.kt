@@ -18,7 +18,7 @@ import top.qxwkstudio.travel.logic.City
 import top.qxwkstudio.travel.logic.CitySearch
 
 /**
- * 城市选择页：从 assets/cities.json（由 tools/gen-cities.mjs 从 frontend 生成）里搜索，
+ * 城市选择页：从 assets/cities.json（由 tools/gen-cities.mjs 从 docs/ 生成）里搜索，
  * 选中后把 **城市名 + 坐标**回传给 VisitEditActivity。
  *
  * 为什么用本机的城市表而不是联网搜索：坐标与名称是跨端约定（网页版也用同一份数据），

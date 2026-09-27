@@ -14,8 +14,8 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.CityFootprint"
         android:usesCleartextTraffic="false">
-        <!-- 两个域名（account.qxwkstudio.top / travel.qxwkstudio.top）都是 HTTPS，
-             所以**刻意没有** network_security_config 的明文例外（模板里那份是为教务系统的 http 开的）。
+        <!-- 三个域名（account.qxwkstudio.top 通行证 / travel.qxwkstudio.top 页面 / api.travel.qxwkstudio.top 接口）
+             都是 HTTPS，所以**刻意没有** network_security_config 的明文例外（模板里那份是为教务系统的 http 开的）。
              usesCleartextTraffic="false" 在这里只是把「全站禁明文」摆到明面上：
              targetSdk ≥ 28 起系统本来就默认禁。 -->
 

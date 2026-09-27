@@ -5,7 +5,7 @@
  * 为什么要一个脚本、而不是让 app 直接读前端的 JS：
  * 安卓端拿不到 window.CITIES，也不该在运行时解析 JS；但城市名/省份/坐标/行政区划代码是**跨端约定**
  * （网页版用同一份数据，地图边界靠 adcode 取），两边一旦分叉就会出现「App 里有的城市网页上没有」
- * 或者「坐标不同、同一座城打在两个位置」。所以城市表在仓库里只有一份源（frontend/*.js），
+ * 或者「坐标不同、同一座城打在两个位置」。所以城市表在仓库里只有一份源（docs/*.js），
  * 这份 assets 是它的**生成物**，前端改了城市数据就重跑本脚本（见 app/README.md）。
  *
  * 零依赖：只用 node 内置模块 + 正则。
@@ -15,8 +15,8 @@
  * 可重复运行：同样的输入一定产出逐字节相同的输出（不写时间戳 —— 那会让每次重跑都产生 diff）。
  *
  * 用到的两个源文件格式（改格式必须同步改这里）：
- *   frontend/cities.js     { name: '北京', province: '北京', lat: 39.904, lng: 116.407 },
- *   frontend/city-codes.js "北京": 110000,
+ *   docs/cities.js     { name: '北京', province: '北京', lat: 39.904, lng: 116.407 },
+ *   docs/city-codes.js "北京": 110000,
  *
  * 跑法：node app/tools/gen-cities.mjs
  * 校验失败（条数对不上/重名）会以退出码 1 结束，不会写出半份数据。
@@ -27,8 +27,9 @@ import { fileURLToPath } from 'node:url';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, '..', '..');
-const citiesSource = resolve(repoRoot, 'frontend', 'cities.js');
-const codesSource = resolve(repoRoot, 'frontend', 'city-codes.js');
+// 前端目录叫 docs/（GitHub Pages 只允许发布仓库根或 /docs），阶段 2 由 frontend/ 改名而来
+const citiesSource = resolve(repoRoot, 'docs', 'cities.js');
+const codesSource = resolve(repoRoot, 'docs', 'city-codes.js');
 const outFile = resolve(here, '..', 'src', 'main', 'assets', 'cities.json');
 
 /** 一条城市记录。lat/lng 必须都是数字，借此天然跳过文件头注释里那份「示例」。 */
@@ -107,7 +108,7 @@ const merged = cities.map((c) => {
 
 const payload = {
   // 生成物标记 + 来源：给以后翻到这个 JSON 的人一条线索（JSON 不支持注释，只能写进字段）
-  source: 'frontend/cities.js + frontend/city-codes.js',
+  source: 'docs/cities.js + docs/city-codes.js',
   generator: 'app/tools/gen-cities.mjs',
   count: merged.length,
   withAdcode,

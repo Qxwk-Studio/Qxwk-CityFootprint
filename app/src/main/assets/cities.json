@@ -1,5 +1,5 @@
 {
-  "source": "frontend/cities.js + frontend/city-codes.js",
+  "source": "docs/cities.js + docs/city-codes.js",
   "generator": "app/tools/gen-cities.mjs",
   "count": 384,
   "withAdcode": 370,

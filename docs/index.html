@@ -821,8 +821,8 @@ function loadCityGeo(adcode) {
       // 1) IndexedDB 缓存
       const cached = await geoDBRead(adcode);
       if (cached) return cached;
-      // 2) 网络请求（经 geoFetch 并发控制）
-      const r = await geoFetch(`/api/geo/${adcode}`);
+      // 2) 网络请求（经 geoFetch 并发控制）；API_BASE 来自 app.js（后端与页面不同源，必须绝对地址）
+      const r = await geoFetch(`${API_BASE}/geo/${adcode}`);
       if (!r.ok) return null; // 404/错误 → 回退圆点
       let g = null;
       try {

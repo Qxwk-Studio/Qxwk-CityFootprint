@@ -1,6 +1,6 @@
 // Qxwk-CityFootprint · Worker
-// 一个 Worker 同时处理 /api/* 接口和静态资源（public/）
-// 同源服务，无需 CORS
+// 只提供 /api/* 接口：页面已搬去 GitHub Pages（仓库 docs/，域名 travel.qxwkstudio.top），
+// 这个 Worker 挂在 api.travel.qxwkstudio.top 上，前后端不同源，故末尾统一挂 CORS 头
 import { json, error, getUserId, resolveViewer } from './lib.js';
 
 // ---------- API 处理 ----------
@@ -187,6 +187,43 @@ async function handleApi(request, env) {
   return null; // 不是已知 API 路由
 }
 
+// ---------- CORS ----------
+// 前端（GitHub Pages，travel.qxwkstudio.top）与这个 Worker（api.travel.qxwkstudio.top）不同源。
+// 前端请求带 Authorization / Content-Type 这类非简单头，浏览器会**先发 OPTIONS 预检**，
+// 预检不过响应连读都读不到，所以接口必须显式放行。
+//
+// 用白名单而不是 `*`：本站身份靠 Bearer token（不用 cookie），本来就不存在「靠 CORS 挡人」的
+// 安全边界，但也没必要让任意站点都能读响应。本地那两个 origin 是给「本地起静态服务器调试
+// Pages 前端、接口仍打线上」用的 —— 端口不固定，所以用正则而不是写死端口。
+const ALLOWED_ORIGINS = [
+  /^https:\/\/travel\.qxwkstudio\.top$/,
+  /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/,
+];
+
+// 命中白名单才给头；不在白名单返回 null（不给头，浏览器侧自然被拦，服务端不额外报错）
+function corsHeaders(request) {
+  const origin = request.headers.get('Origin');
+  if (!origin || !ALLOWED_ORIGINS.some((re) => re.test(origin))) return null;
+  return {
+    'Access-Control-Allow-Origin': origin,
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Authorization, Content-Type',
+    'Access-Control-Max-Age': '86400',
+    // 回显 Origin 就必须带 Vary：否则 CDN / 浏览器可能把 A 来源的响应用给 B 来源
+    Vary: 'Origin',
+  };
+}
+
+// 把 CORS 头贴到任意响应上。4xx/5xx 也要贴：不贴的话浏览器只报 "CORS error"，
+// 真正的状态码和错误信息（比如 401 未登录、403 越权）前端根本看不到。
+function withCors(resp, request) {
+  const extra = corsHeaders(request);
+  if (!extra) return resp;
+  const headers = new Headers(resp.headers);
+  for (const [k, v] of Object.entries(extra)) headers.set(k, v);
+  return new Response(resp.body, { status: resp.status, statusText: resp.statusText, headers });
+}
+
 // ---------- 入口 ----------
 
 export default {
@@ -195,22 +232,22 @@ export default {
 
     // API 路由
     if (url.pathname.startsWith('/api/')) {
+      // OPTIONS 预检：直接回 204，不进业务路由（预检不带 Authorization，进了也只会拿到 401）
+      if (request.method === 'OPTIONS') {
+        const headers = corsHeaders(request);
+        return headers ? new Response(null, { status: 204, headers }) : new Response(null, { status: 403 });
+      }
       try {
         const result = await handleApi(request, env);
-        return result || json({ error: '接口不存在' }, 404);
+        return withCors(result || json({ error: '接口不存在' }, 404), request);
       } catch (e) {
-        return json({ error: '服务器错误: ' + (e && e.message ? e.message : String(e)) }, 500);
+        return withCors(json({ error: '服务器错误: ' + (e && e.message ? e.message : String(e)) }, 500), request);
       }
     }
 
-    // 无扩展名的路径 302 跳转到 .html（如 /account -> /account.html）
-    if (url.pathname !== '/' && !/\.[^/]+$/.test(url.pathname)) {
-      const redirectUrl = new URL(request.url);
-      redirectUrl.pathname = redirectUrl.pathname.replace(/\/$/, '') + '.html';
-      return Response.redirect(redirectUrl.toString(), 302);
-    }
-
-    // 其余：静态资源（public/）
-    return env.ASSETS.fetch(request);
+    // 其余路径一律 404：本 Worker 只提供接口，页面全在 GitHub Pages 上。
+    // （这里原先回落到 env.ASSETS 取静态资源；前端搬走后 [assets] 绑定已从 wrangler.toml 删除，
+    //   再留着这句会拿 undefined 去 fetch 并抛错。）
+    return withCors(json({ error: '接口不存在' }, 404), request);
   },
 };

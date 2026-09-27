@@ -4,14 +4,12 @@ compatibility_date = "2026-08-05"
 compatibility_flags = ["nodejs_compat"]
 
 # 本文件在 backend/ 里，后端命令都在该目录执行（npx wrangler deploy / dev / d1 ...）。
-# 静态资源目录用 ../frontend：wrangler 的相对路径按本文件所在目录解析，不是按命令行当前目录。
-
-# 静态资源目录（前端页面，仓库根的 frontend/）
-# binding = "ASSETS" 不能省：没有它 env.ASSETS 是 undefined，worker.js 末尾对未命中静态文件的
-# 路径调用 env.ASSETS.fetch(request) 会直接抛错（Cloudflare Error 1101），本该 404 的路径变成 500。
-[assets]
-directory = "../frontend"
-binding = "ASSETS"
+#
+# 这里**刻意没有** [assets] 段：页面已搬去 GitHub Pages（仓库 docs/，域名 travel.qxwkstudio.top），
+# 本 Worker 只服务接口，挂在 api.travel.qxwkstudio.top（自定义域在 CF 控制台配，不写进本文件，
+# 免得与网页上已配好的域冲突）。前端搬走时 worker.js 里对 env.ASSETS 的回落也一并删了 ——
+# 若不删而这里又去掉了绑定，env.ASSETS 会是 undefined，任何未命中路由的请求都会抛错
+# （Cloudflare Error 1101，本该 404 的路径变成 500）。
 
 # D1 数据库绑定
 # 部署前：在 CF 控制台创建 D1 数据库后，把 database_id 替换成你的数据库 ID
