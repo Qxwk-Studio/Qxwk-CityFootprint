@@ -47,9 +47,6 @@ class MainActivity : AppCompatActivity() {
             true
         }
 
-        // 顶栏右上角那颗「打开我的」：与底部「我的」是同一个入口，直接切 tab
-        b.btnProfile.setOnClickListener { b.bottomNav.selectedItemId = R.id.tab_profile }
-
         if (savedInstanceState == null) {
             // 选中态交给 BottomNavigationView 自己的 item 状态 —— 选中会回调上面的 listener，
             // 顺带把第一个 Fragment 装上、标题设好（只有一处真相来源）

@@ -4,8 +4,8 @@
      顶栏/底栏各有一条 1px 分隔线（都用 sidebar-border），与设计稿一致。
      原先顶部与底部导航之间还有一条品牌页脚，已按需求移除。
 
-     顶栏右侧那颗「打开我的」按钮（设计稿 .app-bar-action）点一下就切到「我的」tab，
-     它只是切 tab 的另一种入口，所以不给它单独开 Activity。 -->
+     顶栏右侧原先那颗「打开我的」动作按钮也已按需求移除：底部导航里本来就有「我的」，
+     右上角再放一个头像是重复入口。 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
@@ -38,16 +38,6 @@
                 android:textColor="@color/sidebar_fg"
                 android:textSize="16sp"
                 android:textStyle="bold" />
-
-            <ImageButton
-                android:id="@+id/btnProfile"
-                android:layout_width="36dp"
-                android:layout_height="36dp"
-                android:background="@drawable/bg_action_button"
-                android:contentDescription="@string/tab_profile"
-                android:padding="8dp"
-                android:src="@drawable/ic_person"
-                android:tint="@color/sidebar_fg" />
         </LinearLayout>
 
         <View
@@ -76,12 +66,13 @@
 
         <!-- 五个 tab 都在 menu/bottom_nav.xml 里定义（图标 + 文案）；
              选中态样式见 themes.xml 的 Widget.App.BottomNav（主色药丸 + 白字）。
-             高度写死 56dp（M3 默认约 80dp，需求要更矮）——图标 + 文案在 56dp 内仍放得下 -->
+             高度用 wrap_content：M3 那条 56dp 是 minHeight，而图标(24dp + 上下各 8dp) 加
+             文案(12sp + 下方 10dp) 本身就要 ~66dp —— 之前写死 56dp 把图标和文字挤到一起了。 -->
         <com.google.android.material.bottomnavigation.BottomNavigationView
             android:id="@+id/bottomNav"
             style="@style/Widget.App.BottomNav"
             android:layout_width="match_parent"
-            android:layout_height="56dp"
+            android:layout_height="wrap_content"
             android:paddingStart="4dp"
             android:paddingEnd="4dp"
             app:labelVisibilityMode="labeled"

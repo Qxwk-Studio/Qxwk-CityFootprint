@@ -2,16 +2,18 @@
 <!-- 主页 = 网页端「足迹管理页」的内容（概览卡 + 标题行 + 足迹列表），样式按设计稿重做：
      圆角 8dp 描边卡片、11~16sp 的文字层级、主色「添加足迹」按钮（不再是 FAB）。
 
-     列表用 NestedScrollView + wrap_content 的 RecyclerView，而不是把 RecyclerView 当滚动容器：
-     这样那张列表卡片的底边会跟着条目数量走（条目少时不会拉成一整屏的空白卡）。
-     条目上限就是用户的足迹数（几十条），不回收也无妨，和统计页同一取舍。 -->
+     列表就是普通的 RecyclerView（自己滚动），顶部的概览卡与标题行固定不动。
+     （曾把 RecyclerView 塞进 NestedScrollView + wrap_content，想让卡片高度跟着条目数走，
+     但在嵌套测量下只量得出一条的高度。RecyclerView 套在滚动容器里这写法不可靠，改回它自己当滚动容器。） -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical">
 
-    <!-- ===== 足迹统计概览 ===== -->
+    <!-- ===== 足迹统计概览 =====
+         版面照网页端 docs/visits.html 的 .visit-stats：标题下一条分隔线，接着 2×2 网格，
+         每格「小标签在上、主色大数字在下」，第四格是最早·最近那条区间。 -->
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/cardOverview"
         android:layout_width="match_parent"
@@ -30,96 +32,109 @@
                 style="@style/CardTitle"
                 android:text="@string/visits_overview_title" />
 
+            <!-- 网格整体：上方一条 1px 分隔线 + paddingTop，等价网页 .visit-stats 的 border-top -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:orientation="horizontal">
+                android:layout_marginTop="10dp"
+                android:background="@drawable/divider_top_bg"
+                android:orientation="vertical"
+                android:paddingTop="14dp">
 
+                <!-- 第一行：去过城市 / 足迹 -->
                 <LinearLayout
-                    android:layout_width="0dp"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
+                    android:orientation="horizontal">
 
-                    <TextView
-                        android:id="@+id/valueCities"
-                        style="@style/StatValue"
-                        android:text="0" />
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
 
-                    <TextView
-                        style="@style/StatLabel"
-                        android:text="@string/visits_overview_cities" />
+                        <TextView
+                            style="@style/StatLabel"
+                            android:layout_marginTop="0dp"
+                            android:text="@string/visits_overview_cities" />
+
+                        <TextView
+                            android:id="@+id/valueCities"
+                            style="@style/StatValue.Primary"
+                            android:layout_marginTop="2dp"
+                            android:text="0" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            style="@style/StatLabel"
+                            android:layout_marginTop="0dp"
+                            android:text="@string/visits_overview_visits" />
+
+                        <TextView
+                            android:id="@+id/valueVisits"
+                            style="@style/StatValue.Primary"
+                            android:layout_marginTop="2dp"
+                            android:text="0" />
+                    </LinearLayout>
                 </LinearLayout>
 
+                <!-- 第二行：覆盖省份 / 最早·最近 -->
                 <LinearLayout
-                    android:layout_width="0dp"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
+                    android:layout_marginTop="14dp"
+                    android:orientation="horizontal">
 
-                    <TextView
-                        android:id="@+id/valueVisits"
-                        style="@style/StatValue"
-                        android:text="0" />
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
 
-                    <TextView
-                        style="@style/StatLabel"
-                        android:text="@string/visits_overview_visits" />
+                        <TextView
+                            style="@style/StatLabel"
+                            android:layout_marginTop="0dp"
+                            android:text="@string/visits_overview_provinces" />
+
+                        <TextView
+                            android:id="@+id/valueProvinces"
+                            style="@style/StatValue.Primary"
+                            android:layout_marginTop="2dp"
+                            android:text="0" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            style="@style/StatLabel"
+                            android:layout_marginTop="0dp"
+                            android:text="@string/visits_overview_range" />
+
+                        <!-- 日期区间（形如 2019 → 2026-05）不是数字：与网页 .date-range 一样压小些，同用主色 -->
+                        <TextView
+                            android:id="@+id/valueRange"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:ellipsize="end"
+                            android:fontFamily="monospace"
+                            android:maxLines="1"
+                            android:text="—"
+                            android:textColor="@color/accent"
+                            android:textSize="15sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
                 </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:id="@+id/valueProvinces"
-                        style="@style/StatValue"
-                        android:text="0" />
-
-                    <TextView
-                        style="@style/StatLabel"
-                        android:text="@string/visits_overview_provinces" />
-                </LinearLayout>
-            </LinearLayout>
-
-            <!-- 最早·最近：一条日期区间（形如 2019 → 2026-05），左侧小标签、右侧等宽数字 -->
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:layout_marginTop="12dp"
-                android:background="@color/border" />
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/visits_overview_range"
-                    android:textColor="@color/muted_fg"
-                    android:textSize="11sp" />
-
-                <TextView
-                    android:id="@+id/valueRange"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:layout_weight="1"
-                    android:ellipsize="end"
-                    android:fontFamily="monospace"
-                    android:gravity="end"
-                    android:maxLines="1"
-                    android:text="—"
-                    android:textColor="@color/fg"
-                    android:textSize="13sp"
-                    android:textStyle="bold" />
             </LinearLayout>
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
@@ -190,24 +205,20 @@
         <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
             android:id="@+id/swipe"
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_height="match_parent"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginBottom="16dp">
 
-            <androidx.core.widget.NestedScrollView
+            <!-- 左右/底部外边距放在 SwipeRefreshLayout 上而不是 RecyclerView 上：
+                 SwipeRefreshLayout 会忽略子 View 的 margin（下拉指示器按子 View 顶部定位），
+                 放外面才有那圈留白；列表卡改用 bg_card 铺满这块区域。 -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/list"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent">
-
-                <androidx.recyclerview.widget.RecyclerView
-                    android:id="@+id/list"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="16dp"
-                    android:layout_marginTop="4dp"
-                    android:layout_marginEnd="16dp"
-                    android:layout_marginBottom="16dp"
-                    android:background="@drawable/bg_card"
-                    android:clipToPadding="false"
-                    android:nestedScrollingEnabled="false" />
-            </androidx.core.widget.NestedScrollView>
+                android:layout_height="match_parent"
+                android:background="@drawable/bg_card"
+                android:clipToPadding="false" />
         </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
         <ProgressBar

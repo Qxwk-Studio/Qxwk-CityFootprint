@@ -17,7 +17,13 @@
         <item name="colorSurface">@color/card</item>
         <item name="colorOnSurface">@color/fg</item>
         <item name="colorOnSurfaceVariant">@color/muted_fg</item>
-        <item name="colorOutline">@color/input_border</item>
+        <!-- outline 这个角色同时还喂给 MaterialSwitch 的「关闭态」滑块与轨道描边
+             （见下面 MaterialSwitch 的说明）→ 用中灰，别用输入框那种浅灰，
+             否则关闭态的圆点几乎看不见。表单的输入框描边走的是 field_stroke，不经过这里。 -->
+        <item name="colorOutline">@color/muted_fg</item>
+        <!-- 开关「关闭态」的轨道底色。M3 用的是 colorSurfaceContainerHighest，不显式设会
+             落回基线的淡紫（在纯白卡片上就是「颜色不对」）；设成中性浅灰才是干净的白灰轨道。 -->
+        <item name="colorSurfaceContainerHighest">@color/muted</item>
         <item name="colorError">@color/destructive</item>
         <item name="android:colorBackground">@color/bg</item>
 
@@ -110,6 +116,12 @@
         <item name="android:textStyle">bold</item>
         <item name="android:textColor">@color/fg</item>
         <item name="android:fontFamily">monospace</item>
+    </style>
+
+    <!-- 主页「足迹统计」概览卡的数字：网页端 .visit-stats .stat b 用的是主色，
+         而统计页那四个数字是正文色 —— 所以另起一个样式，别动 StatValue 本身。 -->
+    <style name="StatValue.Primary" parent="StatValue">
+        <item name="android:textColor">@color/accent</item>
     </style>
 
     <!-- 数字下方的小标签（设计稿 11px muted-foreground） -->

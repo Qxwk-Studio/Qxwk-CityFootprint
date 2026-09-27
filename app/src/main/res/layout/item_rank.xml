@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 城市排行的一行：名次 / 城市 / 次数 / 人数（设计稿的四列 rank-row）。
-     名次列宽写死 32dp、次数/人数各 56dp：两三位数名次也不会把城市名推歪，一列数字对得齐。
-     逐列宽度必须与 fragment_stats 里那行表头保持一致，改一处要改两处。
-     行上方那条 1px 线就是设计稿的 border-t（表头与第一行之间也有）。 -->
+<!-- 排行一行（等价网页 .rank-item）：名次圆 + 城市(+省份) + 去过 N 人 + N 次，单行。
+     行上方那条 1px 线就是网页的 border-bottom（表头已被去掉，第一行上方的线也保留）。 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
@@ -14,40 +12,52 @@
 
     <TextView
         android:id="@+id/textRank"
-        android:layout_width="32dp"
-        android:layout_height="wrap_content"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:background="@drawable/bg_rank_circle"
         android:fontFamily="monospace"
+        android:gravity="center"
         android:textColor="@color/muted_fg"
-        android:textSize="12sp" />
+        android:textSize="12sp"
+        android:textStyle="bold" />
 
     <TextView
         android:id="@+id/textCity"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="8dp"
+        android:layout_marginStart="12dp"
         android:layout_weight="1"
         android:ellipsize="end"
         android:maxLines="1"
         android:textColor="@color/fg"
-        android:textSize="14sp"
+        android:textSize="15sp"
         android:textStyle="bold" />
 
     <TextView
-        android:id="@+id/textCount"
-        android:layout_width="56dp"
+        android:id="@+id/textProvince"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:fontFamily="monospace"
-        android:gravity="end"
-        android:textColor="@color/fg"
-        android:textSize="13sp"
-        android:textStyle="bold" />
+        android:layout_marginStart="4dp"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:textColor="@color/muted_fg"
+        android:textSize="11sp" />
 
     <TextView
         android:id="@+id/textPeople"
-        android:layout_width="56dp"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:fontFamily="monospace"
-        android:gravity="end"
+        android:layout_marginStart="8dp"
         android:textColor="@color/muted_fg"
-        android:textSize="12sp" />
+        android:textSize="11sp" />
+
+    <TextView
+        android:id="@+id/textCount"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="10dp"
+        android:fontFamily="monospace"
+        android:textColor="@color/accent"
+        android:textSize="13sp"
+        android:textStyle="bold" />
 </LinearLayout>

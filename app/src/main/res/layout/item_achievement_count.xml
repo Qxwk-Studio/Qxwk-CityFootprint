@@ -1,17 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 一条成就：图标（emoji）/ 名称+说明。
-     未达成的**不整行变灰**，而是把名字与说明压到灰色（代码里 setTextColor）——
-     图标是 emoji（彩色字体），压不灰，硬压反而出奇怪的颜色。
-
-     行上方那条 1px 线是设计稿的 border-t；每组的第一条由代码把背景置空。 -->
+<!-- 「成就达成人数」里的一行（等价网页 .ach-count-item）：图标 + 名称/说明 + 「N 人」。
+     N 是否为 0 由代码决定颜色（>0 主色、0 次要色，等价网页 .ach-count-num.done）。 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:background="@drawable/divider_top_bg"
-    android:gravity="top"
+    android:gravity="center_vertical"
     android:orientation="horizontal"
-    android:paddingTop="8dp"
-    android:paddingBottom="8dp">
+    android:paddingTop="7dp"
+    android:paddingBottom="7dp">
 
     <TextView
         android:id="@+id/textIcon"
@@ -41,23 +38,17 @@
             android:id="@+id/textDesc"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
+            android:layout_marginTop="1dp"
             android:textColor="@color/muted_fg"
             android:textSize="11sp" />
     </LinearLayout>
 
-    <!-- 已达成才出现的勾：主色圆底 + 白勾（等价网页 .achievement.done .check）。
-         放在行尾、纵向居中；未达成时 GONE，不占视觉重心。 -->
     <TextView
-        android:id="@+id/textCheck"
-        android:layout_width="18dp"
-        android:layout_height="18dp"
-        android:layout_gravity="center_vertical"
+        android:id="@+id/textNum"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
-        android:background="@drawable/bg_check_circle"
-        android:gravity="center"
-        android:text="@string/achievement_check"
-        android:textColor="@color/on_accent"
-        android:textSize="11sp"
-        android:visibility="gone" />
+        android:fontFamily="monospace"
+        android:textSize="12sp"
+        android:textStyle="bold" />
 </LinearLayout>

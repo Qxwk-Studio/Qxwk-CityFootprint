@@ -3,6 +3,7 @@
      整组整组地插进 LinearLayout，所以没有自己的容器 —— 一条标题 + 若干条成就，顺序即插入顺序。
      第一组不画上方那条分隔线（由代码把 groupTopDivider 置 GONE）。 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical">
@@ -33,6 +34,19 @@
             android:textColor="@color/fg"
             android:textSize="14sp"
             android:textStyle="bold" />
+
+        <!-- 该组的小进度条：等价网页 .category-bar（74px 宽、6px 高，轨道 border、填充主色）。
+             网页顺序是 标题 | 进度条 | 进度文字，这里照排。 -->
+        <com.google.android.material.progressindicator.LinearProgressIndicator
+            android:id="@+id/groupBar"
+            android:layout_width="74dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:max="100"
+            app:indicatorColor="@color/accent"
+            app:trackColor="@color/border"
+            app:trackCornerRadius="3dp"
+            app:trackThickness="6dp" />
 
         <TextView
             android:id="@+id/textGroupCount"

@@ -93,8 +93,11 @@ class AchievementsFragment : Fragment() {
         groups.forEachIndexed { groupIndex, group ->
             val header = ItemAchievementGroupBinding.inflate(layoutInflater, binding.achievementsContainer, false)
             header.textGroupTitle.text = group.title
+            val groupDone = group.items.count { it.done }
             header.textGroupCount.text =
-                getString(R.string.achievement_progress_ratio, group.items.count { it.done }, group.items.size)
+                getString(R.string.achievement_progress_ratio, groupDone, group.items.size)
+            // 该组的小进度条（与网页 .category-bar 同口径）：0-100 整数百分比
+            header.groupBar.progress = if (group.items.isEmpty()) 0 else groupDone * 100 / group.items.size
             // 第一组上方不画分隔线（前面就是进度条）
             header.groupTopDivider.visibility = if (groupIndex == 0) View.GONE else View.VISIBLE
             binding.achievementsContainer.addView(header.root)
@@ -111,6 +114,9 @@ class AchievementsFragment : Fragment() {
                 val subColor = color(if (achievement.done) R.color.text_secondary else R.color.achievement_todo)
                 item.textName.setTextColor(nameColor)
                 item.textDesc.setTextColor(subColor)
+
+                // 达成的在行尾打勾（网页 .achievement.done .check）
+                item.textCheck.visibility = if (achievement.done) View.VISIBLE else View.GONE
 
                 // 每组第一条不画顶部分隔线（分组标题已经把它和上一条隔开了）
                 if (itemIndex == 0) item.root.setBackgroundResource(0)

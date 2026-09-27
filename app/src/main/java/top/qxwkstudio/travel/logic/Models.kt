@@ -101,13 +101,17 @@ data class SiteStats(
 data class CityRank(val city: String = "", val count: Int = 0, val people: Int = 0)
 
 /**
- * 只保留界面用得到的两个字段：统计页只需要 `users.size`（参与人数）。
- * 后端还会返回 `cities`（逗号拼起来的城市名串），但 app 目前**不消费**它 ——
- * 不声明这个字段即可（data/Json.kt 开了 ignoreUnknownKeys，多出来的键会被忽略）。
- * 哪天「谁去过」要用到城市明细，再补一个按逗号切分的序列化器。
+ * 全站统计里的一行「参与用户」。
+ * [cities] 是后端 GROUP_CONCAT 拼出来的城市名串（worker.js 的 /api/stats）——
+ * 「成就达成人数」要拿它逐人跑一遍成就判定，数出每个成就被多少人达成（见 StatsFragment），
+ * 所以原样保留、按逗号切分的活交给调用方。
  */
 @Serializable
-data class UserStat(val nickname: String = "", val color: String = "")
+data class UserStat(
+    val nickname: String = "",
+    val color: String = "",
+    val cities: String = "",
+)
 
 /**
  * 后端 D1 里**没有布尔类型**：`is_private` 存的就是 0/1。这个序列化器把 0/1 与 Boolean 互转，

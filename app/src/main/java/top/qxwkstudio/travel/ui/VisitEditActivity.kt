@@ -7,6 +7,9 @@ import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.View
+import android.widget.ArrayAdapter
+import android.widget.LinearLayout
+import android.widget.Spinner
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -19,6 +22,7 @@ import top.qxwkstudio.travel.databinding.ActivityVisitEditBinding
 import top.qxwkstudio.travel.logic.Visit
 import top.qxwkstudio.travel.logic.VisitDate
 import top.qxwkstudio.travel.logic.VisitDraft
+import java.util.Calendar
 
 /**
  * 新增 / 编辑一条足迹（同一个页面，靠 Intent 里有没有 id 区分）。
@@ -93,9 +97,13 @@ class VisitEditActivity : AppCompatActivity() {
             override fun afterTextChanged(s: Editable) = updateCounter(s.length)
         })
 
-        // 城市不是手输的，点整块输入框都当「点选择」。
-        // inputCity 在布局里设了 focusable=false，触摸不会被它吃掉，会冒泡到这一层的点击事件
-        b.cityLayout.setOnClickListener { openPicker() }
+        // 城市不是手输的：点输入框本身弹出城市选择页。
+        // 监听器必须挂在 inputCity（EditText）而不是外层 cityLayout —— EditText 即使
+        // focusable=false 也照样吃掉触摸事件，挂在外层收不到点击（这正是「点城市没反应」的原因）。
+        b.inputCity.setOnClickListener { openPicker() }
+
+        // 到访时间同理：点一下弹年月选择器，选中后写回 YYYY-MM（见 pickDate）
+        b.inputDate.setOnClickListener { pickDate() }
 
         b.btnSave.setOnClickListener { save() }
         b.btnDelete.setOnClickListener { confirmDelete() }
@@ -104,6 +112,61 @@ class VisitEditActivity : AppCompatActivity() {
     private fun openPicker() {
         picker.launch(Intent(this, CityPickerActivity::class.java))
     }
+
+    /**
+     * 到访时间选择器：一个「年份 + 月份」的对话框，月份里带「仅年份」一项。
+     * 与网页端 docs/visits.html 的 visitYear / visitMonth 两个下拉同口径，也正好覆盖后端只认的
+     * YYYY 与 YYYY-MM 两种形态（worker.js 的 ^\d{4}(-\d{2})?$）：年份必有、月份可空。
+     * 「清除」按钮对应网页端的「记不清了」（后端允许 visit_date 为 null）。
+     */
+    private fun pickDate() {
+        val parts = binding.inputDate.text?.toString()?.trim().orEmpty().split("-")
+        val now = Calendar.getInstance()
+        val years = (now.get(Calendar.YEAR) downTo 2000).toList()
+        // 已填的年份/月份用来定位初始选项；「2024」与「2024-08」都能还原
+        val initYear = parts.getOrNull(0)?.toIntOrNull()?.takeIf { it in years } ?: now.get(Calendar.YEAR)
+        val initMonth = parts.getOrNull(1)?.toIntOrNull()?.coerceIn(1, 12) ?: 0
+
+        val yearSpinner = makeSpinner(years.map { "$it 年" }, years.indexOf(initYear))
+        val monthSpinner = makeSpinner(listOf(getString(R.string.edit_date_year_only)) + (1..12).map { "$it 月" }, initMonth)
+
+        val d = resources.displayMetrics.density
+        val row = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            setPadding((20 * d).toInt(), (8 * d).toInt(), (20 * d).toInt(), 0)
+            addView(yearSpinner, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+            addView(
+                monthSpinner,
+                LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                    .apply { marginStart = (8 * d).toInt() },
+            )
+        }
+
+        AlertDialog.Builder(this)
+            .setTitle(R.string.edit_date)
+            .setView(row)
+            .setPositiveButton(R.string.common_confirm) { _, _ ->
+                val y = years[yearSpinner.selectedItemPosition]
+                val m = monthSpinner.selectedItemPosition
+                // m == 0 是「仅年份」那一项
+                binding.inputDate.setText(if (m == 0) "$y" else "%04d-%02d".format(y, m))
+                binding.dateLayout.error = null
+            }
+            .setNeutralButton(R.string.edit_date_clear) { _, _ ->
+                binding.inputDate.setText("")
+                binding.dateLayout.error = null
+            }
+            .setNegativeButton(R.string.common_cancel, null)
+            .show()
+    }
+
+    /** 生成一个把 [labels] 铺进下拉、预选第 [selected] 项的 Spinner。 */
+    private fun makeSpinner(labels: List<String>, selected: Int): Spinner =
+        Spinner(this).apply {
+            adapter = ArrayAdapter(this@VisitEditActivity, android.R.layout.simple_spinner_item, labels)
+                .apply { setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
+            setSelection(selected)
+        }
 
     private fun updateCounter(length: Int) {
         binding.textNoteCounter.text = getString(R.string.edit_note_counter, length)

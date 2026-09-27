@@ -40,24 +40,10 @@
         android:layout_gravity="bottom"
         android:layout_marginStart="16dp"
         android:layout_marginEnd="16dp"
-        android:layout_marginBottom="60dp"
+        android:layout_marginBottom="16dp"
         android:background="@drawable/bg_card"
         android:padding="10dp"
         android:textColor="@color/fg"
         android:textSize="12sp"
         android:visibility="gone" />
-
-    <TextView
-        android:id="@+id/textHint"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom"
-        android:layout_marginStart="16dp"
-        android:layout_marginEnd="16dp"
-        android:layout_marginBottom="12dp"
-        android:background="@drawable/bg_card"
-        android:padding="10dp"
-        android:text="@string/map_hint"
-        android:textColor="@color/muted_fg"
-        android:textSize="12sp" />
 </FrameLayout>

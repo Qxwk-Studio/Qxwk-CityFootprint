@@ -24,7 +24,7 @@
     <string name="login_need_password">该账号还没设置过密码，请先到通行证（account.qxwkstudio.top）设置密码后再登录</string>
 
     <!-- 我的足迹 -->
-    <string name="visits_title">我的足迹</string>
+    <string name="visits_title">📍 行程记录</string>
     <string name="visits_empty">还没有记录。点右上角「添加足迹」添加第一条</string>
     <string name="visits_add">添加足迹</string>
     <string name="visits_private">私密</string>
@@ -32,11 +32,11 @@
     <string name="visits_delete_confirm_message">删除后无法恢复（%1$s）。</string>
 
     <!-- 主页顶部的「足迹统计」概览（对齐网页端 docs/visits.html 的成就卡上方那块） -->
-    <string name="visits_overview_title">足迹统计</string>
-    <string name="visits_overview_cities">去过城市</string>
-    <string name="visits_overview_visits">足迹</string>
-    <string name="visits_overview_provinces">覆盖省份</string>
-    <string name="visits_overview_range">最早 · 最近</string>
+    <string name="visits_overview_title">📊 足迹统计</string>
+    <string name="visits_overview_cities">✈️ 去过城市</string>
+    <string name="visits_overview_visits">📍 足迹</string>
+    <string name="visits_overview_provinces">🗺️ 省份</string>
+    <string name="visits_overview_range">⏳ 最早 · 最近</string>
     <!-- 城市名在本机 cities.json 里查不到省份时的占位（与网页端 findProvince 返回「未知」同口径） -->
     <string name="visits_overview_unknown_province">未知</string>
 
@@ -46,7 +46,9 @@
     <string name="edit_city">城市</string>
     <string name="edit_city_hint">点击选择城市</string>
     <string name="edit_date">到访时间（可留空）</string>
-    <string name="edit_date_hint">如 2024 或 2024-08</string>
+    <string name="edit_date_hint">点击选择年 / 月，月份可留空</string>
+    <string name="edit_date_year_only">仅年份</string>
+    <string name="edit_date_clear">清除</string>
     <string name="edit_note">备注（选填，最多 100 字）</string>
     <string name="edit_private">仅自己可见</string>
     <string name="edit_private_hint">开启后不出现在公开地图与统计里</string>
@@ -61,17 +63,16 @@
     <string name="city_search_hint">搜索城市名或省份</string>
     <string name="city_empty">没有匹配的城市</string>
 
-    <!-- 统计 -->
-    <string name="stats_total_visits">打卡次数</string>
-    <string name="stats_total_cities">去过的城市</string>
-    <string name="stats_total_users">参与的人</string>
-    <string name="stats_my_cities">我打卡的城市</string>
-    <string name="stats_rank_title">城市排行</string>
-    <string name="stats_achievements_title">我的成就</string>
-    <string name="stats_admin_note">管理员视图：统计里含私密足迹</string>
+    <!-- 统计（对齐网页 docs/stats.html：四张数字卡 + 城市次数排名 + 成就达成人数） -->
+    <string name="stats_total_visits">✈️ 总行程</string>
+    <string name="stats_total_cities">🏙️ 总城市</string>
+    <string name="stats_total_provinces">🗺️ 覆盖省份</string>
+    <string name="stats_total_users">👥 总用户</string>
+    <string name="stats_rank_title">🏆 去过的城市次数排名</string>
+    <string name="stats_achievements_title">🏆 成就</string>
+    <string name="stats_admin_note">👑 管理员视图 · 正在统计全部行程（含私密）</string>
 
     <!-- 地图 -->
-    <string name="map_hint">点标记看城市边界（再次点其它城市会替换）</string>
     <string name="map_loading">正在加载边界…</string>
     <string name="map_no_boundary">%1$s 暂无边界数据，只能显示标记</string>
     <string name="map_boundary_failed">边界加载失败，已保留标记</string>
@@ -87,18 +88,25 @@
     <string name="visits_list_subtitle">共 %1$d 条，最近更新 %2$s</string>
     <string name="visits_list_subtitle_plain">共 %1$d 条</string>
 
-    <!-- 统计页排行表头与右上角 Top 标记 -->
-    <string name="stats_rank_top">Top %1$d</string>
-    <string name="stats_rank_col_rank">排名</string>
-    <string name="stats_rank_col_city">城市</string>
-    <string name="stats_rank_col_count">次数</string>
-    <string name="stats_rank_col_people">人数</string>
+    <!-- 统计页排行行的文案与展开/收起（对齐网页 .rank-item / .rank-toggle） -->
+    <string name="stats_rank_people">去过 %1$d 人</string>
+    <string name="stats_rank_count">%1$d 次</string>
+    <string name="stats_rank_expand">展开查看前 %1$d 名（共 %2$d 座城市）</string>
+    <string name="stats_rank_collapse">收起（仅显示前 %1$d 名）</string>
+    <string name="stats_rank_total">共 %1$d 座城市</string>
+
+    <!-- 统计页「成就达成人数」（网页同名校） -->
+    <string name="stats_achv_count_title">🏅 成就达成人数</string>
+    <string name="stats_achv_count_num">%1$d 人</string>
 
     <!-- 成就页顶部「已点亮 / 总数」的比值 -->
     <string name="achievement_progress_ratio">%1$d / %2$d</string>
+    <!-- 已达成成就右侧那个勾（网页用的是同一个 "✓" 字符） -->
+    <string name="achievement_check">✓</string>
 
     <!-- 通用 -->
     <string name="common_retry">重试</string>
+    <string name="common_confirm">确定</string>
     <string name="common_cancel">取消</string>
     <string name="common_delete">删除</string>
     <string name="common_back">返回</string>

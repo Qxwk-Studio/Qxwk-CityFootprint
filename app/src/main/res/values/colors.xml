@@ -36,6 +36,11 @@
     <!-- ===== 危险动作（退出登录） ===== -->
     <color name="destructive">#EF4444</color>
 
+    <!-- ===== 管理员视图横幅：网页 stats.html 的 .admin-view-note 那套琥珀色 ===== -->
+    <color name="admin_note_bg">#FFFBEB</color>
+    <color name="admin_note_border">#FCD34D</color>
+    <color name="admin_note_fg">#92400E</color>
+
     <!-- 系统栏兜底：与顶栏同色（只做浅色，深色不再覆盖 —— 见 values-night 已移除） -->
     <color name="window_bg_light">#F0F6FF</color>
     <color name="window_bg_dark">#F0F6FF</color>

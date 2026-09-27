@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 「成就达成人数」的分类标题（等价网页 .ach-count-cat）：第一个分类不画上方分隔线
+     （由代码把 categoryTopDivider 置 GONE）。 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <View
+        android:id="@+id/categoryTopDivider"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginTop="14dp"
+        android:background="@color/border"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/textCategoryTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingTop="10dp"
+        android:paddingBottom="2dp"
+        android:textColor="@color/fg"
+        android:textSize="13sp"
+        android:textStyle="bold" />
+</LinearLayout>

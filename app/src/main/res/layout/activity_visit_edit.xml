@@ -87,6 +87,7 @@
                             android:id="@+id/inputCity"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
+                            android:clickable="true"
                             android:cursorVisible="false"
                             android:focusable="false"
                             android:hint="@string/edit_city_hint"
@@ -94,8 +95,8 @@
                             android:maxLines="1" />
                     </com.google.android.material.textfield.TextInputLayout>
 
-                    <!-- inputType 必须是 text 而不是 number/numberDecimal：
-                         日期允许「2024」与「2024-08」两种写法，数字键盘上没有减号，用户根本打不出年月 -->
+                    <!-- 到访时间也改成「点开选择」：与城市一样是只读框，点一下弹年月选择器。
+                         既避开数字键盘上没有减号的问题，也从源头杜绝手输格式错误。 -->
                     <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/dateLayout"
                         style="@style/Widget.App.TextInputLayout"
@@ -109,7 +110,10 @@
                             android:id="@+id/inputDate"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:inputType="text"
+                            android:clickable="true"
+                            android:cursorVisible="false"
+                            android:focusable="false"
+                            android:inputType="none"
                             android:maxLines="1" />
                     </com.google.android.material.textfield.TextInputLayout>
 
