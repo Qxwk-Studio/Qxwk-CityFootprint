@@ -633,7 +633,7 @@
   </div>
 </header>
 
-<div class="legend" id="legend">
+<div class="legend collapsed" id="legend">
   <div class="legend-header" onclick="toggleLegend()" title="点击收起/展开">
     <h4>谁的足迹</h4>
     <svg class="legend-toggle" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
@@ -946,10 +946,18 @@ function renderFilter() {
   }
 }
 
-// 收起/展开图例面板
+// 收起/展开图例面板，折叠状态用 localStorage('legendCollapsed') 记忆
+const LEGEND_KEY = 'legendCollapsed';
 function toggleLegend() {
-  document.getElementById('legend').classList.toggle('collapsed');
+  const collapsed = document.getElementById('legend').classList.toggle('collapsed');
+  try { localStorage.setItem(LEGEND_KEY, collapsed ? '1' : '0'); } catch (e) {}
 }
+// 恢复上次折叠状态；无记录时保持默认折叠（见 HTML 里的 collapsed class）
+(function restoreLegend() {
+  let v = null;
+  try { v = localStorage.getItem(LEGEND_KEY); } catch (e) {}
+  if (v === '0') document.getElementById('legend').classList.remove('collapsed');
+})();
 
 // 汉堡菜单开关（独立按钮展开/收起）
 function toggleFabMenu() {
