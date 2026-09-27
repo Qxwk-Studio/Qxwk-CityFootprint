@@ -1,4 +1,4 @@
-// 补全 public/cities.js：从 DataV 拉取缺失的地级行政区（自治州/地区/盟/直辖县级等）
+// 补全 docs/cities.js：从 DataV 拉取缺失的地级行政区（自治州/地区/盟/直辖县级等）
 // 用法：node scripts/complete-cities.js
 const fs = require('fs');
 const path = require('path');
@@ -24,7 +24,7 @@ function norm(name) {
 }
 
 async function main() {
-  const citiesPath = path.join(__dirname, '..', 'public', 'cities.js');
+  const citiesPath = path.join(__dirname, '..', 'docs', 'cities.js');
   const citiesJs = fs.readFileSync(citiesPath, 'utf8');
   const existing = new Set([...citiesJs.matchAll(/name: .([^,]+)./g)].map(m => m[1].replace(/['"]/g, '')));
 

@@ -1,4 +1,4 @@
-// 生成 public/city-codes.js：城市名 -> 行政区划代码(adcode) 映射
+// 生成 docs/city-codes.js：城市名 -> 行政区划代码(adcode) 映射
 // 数据源：阿里 DataV GeoAtlas（https://geo.datav.aliyun.com/areas_v3/bound/{adcode}_full.json）
 // 用法：node scripts/gen-city-codes.js
 const fs = require('fs');
@@ -56,7 +56,7 @@ async function main() {
   console.log('从 DataV 获取市级记录:', nameToAdcode.size, '条');
 
   // 读取 cities.js 城市名
-  const citiesJs = fs.readFileSync(path.join(__dirname, '..', 'public', 'cities.js'), 'utf8');
+  const citiesJs = fs.readFileSync(path.join(__dirname, '..', 'docs', 'cities.js'), 'utf8');
   const names = [...citiesJs.matchAll(/name:\s*'([^']+)'/g)].map(m => m[1]);
   // 过滤注释里的示例名（非真实城市）
   const uniqueNames = [...new Set(names)].filter(n => n && n !== '市名');
@@ -83,8 +83,8 @@ async function main() {
 
   // 输出
   const out = '// 城市名 -> 行政区划代码(adcode) 映射\n// 由 scripts/gen-city-codes.js 从阿里 DataV GeoAtlas 生成，可重复运行更新\nconst CITY_CODES = ' + JSON.stringify(codes, null, 2) + ';\n';
-  fs.writeFileSync(path.join(__dirname, '..', 'public', 'city-codes.js'), out);
-  console.log('已生成 public/city-codes.js，映射', Object.keys(codes).length, '个城市');
+  fs.writeFileSync(path.join(__dirname, '..', 'docs', 'city-codes.js'), out);
+  console.log('已生成 docs/city-codes.js，映射', Object.keys(codes).length, '个城市');
   console.log('未匹配（将回退为圆点）:', missing.length ? missing.join(', ') : '无');
 }
 

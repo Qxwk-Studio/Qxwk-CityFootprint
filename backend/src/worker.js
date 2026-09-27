@@ -103,21 +103,6 @@ async function handleApi(request, env) {
     return json({ totalVisits, totalCities, cityRank: cityRank.results, users: users.results, isAdmin });
   }
 
-  // GET /api/user/:nickname（公开：某人足迹）
-  const userMatch = path.match(/^\/api\/user\/([^/]+)$/);
-  if (method === 'GET' && userMatch) {
-    const nickname = decodeURIComponent(userMatch[1]);
-    const user = await DB.prepare('SELECT id, nickname, color, created_at FROM users WHERE nickname = ?')
-      .bind(nickname).first();
-    if (!user) return error('用户不存在', 404);
-
-    const isAdmin = (await getViewer(DB, request)).isAdmin;
-    const visits = await DB.prepare(
-      `SELECT id, city, lat, lng, visit_date, note FROM cf_visits WHERE user_id = ? ${isAdmin ? '' : 'AND is_private = 0'} ORDER BY created_at ASC`
-    ).bind(user.id).all();
-    return json({ user: { id: user.id, nickname: user.nickname, color: user.color, created_at: user.created_at }, visits: visits.results });
-  }
-
   // GET /api/my-visits（登录）
   if (method === 'GET' && path === '/api/my-visits') {
     const userId = await getUserId(DB, request);

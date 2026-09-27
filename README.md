@@ -89,6 +89,9 @@
 │   │   └── 0001_init.sql   # 建表：users（两站共享）/ visits（本站独占）
 │   └── wrangler.toml       # Worker 配置（只有 D1 绑定；静态资源段已删 —— 页面在 GitHub Pages）
 ├── app/                    # 安卓 app，见 app/README.md（Kotlin + XML View/viewBinding，原生 osmdroid 地图，不用 WebView）
+├── scripts/                # 城市数据维护脚本（Node，本地手动跑，不参与部署）
+│   ├── complete-cities.js  # 从 DataV 补齐 docs/cities.js 缺失的地级行政区
+│   └── gen-city-codes.js   # 由 DataV 生成 docs/city-codes.js（城市名 → adcode）
 ├── .github/
 │   └── workflows/
 │       └── build-android.yml  # 手动触发的安卓打包（JDK 17 + Secrets 里的签名密钥 → 签名 APK artifact）
@@ -103,7 +106,6 @@
 |------|------|------|------|
 | GET | `/api/me` | Bearer | 当前用户信息（token 经通行证验证，返回 `userId/nickname/color/avatar/is_admin/created_at`） |
 | GET | `/api/cities` | 可选 Bearer | 城市 + 谁去过（地图用；登录可见本人私密，管理员可见全部） |
-| GET | `/api/user/:nickname` | 可选 Bearer | 某人足迹明细（管理员可见其私密） |
 | GET | `/api/stats` | 可选 Bearer | 全站统计（管理员含私密行程） |
 | GET | `/api/my-visits` | Bearer | 自己的足迹（含 is_private） |
 | POST | `/api/visits` | Bearer | 添加足迹（可带 is_private） |
@@ -259,6 +261,8 @@ localhost 的任意端口（见 `backend/src/worker.js` 的 `ALLOWED_ORIGINS`）
 
 **1. 补充城市数据**
 - 编辑 `docs/cities.js`，往对应省份数组里加 `{ name, province, lat, lng }` 即可
+- 想批量补全（自治州 / 地区 / 盟 / 直辖县级）或重算 adcode，用 `scripts/` 下的两个脚本：`node scripts/complete-cities.js`（补 `cities.js`）、`node scripts/gen-city-codes.js`（重生成 `city-codes.js`），数据都来自阿里 DataV GeoAtlas
+- 改完 `docs/` 的城市数据后**必须重跑** `node app/tools/gen-cities.mjs` 并提交 `app/src/main/assets/cities.json`，否则安卓端的城市表与网页版分叉
 
 **2. 更换地图瓦片**
 - 默认使用**高德免 Key 瓦片**（国内加载快），Leaflet 库也已自托管到 `docs/vendor/`（与站点同源，走 GitHub Pages 的 CDN）
@@ -270,7 +274,7 @@ localhost 的任意端口（见 `backend/src/worker.js` 的 `ALLOWED_ORIGINS`）
 
 **4. 不公开行程（`is_private`）**
 - 勾选"不公开行程"的足迹仅本人可见，接口层通过 `is_private` 字段过滤
-- 公开接口（地图 `/api/cities`、统计 `/api/stats`、公开资料 `/api/user/:nickname`）默认不含私密；登录用户在地图上可见自己的私密行程，管理员可见全部
+- 公开接口（地图 `/api/cities`、统计 `/api/stats`）默认不含私密；登录用户在地图上可见自己的私密行程，管理员可见全部
 - 地图边界数据已做浏览器 IndexedDB 缓存（24h 过期），重复打开不重复请求
 
 **5. 用户颜色来源**
