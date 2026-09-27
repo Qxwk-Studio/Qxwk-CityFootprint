@@ -1,7 +1,6 @@
 // 工具与通行证验证（Worker 版）
 // 本站不再持有密码 / 会话，认证统一由通行证 account.qxwkstudio.top 处理
 // 业务路由拿 Bearer token 去问通行证 /api/me，按通行证 userId（users.passport_id）映射到本地用户
-// （跨站 SSO / 跳转授权已在通行证侧下线，本站改为前端直调通行证 /api/login 换 token）
 
 // 通行证地址（本地 dev 改 http://localhost:8787）
 const PASSPORT_URL = 'https://account.qxwkstudio.top';
