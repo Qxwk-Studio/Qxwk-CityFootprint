@@ -10,13 +10,14 @@ import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import top.qxwkstudio.travel.R
+import top.qxwkstudio.travel.data.CityStore
 import top.qxwkstudio.travel.data.Store
 import top.qxwkstudio.travel.data.VisitRepo
 import top.qxwkstudio.travel.databinding.FragmentVisitsBinding
 import top.qxwkstudio.travel.logic.Visit
 
 /**
- * 「我的足迹」：列表 + 下拉刷新 + 新增/编辑/删除。
+ * 「主页」：网页端「足迹管理页」的内容 —— 顶部足迹统计概览 + 行程列表（下拉刷新 + 新增/编辑/删除）。
  * 接口：GET /api/my-visits（后端按 created_at DESC 排好序），增删改分别 POST / PUT / DELETE。
  */
 class VisitsFragment : Fragment() {
@@ -86,7 +87,32 @@ class VisitsFragment : Fragment() {
             }
             adapter.submit(visits)
             bd.textEmpty.visibility = if (visits.isEmpty()) View.VISIBLE else View.GONE
+            renderOverview(visits)
         }
+    }
+
+    /**
+     * 概览卡：去过城市 / 足迹总数 / 覆盖省份 / 最早·最近。
+     * 与网页端 docs/visits.html 的 updateVisitStats 同口径：
+     *  - 城市去重（同一座城打卡多次只算一座）；
+     *  - 省份按城市名在本机 assets/cities.json 里查，查不到记「未知」（仍占一个名额，跟网页端一致）；
+     *  - 日期直接按字符串排序取首尾（数据形如 2024 或 2024-08，字典序即时间序）。
+     */
+    private fun renderOverview(visits: List<Visit>) {
+        val b = _binding ?: return
+        val cityNames = visits.map { it.city }.distinct()
+        b.valueCities.text = cityNames.size.toString()
+        b.valueVisits.text = visits.size.toString()
+
+        val allCities = CityStore.all(requireContext())
+        val unknown = getString(R.string.visits_overview_unknown_province)
+        val provinces = cityNames.map { name ->
+            allCities.firstOrNull { it.name == name }?.province?.takeIf { it.isNotBlank() } ?: unknown
+        }.toSet()
+        b.valueProvinces.text = provinces.size.toString()
+
+        val dates = visits.mapNotNull { it.visitDate }.filter { it.isNotBlank() }.sorted()
+        b.valueRange.text = if (dates.isEmpty()) "—" else "${dates.first()} → ${dates.last()}"
     }
 
     /** 删除要二次确认：点错了没有回收站。文案里带上城市名，让人看清删的是哪一条。 */

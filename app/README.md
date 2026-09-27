@@ -104,6 +104,23 @@ node app/tools/gen-cities.mjs
 **没有做拼音首字母匹配**：源数据里没有拼音字段，要支持就得再维护一张几千字的拼音表；
 哪天 `cities.js` 出现了拼音字段，在那里加一条比对即可。
 
+## 界面结构（底部导航 5 个 tab）
+
+五个 tab 的正文都对齐网页端，改 tab 时两端一起看：
+
+| tab | 图标 | 正文 = 网页端的 | Fragment |
+| --- | --- | --- | --- |
+| 主页 | `ic_home` | 足迹管理页（`visits.html`，含顶部「足迹统计」概览） | `VisitsFragment` |
+| 我的成就 | `ic_achievement` | 足迹管理页的成就区（`visits.html` + `achievements.js`） | `AchievementsFragment` |
+| 地图 | `ic_map` | 首页足迹大地图（`index.html`） | `MapFragment` |
+| 全站统计 | `ic_stats` | 全站统计页（`stats.html`） | `StatsFragment` |
+| 我的 | `ic_person` | 个人中心（`account.html`）与设置 | `ProfileFragment` |
+
+- 图标必须是**单色矢量**（`BottomNavigationView` 按选中态自己染色），放在 `res/drawable/ic_*.xml`；
+  菜单在 `res/menu/bottom_nav.xml`，路由（tag / 标题 / 首个 Fragment）在 `ui/MainActivity.kt`。
+- Fragment 用 **add + hide/show**（不是 replace），所以隐藏页仍是 RESUMED，
+  各页感知「被切回来」用 `onHiddenChanged` 而不是 `onResume`。
+
 ## 签名与发版
 
 1. 生成 keystore（别名按本仓库的习惯叫 `city-footprint`）：

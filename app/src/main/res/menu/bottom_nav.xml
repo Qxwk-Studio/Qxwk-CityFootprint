@@ -1,18 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 底部导航四个 tab。图标必须是单色矢量：BottomNavigationView 会按选中态自己染色 -->
+<!-- 底部导航五个 tab（顺序即用户看到的顺序：主页 / 我的成就 / 地图 / 全站统计 / 我的）。
+     图标必须是单色矢量：BottomNavigationView 会按选中态自己染色。
+     各 tab 的正文对齐网页端：主页=足迹管理页、我的成就=该页成就区、地图=首页地图、全站统计=统计页、我的=个人管理 -->
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item
-        android:id="@+id/tab_visits"
-        android:icon="@drawable/ic_footprint"
-        android:title="@string/tab_visits" />
+        android:id="@+id/tab_home"
+        android:icon="@drawable/ic_home"
+        android:title="@string/tab_home" />
     <item
-        android:id="@+id/tab_stats"
-        android:icon="@drawable/ic_stats"
-        android:title="@string/tab_stats" />
+        android:id="@+id/tab_achievements"
+        android:icon="@drawable/ic_achievement"
+        android:title="@string/tab_achievements" />
     <item
         android:id="@+id/tab_map"
         android:icon="@drawable/ic_map"
         android:title="@string/tab_map" />
+    <item
+        android:id="@+id/tab_stats"
+        android:icon="@drawable/ic_stats"
+        android:title="@string/tab_stats" />
     <item
         android:id="@+id/tab_profile"
         android:icon="@drawable/ic_person"

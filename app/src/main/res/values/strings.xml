@@ -4,10 +4,12 @@
          只做英文 City Footprint，与网页端 / 通行证登记名一致，不再另设中文名。 -->
     <string name="app_name">City Footprint</string>
 
-    <!-- 底部导航四个 tab 的名字（与 menu/bottom_nav.xml 一一对应） -->
-    <string name="tab_visits">足迹</string>
-    <string name="tab_stats">统计</string>
+    <!-- 底部导航五个 tab 的名字（与 menu/bottom_nav.xml 一一对应）。
+         五个 tab 的正文分别对齐网页端：主页=足迹管理页、我的成就=该页成就区、地图=首页地图、全站统计=统计页、我的=个人管理 -->
+    <string name="tab_home">主页</string>
+    <string name="tab_achievements">我的成就</string>
     <string name="tab_map">地图</string>
+    <string name="tab_stats">全站统计</string>
     <string name="tab_profile">我的</string>
 
     <!-- 登录页 -->
@@ -27,6 +29,15 @@
     <string name="visits_private">私密</string>
     <string name="visits_delete_confirm_title">删除这条足迹？</string>
     <string name="visits_delete_confirm_message">删除后无法恢复（%1$s）。</string>
+
+    <!-- 主页顶部的「足迹统计」概览（对齐网页端 docs/visits.html 的成就卡上方那块） -->
+    <string name="visits_overview_title">足迹统计</string>
+    <string name="visits_overview_cities">去过城市</string>
+    <string name="visits_overview_visits">足迹</string>
+    <string name="visits_overview_provinces">覆盖省份</string>
+    <string name="visits_overview_range">最早 · 最近</string>
+    <!-- 城市名在本机 cities.json 里查不到省份时的占位（与网页端 findProvince 返回「未知」同口径） -->
+    <string name="visits_overview_unknown_province">未知</string>
 
     <!-- 新增 / 编辑 -->
     <string name="edit_title_new">添加足迹</string>

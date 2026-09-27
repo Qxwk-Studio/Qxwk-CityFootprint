@@ -331,6 +331,45 @@
   .achievement .icon { font-size: 1.1rem; flex-shrink: 0; }
   .achievement .name { font-size: 0.85rem; font-weight: 600; flex-shrink: 0; }
   .achievement .desc { font-size: 0.75rem; color: var(--text-tertiary); flex: 1 1 0; min-width: 0; max-width: 100%; line-height: 1.45; overflow-wrap: anywhere; word-break: break-word; }
+  /* 达成才有 ✓，未达成留白不占视觉重心 */
+  .achievement .check {
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: var(--primary);
+    color: #fff;
+    font-size: 0.65rem;
+    line-height: 1;
+  }
+  .achievement.done .check { display: flex; }
+
+  /* 总进度：在成就网格之上，折叠整卡时依然可见，一眼看到点亮了几座里程碑 */
+  .achievement-summary {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .achievement-summary .sum-label { font-size: 0.8rem; color: var(--text-tertiary); white-space: nowrap; }
+  .achievement-summary .sum-label b { color: var(--primary); font-size: 0.95rem; }
+  .achievement-summary .sum-bar {
+    flex: 1;
+    height: 8px;
+    background: var(--border);
+    border-radius: 999px;
+    overflow: hidden;
+  }
+  .achievement-summary .sum-bar i {
+    display: block;
+    height: 100%;
+    background: var(--primary);
+    border-radius: 999px;
+    transition: width 0.4s ease;
+  }
 
   .category-body {
     display: flex;
@@ -356,6 +395,22 @@
   }
   .category-header:hover { border-color: var(--primary); }
   .category-title { font-size: 0.9rem; font-weight: 600; flex: 1; }
+  /* 分类细进度条：轨道用 --border（分类头背景是 --bg，用 --bg 会看不见） */
+  .category-bar {
+    width: 74px;
+    height: 6px;
+    background: var(--border);
+    border-radius: 999px;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .category-bar i {
+    display: block;
+    height: 100%;
+    background: var(--primary);
+    border-radius: 999px;
+    transition: width 0.4s ease;
+  }
   .category-progress { font-size: 0.75rem; color: var(--text-tertiary); }
   .category-toggle { color: var(--text-tertiary); transition: transform 0.2s ease; flex-shrink: 0; }
   .achievement-category.collapsed .category-toggle { transform: rotate(-90deg); }
@@ -540,6 +595,12 @@
             <h3>🏆 成就</h3>
             <svg class="card-toggle" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
           </div>
+          <!-- 总进度：数字由 renderAchievements() 填。折叠整卡时这一行仍然留着 ——
+               收起后还想一眼看到「点亮了几座里程碑」，只把分类列表藏起来 -->
+          <div class="achievement-summary">
+            <span class="sum-label">已点亮 <b id="achvDone">0</b> / <span id="achvTotal">0</span></span>
+            <span class="sum-bar"><i id="achvBar" style="width:0%"></i></span>
+          </div>
           <div class="achievement-grid" id="achievementGrid"><div class="empty">正在加载…</div></div>
         </div>
       </div>
@@ -670,19 +731,33 @@ function updateVisitStats() {
     </div>`;
 }
 
-// 渲染成就卡片（4 分类，每类可折叠）
+// 渲染成就卡片：先算总进度写到卡片顶部，再按 4 个分类铺开（每类可折叠）
 function renderAchievements() {
   const el = document.getElementById('achievementGrid');
   if (!el) return;
   // 判定逻辑在 achievements.js 的 getAchievements
   const CATEGORIES = getAchievements(myVisits.map(v => v.city));
+
+  // 总进度（卡片头部那一行）：「已点亮 X / Y」+ 进度条宽度
+  const doneAll = CATEGORIES.reduce((n, c) => n + c.items.filter(a => a.done).length, 0);
+  const totalAll = CATEGORIES.reduce((n, c) => n + c.items.length, 0);
+  const doneEl = document.getElementById('achvDone');
+  const totalEl = document.getElementById('achvTotal');
+  const barEl = document.getElementById('achvBar');
+  if (doneEl) doneEl.textContent = doneAll;
+  if (totalEl) totalEl.textContent = totalAll;
+  if (barEl) barEl.style.width = (totalAll ? (doneAll / totalAll) * 100 : 0) + '%';
+
   el.innerHTML = CATEGORIES.map(cat => {
     const doneCount = cat.items.filter(a => a.done).length;
+    const pct = cat.items.length ? (doneCount / cat.items.length) * 100 : 0;
     return `
       <div class="achievement-category">
-        <div class="category-header">
+        <div class="category-header" onclick="toggleCategory(this)">
           <span class="category-title">${cat.title}</span>
+          <span class="category-bar"><i style="width:${pct}%"></i></span>
           <span class="category-progress">${doneCount}/${cat.items.length}</span>
+          <svg class="category-toggle" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
         <div class="category-body">
           ${cat.items.map(a => `
@@ -690,10 +765,16 @@ function renderAchievements() {
               <div class="icon">${a.icon}</div>
               <div class="name">${a.name}</div>
               <div class="desc">${a.desc}</div>
+              <span class="check">✓</span>
             </div>`).join('')}
         </div>
       </div>`;
   }).join('');
+}
+
+// 分类折叠：点分类标题行切换（原先只有 CSS、没有触发点，折叠一直没生效）
+function toggleCategory(header) {
+  header.closest('.achievement-category').classList.toggle('collapsed');
 }
 
 // 成就卡片整体折叠开关

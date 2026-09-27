@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 「我的成就」独立页：内容即原统计页底部那张成就卡，按 tab 拆出来单独成页。
+     判定用的是「我自己的足迹」，所以这一页只发 GET /api/my-visits 一个请求。
+     用 NestedScrollView 而不是 RecyclerView：成就总共约 42 条，一次铺开最省事（见 fragment_stats 的同类说明） -->
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="12dp">
+
+        <ProgressBar
+            android:id="@+id/progress"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="24dp" />
+
+        <TextView
+            android:id="@+id/textError"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:gravity="center"
+            android:textColor="#B3261E"
+            android:textSize="13sp"
+            android:visibility="gone" />
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    style="@style/CardTitle"
+                    android:text="@string/stats_achievements_title" />
+
+                <TextView
+                    android:id="@+id/textAchievementProgress"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="12sp" />
+
+                <!-- 总进度可视化：与网页端成就卡顶部的进度条对齐（轨道色用默认值，深浅色都能看） -->
+                <com.google.android.material.progressindicator.LinearProgressIndicator
+                    android:id="@+id/achievementBar"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:max="100"
+                    app:indicatorColor="@color/accent"
+                    app:trackCornerRadius="3dp"
+                    app:trackThickness="6dp" />
+
+                <!-- 分组与条目由代码 inflate（item_achievement_group.xml / item_achievement.xml）后 add 进来 -->
+                <LinearLayout
+                    android:id="@+id/achievementsContainer"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:orientation="vertical" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+    </LinearLayout>
+</androidx.core.widget.NestedScrollView>

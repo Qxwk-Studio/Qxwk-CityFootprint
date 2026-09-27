@@ -19,8 +19,8 @@
         android:layout_height="0dp"
         android:layout_weight="1" />
 
-    <!-- 四个 tab 都在 menu/bottom_nav.xml 里定义（图标 + 文案），
-         无选中态写死在代码里（见 MainActivity），这样切 tab 只有一个真相来源 -->
+    <!-- 五个 tab 都在 menu/bottom_nav.xml 里定义（图标 + 文案），
+         选中态写死在代码里（见 MainActivity），这样切 tab 只有一个真相来源 -->
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottomNav"
         android:layout_width="match_parent"

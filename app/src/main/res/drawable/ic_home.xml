@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 底部导航：「主页」。用房子表示「回到首页」（原「足迹」tab 的定位针挪去「地图」不合适，改这里）。
+     填充色写死 0xFF000000：BottomNavigationView 会按选中态给整个 drawable 染色。 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M10,20v-6h4v6h5v-8h3L12,3 2,12h3v8z" />
+</vector>

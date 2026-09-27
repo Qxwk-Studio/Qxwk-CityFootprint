@@ -10,7 +10,7 @@ import top.qxwkstudio.travel.data.Store
 import top.qxwkstudio.travel.databinding.ActivityMainBinding
 
 /**
- * 主页：底部四个 tab（足迹 / 统计 / 地图 / 我的）。
+ * 主页：底部五个 tab（主页 / 我的成就 / 地图 / 全站统计 / 我的）。
  *
  * Fragment 用 **add + hide/show** 而不是 replace：
  * 地图页 replace 一次就要重建整个 MapView（重新拉瓦片、缩放位置全丢），
@@ -47,7 +47,7 @@ class MainActivity : AppCompatActivity() {
         if (savedInstanceState == null) {
             // 选中态交给 BottomNavigationView 自己的 item 状态 —— 选中会回调上面的 listener，
             // 顺带把第一个 Fragment 装上、标题设好（只有一处真相来源）
-            b.bottomNav.selectedItemId = R.id.tab_visits
+            b.bottomNav.selectedItemId = R.id.tab_home
         } else {
             // 重建时 Fragment 由 FragmentManager 自己恢复（选中的那一项也恢复了），
             // 这里只需要把标题补上
@@ -91,30 +91,34 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun newFragment(tag: String): Fragment = when (tag) {
-        TAG_STATS -> StatsFragment()
+        TAG_ACHV -> AchievementsFragment()
         TAG_MAP -> MapFragment()
+        TAG_STATS -> StatsFragment()
         TAG_PROFILE -> ProfileFragment()
         else -> VisitsFragment()
     }
 
     private fun tagOf(itemId: Int): String = when (itemId) {
-        R.id.tab_stats -> TAG_STATS
+        R.id.tab_achievements -> TAG_ACHV
         R.id.tab_map -> TAG_MAP
+        R.id.tab_stats -> TAG_STATS
         R.id.tab_profile -> TAG_PROFILE
-        else -> TAG_VISITS
+        else -> TAG_HOME
     }
 
     private fun titleOf(itemId: Int): Int = when (itemId) {
-        R.id.tab_stats -> R.string.tab_stats
+        R.id.tab_achievements -> R.string.tab_achievements
         R.id.tab_map -> R.string.tab_map
+        R.id.tab_stats -> R.string.tab_stats
         R.id.tab_profile -> R.string.tab_profile
-        else -> R.string.tab_visits
+        else -> R.string.tab_home
     }
 
     private companion object {
-        const val TAG_VISITS = "visits"
-        const val TAG_STATS = "stats"
+        const val TAG_HOME = "home"
+        const val TAG_ACHV = "achievements"
         const val TAG_MAP = "map"
+        const val TAG_STATS = "stats"
         const val TAG_PROFILE = "profile"
     }
 }
