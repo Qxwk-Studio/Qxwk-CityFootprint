@@ -1,4 +1,4 @@
-// 城市足迹 · 安卓端构建文件。
+// City Footprint · 安卓端构建文件。
 // 这是**根项目**的 build 文件（见 settings.gradle.kts 的说明）：application 插件挂在这里，
 // 源集就是同级的 src/main。技术栈跟同工作室的 Class-Assistant/android 对齐：
 // AGP 8.2.2 + Kotlin 1.9.22 + Gradle 8.2，compileSdk/targetSdk 34、minSdk 24、Java 17、XML View（viewBinding）。

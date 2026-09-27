@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">城市足迹</string>
+    <!-- 应用显示名：启动器图标下、系统「应用信息」里显示的就是它（清单的 android:label 引用的就是这条）。
+         只做英文 City Footprint，与网页端 / 通行证登记名一致，不再另设中文名。 -->
+    <string name="app_name">City Footprint</string>
 
     <!-- 底部导航四个 tab 的名字（与 menu/bottom_nav.xml 一一对应） -->
     <string name="tab_visits">足迹</string>

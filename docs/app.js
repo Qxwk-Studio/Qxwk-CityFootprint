@@ -20,11 +20,13 @@ async function api(path, options = {}) {
     if (res.status === 401 && token) {
       localStorage.removeItem(LS_TOKEN);
       localStorage.removeItem(LS_USER);
-      const p = window.location.pathname;
-      if (p.endsWith('account.html')) {
+      // 站内路径不带 .html（见 README 设计说明），但旧链接 / 直接手输可能带后缀，也可能被补上末尾斜杠，
+      // 所以先归一化再比 —— 否则这层 401 兜底会悄悄失效，用户卡在一个已经没有登录态的页面上
+      const p = window.location.pathname.replace(/\.html$/, '').replace(/\/+$/, '');
+      if (p === '/account') {
         window.location.reload();          // 个人中心：回到登录视图
-      } else if (p.endsWith('visits.html')) {
-        window.location.href = 'account.html'; // 足迹管理：跳转登录页
+      } else if (p === '/visits') {
+        window.location.href = '/account'; // 足迹管理：跳转登录页
       }
     }
     throw new Error(data.error || '请求失败 (' + res.status + ')');

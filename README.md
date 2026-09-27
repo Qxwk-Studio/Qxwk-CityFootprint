@@ -120,6 +120,7 @@
 - **私密行程接口层过滤**：`is_private` 过滤在 Worker 侧（`lib.js` / worker 查询）做，而不是前端，防止有人抓接口构造出别人的私密足迹。管理员用 `is_admin=1` 标志绕过过滤查看全部。
 - **成就系统**：判定逻辑在 `achievements.js` 前端执行，按"足迹丰碑 / 巡游四方 / 城市打卡 / 极限挑战"四大类分组。新增成就时在成就定义数组追加即可，判定函数拿到 `stats + myVisits` 上下文。
 - **地图边界与瓦片缓存**：DataV GeoAtlas 边界由 Worker `/api/geo/:adcode` 代理并缓存 24h；浏览器侧再用 IndexedDB 保存 24h，打开地图时只拉取缺省的边界。瓦片用高德免 Key 内网直出、Leaflet 资源自托管到 `docs/vendor/`，避免外链失效与 CORS 折腾。
+- **页面链接不带 `.html`**：GitHub Pages 对 `/xxx` 会自动回落到 `xxx.html`（`travel.qxwkstudio.top/account`、`/stats` 已线上验证），所以站内导航统一写裸路径（`/account`、`/visits`…），浏览器地址栏就不露后缀。`docs/app.js` 的 401 兜底与 `docs/robots.txt` 的路径都已按裸路径对齐 —— 改导航时别把后缀加回来。
 - **响应式边距规范**：全站 6 页（index / account / visits / stats / news / setup）沿用同一套间距规范，新增页面或模块**务必遵守**，避免不同页面在手机/桌面上松紧不一。
 
   | 元素 | 桌面端（默认 CSS） | 手机端 `@media (max-width: 640px)` |
