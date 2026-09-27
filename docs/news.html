@@ -344,6 +344,21 @@
       <div class="timeline">
 
         <div class="timeline-item">
+          <div class="timeline-date">2026-09-27</div>
+          <span class="timeline-tag">v1.0.0</span>
+          <div class="timeline-content">
+            <ul>
+              <li><b>新增安卓客户端</b>：原生 App（Kotlin + XML View，非网页套壳、不含 WebView），底部 5 个标签页——主页（足迹管理）、我的成就、地图、全站统计、我的；登录沿用通行证账号，地图用原生 osmdroid + 阿里 DataV 行政边界，CI 自动打包签名 APK</li>
+              <li><b>前后端分家</b>：网页迁至 GitHub Pages（travel.qxwkstudio.top），接口迁至 api.travel.qxwkstudio.top，静态页面不再由 Cloudflare 托管</li>
+              <li><b>品牌统一</b>：网页图标与安卓启动图标改用同一张源图，应用名统一为「City Footprint」（原「城市足迹」）</li>
+              <li>网页图标改用无损 webp，体积从 25KB 压到 9.4KB</li>
+              <li><b>成就显示优化</b>：成就卡新增总进度条与分类细进度条，达成的标 ✓、未达成的压暗；分类折叠改为可点击（此前只有样式、没有触发）</li>
+              <li>个人资料头像与通行证同步（后端 <b>resolveViewer</b> 同步 users.avatar）</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="timeline-item">
           <div class="timeline-date">2026-09-25</div>
           <span class="timeline-tag">v0.8.2</span>
           <div class="timeline-content">
