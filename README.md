@@ -86,7 +86,7 @@
 │   │   ├── worker.js       # Worker 入口（/api/* 接口 + CORS；静态资源回退已删）
 │   │   └── lib.js          # 通行证 token 验证 + 本地用户映射 + 工具
 │   ├── migrations/
-│   │   └── 0001_init.sql   # 建表：users（两站共享）/ visits（本站独占）
+│   │   └── 0001_init.sql   # 建表：users（两站共享）/ cf_visits（本站独占，含 is_private）
 │   └── wrangler.toml       # Worker 配置（只有 D1 绑定；静态资源段已删 —— 页面在 GitHub Pages）
 ├── app/                    # 安卓 app，见 app/README.md（Kotlin + XML View/viewBinding，原生 osmdroid 地图，不用 WebView）
 ├── scripts/                # 城市数据维护脚本（Node，本地手动跑，不参与部署）
