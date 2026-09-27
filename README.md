@@ -17,7 +17,7 @@
 - **本站登录表单**：未登录视图直接给出「昵称或邮箱 + 密码」表单，提交后由本站前端 JS 跨域调通行证 `/api/login` 换取 token（密码只从浏览器发给通行证，不经过本站服务器）；下方保留「打开通行证」外链用于注册 / 找回密码
 - **本地会话**：登录成功把 token 存 localStorage（键 `qxwf_token`），再调本站 `/api/me` 把用户信息写入 `qxwf_user` 缓存，后续访问免登录
 - **账户信息**：专属颜色大头像（**直接使用通行证返回的 avatar URL，前端不再自己计算邮箱哈希**）、UID、注册时间、管理员徽章
-- **通行证中心入口**：个人中心右列提供通行证外链卡，方便改昵称/颜色/密码、生成邀请码、查看最近登录
+- **通行证中心入口**：个人中心右列提供通行证外链卡，方便改昵称 / 颜色 / 密码、生成邀请码
 - **退出登录**：清掉本地 token 后，顺带跨域 POST 通行证 `/api/logout` 撤销该会话（请求失败不影响本地登出）
 
 ### ✈️ 足迹管理 (`visits.html`)
@@ -109,7 +109,7 @@
 | DELETE | `/api/visits/:id` | Bearer | 删除（仅本人） |
 | GET | `/api/geo/:adcode` | 无 | 代理 DataV 边界接口（规避浏览器跨域，结果缓存 24h） |
 
-> 注册 / 改密 / 邀请码 / 最近登录 等账号能力已全部移交通行证 account.qxwkstudio.top；本站的登录表单只是前端直调通行证 `/api/login`，本站后端不自建账号体系。
+> 注册 / 改密 / 邀请码 等账号能力已全部移交通行证 account.qxwkstudio.top；本站的登录表单只是前端直调通行证 `/api/login`，本站后端不自建账号体系。
 
 ## 🛠 设计说明
 
@@ -161,18 +161,33 @@ npx wrangler d1 migrations apply qxwk-data --remote
 
 #### ⚠️ 线上已有库必须手工补 `passport_id` 列
 
-线上 `users` 表已经存在（且是与 [Qxwk-Blog](https://github.com/Qxwk-Studio/Qxwk-Blog) **共享**的库 `qxwk-data`），`CREATE TABLE IF NOT EXISTS` 和 `npx wrangler d1 migrations apply qxwk-data --remote` **都补不了这个新列**，必须手工执行（**在 `backend/` 目录里**）：
+线上 `users` 表已经存在（且是与 [Qxwk-Blog](https://github.com/Qxwk-Studio/Qxwk-Blog) **共享**的库 `qxwk-data`），`CREATE TABLE IF NOT EXISTS` 和 `npx wrangler d1 migrations apply qxwk-data --remote` **都补不了这个新列**，必须手工执行。**按下面顺序走**，命令都在 `backend/` 目录里跑（PowerShell 下 `npx` 写成 `npx.cmd`）：
 
 ```bash
-# 1) 补 passport_id 列（通行证 userId）
+# ① 补 passport_id 列（通行证 userId）
 npx wrangler d1 execute qxwk-data --remote --command "ALTER TABLE users ADD COLUMN passport_id INTEGER"
 
-# 2) 补唯一索引：SQLite 的 ALTER TABLE 加不了 UNIQUE 列约束，
+# ② 补唯一索引：SQLite 的 ALTER TABLE 加不了 UNIQUE 列约束，
 #    唯一性只能靠显式唯一索引兜住（多行 NULL 是允许的，不影响 Qxwk-Blog 的老行）
 npx wrangler d1 execute qxwk-data --remote --command "CREATE UNIQUE INDEX IF NOT EXISTS idx_users_passport ON users(passport_id)"
+
+# ③ 核对结构：两条命令都该各回一行（列名 / 索引名），查不到就是没补上
+npx wrangler d1 execute qxwk-data --remote --command "SELECT name FROM pragma_table_info('users') WHERE name = 'passport_id'"
+npx wrangler d1 execute qxwk-data --remote --command "SELECT name FROM sqlite_master WHERE type = 'index' AND name = 'idx_users_passport'"
+
+# ④ 部署后端（必须在补列之后）
+npx wrangler deploy
 ```
 
-漏加这一列会让所有需要登录的接口直接 500。
+⑤ 部署后用通行证账号登录一次本站，再查存量行有没有被认领 —— `passport_id` 应从 NULL 变成你的通行证 userId（**仍在 `backend/` 目录**）：
+
+```bash
+npx wrangler d1 execute qxwk-data --remote --command "SELECT id, nickname, passport_id, is_admin FROM users ORDER BY id"
+```
+
+只有「昵称与通行证一致、且 `passport_id IS NULL`」的老行会被自动认领；昵称已经和通行证对不上、且此前从没走过新逻辑的老行认不出来，会在下次登录时新建一行，**旧行及其足迹需要人工在库里合并**。
+
+漏加这一列会让所有需要登录的接口直接 500（`resolveViewer()` 的第一条 SQL 就查 `passport_id`）。
 
 ### 3️⃣ 在通行证注册本站
 
