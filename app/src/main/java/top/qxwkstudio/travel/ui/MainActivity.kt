@@ -3,6 +3,7 @@ package top.qxwkstudio.travel.ui
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
+import top.qxwkstudio.travel.BuildConfig
 import top.qxwkstudio.travel.R
 import top.qxwkstudio.travel.data.Auth
 import top.qxwkstudio.travel.data.MeResult
@@ -40,9 +41,14 @@ class MainActivity : AppCompatActivity() {
 
         b.bottomNav.setOnItemSelectedListener { item ->
             show(tagOf(item.itemId))
-            b.toolbar.title = getString(titleOf(item.itemId))
+            b.title.text = getString(titleOf(item.itemId))
             true
         }
+
+        // 顶栏右上角那颗「打开我的」：与底部「我的」是同一个入口，直接切 tab
+        b.btnProfile.setOnClickListener { b.bottomNav.selectedItemId = R.id.tab_profile }
+        // 页脚右侧的版本号：与「我的」页显示的是同一个 BuildConfig.VERSION_NAME
+        b.footerVersion.text = getString(R.string.footer_version, BuildConfig.VERSION_NAME)
 
         if (savedInstanceState == null) {
             // 选中态交给 BottomNavigationView 自己的 item 状态 —— 选中会回调上面的 listener，
@@ -51,7 +57,7 @@ class MainActivity : AppCompatActivity() {
         } else {
             // 重建时 Fragment 由 FragmentManager 自己恢复（选中的那一项也恢复了），
             // 这里只需要把标题补上
-            b.toolbar.title = getString(titleOf(b.bottomNav.selectedItemId))
+            b.title.text = getString(titleOf(b.bottomNav.selectedItemId))
         }
 
         verifySession()

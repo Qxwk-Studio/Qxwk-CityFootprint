@@ -36,7 +36,7 @@ class CityPickerActivity : AppCompatActivity() {
         binding = b
         setContentView(b.root)
 
-        b.toolbar.setNavigationOnClickListener { finish() }
+        b.btnBack.setOnClickListener { finish() }
 
         // 同步读一次 asset（四百多条，几毫秒）：为了它做异步反而让页面先空一下再闪出列表。
         // CityStore 内部有内存缓存，第二次打开不再重复解析

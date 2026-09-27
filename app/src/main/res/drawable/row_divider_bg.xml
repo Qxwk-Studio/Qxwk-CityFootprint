@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 列表行底：透明 + 底部 1dp 分隔线（设计稿行与行之间的 border-t）。
+     最后一行由代码把背景置空，避免和卡片的底描边叠成双线。 -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@android:color/transparent" />
+        </shape>
+    </item>
+    <item android:gravity="bottom">
+        <shape android:shape="rectangle">
+            <size android:height="1dp" />
+            <solid android:color="@color/border" />
+        </shape>
+    </item>
+</layer-list>

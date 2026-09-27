@@ -1,19 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 主页 = 网页端「足迹管理页」的内容：顶部「足迹统计」概览 + 下方行程列表。
-     概览卡固定在最上方（不随列表滚动）：就一行数字，钉住反而方便随时对照；
-     列表本身仍在 SwipeRefreshLayout 里，下拉刷新只作用在列表上。 -->
+<!-- 主页 = 网页端「足迹管理页」的内容（概览卡 + 标题行 + 足迹列表），样式按设计稿重做：
+     圆角 8dp 描边卡片、11~16sp 的文字层级、主色「添加足迹」按钮（不再是 FAB）。
+
+     列表用 NestedScrollView + wrap_content 的 RecyclerView，而不是把 RecyclerView 当滚动容器：
+     这样那张列表卡片的底边会跟着条目数量走（条目少时不会拉成一整屏的空白卡）。
+     条目上限就是用户的足迹数（几十条），不回收也无妨，和统计页同一取舍。 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical">
 
+    <!-- ===== 足迹统计概览 ===== -->
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/cardOverview"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginStart="12dp"
-        android:layout_marginTop="8dp"
+        android:layout_marginTop="12dp"
         android:layout_marginEnd="12dp">
 
         <LinearLayout
@@ -81,33 +85,106 @@
                 </LinearLayout>
             </LinearLayout>
 
-            <!-- 最早·最近是一条日期区间（形如 2023 → 2025-08），不是数字，
-                 所以不复用 24sp 的 StatValue，压到 14sp 免得跟上面的数字抢视线 -->
+            <!-- 最早·最近：一条日期区间（形如 2019 → 2026-05），左侧小标签、右侧等宽数字 -->
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginTop="12dp"
+                android:background="@color/border" />
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
-                android:orientation="vertical">
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/visits_overview_range"
+                    android:textColor="@color/muted_fg"
+                    android:textSize="11sp" />
 
                 <TextView
                     android:id="@+id/valueRange"
-                    android:layout_width="match_parent"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:layout_weight="1"
+                    android:ellipsize="end"
+                    android:fontFamily="monospace"
+                    android:gravity="end"
+                    android:maxLines="1"
                     android:text="—"
-                    android:textColor="@color/text_primary"
-                    android:textSize="14sp"
+                    android:textColor="@color/fg"
+                    android:textSize="13sp"
                     android:textStyle="bold" />
-
-                <TextView
-                    style="@style/StatLabel"
-                    android:text="@string/visits_overview_range" />
             </LinearLayout>
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 
+    <!-- ===== 「我的足迹」标题行（左侧标题+条数说明，右侧主色「添加足迹」） ===== -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:layout_marginTop="12dp"
+        android:layout_marginEnd="12dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text="@string/visits_title"
+                android:textColor="@color/fg"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/textListSubtitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textColor="@color/muted_fg"
+                android:textSize="11sp" />
+        </LinearLayout>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnAdd"
+            style="@style/Widget.App.Button"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:layout_marginStart="12dp"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:minWidth="0dp"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:text="@string/visits_add"
+            android:textSize="13sp"
+            app:icon="@drawable/ic_add"
+            app:iconGravity="textStart"
+            app:iconPadding="6dp"
+            app:iconSize="16dp" />
+    </LinearLayout>
+
+    <!-- ===== 足迹列表 ===== -->
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
+        android:layout_marginTop="8dp"
         android:layout_weight="1">
 
         <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
@@ -115,17 +192,22 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent">
 
-            <!-- paddingBottom 给 FAB 让位，clipToPadding=false 让列表能滑到那个留白里 ——
-                 否则最后一条会被 FAB 永久盖住一半 -->
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/list"
+            <androidx.core.widget.NestedScrollView
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:clipToPadding="false"
-                android:paddingStart="12dp"
-                android:paddingTop="8dp"
-                android:paddingEnd="12dp"
-                android:paddingBottom="88dp" />
+                android:layout_height="match_parent">
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/list"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:layout_marginTop="4dp"
+                    android:layout_marginEnd="12dp"
+                    android:layout_marginBottom="12dp"
+                    android:background="@drawable/bg_card"
+                    android:clipToPadding="false"
+                    android:nestedScrollingEnabled="false" />
+            </androidx.core.widget.NestedScrollView>
         </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
         <ProgressBar
@@ -142,19 +224,8 @@
             android:gravity="center"
             android:padding="24dp"
             android:text="@string/visits_empty"
-            android:textColor="@color/text_secondary"
+            android:textColor="@color/muted_fg"
             android:textSize="14sp"
             android:visibility="gone" />
-
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/fab"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="bottom|end"
-            android:layout_margin="16dp"
-            android:contentDescription="@string/visits_add"
-            app:backgroundTint="@color/accent"
-            app:srcCompat="@drawable/ic_add"
-            app:tint="#FFFFFFFF" />
     </FrameLayout>
 </LinearLayout>

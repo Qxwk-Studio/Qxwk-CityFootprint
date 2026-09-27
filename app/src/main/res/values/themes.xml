@@ -1,41 +1,131 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- 主题名固定为 Theme.CityFootprint（清单里四个 Activity 都指向它）。
-         父主题用 Material3 的 DayNight.NoActionBar：本 app 全部页面自带 Toolbar，
-         不要系统那条 ActionBar（两条件栏叠在一起最难看）。 -->
-    <style name="Theme.CityFootprint" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- 系统栏配色只是**兜底**，跟随系统深浅色（见 colors.xml 的窗口底色）。
-             没有「网页上报主题」这一环 —— 这个 app 没有 WebView，配色全在原生这一侧。 -->
+         父主题用 Material3 的 **Light**.NoActionBar：
+         设计稿（city-footprint-app/pages）只提供浅色那套品牌色，深色那一套是另一支品牌
+         （主色 #FC2C50 红），所以这里**钉死浅色**，不跟随系统深色（values-night 已移除）。
+         NoActionBar：本 app 全部页面自带顶栏，不要系统那条 ActionBar。 -->
+    <style name="Theme.CityFootprint" parent="Theme.Material3.Light.NoActionBar">
+        <!-- 把设计稿的语义色接进 Material，让按钮 / 开关 / 输入框 / 进度自动跟着走 -->
+        <item name="colorPrimary">@color/accent</item>
+        <item name="colorOnPrimary">@color/on_accent</item>
+        <item name="colorPrimaryContainer">@color/accent_light</item>
+        <item name="colorOnPrimaryContainer">@color/accent_soft_fg</item>
+        <item name="colorSecondary">@color/accent</item>
+        <item name="colorSecondaryContainer">@color/accent_light</item>
+        <item name="colorOnSecondaryContainer">@color/accent_soft_fg</item>
+        <item name="colorSurface">@color/card</item>
+        <item name="colorOnSurface">@color/fg</item>
+        <item name="colorOnSurfaceVariant">@color/muted_fg</item>
+        <item name="colorOutline">@color/input_border</item>
+        <item name="colorError">@color/destructive</item>
+        <item name="android:colorBackground">@color/bg</item>
+
+        <!-- 系统栏与顶栏同色（顶栏底色是设计稿的 sidebar），图标用深色 -->
         <item name="android:statusBarColor">@color/window_bg_light</item>
         <item name="android:navigationBarColor">@color/window_bg_light</item>
         <item name="android:windowLightStatusBar">true</item>
         <item name="android:windowLightNavigationBar" tools:targetApi="27">true</item>
+        <!-- 浅色只做一套：即便系统开了深色（强制深色 / 开发者选项），也不许系统反色 -->
+        <item name="android:forceDarkAllowed" tools:targetApi="29">false</item>
+
+        <!-- 默认卡片 / 按钮样式：一处定义，全 app 一致（设计稿圆角 8px、1px 描边、无阴影） -->
+        <item name="materialCardViewStyle">@style/Widget.App.CardView</item>
+        <item name="materialButtonStyle">@style/Widget.App.Button</item>
     </style>
 
-    <!-- ===== 统计页那四块数字 ===== -->
-    <!-- 数字本身：比标签大得多，一屏扫过去先看数再看名 -->
+    <!-- ===== 卡片：圆角 8dp + 1dp 描边 + 无阴影（设计稿 rounded-lg border bg-card） ===== -->
+    <style name="Widget.App.CardView" parent="Widget.Material3.CardView.Outlined">
+        <item name="cardCornerRadius">8dp</item>
+        <item name="cardElevation">0dp</item>
+        <item name="cardBackgroundColor">@color/card</item>
+        <item name="strokeColor">@color/border</item>
+        <item name="strokeWidth">1dp</item>
+    </style>
+
+    <!-- ===== 按钮：圆角 8dp（Material3 默认是胶囊形，与设计稿的 rounded-lg 不一致） ===== -->
+    <style name="Widget.App.Button" parent="Widget.Material3.Button">
+        <item name="cornerRadius">8dp</item>
+    </style>
+
+    <style name="Widget.App.Button.Outlined" parent="Widget.Material3.Button.OutlinedButton">
+        <item name="cornerRadius">8dp</item>
+        <item name="strokeColor">@color/border</item>
+        <item name="android:textColor">@color/fg</item>
+    </style>
+
+    <!-- 危险动作按钮（退出登录）：描边 + 红字 -->
+    <style name="Widget.App.Button.Danger" parent="Widget.Material3.Button.OutlinedButton">
+        <item name="cornerRadius">8dp</item>
+        <item name="strokeColor">@color/border</item>
+        <item name="android:textColor">@color/destructive</item>
+    </style>
+
+    <!-- ===== 输入框：圆角 8dp + popover 底 + input 描边（设计稿的输入框形态） ===== -->
+    <style name="Widget.App.TextInputLayout" parent="Widget.Material3.TextInputLayout.OutlinedBox">
+        <item name="boxCornerRadiusTopStart">8dp</item>
+        <item name="boxCornerRadiusTopEnd">8dp</item>
+        <item name="boxCornerRadiusBottomStart">8dp</item>
+        <item name="boxCornerRadiusBottomEnd">8dp</item>
+        <item name="boxStrokeColor">@color/field_stroke</item>
+        <item name="boxStrokeWidth">1dp</item>
+        <item name="boxStrokeWidthFocused">1dp</item>
+        <item name="boxBackgroundColor">@color/popover</item>
+        <item name="hintTextColor">@color/muted_fg</item>
+        <item name="android:textColorHint">@color/muted_fg</item>
+    </style>
+
+    <!-- ===== 底部导航：选中项是主色药丸 + 白字（设计稿的 sidebar-primary 选中态） ===== -->
+    <style name="Widget.App.BottomNav" parent="Widget.Material3.BottomNavigationView">
+        <item name="itemIconTint">@color/nav_item_tint</item>
+        <item name="itemTextColor">@color/nav_item_text</item>
+        <item name="itemBackground">@drawable/nav_item_bg</item>
+        <!-- 关掉 M3 自带的活动指示器：否则会和上面的 itemBackground 药丸叠在一起 -->
+        <item name="itemActiveIndicatorStyle">@style/Widget.App.NavIndicator</item>
+        <item name="android:background">@color/sidebar</item>
+        <item name="elevation">0dp</item>
+    </style>
+
+    <style name="Widget.App.NavIndicator" parent="Widget.Material3.BottomNavigationView.ActiveIndicator">
+        <item name="android:width">0dp</item>
+        <item name="android:height">0dp</item>
+    </style>
+
+    <!-- ===== 文字样式 ===== -->
+
+    <!-- 卡片 / 区块小标题（设计稿 16px semibold） -->
+    <style name="CardTitle">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/fg</item>
+    </style>
+
+    <!-- 大数字（设计稿 24px bold，等宽数字）：颜色是正文色，不是主色 -->
     <style name="StatValue">
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">wrap_content</item>
         <item name="android:textSize">24sp</item>
         <item name="android:textStyle">bold</item>
-        <item name="android:textColor">@color/accent</item>
+        <item name="android:textColor">@color/fg</item>
+        <item name="android:fontFamily">monospace</item>
     </style>
 
+    <!-- 数字下方的小标签（设计稿 11px muted-foreground） -->
     <style name="StatLabel">
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">wrap_content</item>
-        <item name="android:layout_marginTop">2dp</item>
-        <item name="android:textSize">12sp</item>
-        <item name="android:textColor">@color/text_secondary</item>
+        <item name="android:layout_marginTop">4dp</item>
+        <item name="android:textSize">11sp</item>
+        <item name="android:textColor">@color/muted_fg</item>
     </style>
 
-    <!-- 卡片小标题（「城市排行」「我的成就」） -->
-    <style name="CardTitle">
-        <item name="android:layout_width">match_parent</item>
+    <!-- 次要说明文字（设计稿 11~12px muted-foreground） -->
+    <style name="BodyMuted">
+        <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">wrap_content</item>
-        <item name="android:textSize">16sp</item>
-        <item name="android:textStyle">bold</item>
-        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:textSize">11sp</item>
+        <item name="android:textColor">@color/muted_fg</item>
     </style>
 </resources>

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 编辑页 / 城市选择页 Toolbar 的返回箭头（几何是 Material arrow_back） -->
+<!-- 编辑页 / 城市选择页顶栏的返回箭头（几何是 Material arrow_back） -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"

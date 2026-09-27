@@ -1,17 +1,59 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- app 外壳（设计稿的 .app-board）：顶栏 + 内容 + 页脚 + 底部导航，四段纵向排布。
+     顶栏与底栏都是设计稿的 sidebar 底色（浅蓝），内容区是 background 白。
+     顶栏/底栏各有一条 1px 分隔线（顶栏用 sidebar-border，页脚上沿用 border），与设计稿一致。
+
+     顶栏右侧那颗「打开我的」按钮（设计稿 .app-bar-action）点一下就切到「我的」tab，
+     它只是切 tab 的另一种入口，所以不给它单独开 Activity。 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/bg"
     android:orientation="vertical">
 
-    <!-- 标题随 tab 变（代码里 setTitle），放一条 Toolbar 而不是每个 Fragment 各画一行标题：
-         底部切 tab 时标题不该跟着整页重画，那不必要地闪一下 -->
-    <com.google.android.material.appbar.MaterialToolbar
-        android:id="@+id/toolbar"
+    <!-- ===== 顶栏 ===== -->
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="?attr/actionBarSize"
-        android:background="?attr/colorSurface" />
+        android:layout_height="wrap_content"
+        android:background="@color/sidebar"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp">
+
+            <TextView
+                android:id="@+id/title"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textColor="@color/sidebar_fg"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <ImageButton
+                android:id="@+id/btnProfile"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:background="@drawable/bg_action_button"
+                android:contentDescription="@string/tab_profile"
+                android:padding="8dp"
+                android:src="@drawable/ic_person"
+                android:tint="@color/sidebar_fg" />
+        </LinearLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/sidebar_border" />
+    </LinearLayout>
 
     <FrameLayout
         android:id="@+id/container"
@@ -19,11 +61,70 @@
         android:layout_height="0dp"
         android:layout_weight="1" />
 
-    <!-- 五个 tab 都在 menu/bottom_nav.xml 里定义（图标 + 文案），
-         选中态写死在代码里（见 MainActivity），这样切 tab 只有一个真相来源 -->
-    <com.google.android.material.bottomnavigation.BottomNavigationView
-        android:id="@+id/bottomNav"
+    <!-- ===== 页脚 ===== -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:menu="@menu/bottom_nav" />
+        android:background="@color/card"
+        android:orientation="vertical">
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/border" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="12dp"
+            android:paddingTop="8dp"
+            android:paddingEnd="12dp"
+            android:paddingBottom="8dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text="@string/footer_brand"
+                android:textColor="@color/muted_fg"
+                android:textSize="11sp" />
+
+            <TextView
+                android:id="@+id/footerVersion"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:textColor="@color/muted_fg"
+                android:textSize="11sp" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- ===== 底部导航 ===== -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/sidebar"
+        android:orientation="vertical">
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/sidebar_border" />
+
+        <!-- 五个 tab 都在 menu/bottom_nav.xml 里定义（图标 + 文案）；
+             选中态样式见 themes.xml 的 Widget.App.BottomNav（主色药丸 + 白字） -->
+        <com.google.android.material.bottomnavigation.BottomNavigationView
+            android:id="@+id/bottomNav"
+            style="@style/Widget.App.BottomNav"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingStart="4dp"
+            android:paddingEnd="4dp"
+            app:labelVisibilityMode="labeled"
+            app:menu="@menu/bottom_nav" />
+    </LinearLayout>
 </LinearLayout>

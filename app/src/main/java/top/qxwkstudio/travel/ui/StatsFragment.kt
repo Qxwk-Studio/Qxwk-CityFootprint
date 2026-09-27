@@ -103,12 +103,16 @@ class StatsFragment : Fragment() {
         // 管理员看到的数字含私密足迹，必须说明白，否则会以为统计把别人的私密记录抖出来了
         b.textAdminNote.visibility = if (stats.isAdmin) View.VISIBLE else View.GONE
 
+        b.textRankTop.text = getString(R.string.stats_rank_top, RANK_DEFAULT)
+
         b.rankContainer.removeAllViews()
         stats.cityRank.take(RANK_DEFAULT).forEachIndexed { index, row ->
             val item = ItemRankBinding.inflate(layoutInflater, b.rankContainer, false)
             item.textRank.text = (index + 1).toString()
             item.textCity.text = row.city
-            item.textCount.text = getString(R.string.stats_rank_item, row.count, row.people)
+            // 次数与人数各占一列，和表头那两列左右对齐（设计稿的 rank-row）
+            item.textCount.text = row.count.toString()
+            item.textPeople.text = row.people.toString()
             b.rankContainer.addView(item.root)
         }
     }

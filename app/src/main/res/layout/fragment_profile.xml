@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- 「我的」：本机登录身份的展示与退出登录。内容沿用现有（头像/昵称/账号说明/版本/退出），
+     样式按设计稿重做：圆角描边卡片、11~18sp 文字层级、退出用危险色描边按钮。 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp">
+    android:padding="12dp">
 
     <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
@@ -12,11 +14,13 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:gravity="center_vertical"
             android:orientation="horizontal"
             android:padding="16dp">
 
             <!-- 头像用「昵称首字」而不是去下载通行证的头像图：
-                 为了一个头像引图片加载库不划算，而首字方块 + 通行证给的主题色已经够辨认 -->
+                 为了一个头像引图片加载库不划算，而首字方块 + 通行证给的主题色已经够辨认。
+                 底色在代码里按通行证主题色画（ProfileFragment.avatarDrawable），布局不写死。 -->
             <TextView
                 android:id="@+id/textAvatar"
                 android:layout_width="48dp"
@@ -29,7 +33,7 @@
             <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="14dp"
+                android:layout_marginStart="12dp"
                 android:layout_weight="1"
                 android:orientation="vertical">
 
@@ -37,7 +41,9 @@
                     android:id="@+id/textNickname"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:textColor="@color/text_primary"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:textColor="@color/fg"
                     android:textSize="18sp"
                     android:textStyle="bold" />
 
@@ -47,19 +53,18 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
                     android:text="@string/profile_account_note"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="12sp" />
+                    android:textColor="@color/muted_fg"
+                    android:textSize="11sp" />
             </LinearLayout>
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 
     <TextView
         android:id="@+id/textVersion"
+        style="@style/BodyMuted"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
-        android:textColor="@color/text_secondary"
-        android:textSize="12sp" />
+        android:layout_marginTop="12dp" />
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -69,7 +74,7 @@
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnLogout"
-        style="@style/Widget.Material3.Button.OutlinedButton"
+        style="@style/Widget.App.Button.Danger"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="@string/profile_logout" />

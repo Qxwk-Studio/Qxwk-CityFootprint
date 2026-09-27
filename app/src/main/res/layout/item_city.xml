@@ -1,8 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- 城市列表的一行：名称 + 省份。
+     省份必须显示：同名或简称相似的市不少，靠省份才分得清。
+     行底一条 1px 分隔线（row_divider_bg），点按有水波纹。 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="?attr/selectableItemBackground"
+    android:background="@drawable/row_divider_bg"
+    android:foreground="?attr/selectableItemBackground"
     android:gravity="center_vertical"
     android:orientation="horizontal"
     android:paddingStart="16dp"
@@ -15,13 +19,16 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
-        android:textColor="@color/text_primary"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:textColor="@color/fg"
         android:textSize="16sp" />
 
     <TextView
         android:id="@+id/textProvince"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textColor="@color/text_secondary"
+        android:layout_marginStart="8dp"
+        android:textColor="@color/muted_fg"
         android:textSize="12sp" />
 </LinearLayout>

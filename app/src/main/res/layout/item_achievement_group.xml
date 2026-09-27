@@ -1,12 +1,46 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 成就分组标题（「🌟 足迹丰碑」这种）。整组整组地插进 LinearLayout，
-     所以没有自己的容器 —— 一条标题 + 若干条成就，顺序就是插入顺序 -->
-<TextView xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/textGroupTitle"
+<!-- 成就分组标题（「🌟 足迹丰碑」这种）+ 右侧该组进度「4 / 8」。
+     整组整组地插进 LinearLayout，所以没有自己的容器 —— 一条标题 + 若干条成就，顺序即插入顺序。
+     第一组不画上方那条分隔线（由代码把 groupTopDivider 置 GONE）。 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:paddingTop="14dp"
-    android:paddingBottom="6dp"
-    android:textColor="@color/text_primary"
-    android:textSize="14sp"
-    android:textStyle="bold" />
+    android:orientation="vertical">
+
+    <View
+        android:id="@+id/groupTopDivider"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginTop="16dp"
+        android:background="@color/border"
+        android:visibility="gone" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingTop="12dp"
+        android:paddingBottom="2dp">
+
+        <TextView
+            android:id="@+id/textGroupTitle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textColor="@color/fg"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/textGroupCount"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:fontFamily="monospace"
+            android:textColor="@color/muted_fg"
+            android:textSize="11sp" />
+    </LinearLayout>
+</LinearLayout>

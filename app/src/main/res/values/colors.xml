@@ -1,20 +1,54 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- 强调色：与工作室其它端（网页 / 班级助理）同一支靛蓝，地图折线、按钮、选中态都用它 -->
-    <color name="accent">#4F46E5</color>
-    <color name="accent_light">#E9EAFF</color>
+    <!-- 色板来自设计稿 city-footprint-app/pages 的 Google 浅色品牌（只读参考）。
+         设计稿深色那一套是**另一支品牌**（主色 #FC2C50 红），与浅色的 Google 蓝不是一套，
+         所以本 app **只做浅色**（见 themes.xml 的说明），不落地深色 token。
 
-    <!-- 系统栏配色跟随深浅色（见 themes.xml 的注释） -->
-    <color name="window_bg_light">#F2F2F7</color>
-    <color name="window_bg_dark">#07070C</color>
+         命名沿用设计稿的语义 token：primary / secondary / muted / accent / border / sidebar 等，
+         网页端叫 primary、sidebar 的那些在这里就是 accent、sidebar，一一对应。 -->
 
-    <!-- 文字层级：标题 / 正文 / 次要说明。深色模式下由系统反色（Material3 主题自带），
-         所以这里只写浅色模式用的两支，深色模式**不覆盖**（覆盖了反而会让 Material3 的自动反色失效） -->
-    <color name="text_primary">#1C1B1F</color>
-    <color name="text_secondary">#5B5B66</color>
+    <!-- ===== 品牌主色（按钮 / 选中态 / 进度 / 边界线） ===== -->
+    <color name="accent">#4285F4</color>              <!-- primary -->
+    <color name="accent_light">#DBEAFE</color>        <!-- secondary / accent：浅蓝底 -->
+    <color name="accent_soft_fg">#003E8F</color>      <!-- accent-foreground：蓝底上的深蓝字 -->
+    <color name="secondary_soft_fg">#333942</color>   <!-- secondary-foreground -->
+    <color name="on_accent">#FFFFFF</color>           <!-- primary-foreground -->
 
-    <!-- 私密标记：不是警告，只是「这条别人看不到」，用中性的灰紫而不是红 -->
-    <color name="private_badge">#8E7CC3</color>
-    <!-- 未达成的成就：图标与文字整体压灰，一眼能看出「还没点亮」 -->
+    <!-- ===== 面 / 文字 ===== -->
+    <color name="bg">#FFFFFF</color>                  <!-- background：页面底 -->
+    <color name="card">#FFFFFF</color>                <!-- card -->
+    <color name="fg">#0E1115</color>                  <!-- foreground：标题 / 正文 -->
+    <color name="text_primary">#0E1115</color>        <!-- 与 fg 同值，兼容既有引用 -->
+    <color name="text_secondary">#7F8D9F</color>      <!-- muted-foreground：次要说明 -->
+    <color name="muted_fg">#7F8D9F</color>
+    <color name="muted">#EFF1F4</color>               <!-- muted：进度轨道 / 开关底 -->
+    <color name="popover">#F9F9FA</color>             <!-- popover：输入框底 -->
+
+    <!-- ===== 线 ===== -->
+    <color name="border">#EBEBEB</color>              <!-- border：卡片描边 / 分隔线 -->
+    <color name="input_border">#E2E3E4</color>        <!-- input：输入框描边 -->
+
+    <!-- ===== 外壳（顶栏 / 底栏，设计稿的 sidebar） ===== -->
+    <color name="sidebar">#F0F6FF</color>
+    <color name="sidebar_fg">#0E1115</color>
+    <color name="sidebar_border">#E7EAEF</color>
+
+    <!-- ===== 危险动作（退出登录） ===== -->
+    <color name="destructive">#EF4444</color>
+
+    <!-- 系统栏兜底：与顶栏同色（只做浅色，深色不再覆盖 —— 见 values-night 已移除） -->
+    <color name="window_bg_light">#F0F6FF</color>
+    <color name="window_bg_dark">#F0F6FF</color>
+
+    <!-- 私密标记：设计稿是 accent 药丸底 + accent-foreground 字，不再是灰紫文字 -->
+    <color name="private_badge">#003E8F</color>
+    <!-- 未达成的成就：图标与文字整体压灰 -->
     <color name="achievement_todo">#9A9AA5</color>
+
+    <!-- 图表色（设计稿 chart-1..5）：地图图例等备用 -->
+    <color name="chart_1">#4285F4</color>
+    <color name="chart_2">#EA4335</color>
+    <color name="chart_3">#FBBC05</color>
+    <color name="chart_4">#0043AD</color>
+    <color name="chart_5">#34A853</color>
 </resources>

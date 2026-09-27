@@ -174,8 +174,9 @@ class MapFragment : Fragment() {
                     setPoints(ring)
                     // 用 Paint 而不是 setFillColor/setStrokeColor 那几个：它们在 6.x 里已标记 @Deprecated，
                     // 只是转发到 Paint（osmdroid 6.0.2 起 Fill/Outline 各是一支 Paint）
-                    fillPaint.color = Color.parseColor("#334F46E5")
-                    outlinePaint.color = Color.parseColor("#4F46E5")
+                    // 颜色与设计稿主色一致（#4285F4），填充是同色 20% 透明
+                    fillPaint.color = Color.parseColor("#334285F4")
+                    outlinePaint.color = Color.parseColor("#4285F4")
                     outlinePaint.strokeWidth = 4f
                     title = cityName
                 }

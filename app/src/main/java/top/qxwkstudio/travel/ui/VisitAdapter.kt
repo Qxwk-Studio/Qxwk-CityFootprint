@@ -4,6 +4,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
+import top.qxwkstudio.travel.R
 import top.qxwkstudio.travel.databinding.ItemVisitBinding
 import top.qxwkstudio.travel.logic.Visit
 import top.qxwkstudio.travel.logic.VisitDate
@@ -35,20 +36,28 @@ class VisitAdapter(
 
     override fun getItemCount(): Int = items.size
 
-    override fun onBindViewHolder(holder: Holder, position: Int) = holder.bind(items[position])
+    // 最后一行要特殊处理（不画底分隔线），所以把位置信息一起交给 Holder
+    override fun onBindViewHolder(holder: Holder, position: Int) =
+        holder.bind(items[position], position == items.size - 1)
 
     inner class Holder(private val b: ItemVisitBinding) : RecyclerView.ViewHolder(b.root) {
 
-        fun bind(v: Visit) {
+        fun bind(v: Visit, isLast: Boolean) {
             b.textCity.text = v.city
             // 库里存 "2024-08"，列表显示 "2024年8月"：存储形态与展示形态分开（见 logic/VisitDate）
             b.textDate.text = VisitDate.display(v.visitDate)
 
+            // 日期与备注之间那个「·」只在有备注时出现，否则会剩一个孤零零的点
+            val hasNote = v.note.isNotBlank()
             b.textNote.text = v.note
-            b.textNote.visibility = if (v.note.isBlank()) View.GONE else View.VISIBLE
+            b.textNote.visibility = if (hasNote) View.VISIBLE else View.GONE
+            b.textSep.visibility = if (hasNote) View.VISIBLE else View.GONE
 
             // 私密标记只在私密时出现（不是「公开/私密」两态都显示一个标签）
             b.textPrivate.visibility = if (v.isPrivate) View.VISIBLE else View.GONE
+
+            // 最后一行不画底分隔线：列表卡片自带的底描边已经在那儿了，再画一条就成双线
+            b.root.setBackgroundResource(if (isLast) 0 else R.drawable.row_divider_bg)
 
             b.root.setOnClickListener { onEdit(v) }
             b.root.setOnLongClickListener {

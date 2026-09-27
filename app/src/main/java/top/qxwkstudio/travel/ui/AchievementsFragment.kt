@@ -87,32 +87,35 @@ class AchievementsFragment : Fragment() {
         val b = _binding ?: return
         val groups = Achievements.all(visits.map { it.city })
         val (done, total) = Achievements.progress(groups)
-        b.textAchievementProgress.text = getString(R.string.stats_achievements_progress, done, total)
+        b.textProgressRatio.text = getString(R.string.achievement_progress_ratio, done, total)
         // 进度条按 0-100 整数百分比，total 为 0 时不画（NaN/除零都不该发生）
         b.achievementBar.progress = if (total > 0) done * 100 / total else 0
 
         b.achievementsContainer.removeAllViews()
-        for (group in groups) {
-            val title = ItemAchievementGroupBinding.inflate(layoutInflater, b.achievementsContainer, false)
-            // item_achievement_group.xml 的根本身就带 id=textGroupTitle，root 就是那个 TextView
-            title.root.text = group.title
-            b.achievementsContainer.addView(title.root)
+        groups.forEachIndexed { groupIndex, group ->
+            val header = ItemAchievementGroupBinding.inflate(layoutInflater, b.achievementsContainer, false)
+            header.textGroupTitle.text = group.title
+            header.textGroupCount.text =
+                getString(R.string.achievement_progress_ratio, group.items.count { it.done }, group.items.size)
+            // 第一组上方不画分隔线（前面就是进度条）
+            header.groupTopDivider.visibility = if (groupIndex == 0) View.GONE else View.VISIBLE
+            b.achievementsContainer.addView(header.root)
 
-            for (achievement in group.items) {
+            group.items.forEachIndexed { itemIndex, achievement ->
                 val item = ItemAchievementBinding.inflate(layoutInflater, b.achievementsContainer, false)
                 item.textIcon.text = achievement.icon
                 item.textName.text = achievement.name
                 item.textDesc.text = achievement.desc
-                item.textState.text =
-                    getString(if (achievement.done) R.string.stats_achievement_done else R.string.stats_achievement_todo)
 
-                // 未达成的只把「名字/说明/状态」压灰。图标是 emoji（彩色字体），
+                // 未达成的只把「名字/说明」压灰。图标是 emoji（彩色字体），
                 // 给它 setTextColor 反而会出奇怪的颜色，所以图标不染
                 val nameColor = color(if (achievement.done) R.color.text_primary else R.color.achievement_todo)
                 val subColor = color(if (achievement.done) R.color.text_secondary else R.color.achievement_todo)
                 item.textName.setTextColor(nameColor)
                 item.textDesc.setTextColor(subColor)
-                item.textState.setTextColor(subColor)
+
+                // 每组第一条不画顶部分隔线（分组标题已经把它和上一条隔开了）
+                if (itemIndex == 0) item.root.setBackgroundResource(0)
 
                 b.achievementsContainer.addView(item.root)
             }

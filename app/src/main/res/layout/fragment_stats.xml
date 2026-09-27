@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- 整页用 NestedScrollView 而不是把排行/成就各做成 RecyclerView：
      一屏里只有两块列表、条数也不多（城市几百、成就 42），嵌进滚动页里最省事；
-     真做成多类型 RecyclerView 是给「列表长到几千条」准备的，这里用不上。 -->
+     真做成多类型 RecyclerView 是给「列表长到几千条」准备的，这里用不上。
+
+     内容沿用现有网页端：四块数字 + 城市排行（含表头）。样式按设计稿重做（圆角描边卡片、
+     等宽大数字、排行四列对齐）。 -->
 <androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
@@ -25,12 +28,11 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:gravity="center"
-            android:textColor="#B3261E"
+            android:textColor="@color/destructive"
             android:textSize="13sp"
             android:visibility="gone" />
 
-        <!-- 四块数字：两行两列。写成固定的两行而不是 GridLayout ——
-             行列关系一眼看得见，比数标签属性快 -->
+        <!-- 四块数字：两行两列 -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/cardNumbers"
             android:layout_width="match_parent"
@@ -56,7 +58,8 @@
                         <TextView
                             android:id="@+id/valueVisits"
                             style="@style/StatValue"
-                            android:text="-" />
+                            android:text="-"
+                            android:textSize="26sp" />
 
                         <TextView
                             style="@style/StatLabel"
@@ -72,7 +75,8 @@
                         <TextView
                             android:id="@+id/valueCities"
                             style="@style/StatValue"
-                            android:text="-" />
+                            android:text="-"
+                            android:textSize="26sp" />
 
                         <TextView
                             style="@style/StatLabel"
@@ -95,7 +99,8 @@
                         <TextView
                             android:id="@+id/valueUsers"
                             style="@style/StatValue"
-                            android:text="-" />
+                            android:text="-"
+                            android:textSize="26sp" />
 
                         <TextView
                             style="@style/StatLabel"
@@ -111,7 +116,8 @@
                         <TextView
                             android:id="@+id/valueMyCities"
                             style="@style/StatValue"
-                            android:text="-" />
+                            android:text="-"
+                            android:textSize="26sp" />
 
                         <TextView
                             style="@style/StatLabel"
@@ -120,19 +126,23 @@
                 </LinearLayout>
 
                 <!-- 管理员看到的数字含私密足迹（后端按 isAdmin 过滤），这一条要说明白，
-                     否则会以为统计把别人的私密记录也抖出来了 -->
+                     否则会以为统计把别人的私密记录也抖出来了。
+                     背景自带一条上方分隔线，隐藏时那条线也跟着消失（见 divider_top_bg）。 -->
                 <TextView
                     android:id="@+id/textAdminNote"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
+                    android:background="@drawable/divider_top_bg"
+                    android:paddingTop="12dp"
                     android:text="@string/stats_admin_note"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="12sp"
+                    android:textColor="@color/muted_fg"
+                    android:textSize="11sp"
                     android:visibility="gone" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
+        <!-- 城市排行：标题行 + 表头行 + 数据行（四列固定宽度对齐） -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -145,9 +155,68 @@
                 android:orientation="vertical"
                 android:padding="16dp">
 
-                <TextView
-                    style="@style/CardTitle"
-                    android:text="@string/stats_rank_title" />
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        style="@style/CardTitle"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:text="@string/stats_rank_title" />
+
+                    <TextView
+                        android:id="@+id/textRankTop"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:fontFamily="monospace"
+                        android:textColor="@color/muted_fg"
+                        android:textSize="11sp" />
+                </LinearLayout>
+
+                <!-- 表头：列宽与 item_rank 逐列对齐（32dp / 自适应 / 56dp / 56dp） -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="32dp"
+                        android:layout_height="wrap_content"
+                        android:text="@string/stats_rank_col_rank"
+                        android:textColor="@color/muted_fg"
+                        android:textSize="11sp" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:layout_weight="1"
+                        android:text="@string/stats_rank_col_city"
+                        android:textColor="@color/muted_fg"
+                        android:textSize="11sp" />
+
+                    <TextView
+                        android:layout_width="56dp"
+                        android:layout_height="wrap_content"
+                        android:gravity="end"
+                        android:text="@string/stats_rank_col_count"
+                        android:textColor="@color/muted_fg"
+                        android:textSize="11sp" />
+
+                    <TextView
+                        android:layout_width="56dp"
+                        android:layout_height="wrap_content"
+                        android:gravity="end"
+                        android:text="@string/stats_rank_col_people"
+                        android:textColor="@color/muted_fg"
+                        android:textSize="11sp" />
+                </LinearLayout>
 
                 <!-- 行由代码 inflate（item_rank.xml）后 add 进来 -->
                 <LinearLayout

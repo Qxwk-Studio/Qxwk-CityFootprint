@@ -1,23 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 一条成就：图标 / 名称+说明 / 状态。
-     未达成的不用「整行变灰」这种粗暴做法，而是名字与说明压到灰色（代码里 setTextColor）——
-     图标是 emoji（彩色字体），压不灰，硬压反而出奇怪的颜色 -->
+<!-- 一条成就：图标（emoji）/ 名称+说明。
+     未达成的**不整行变灰**，而是把名字与说明压到灰色（代码里 setTextColor）——
+     图标是 emoji（彩色字体），压不灰，硬压反而出奇怪的颜色。
+
+     行上方那条 1px 线是设计稿的 border-t；每组的第一条由代码把背景置空。 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:background="@drawable/divider_top_bg"
+    android:gravity="top"
     android:orientation="horizontal"
-    android:paddingTop="6dp"
-    android:paddingBottom="6dp">
+    android:paddingTop="8dp"
+    android:paddingBottom="8dp">
 
     <TextView
         android:id="@+id/textIcon"
-        android:layout_width="32dp"
+        android:layout_width="20dp"
         android:layout_height="wrap_content"
-        android:textSize="18sp" />
+        android:gravity="center_horizontal"
+        android:textSize="16sp" />
 
     <LinearLayout
         android:layout_width="0dp"
         android:layout_height="wrap_content"
+        android:layout_marginStart="10dp"
         android:layout_weight="1"
         android:orientation="vertical">
 
@@ -25,21 +31,18 @@
             android:id="@+id/textName"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textColor="@color/text_primary"
-            android:textSize="14sp" />
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textColor="@color/fg"
+            android:textSize="13sp"
+            android:textStyle="bold" />
 
         <TextView
             android:id="@+id/textDesc"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textColor="@color/text_secondary"
-            android:textSize="12sp" />
+            android:layout_marginTop="2dp"
+            android:textColor="@color/muted_fg"
+            android:textSize="11sp" />
     </LinearLayout>
-
-    <TextView
-        android:id="@+id/textState"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="8dp"
-        android:textSize="12sp" />
 </LinearLayout>

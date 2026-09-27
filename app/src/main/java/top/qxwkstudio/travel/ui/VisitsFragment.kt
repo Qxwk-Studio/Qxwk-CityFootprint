@@ -52,7 +52,7 @@ class VisitsFragment : Fragment() {
         binding.list.layoutManager = LinearLayoutManager(requireContext())
         binding.list.adapter = adapter
         binding.swipe.setOnRefreshListener { load() }
-        binding.fab.setOnClickListener { editResult.launch(VisitEditActivity.intent(requireContext(), null)) }
+        binding.btnAdd.setOnClickListener { editResult.launch(VisitEditActivity.intent(requireContext(), null)) }
 
         load()
     }
@@ -113,6 +113,13 @@ class VisitsFragment : Fragment() {
 
         val dates = visits.mapNotNull { it.visitDate }.filter { it.isNotBlank() }.sorted()
         b.valueRange.text = if (dates.isEmpty()) "—" else "${dates.first()} → ${dates.last()}"
+
+        // 标题行右侧那条「共 N 条，最近更新 YYYY-MM」：没有带日期的足迹时就只报条数
+        b.textListSubtitle.text = if (dates.isEmpty()) {
+            getString(R.string.visits_list_subtitle_plain, visits.size)
+        } else {
+            getString(R.string.visits_list_subtitle, visits.size, dates.last())
+        }
     }
 
     /** 删除要二次确认：点错了没有回收站。文案里带上城市名，让人看清删的是哪一条。 */

@@ -14,6 +14,7 @@
 
     <!-- 登录页 -->
     <string name="login_title">Qxwk 通行证登录</string>
+    <string name="login_bar_title">通行证登录</string>
     <string name="login_subtitle">足迹数据与聊天账号共用一套通行证</string>
     <string name="login_account">昵称或邮箱</string>
     <string name="login_password">密码</string>
@@ -24,7 +25,7 @@
 
     <!-- 我的足迹 -->
     <string name="visits_title">我的足迹</string>
-    <string name="visits_empty">还没有记录。点右下角 + 添加第一条足迹</string>
+    <string name="visits_empty">还没有记录。点右上角「添加足迹」添加第一条</string>
     <string name="visits_add">添加足迹</string>
     <string name="visits_private">私密</string>
     <string name="visits_delete_confirm_title">删除这条足迹？</string>
@@ -48,6 +49,8 @@
     <string name="edit_date_hint">如 2024 或 2024-08</string>
     <string name="edit_note">备注（选填，最多 100 字）</string>
     <string name="edit_private">仅自己可见</string>
+    <string name="edit_private_hint">开启后不出现在公开地图与统计里</string>
+    <string name="edit_footnote">城市与坐标来自内置城市表，保存后地图上会自动落点；日期留空表示「去过但记不清了」</string>
     <string name="edit_save">保存</string>
     <string name="edit_delete">删除</string>
     <string name="edit_note_counter">%1$d/100</string>
@@ -64,11 +67,7 @@
     <string name="stats_total_users">参与的人</string>
     <string name="stats_my_cities">我打卡的城市</string>
     <string name="stats_rank_title">城市排行</string>
-    <string name="stats_rank_item">%1$d 次 · %2$d 人</string>
     <string name="stats_achievements_title">我的成就</string>
-    <string name="stats_achievements_progress">已点亮 %1$d / %2$d</string>
-    <string name="stats_achievement_done">已达成</string>
-    <string name="stats_achievement_todo">未达成</string>
     <string name="stats_admin_note">管理员视图：统计里含私密足迹</string>
 
     <!-- 地图 -->
@@ -83,6 +82,24 @@
     <string name="profile_logout_confirm">退出后本地登录态会被清除，需要重新登录。</string>
     <string name="profile_version">版本 %1$s</string>
     <string name="profile_account_note">登录由「Qxwk 通行证」(account.qxwkstudio.top) 提供，密码不经过足迹后端</string>
+
+    <!-- 页脚（设计稿每个页面底部那条品牌行：左品牌 / 右版本） -->
+    <string name="footer_brand">City Footprint · 2026 青翔未阔工作室</string>
+    <string name="footer_version">v%1$s</string>
+
+    <!-- 主页「我的足迹」标题行右侧的条数说明 -->
+    <string name="visits_list_subtitle">共 %1$d 条，最近更新 %2$s</string>
+    <string name="visits_list_subtitle_plain">共 %1$d 条</string>
+
+    <!-- 统计页排行表头与右上角 Top 标记 -->
+    <string name="stats_rank_top">Top %1$d</string>
+    <string name="stats_rank_col_rank">排名</string>
+    <string name="stats_rank_col_city">城市</string>
+    <string name="stats_rank_col_count">次数</string>
+    <string name="stats_rank_col_people">人数</string>
+
+    <!-- 成就页顶部「已点亮 / 总数」的比值 -->
+    <string name="achievement_progress_ratio">%1$d / %2$d</string>
 
     <!-- 通用 -->
     <string name="common_retry">重试</string>

@@ -1,33 +1,53 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 城市排行的一行：名次 / 城市 / 「N 次 · M 人」。
-     名次宽度写 28dp 而不是 wrap_content：两位数名次会把城市名推歪，一列数字对不齐很难看 -->
+<!-- 城市排行的一行：名次 / 城市 / 次数 / 人数（设计稿的四列 rank-row）。
+     名次列宽写死 32dp、次数/人数各 56dp：两三位数名次也不会把城市名推歪，一列数字对得齐。
+     逐列宽度必须与 fragment_stats 里那行表头保持一致，改一处要改两处。
+     行上方那条 1px 线就是设计稿的 border-t（表头与第一行之间也有）。 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:background="@drawable/divider_top_bg"
     android:gravity="center_vertical"
     android:orientation="horizontal"
-    android:paddingTop="8dp"
-    android:paddingBottom="8dp">
+    android:paddingTop="10dp"
+    android:paddingBottom="10dp">
 
     <TextView
         android:id="@+id/textRank"
-        android:layout_width="28dp"
+        android:layout_width="32dp"
         android:layout_height="wrap_content"
-        android:textColor="@color/text_secondary"
+        android:fontFamily="monospace"
+        android:textColor="@color/muted_fg"
         android:textSize="12sp" />
 
     <TextView
         android:id="@+id/textCity"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
         android:layout_weight="1"
-        android:textColor="@color/text_primary"
-        android:textSize="14sp" />
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:textColor="@color/fg"
+        android:textSize="14sp"
+        android:textStyle="bold" />
 
     <TextView
         android:id="@+id/textCount"
-        android:layout_width="wrap_content"
+        android:layout_width="56dp"
         android:layout_height="wrap_content"
-        android:textColor="@color/text_secondary"
+        android:fontFamily="monospace"
+        android:gravity="end"
+        android:textColor="@color/fg"
+        android:textSize="13sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/textPeople"
+        android:layout_width="56dp"
+        android:layout_height="wrap_content"
+        android:fontFamily="monospace"
+        android:gravity="end"
+        android:textColor="@color/muted_fg"
         android:textSize="12sp" />
 </LinearLayout>

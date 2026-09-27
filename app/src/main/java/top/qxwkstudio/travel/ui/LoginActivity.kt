@@ -4,6 +4,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
+import top.qxwkstudio.travel.BuildConfig
 import top.qxwkstudio.travel.R
 import top.qxwkstudio.travel.data.Auth
 import top.qxwkstudio.travel.data.LoginResult
@@ -36,6 +37,7 @@ class LoginActivity : AppCompatActivity() {
         val b = ActivityLoginBinding.inflate(layoutInflater)
         binding = b
         setContentView(b.root)
+        b.footerVersion.text = getString(R.string.footer_version, BuildConfig.VERSION_NAME)
         b.btnLogin.setOnClickListener { submit() }
     }
 

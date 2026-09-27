@@ -10,6 +10,7 @@ import android.view.View
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import top.qxwkstudio.travel.BuildConfig
 import top.qxwkstudio.travel.R
 import top.qxwkstudio.travel.data.ApiException
 import top.qxwkstudio.travel.data.Store
@@ -64,11 +65,12 @@ class VisitEditActivity : AppCompatActivity() {
         binding = b
         setContentView(b.root)
 
-        b.toolbar.setNavigationOnClickListener { finish() }
+        b.btnBack.setOnClickListener { finish() }
+        b.footerVersion.text = getString(R.string.footer_version, BuildConfig.VERSION_NAME)
 
         editId = intent.getLongExtra(EXTRA_ID, 0L)
         val editing = editId != 0L
-        b.toolbar.title = getString(if (editing) R.string.edit_title_old else R.string.edit_title_new)
+        b.title.text = getString(if (editing) R.string.edit_title_old else R.string.edit_title_new)
         // 新增时没有「删除」这回事
         b.btnDelete.visibility = if (editing) View.VISIBLE else View.GONE
 

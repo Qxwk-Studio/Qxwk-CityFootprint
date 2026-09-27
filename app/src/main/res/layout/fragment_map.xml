@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- 地图页：只重做外壳（顶部/底部那几条说明条的样式），地图本体仍是 osmdroid 的真实地图。
+     说明条改成设计稿那种浅色圆角小卡片（白底 + 灰描边），不再用半透明黑条 ——
+     底图是深浅不一的瓦片，黑条上的白字看着像调试信息，白卡片更贴合整体浅色风格。 -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
@@ -26,8 +29,22 @@
         android:gravity="center"
         android:padding="24dp"
         android:text="@string/map_empty"
-        android:textColor="@color/text_secondary"
+        android:textColor="@color/muted_fg"
         android:textSize="14sp"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/textBoundary"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:layout_marginStart="12dp"
+        android:layout_marginEnd="12dp"
+        android:layout_marginBottom="60dp"
+        android:background="@drawable/bg_card"
+        android:padding="10dp"
+        android:textColor="@color/fg"
+        android:textSize="12sp"
         android:visibility="gone" />
 
     <TextView
@@ -35,21 +52,12 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
-        android:background="#CC000000"
-        android:padding="8dp"
+        android:layout_marginStart="12dp"
+        android:layout_marginEnd="12dp"
+        android:layout_marginBottom="12dp"
+        android:background="@drawable/bg_card"
+        android:padding="10dp"
         android:text="@string/map_hint"
-        android:textColor="#FFFFFFFF"
+        android:textColor="@color/muted_fg"
         android:textSize="12sp" />
-
-    <TextView
-        android:id="@+id/textBoundary"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom"
-        android:layout_marginBottom="34dp"
-        android:background="#CC000000"
-        android:padding="8dp"
-        android:textColor="#FFFFFFFF"
-        android:textSize="12sp"
-        android:visibility="gone" />
 </FrameLayout>

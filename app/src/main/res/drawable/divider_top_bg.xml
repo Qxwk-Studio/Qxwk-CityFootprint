@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 「上方一条 1px 分隔线」的背景（如统计卡里那条「统计范围」说明的 border-t）。
+     与 row_divider_bg（下方线）区分开，免得为了复用现成的把版面翻过来。 -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@android:color/transparent" />
+        </shape>
+    </item>
+    <item android:gravity="top">
+        <shape android:shape="rectangle">
+            <size android:height="1dp" />
+            <solid android:color="@color/border" />
+        </shape>
+    </item>
+</layer-list>

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 输入框描边：默认 input 灰线，聚焦时换成主色（设计稿 focus-visible:outline-ring 的等价物） -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:color="@color/accent" android:state_focused="true" />
+    <item android:color="@color/input_border" />
+</selector>
