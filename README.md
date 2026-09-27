@@ -4,8 +4,6 @@
 >
 > 登录通行证后把自己去过的城市打点在地图上，和朋友们一起拼出一张五彩斑斓的足迹大地图。
 
-> **ℹ️ 本仓库专注足迹内容**：未阔月刊（投稿/审核）前端与后端已迁至 [Qxwk-Blog](https://github.com/Qxwk-Studio/Qxwk-Blog)，两站仍共享同一 D1 数据库与通行证统一登录。
-
 ## ✨ 功能一览
 
 ### 🗺️ 足迹大地图 (`index.html`)
@@ -79,7 +77,7 @@
 │   ├── app.js              # API 客户端 + 通行证登录/会话（直调 /api/login、401 兜底） + setAvatarFromUrl()（头像渲染）
 │   ├── cities.js           # 国内地级市坐标数据
 │   ├── city-codes.js       # 城市 adcode（地图边界用）
-│   ├── favicon.png         # 站点图标（与安卓启动图标同一张源图，见 app/README.md）
+│   ├── favicon.webp        # 站点图标（lossless webp，与安卓启动图标同一张源图，见 app/README.md）
 │   └── robots.txt          # 爬虫规则（屏蔽登录页与足迹管理页；接口在另一个域上，这里管不到）
 ├── backend/                # 后端（Cloudflare Worker + D1）；后端命令都在这个目录里执行
 │   ├── src/
@@ -97,8 +95,6 @@
 │       └── build-android.yml  # 手动触发的安卓打包（JDK 17 + Secrets 里的签名密钥 → 签名 APK artifact）
 └── README.md
 ```
-
-> **✅ 改造进度（阶段 1a / 2 / 3 均已完成）**：阶段 1a 完成目录重构（`public/` → `frontend/`，`src/`、`migrations/`、`wrangler.toml` → `backend/`，改名走 `git mv`，提交历史保留）；阶段 2 完成前后端分家——页面改由 **GitHub Pages** 发布（`frontend/` → `docs/`，域名 `travel.qxwkstudio.top`），Worker 只留 `/api/*` 并挂到 `api.travel.qxwkstudio.top`，`[assets]` 段与 `env.ASSETS` 回落一并删除，同时补上前端跨域所需的 CORS（含 `OPTIONS` 预检）；阶段 3 已加入 `app/`（安卓原生客户端，包名 `top.qxwkstudio.travel`）与 `.github/workflows/build-android.yml`（手动触发，编译 / R8 / 签名已在 CI 跑通；本机无 Android SDK / JDK，只能靠 CI 验证）。功能页（visits / account / setup）**暂不删除**，等安卓 app 可用后再下线；后端校验凭证的机制沿用公开 HTTP 调通行证 `/api/me`，已定稿，不做缓存。
 
 ## 🔌 API 接口
 
@@ -162,7 +158,6 @@ npx wrangler d1 migrations apply qxwk-data --remote
 
 迁移会创建本站所需的全部表：`users`（`is_admin` 管理员标志、`color` 颜色随通行证同步、`passport_id` 通行证 userId，两站共享）与 `cf_visits`（足迹，含 `is_private`，本站独占），并一并建出 `passport_id` 的唯一索引。
 
-> 注：本站自接入通行证起不再自建账号与密码体系，注册/改密/邀请码等均移交通行证，因此迁移文件中**不包含** sessions / invite_codes / settings 表。
 
 #### ⚠️ 线上已有库必须手工补 `passport_id` 列
 

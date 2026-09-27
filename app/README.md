@@ -145,7 +145,7 @@ app/
 
 > **启动图标是生成物**：`res/mipmap-*/ic_launcher.png` 五档（mdpi 48 / hdpi 72 / xhdpi 96 /
 > xxhdpi 144 / xxxhdpi 192）都是**同一张 2048×2048 圆形源图**缩放出来的，源图不进仓库，
-> 所以**不要手改这些 PNG**。网页端的 `docs/favicon.png`（256×256）也出自这张源图 ——
+> 所以**不要手改这些 PNG**。网页端的 `docs/favicon.webp`（256×256，libvips 出的 lossless webp）也出自这张源图 ——
 > 换 logo 时两边要一起换，否则网页与 app 的图标会不一致。
 
 ## 本机状态与登录态
