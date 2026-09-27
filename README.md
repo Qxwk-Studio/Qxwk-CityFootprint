@@ -176,17 +176,19 @@ npx wrangler d1 execute qxwk-data --remote --command "CREATE UNIQUE INDEX IF NOT
 
 ### 3️⃣ 在通行证注册本站
 
-建议在通行证的 `apps` 表登记 origin（仅用于登录时把 `client` 认成本站站点名；通行证 `/api/login`、`/api/me` 的 CORS 已全面放行，未登记站点也能正常登录与跨域验证 token，只是来源会被记为「未登记来源」）。在通行证项目执行：
+建议在通行证的 `apps` 表登记本站（仅用于登录时把 `client` 认成本站站点名；通行证 `/api/login`、`/api/me` 的 CORS 已全面放行，未登记站点也能正常登录与跨域验证 token，只是来源会被记为「未登记来源」）。在通行证项目执行：
+
+> ⚠️ `apps` 表已不再用 `name` / `origin` 两列，改成 **`display_name`（展示名）** + **`match_type` / `match_key`（检测名称）**。网页来源填 `match_type='origin'`，`match_key` 必须是**规范 origin**（`scheme://host[:port]`，无路径、无末尾斜杠，要与浏览器请求里的 `Origin` 完全一致）。
 
 ```bash
 cd c:\Code\Qxwk-Account
-npx wrangler d1 execute qxwk-account --remote --command "INSERT OR IGNORE INTO apps (name, origin, homepage) VALUES ('City Footprint', 'https://travel.qxwkstudio.top', 'https://travel.qxwkstudio.top')"
+npx wrangler d1 execute qxwk-account --remote --command "INSERT OR IGNORE INTO apps (display_name, match_type, match_key, homepage) VALUES ('City Footprint', 'origin', 'https://travel.qxwkstudio.top', 'https://travel.qxwkstudio.top')"
 ```
 
 本地联调另插一行 origin（填**本地页面**的地址，端口随你用的静态服务器而定；不登记也能登录，只是来源会被记成「未登记来源」）：
 
 ```bash
-npx wrangler d1 execute qxwk-account --local --command "INSERT OR IGNORE INTO apps (name, origin, homepage) VALUES ('City Footprint 本地', 'http://localhost:8080', 'http://localhost:8080')"
+npx wrangler d1 execute qxwk-account --local --command "INSERT OR IGNORE INTO apps (display_name, match_type, match_key, homepage) VALUES ('City Footprint 本地', 'origin', 'http://localhost:8080', 'http://localhost:8080')"
 ```
 
 ### 4️⃣ 填入 database_id 并部署
