@@ -10,7 +10,7 @@ import android.view.View
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import top.qxwkstudio.travel.BuildConfig
+import androidx.lifecycle.lifecycleScope
 import top.qxwkstudio.travel.R
 import top.qxwkstudio.travel.data.ApiException
 import top.qxwkstudio.travel.data.Store
@@ -32,7 +32,9 @@ import top.qxwkstudio.travel.logic.VisitDraft
  */
 class VisitEditActivity : AppCompatActivity() {
 
-    private var binding: ActivityVisitEditBinding? = null
+    // 非空 lateinit：Activity 与视图同生共死，不必像 Fragment 那样在 onDestroyView 里置 null。
+    // 异步回调挂在 lifecycleScope 上（onDestroy 取消），所以回调里直接用 binding 是安全的。
+    private lateinit var binding: ActivityVisitEditBinding
     private lateinit var store: Store
 
     /** 0 = 新增；非 0 = 编辑这条 id。 */
@@ -53,20 +55,19 @@ class VisitEditActivity : AppCompatActivity() {
         if (pickedLat.isNaN() || pickedLng.isNaN()) return@registerForActivityResult
         lat = pickedLat
         lng = pickedLng
-        binding?.inputCity?.setText(data.getStringExtra(CityPickerActivity.EXTRA_NAME).orEmpty())
-        binding?.cityLayout?.error = null
+        binding.inputCity.setText(data.getStringExtra(CityPickerActivity.EXTRA_NAME).orEmpty())
+        binding.cityLayout.error = null
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         store = Store(this)
 
-        val b = ActivityVisitEditBinding.inflate(layoutInflater)
-        binding = b
+        binding = ActivityVisitEditBinding.inflate(layoutInflater)
+        val b = binding
         setContentView(b.root)
 
         b.btnBack.setOnClickListener { finish() }
-        b.footerVersion.text = getString(R.string.footer_version, BuildConfig.VERSION_NAME)
 
         editId = intent.getLongExtra(EXTRA_ID, 0L)
         val editing = editId != 0L
@@ -100,21 +101,16 @@ class VisitEditActivity : AppCompatActivity() {
         b.btnDelete.setOnClickListener { confirmDelete() }
     }
 
-    override fun onDestroy() {
-        binding = null
-        super.onDestroy()
-    }
-
     private fun openPicker() {
         picker.launch(Intent(this, CityPickerActivity::class.java))
     }
 
     private fun updateCounter(length: Int) {
-        binding?.textNoteCounter?.text = getString(R.string.edit_note_counter, length)
+        binding.textNoteCounter.text = getString(R.string.edit_note_counter, length)
     }
 
     private fun save() {
-        val b = binding ?: return
+        val b = binding
         b.textEditError.visibility = View.GONE
 
         val city = b.inputCity.text?.toString()?.trim().orEmpty()
@@ -152,38 +148,36 @@ class VisitEditActivity : AppCompatActivity() {
 
         setBusy(true)
         val id = editId
-        Async.run({ if (id == 0L) VisitRepo.create(token, draft) else VisitRepo.update(token, id, draft) }) { result ->
+        lifecycleScope.runIo({
+            if (id == 0L) VisitRepo.create(token, draft) else VisitRepo.update(token, id, draft)
+        }) { result ->
             setBusy(false)
             val e = result.exceptionOrNull()
             if (e == null) {
                 // 让列表知道要刷新（见 VisitsFragment 的 editResult）
                 setResult(Activity.RESULT_OK)
                 finish()
-                return@run
+                return@runIo
             }
             // 401 走统一流程；其余（「无权操作他人的记录」这类）显示在本页的提示位上，
             // 不用 Toast —— 表单还在，提示留在表单旁边更容易对照
             if (e is ApiException && e.code == 401) {
                 Session.expired(this)
-                return@run
+                return@runIo
             }
-            binding?.let { bd ->
-                bd.textEditError.text = e.message ?: getString(R.string.common_error)
-                bd.textEditError.visibility = View.VISIBLE
-            }
+            binding.textEditError.text = e.message ?: getString(R.string.common_error)
+            binding.textEditError.visibility = View.VISIBLE
         }
     }
 
     private fun setBusy(busy: Boolean) {
-        val b = binding ?: return
-        b.btnSave.isEnabled = !busy
-        b.btnDelete.isEnabled = !busy
-        b.editProgress.visibility = if (busy) View.VISIBLE else View.GONE
+        binding.btnSave.isEnabled = !busy
+        binding.btnDelete.isEnabled = !busy
+        binding.editProgress.visibility = if (busy) View.VISIBLE else View.GONE
     }
 
     private fun confirmDelete() {
-        val b = binding ?: return
-        val city = b.inputCity.text?.toString().orEmpty()
+        val city = binding.inputCity.text?.toString().orEmpty()
         AlertDialog.Builder(this)
             .setTitle(R.string.visits_delete_confirm_title)
             .setMessage(getString(R.string.visits_delete_confirm_message, city))
@@ -197,22 +191,20 @@ class VisitEditActivity : AppCompatActivity() {
         val id = editId
         if (id == 0L) return
         setBusy(true)
-        Async.run({ VisitRepo.delete(token, id) }) { result ->
+        lifecycleScope.runIo({ VisitRepo.delete(token, id) }) { result ->
             setBusy(false)
             val e = result.exceptionOrNull()
             if (e == null) {
                 setResult(Activity.RESULT_OK)
                 finish()
-                return@run
+                return@runIo
             }
             if (e is ApiException && e.code == 401) {
                 Session.expired(this)
-                return@run
+                return@runIo
             }
-            binding?.let { bd ->
-                bd.textEditError.text = e.message ?: getString(R.string.common_error)
-                bd.textEditError.visibility = View.VISIBLE
-            }
+            binding.textEditError.text = e.message ?: getString(R.string.common_error)
+            binding.textEditError.visibility = View.VISIBLE
         }
     }
 

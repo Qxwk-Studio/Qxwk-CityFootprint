@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- app 外壳（设计稿的 .app-board）：顶栏 + 内容 + 页脚 + 底部导航，四段纵向排布。
+<!-- app 外壳（设计稿的 .app-board）：顶栏 + 内容 + 底部导航，三段纵向排布。
      顶栏与底栏都是设计稿的 sidebar 底色（浅蓝），内容区是 background 白。
-     顶栏/底栏各有一条 1px 分隔线（顶栏用 sidebar-border，页脚上沿用 border），与设计稿一致。
+     顶栏/底栏各有一条 1px 分隔线（都用 sidebar-border），与设计稿一致。
+     原先顶部与底部导航之间还有一条品牌页脚，已按需求移除。
 
      顶栏右侧那颗「打开我的」按钮（设计稿 .app-bar-action）点一下就切到「我的」tab，
      它只是切 tab 的另一种入口，所以不给它单独开 Activity。 -->
@@ -24,8 +25,8 @@
             android:layout_height="56dp"
             android:gravity="center_vertical"
             android:orientation="horizontal"
-            android:paddingStart="12dp"
-            android:paddingEnd="12dp">
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp">
 
             <TextView
                 android:id="@+id/title"
@@ -61,48 +62,6 @@
         android:layout_height="0dp"
         android:layout_weight="1" />
 
-    <!-- ===== 页脚 ===== -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@color/card"
-        android:orientation="vertical">
-
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:background="@color/border" />
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:paddingStart="12dp"
-            android:paddingTop="8dp"
-            android:paddingEnd="12dp"
-            android:paddingBottom="8dp">
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:ellipsize="end"
-                android:maxLines="1"
-                android:text="@string/footer_brand"
-                android:textColor="@color/muted_fg"
-                android:textSize="11sp" />
-
-            <TextView
-                android:id="@+id/footerVersion"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:textColor="@color/muted_fg"
-                android:textSize="11sp" />
-        </LinearLayout>
-    </LinearLayout>
-
     <!-- ===== 底部导航 ===== -->
     <LinearLayout
         android:layout_width="match_parent"
@@ -116,12 +75,13 @@
             android:background="@color/sidebar_border" />
 
         <!-- 五个 tab 都在 menu/bottom_nav.xml 里定义（图标 + 文案）；
-             选中态样式见 themes.xml 的 Widget.App.BottomNav（主色药丸 + 白字） -->
+             选中态样式见 themes.xml 的 Widget.App.BottomNav（主色药丸 + 白字）。
+             高度写死 56dp（M3 默认约 80dp，需求要更矮）——图标 + 文案在 56dp 内仍放得下 -->
         <com.google.android.material.bottomnavigation.BottomNavigationView
             android:id="@+id/bottomNav"
             style="@style/Widget.App.BottomNav"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="56dp"
             android:paddingStart="4dp"
             android:paddingEnd="4dp"
             app:labelVisibilityMode="labeled"

@@ -26,14 +26,15 @@ import top.qxwkstudio.travel.logic.CitySearch
  */
 class CityPickerActivity : AppCompatActivity() {
 
-    private var binding: ActivityCityPickerBinding? = null
+    // 非空 lateinit：Activity 与视图同生共死，不必在 onDestroy 里置 null
+    private lateinit var binding: ActivityCityPickerBinding
     private lateinit var adapter: CityAdapter
     private var all: List<City> = emptyList()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val b = ActivityCityPickerBinding.inflate(layoutInflater)
-        binding = b
+        binding = ActivityCityPickerBinding.inflate(layoutInflater)
+        val b = binding
         setContentView(b.root)
 
         b.btnBack.setOnClickListener { finish() }
@@ -54,16 +55,11 @@ class CityPickerActivity : AppCompatActivity() {
         })
     }
 
-    override fun onDestroy() {
-        binding = null
-        super.onDestroy()
-    }
-
     /** 过滤是本地纯函数（见 logic/CitySearch），边打边过滤，不必等 ime 的搜索键。 */
     private fun applyFilter(query: String) {
         val matched = CitySearch.filter(all, query)
         adapter.submit(matched)
-        binding?.textCityEmpty?.visibility = if (matched.isEmpty()) View.VISIBLE else View.GONE
+        binding.textCityEmpty.visibility = if (matched.isEmpty()) View.VISIBLE else View.GONE
     }
 
     private fun pick(city: City) {

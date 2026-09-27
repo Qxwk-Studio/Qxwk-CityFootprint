@@ -8,6 +8,7 @@ import android.view.ViewGroup
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import top.qxwkstudio.travel.R
 import top.qxwkstudio.travel.data.CityStore
@@ -69,24 +70,24 @@ class VisitsFragment : Fragment() {
             Session.expired(requireActivity())
             return
         }
-        val b = _binding ?: return
-        b.progress.visibility = View.VISIBLE
-        b.textEmpty.visibility = View.GONE
+        binding.progress.visibility = View.VISIBLE
+        binding.textEmpty.visibility = View.GONE
 
-        Async.run({ VisitRepo.myVisits(token) }) { result ->
-            val bd = _binding ?: return@run
-            bd.progress.visibility = View.GONE
+        // 挂在 viewLifecycleOwner 上：页面销毁时协程自动取消，
+        // 所以回调里不用再判 binding 是否还在（见 ui/Coroutines 的说明）
+        viewLifecycleOwner.lifecycleScope.runIo({ VisitRepo.myVisits(token) }) { result ->
+            binding.progress.visibility = View.GONE
             // 下拉刷新转圈必须停：失败时不停，用户会以为还在加载
-            bd.swipe.isRefreshing = false
+            binding.swipe.isRefreshing = false
 
             val visits = result.getOrNull()
             if (visits == null) {
                 // 401 在这条链路里统一处理（清 token 回登录页 + 只弹一次），其余弹后端文案
                 activity?.handleApiFailure(result.exceptionOrNull() ?: RuntimeException())
-                return@run
+                return@runIo
             }
             adapter.submit(visits)
-            bd.textEmpty.visibility = if (visits.isEmpty()) View.VISIBLE else View.GONE
+            binding.textEmpty.visibility = if (visits.isEmpty()) View.VISIBLE else View.GONE
             renderOverview(visits)
         }
     }
@@ -99,23 +100,22 @@ class VisitsFragment : Fragment() {
      *  - 日期直接按字符串排序取首尾（数据形如 2024 或 2024-08，字典序即时间序）。
      */
     private fun renderOverview(visits: List<Visit>) {
-        val b = _binding ?: return
         val cityNames = visits.map { it.city }.distinct()
-        b.valueCities.text = cityNames.size.toString()
-        b.valueVisits.text = visits.size.toString()
+        binding.valueCities.text = cityNames.size.toString()
+        binding.valueVisits.text = visits.size.toString()
 
         val allCities = CityStore.all(requireContext())
         val unknown = getString(R.string.visits_overview_unknown_province)
         val provinces = cityNames.map { name ->
             allCities.firstOrNull { it.name == name }?.province?.takeIf { it.isNotBlank() } ?: unknown
         }.toSet()
-        b.valueProvinces.text = provinces.size.toString()
+        binding.valueProvinces.text = provinces.size.toString()
 
         val dates = visits.mapNotNull { it.visitDate }.filter { it.isNotBlank() }.sorted()
-        b.valueRange.text = if (dates.isEmpty()) "—" else "${dates.first()} → ${dates.last()}"
+        binding.valueRange.text = if (dates.isEmpty()) "—" else "${dates.first()} → ${dates.last()}"
 
         // 标题行右侧那条「共 N 条，最近更新 YYYY-MM」：没有带日期的足迹时就只报条数
-        b.textListSubtitle.text = if (dates.isEmpty()) {
+        binding.textListSubtitle.text = if (dates.isEmpty()) {
             getString(R.string.visits_list_subtitle_plain, visits.size)
         } else {
             getString(R.string.visits_list_subtitle, visits.size, dates.last())
@@ -134,15 +134,13 @@ class VisitsFragment : Fragment() {
 
     private fun delete(visit: Visit) {
         val token = store.token ?: return
-        val b = _binding ?: return
-        b.progress.visibility = View.VISIBLE
-        Async.run({ VisitRepo.delete(token, visit.id) }) { result ->
-            val bd = _binding ?: return@run
+        binding.progress.visibility = View.VISIBLE
+        viewLifecycleOwner.lifecycleScope.runIo({ VisitRepo.delete(token, visit.id) }) { result ->
             val e = result.exceptionOrNull()
             if (e != null) {
-                bd.progress.visibility = View.GONE
+                binding.progress.visibility = View.GONE
                 activity?.handleApiFailure(e)
-                return@run
+                return@runIo
             }
             // 删成功后重新拉一次，而不是本地移除：以后端为准（也顺带同步别人改过的数据）
             load()

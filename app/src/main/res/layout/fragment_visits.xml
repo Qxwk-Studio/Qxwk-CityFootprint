@@ -16,9 +16,9 @@
         android:id="@+id/cardOverview"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginStart="12dp"
-        android:layout_marginTop="12dp"
-        android:layout_marginEnd="12dp">
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="16dp">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -128,9 +128,9 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginStart="12dp"
-        android:layout_marginTop="12dp"
-        android:layout_marginEnd="12dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="16dp"
         android:gravity="center_vertical"
         android:orientation="horizontal">
 
@@ -200,10 +200,10 @@
                     android:id="@+id/list"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="12dp"
+                    android:layout_marginStart="16dp"
                     android:layout_marginTop="4dp"
-                    android:layout_marginEnd="12dp"
-                    android:layout_marginBottom="12dp"
+                    android:layout_marginEnd="16dp"
+                    android:layout_marginBottom="16dp"
                     android:background="@drawable/bg_card"
                     android:clipToPadding="false"
                     android:nestedScrollingEnabled="false" />

@@ -3,7 +3,7 @@ package top.qxwkstudio.travel.ui
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
-import top.qxwkstudio.travel.BuildConfig
+import androidx.lifecycle.lifecycleScope
 import top.qxwkstudio.travel.R
 import top.qxwkstudio.travel.data.Auth
 import top.qxwkstudio.travel.data.MeResult
@@ -21,7 +21,9 @@ import top.qxwkstudio.travel.databinding.ActivityMainBinding
  */
 class MainActivity : AppCompatActivity() {
 
-    private var binding: ActivityMainBinding? = null
+    // 非空 lateinit：Activity 与视图同生共死（不必像 Fragment 那样在 onDestroyView 里置 null）。
+    // 异步回调挂在 lifecycleScope 上（onDestroy 取消），所以回调里直接用 binding 是安全的。
+    private lateinit var binding: ActivityMainBinding
     private lateinit var store: Store
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -35,8 +37,8 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        val b = ActivityMainBinding.inflate(layoutInflater)
-        binding = b
+        binding = ActivityMainBinding.inflate(layoutInflater)
+        val b = binding
         setContentView(b.root)
 
         b.bottomNav.setOnItemSelectedListener { item ->
@@ -47,8 +49,6 @@ class MainActivity : AppCompatActivity() {
 
         // 顶栏右上角那颗「打开我的」：与底部「我的」是同一个入口，直接切 tab
         b.btnProfile.setOnClickListener { b.bottomNav.selectedItemId = R.id.tab_profile }
-        // 页脚右侧的版本号：与「我的」页显示的是同一个 BuildConfig.VERSION_NAME
-        b.footerVersion.text = getString(R.string.footer_version, BuildConfig.VERSION_NAME)
 
         if (savedInstanceState == null) {
             // 选中态交给 BottomNavigationView 自己的 item 状态 —— 选中会回调上面的 listener，
@@ -63,11 +63,6 @@ class MainActivity : AppCompatActivity() {
         verifySession()
     }
 
-    override fun onDestroy() {
-        binding = null
-        super.onDestroy()
-    }
-
     /**
      * 拿本机 token 找足迹后端要一次 /api/me：
      *  - 200 → 顺手刷新昵称/头像（通行证那边可能改过）；
@@ -76,7 +71,8 @@ class MainActivity : AppCompatActivity() {
      */
     private fun verifySession() {
         val token = store.token ?: return
-        Async.run({ Auth.me(token) }) { result ->
+        // 挂在 lifecycleScope 上：这一屏销毁时请求自动取消，回调里不用再判 binding
+        lifecycleScope.runIo({ Auth.me(token) }) { result ->
             when (val me = result.getOrNull()) {
                 is MeResult.Ok -> store.saveMe(me.me)
                 MeResult.Unauthorized -> Session.expired(this)

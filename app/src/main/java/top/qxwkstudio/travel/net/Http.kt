@@ -23,7 +23,8 @@ class HttpResult(val code: Int, val body: String) {
  * 换来的是一份体积不小的依赖 + 一套 R8 规则 + 一个要跟着升的版本 —— 收益与维护成本不成比例。
  * 代价是并发、连接池这些要自己操心；这里也确实不需要（同一个页面最多同时发两个请求）。
  *
- * 约定：**本方法只在工作线程调用**（见 ui/Async），主线程发网络会抛 NetworkOnMainThreadException。
+ * 约定：**本方法只在工作线程调用**（见 ui/Coroutines 的 runIo，它把 work 放在 Dispatchers.IO 上），
+ * 主线程发网络会抛 NetworkOnMainThreadException。
  */
 object Http {
     const val NETWORK_FAILED = -1

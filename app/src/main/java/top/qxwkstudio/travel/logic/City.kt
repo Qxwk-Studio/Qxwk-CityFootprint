@@ -1,13 +1,25 @@
 package top.qxwkstudio.travel.logic
 
+import kotlinx.serialization.Serializable
+
 /**
  * 城市数据模型。数据来自 assets/cities.json，那份文件由 tools/gen-cities.mjs 从
  * docs/cities.js（名称/省份/坐标）与 docs/city-codes.js（名称 → adcode）生成，可重复运行。
  *
  * adcode 可能是 null：源数据里有县级市（格尔木、伊宁、库尔勒…）在 city-codes.js 里没有记录，
  * 地图上就取不到边界，只能退回「只画标记」这种降级形态（见 ui/MapFragment）。
+ *
+ * 直接标 @Serializable 当作 assets/cities.json 的解析模型：name/lat/lng 是必填（生成脚本会校验），
+ * 其余给默认值，缺字段/给 null 也不会解析失败（见 data/Json.kt 的 coerceInputValues）。
  */
-data class City(val name: String, val province: String, val lat: Double, val lng: Double, val adcode: Int?)
+@Serializable
+data class City(
+    val name: String,
+    val province: String = "",
+    val lat: Double,
+    val lng: Double,
+    val adcode: Int? = null,
+)
 
 /**
  * 城市搜索。刻意做成纯函数（不碰 Context / 不读 assets），单测才好直接喂数据进来。

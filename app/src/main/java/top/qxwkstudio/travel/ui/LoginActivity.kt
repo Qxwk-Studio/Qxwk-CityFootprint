@@ -4,7 +4,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
-import top.qxwkstudio.travel.BuildConfig
+import androidx.lifecycle.lifecycleScope
 import top.qxwkstudio.travel.R
 import top.qxwkstudio.travel.data.Auth
 import top.qxwkstudio.travel.data.LoginResult
@@ -20,7 +20,9 @@ import top.qxwkstudio.travel.databinding.ActivityLoginBinding
  */
 class LoginActivity : AppCompatActivity() {
 
-    private var binding: ActivityLoginBinding? = null
+    // 非空 lateinit：Activity 与它的视图同生共死，不像 Fragment 需要在 onDestroyView 里置 null。
+    // 异步回调挂在 lifecycleScope 上（onDestroy 时取消），所以回调里直接用 binding 是安全的。
+    private lateinit var binding: ActivityLoginBinding
     private lateinit var store: Store
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -34,20 +36,13 @@ class LoginActivity : AppCompatActivity() {
             return
         }
 
-        val b = ActivityLoginBinding.inflate(layoutInflater)
-        binding = b
-        setContentView(b.root)
-        b.footerVersion.text = getString(R.string.footer_version, BuildConfig.VERSION_NAME)
-        b.btnLogin.setOnClickListener { submit() }
-    }
-
-    override fun onDestroy() {
-        binding = null
-        super.onDestroy()
+        binding = ActivityLoginBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+        binding.btnLogin.setOnClickListener { submit() }
     }
 
     private fun submit() {
-        val b = binding ?: return
+        val b = binding
         val account = b.inputAccount.text?.toString()?.trim().orEmpty()
         val password = b.inputPassword.text?.toString().orEmpty()
 
@@ -67,13 +62,14 @@ class LoginActivity : AppCompatActivity() {
         }
 
         setBusy(true)
-        Async.run({ Auth.login(account, password) }) { result ->
+        // 挂在 Activity 的 lifecycleScope 上：退出这一屏时请求自动取消，回调里不必再判 binding
+        lifecycleScope.runIo({ Auth.login(account, password) }) { result ->
             val login = result.getOrNull()
             if (login == null) {
                 // 连 work 块本身都抛了（不是通行证答错）：用兜底文案，不要把 exception 的 toString 甩给用户
                 setBusy(false)
                 showError(result.exceptionOrNull()?.message ?: getString(R.string.common_error))
-                return@run
+                return@runIo
             }
             when (login) {
                 is LoginResult.Ok -> {
@@ -96,15 +92,13 @@ class LoginActivity : AppCompatActivity() {
     }
 
     private fun setBusy(busy: Boolean) {
-        val b = binding ?: return
-        b.btnLogin.isEnabled = !busy
-        b.loginProgress.visibility = if (busy) View.VISIBLE else View.GONE
+        binding.btnLogin.isEnabled = !busy
+        binding.loginProgress.visibility = if (busy) View.VISIBLE else View.GONE
     }
 
     private fun showError(message: String) {
-        val b = binding ?: return
-        b.textLoginError.text = message
-        b.textLoginError.visibility = View.VISIBLE
+        binding.textLoginError.text = message
+        binding.textLoginError.visibility = View.VISIBLE
     }
 
     private fun goMain() {

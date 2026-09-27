@@ -11,8 +11,6 @@ Qxwk City Footprint 的原生安卓客户端。登录走「Qxwk 通行证」，�
 | SDK | compileSdk 34 / minSdk 24 / targetSdk 34，Java 17 |
 | 构建 | AGP 8.2.2 + Kotlin 1.9.22 + Gradle 8.2 |
 
-技术栈与同工作室的 [`Class-Assistant/android`](../../Class-Assistant/android) 对齐，两边一起升级。
-
 **工程布局：Gradle 根就是 `app/` 这一层**（`settings.gradle.kts` 在 `app/` 下，`com.android.application`
 直接挂在根项目上，源集是 `app/src/main/...`，没有 `:app` 子模块）。所以所有命令都要**在 `app/` 目录里**跑：
 
@@ -22,29 +20,28 @@ cd app
 ./gradlew assembleDebug        # 需要本机有 Android SDK
 ```
 
-## 本地构建
-
-**这台机器上没有 Android SDK，也没有 JDK**，所以本地**编不了**：安卓侧的改动只能靠 CI 验证
-（`.github/workflows/build-android.yml`）。改动推上去后到 Actions 里 `Build Android APK` →
-`Run workflow`，填 `version_name` / `version_code` 触发。
-
-能本地跑的两件事：
-
-```bash
-node app/tools/gen-cities.mjs        # 重新生成城市表（见下）
-# XML 是否 well-formed（PowerShell）：
-#   Get-ChildItem -Recurse app/src/main/res -Include *.xml | % { [xml](Get-Content $_.FullName) }
-```
-
 ## 依赖取舍
 
-**刻意压到最少**，只有：`core-ktx`、`appcompat`、`material`、`recyclerview`、`swiperefreshlayout`、`osmdroid`、`junit`（测试）。
+**压得很小**：`core-ktx`、`appcompat`、`material`、`recyclerview`、`swiperefreshlayout`、`osmdroid`、
+`kotlinx-coroutines-android` + `lifecycle-runtime-ktx`、`kotlinx-serialization-json`、`junit`（测试）。
 
-- 网络用 JDK 的 `HttpURLConnection`、JSON 用 Android 自带的 `org.json`（见 `net/Http.kt` 与 `data/Json.kt`）：
-  一共十来个接口、全是「点一下发一次」，引 Retrofit/OkHttp/Moshi 要多一份体积 + 一套 R8 规则 + 一个要跟着升的版本。
+- **网络**仍是 JDK 的 `HttpURLConnection`（`net/Http.kt`），**不引** Retrofit/OkHttp：
+  一共十来个接口、全是「点一下发一次」，Retrofit 的注解接口 + converter 换不到什么，
+  OkHttp 的连接池/拦截器也用不上。
+- **JSON** 从 `org.json` 换成 `kotlinx-serialization`（`@Serializable` 数据类，见 `logic/Models.kt` 与 `data/Json.kt`）：
+  序列化器在**编译期**生成、运行时不用反射，所以**不需要手写 keep 规则**（这是相对 Gson/Moshi 的主要好处）。
+  后端那个「没有布尔类型、`is_private` 存 0/1」的怪癖用一个自定义序列化器表达
+  （`IntBooleanSerializer`），界面上只见到 Boolean。
+- **异步**用协程 + lifecycle（`ui/Coroutines.kt` 的 `runIo`）：挂在 `viewLifecycleOwner.lifecycleScope`
+  （Fragment）或 `lifecycleScope`（Activity）上，**页面销毁时请求自动取消** —— 因此各页不再需要
+  `_binding ?: return` 那一堆兜底判空。退出登录那次「尽力而为」的撤销请求挂在进程级 `appScope` 上
+  （挂 UI scope 会被页面销毁一起取消，那就发不出去了）。
+- **边界 GeoJSON 仍是手工解析**（`ui/GeoJson.kt`，用 Android 自带的 `org.json`）：坐标是异构嵌套数组，
+  换成 kotlinx 也得手动遍历 `JsonElement`，省不下多少，而这里只要 Polygon / MultiPolygon 的坐标。
 - release 开了 R8（`isMinifyEnabled` + `isShrinkResources`）。**风险点在 `proguard-rules.pro`**：
   `fragment_map.xml` 里按类名写死的 `org.osmdroid.views.MapView` 走的是 LayoutInflater 反射路径，
   名字被改掉会在**打开地图页时直接崩**，所以那里显式 keep 了地图相关包。
+  （kotlinx-serialization 与协程都不需要手写 keep 规则。）
 
 ## 后端与域名（要改地址只改一处）
 
@@ -155,9 +152,11 @@ app/
     │   └── java/top/qxwkstudio/travel/
     │       ├── Api.kt          # 域名与接口路径的唯一出处
     │       ├── logic/          # 纯 Kotlin：不 import android.*，所以能在 JVM 上单测
-    │       ├── net/ data/      # HttpURLConnection / org.json / SharedPreferences / 各接口
-    │       └── ui/             # Activity / Fragment / Adapter / 401 统一处理
-    └── test/java/top/qxwkstudio/travel/logic/   # 单测：成就边界、visit_date、城市搜索
+    │       ├── net/ data/      # HttpURLConnection / kotlinx-serialization / SharedPreferences / 各接口
+    │       └── ui/             # Activity / Fragment / Adapter / 协程封装 / 401 统一处理
+    └── test/java/top/qxwkstudio/travel/         # 单测（JVM，不需要设备）：
+        ├── logic/   # 成就边界、visit_date、城市搜索
+        └── data/    # JsonWireTest：请求/响应报文字段契约
 ```
 
 > **启动图标是生成物**：`res/mipmap-*/ic_launcher.png` 五档（mdpi 48 / hdpi 72 / xhdpi 96 /

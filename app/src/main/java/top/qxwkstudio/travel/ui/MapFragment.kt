@@ -8,6 +8,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import org.osmdroid.config.Configuration
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
@@ -107,25 +108,23 @@ class MapFragment : Fragment() {
             Session.expired(requireActivity())
             return
         }
-        val b = _binding ?: return
-        b.progress.visibility = View.VISIBLE
+        binding.progress.visibility = View.VISIBLE
 
-        Async.run({ VisitRepo.myVisits(token) }) { result ->
-            val bd = _binding ?: return@run
-            bd.progress.visibility = View.GONE
+        viewLifecycleOwner.lifecycleScope.runIo({ VisitRepo.myVisits(token) }) { result ->
+            binding.progress.visibility = View.GONE
 
             val visits = result.getOrNull()
             if (visits == null) {
                 activity?.handleApiFailure(result.exceptionOrNull() ?: RuntimeException())
-                return@run
+                return@runIo
             }
             loaded = true
-            bd.textEmpty.visibility = if (visits.isEmpty()) View.VISIBLE else View.GONE
+            binding.textEmpty.visibility = if (visits.isEmpty()) View.VISIBLE else View.GONE
 
-            bd.map.overlays.removeAll(markerOverlays)
+            binding.map.overlays.removeAll(markerOverlays)
             markerOverlays.clear()
             for (visit in visits) {
-                val marker = Marker(bd.map).apply {
+                val marker = Marker(binding.map).apply {
                     position = GeoPoint(visit.lat, visit.lng)
                     title = visit.city
                     // 默认那个图钉在 OSM 底图上几乎看不见，换成我们自己的脚印图标
@@ -137,16 +136,14 @@ class MapFragment : Fragment() {
                     }
                 }
                 markerOverlays.add(marker)
-                bd.map.overlays.add(marker)
+                binding.map.overlays.add(marker)
             }
-            bd.map.invalidate()
+            binding.map.invalidate()
         }
     }
 
     /** 点标记 → 取该城市的边界。每次点新的先清掉上一次的：同一屏只画一座城市（需求就是「只画被点中的」）。 */
     private fun showBoundary(cityName: String) {
-        // 页面已销毁就不必再发这次边界请求（下面各步还会各自兜一次 null）
-        if (_binding == null) return
         clearBoundary()
 
         // adcode 来自本机城市表（与网页版同源）。县级市在源数据里没有 adcode → 拿不到边界，降级
@@ -157,18 +154,18 @@ class MapFragment : Fragment() {
         }
 
         showBoundaryText(getString(R.string.map_loading))
-        Async.run({ VisitRepo.geoJson(adcode) }) { result ->
-            val bd = _binding ?: return@run
+        // 与 map 视图一样挂在 viewLifecycleOwner 上：页面销毁时这次边界请求会自动取消
+        viewLifecycleOwner.lifecycleScope.runIo({ VisitRepo.geoJson(adcode) }) { result ->
             val json = result.getOrNull()
             if (json == null) {
                 // 边界拉不到时**不清标记**：标记是主信息，边界只是补充
-                bd.textBoundary.text = getString(R.string.map_boundary_failed)
-                return@run
+                binding.textBoundary.text = getString(R.string.map_boundary_failed)
+                return@runIo
             }
             val polygons = GeoJson.polygons(json)
             if (polygons.isEmpty()) {
-                bd.textBoundary.text = getString(R.string.map_no_boundary, cityName)
-                return@run
+                binding.textBoundary.text = getString(R.string.map_no_boundary, cityName)
+                return@runIo
             }
             for (ring in polygons) {
                 val polygon = Polygon().apply {
@@ -182,24 +179,22 @@ class MapFragment : Fragment() {
                     title = cityName
                 }
                 boundaryOverlays.add(polygon)
-                bd.map.overlays.add(polygon)
+                binding.map.overlays.add(polygon)
             }
-            bd.map.invalidate()
-            bd.textBoundary.visibility = View.GONE
+            binding.map.invalidate()
+            binding.textBoundary.visibility = View.GONE
         }
     }
 
     private fun showBoundaryText(text: String) {
-        val b = _binding ?: return
-        b.textBoundary.text = text
-        b.textBoundary.visibility = View.VISIBLE
+        binding.textBoundary.text = text
+        binding.textBoundary.visibility = View.VISIBLE
     }
 
     private fun clearBoundary() {
-        val b = _binding ?: return
-        b.map.overlays.removeAll(boundaryOverlays)
+        binding.map.overlays.removeAll(boundaryOverlays)
         boundaryOverlays.clear()
-        b.map.invalidate()
+        binding.map.invalidate()
     }
 
     private companion object {

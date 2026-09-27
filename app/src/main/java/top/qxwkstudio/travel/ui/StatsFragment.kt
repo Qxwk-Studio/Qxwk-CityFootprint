@@ -5,6 +5,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import top.qxwkstudio.travel.R
 import top.qxwkstudio.travel.data.ApiException
 import top.qxwkstudio.travel.data.Store
@@ -62,58 +63,54 @@ class StatsFragment : Fragment() {
             Session.expired(requireActivity())
             return
         }
-        val b = _binding ?: return
-        b.progress.visibility = View.VISIBLE
-        b.textError.visibility = View.GONE
+        binding.progress.visibility = View.VISIBLE
+        binding.textError.visibility = View.GONE
 
-        Async.run({
+        viewLifecycleOwner.lifecycleScope.runIo({
             // 「我打卡的城市」与成就都基于自己的足迹；统计那份是公开接口
             val visits = VisitRepo.myVisits(token)
             val stats = VisitRepo.stats()
             visits to stats
         }) { result ->
-            val bd = _binding ?: return@run
-            bd.progress.visibility = View.GONE
+            binding.progress.visibility = View.GONE
 
             val pair = result.getOrNull()
             if (pair == null) {
                 val e = result.exceptionOrNull() ?: RuntimeException()
                 if (e is ApiException && e.code == 401) {
                     Session.expired(requireActivity())
-                    return@run
+                    return@runIo
                 }
                 // 统计页的错误就地显示（这一页本来就有位置），不弹 Toast
-                bd.textError.text = e.message ?: getString(R.string.common_error)
-                bd.textError.visibility = View.VISIBLE
-                return@run
+                binding.textError.text = e.message ?: getString(R.string.common_error)
+                binding.textError.visibility = View.VISIBLE
+                return@runIo
             }
             render(pair.first, pair.second)
         }
     }
 
     private fun render(visits: List<Visit>, stats: SiteStats) {
-        val b = _binding ?: return
-
-        b.valueVisits.text = stats.totalVisits.toString()
-        b.valueCities.text = stats.totalCities.toString()
+        binding.valueVisits.text = stats.totalVisits.toString()
+        binding.valueCities.text = stats.totalCities.toString()
         // 与网页版同口径：users 是「users LEFT JOIN visits」的完整表，直接取条数（stats.html:421）
-        b.valueUsers.text = stats.users.size.toString()
+        binding.valueUsers.text = stats.users.size.toString()
         // 同一座城市打卡多次只算一座
-        b.valueMyCities.text = visits.map { it.city }.distinct().size.toString()
+        binding.valueMyCities.text = visits.map { it.city }.distinct().size.toString()
         // 管理员看到的数字含私密足迹，必须说明白，否则会以为统计把别人的私密记录抖出来了
-        b.textAdminNote.visibility = if (stats.isAdmin) View.VISIBLE else View.GONE
+        binding.textAdminNote.visibility = if (stats.isAdmin) View.VISIBLE else View.GONE
 
-        b.textRankTop.text = getString(R.string.stats_rank_top, RANK_DEFAULT)
+        binding.textRankTop.text = getString(R.string.stats_rank_top, RANK_DEFAULT)
 
-        b.rankContainer.removeAllViews()
+        binding.rankContainer.removeAllViews()
         stats.cityRank.take(RANK_DEFAULT).forEachIndexed { index, row ->
-            val item = ItemRankBinding.inflate(layoutInflater, b.rankContainer, false)
+            val item = ItemRankBinding.inflate(layoutInflater, binding.rankContainer, false)
             item.textRank.text = (index + 1).toString()
             item.textCity.text = row.city
             // 次数与人数各占一列，和表头那两列左右对齐（设计稿的 rank-row）
             item.textCount.text = row.count.toString()
             item.textPeople.text = row.people.toString()
-            b.rankContainer.addView(item.root)
+            binding.rankContainer.addView(item.root)
         }
     }
 

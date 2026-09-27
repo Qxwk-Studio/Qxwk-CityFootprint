@@ -6,6 +6,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import top.qxwkstudio.travel.R
 import top.qxwkstudio.travel.data.ApiException
 import top.qxwkstudio.travel.data.Store
@@ -59,50 +60,47 @@ class AchievementsFragment : Fragment() {
             Session.expired(requireActivity())
             return
         }
-        val b = _binding ?: return
-        b.progress.visibility = View.VISIBLE
-        b.textError.visibility = View.GONE
+        binding.progress.visibility = View.VISIBLE
+        binding.textError.visibility = View.GONE
 
-        Async.run({ VisitRepo.myVisits(token) }) { result ->
-            val bd = _binding ?: return@run
-            bd.progress.visibility = View.GONE
+        viewLifecycleOwner.lifecycleScope.runIo({ VisitRepo.myVisits(token) }) { result ->
+            binding.progress.visibility = View.GONE
 
             val visits = result.getOrNull()
             if (visits == null) {
                 val e = result.exceptionOrNull() ?: RuntimeException()
                 if (e is ApiException && e.code == 401) {
                     Session.expired(requireActivity())
-                    return@run
+                    return@runIo
                 }
                 // 这一页本来就有位置，错误就地显示，不弹 Toast
-                bd.textError.text = e.message ?: getString(R.string.common_error)
-                bd.textError.visibility = View.VISIBLE
-                return@run
+                binding.textError.text = e.message ?: getString(R.string.common_error)
+                binding.textError.visibility = View.VISIBLE
+                return@runIo
             }
             render(visits)
         }
     }
 
     private fun render(visits: List<Visit>) {
-        val b = _binding ?: return
         val groups = Achievements.all(visits.map { it.city })
         val (done, total) = Achievements.progress(groups)
-        b.textProgressRatio.text = getString(R.string.achievement_progress_ratio, done, total)
+        binding.textProgressRatio.text = getString(R.string.achievement_progress_ratio, done, total)
         // 进度条按 0-100 整数百分比，total 为 0 时不画（NaN/除零都不该发生）
-        b.achievementBar.progress = if (total > 0) done * 100 / total else 0
+        binding.achievementBar.progress = if (total > 0) done * 100 / total else 0
 
-        b.achievementsContainer.removeAllViews()
+        binding.achievementsContainer.removeAllViews()
         groups.forEachIndexed { groupIndex, group ->
-            val header = ItemAchievementGroupBinding.inflate(layoutInflater, b.achievementsContainer, false)
+            val header = ItemAchievementGroupBinding.inflate(layoutInflater, binding.achievementsContainer, false)
             header.textGroupTitle.text = group.title
             header.textGroupCount.text =
                 getString(R.string.achievement_progress_ratio, group.items.count { it.done }, group.items.size)
             // 第一组上方不画分隔线（前面就是进度条）
             header.groupTopDivider.visibility = if (groupIndex == 0) View.GONE else View.VISIBLE
-            b.achievementsContainer.addView(header.root)
+            binding.achievementsContainer.addView(header.root)
 
             group.items.forEachIndexed { itemIndex, achievement ->
-                val item = ItemAchievementBinding.inflate(layoutInflater, b.achievementsContainer, false)
+                val item = ItemAchievementBinding.inflate(layoutInflater, binding.achievementsContainer, false)
                 item.textIcon.text = achievement.icon
                 item.textName.text = achievement.name
                 item.textDesc.text = achievement.desc
@@ -117,7 +115,7 @@ class AchievementsFragment : Fragment() {
                 // 每组第一条不画顶部分隔线（分组标题已经把它和上一条隔开了）
                 if (itemIndex == 0) item.root.setBackgroundResource(0)
 
-                b.achievementsContainer.addView(item.root)
+                binding.achievementsContainer.addView(item.root)
             }
         }
     }

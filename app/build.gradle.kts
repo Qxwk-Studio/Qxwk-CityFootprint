@@ -5,6 +5,9 @@
 plugins {
     id("com.android.application") version "8.2.2"
     id("org.jetbrains.kotlin.android") version "1.9.22"
+    // kotlinx.serialization 的编译器插件：序列化器在**编译期**生成，运行时不用反射，
+    // 所以 R8 不需要额外 keep 规则（这正是不选 Gson/Moshi 的原因）
+    id("org.jetbrains.kotlin.plugin.serialization") version "1.9.22"
 }
 
 android {
@@ -71,13 +74,24 @@ android {
 }
 
 dependencies {
-    // 依赖刻意压到最少：网络与 JSON 分别是 JDK 的 HttpURLConnection 与 Android 自带的 org.json，
-    // 不引 Retrofit/OkHttp/Moshi（多一份依赖就多一份体积、R8 规则与升级风险），理由写在 README 的「依赖取舍」。
+    // 依赖仍然压得很小：网络还是 JDK 的 HttpURLConnection（**不引** Retrofit/OkHttp），
+    // JSON 从 org.json 换成 kotlinx-serialization（编译期生成、无反射、无需 keep 规则），
+    // 异步从裸 Thread 换成协程 + lifecycle（页面销毁自动取消请求）。
+    // 取舍理由写在 README 的「依赖取舍」。
     implementation("androidx.core:core-ktx:1.12.0")
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("com.google.android.material:material:1.11.0")
     implementation("androidx.recyclerview:recyclerview:1.3.2")
     implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
+
+    // 协程 + lifecycle：把「后台跑一段活、回主线程交结果」绑到页面生命周期上。
+    // lifecycle-runtime-ktx 提供 lifecycleScope / viewLifecycleOwner.lifecycleScope，
+    // 页面销毁时协程自动取消 —— 这正是各页不再需要 `_binding ?: return` 兜底的原因
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.2")
+
+    // JSON：@Serializable 数据类 + 编译期序列化器（见 data/Json.kt）
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.2")
 
     // 地图选型见 README：osmdroid 是纯原生 Android View 的 OSM 地图，不需要任何 API key，
     // 与「界面本身和地图都要原生」的要求一致。6.1.20 是它在 Maven Central 上的最后一个正式版

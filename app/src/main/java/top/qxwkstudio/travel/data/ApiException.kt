@@ -1,6 +1,6 @@
 package top.qxwkstudio.travel.data
 
-import org.json.JSONObject
+import kotlinx.serialization.Serializable
 import top.qxwkstudio.travel.net.Http
 import top.qxwkstudio.travel.net.HttpResult
 
@@ -18,8 +18,15 @@ import top.qxwkstudio.travel.net.HttpResult
  */
 class ApiException(val code: Int, message: String) : Exception(message)
 
+/** 后端出错时的统一报文：`{ "error": "..." }`（worker.js 的 error() 与 lib.js 都是这个形状）。 */
+@Serializable
+private data class ErrorBody(val error: String? = null)
+
 /** 从失败响应里抽出能给用户看的一句话；后端没给 error 字段时用调用方的兜底文案。 */
 internal fun apiException(result: HttpResult, fallback: String): ApiException {
-    val fromServer = runCatching { JSONObject(result.body).strOrNull("error") }.getOrNull()
+    // 报文可能根本不是 JSON（网关的 HTML 错误页）：解析失败就退回 fallback，不要让异常冒出去
+    val fromServer = runCatching {
+        json.decodeFromString(ErrorBody.serializer(), result.body).error
+    }.getOrNull()
     return ApiException(result.code, fromServer ?: fallback)
 }

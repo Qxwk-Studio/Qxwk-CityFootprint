@@ -1,7 +1,7 @@
 package top.qxwkstudio.travel.data
 
 import android.content.Context
-import org.json.JSONObject
+import kotlinx.serialization.Serializable
 import top.qxwkstudio.travel.logic.City
 
 /**
@@ -24,24 +24,16 @@ object CityStore {
         }
     }
 
+    /** assets/cities.json 的报文：`{ "cities": [...] }`。 */
+    @Serializable
+    private data class CitiesFile(val cities: List<City> = emptyList())
+
     private fun load(context: Context): List<City> {
         val text = context.assets.open(ASSET_NAME).bufferedReader().use { it.readText() }
-        val array = JSONObject(text).optJSONArray("cities") ?: return emptyList()
-        return (0 until array.length()).mapNotNull { i ->
-            val o = array.optJSONObject(i) ?: return@mapNotNull null
-            val name = o.strOrNull("name") ?: return@mapNotNull null
-            val lat = o.doubleOrNull("lat") ?: return@mapNotNull null
-            val lng = o.doubleOrNull("lng") ?: return@mapNotNull null
-            // adcode 可能为 null（源数据里没有对应行政区划代码的县级市），保持 null 一路传下去，
-            // 地图页据此降级成「只画标记」
-            City(
-                name = name,
-                province = o.strOrNull("province").orEmpty(),
-                lat = lat,
-                lng = lng,
-                adcode = if (o.isNull("adcode")) null else o.optInt("adcode"),
-            )
-        }
+        // 这份 JSON 是生成物、生成脚本已校验过；真读到坏数据就退化成「没有城市」，
+        // 而不是把整个城市选择页崩掉
+        return runCatching { json.decodeFromString(CitiesFile.serializer(), text).cities }
+            .getOrDefault(emptyList())
     }
 
     private const val ASSET_NAME = "cities.json"

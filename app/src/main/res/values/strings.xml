@@ -83,10 +83,6 @@
     <string name="profile_version">版本 %1$s</string>
     <string name="profile_account_note">登录由「Qxwk 通行证」(account.qxwkstudio.top) 提供，密码不经过足迹后端</string>
 
-    <!-- 页脚（设计稿每个页面底部那条品牌行：左品牌 / 右版本） -->
-    <string name="footer_brand">City Footprint · 2026 青翔未阔工作室</string>
-    <string name="footer_version">v%1$s</string>
-
     <!-- 主页「我的足迹」标题行右侧的条数说明 -->
     <string name="visits_list_subtitle">共 %1$d 条，最近更新 %2$s</string>
     <string name="visits_list_subtitle_plain">共 %1$d 条</string>
