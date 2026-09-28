@@ -390,6 +390,13 @@ input::placeholder, textarea::placeholder { color: var(--text-tertiary); }
 
 :root[data-theme="dark"] .back-link:hover { background:rgba(59,130,246,0.30); border-color:rgba(96,165,250,0.60); }
 
+/* ========= 个人中心两列布局 =========
+   个人中心（account.html）与足迹管理（visits.html）共用：电脑端左右两列，窄屏在下面的断点里并成一列。
+   基础规则必须留在这里 —— 页内再各写一份 .personal-layout，会排在 <link> 之后把断点里的单列覆盖掉，
+   手机上就还是挤成两列（这就是「手机端没上下堆叠」的根因） */
+.personal-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+.personal-col { display: flex; flex-direction: column; gap: 20px; }
+
 /* ========= Responsive =========
    只放各页共用的断点规则；某页自己的（如 index 的浮动组件、stats 的 .stats-grid）留在页内 */
 @media (max-width: 768px) {

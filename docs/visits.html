@@ -60,7 +60,9 @@
     border-radius: 4px;
     vertical-align: 1px;
   }
-  .visit-meta { font-size: 0.78rem; color: var(--text-tertiary); margin-top: 2px; }
+  /* 时间与城市名同一行（见下方渲染模板）：整行都在 .visit-city 里，
+     字号/字色降一档做区分；font-weight 要显式收回 400 —— .visit-city 是 600，子元素会继承成粗体 */
+  .visit-meta { margin-left: 6px; font-size: 0.78rem; font-weight: 400; color: var(--text-tertiary); }
   .visit-note { font-size: 0.84rem; color: var(--text-secondary); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   /* 列表里的出行方式徽章（可多选，一行铺开） */
   .visit-transport { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
@@ -76,6 +78,9 @@
     white-space: nowrap;
   }
   .visit-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  /* 分享按钮：只有图标、暂时没有行为（内容留空，等哪天真接上分享再接 onclick）。
+     图标按钮把 .btn-sm 的左右 12px 内边距收掉，不然会比旁边的文字按钮胖一圈 */
+  .visit-share { padding: 6px; }
 
   /* .empty 空态、.loading-view / .loading-spinner 加载态、.hint / .note-count 小字、
      .msg 提示文案都见 style.css */
@@ -134,14 +139,7 @@
   /* 日期串比纯数字长一倍，字号收一档免得撑满整行 */
   .visit-stats .value.date-range { font-size: 1.25rem; }
 
-  /* 个人中心两列布局（电脑端两列；手机端单列） */
-  .personal-layout {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-    align-items: start;
-  }
-  .personal-col { display: flex; flex-direction: column; gap: 20px; }
+  /* 两列布局 .personal-layout / .personal-col 见 style.css（电脑端两列、窄屏并成一列） */
 
   /* 三节（足迹统计 / 行程记录 / 成就）都不套外层 .card、也不再折叠，标题用这个；
      字号取值与 style.css 的 .card h3 一致，改那边时这里跟着改 */
@@ -618,12 +616,14 @@ async function loadVisits() {
       item.innerHTML = `
         <span class="visit-dot">${myVisits.length - i}</span>
         <div class="visit-main">
-          <div class="visit-city">${escapeHtml(v.city)}${v.is_private ? '<span class="visit-private-badge" title="不公开行程，仅自己可见">🔒 不公开</span>' : ''}</div>
-          <div class="visit-meta">${escapeHtml(fmtDate(v.visit_date))}</div>
+          <div class="visit-city">${escapeHtml(v.city)}${v.is_private ? '<span class="visit-private-badge" title="不公开行程，仅自己可见">🔒 不公开</span>' : ''}<span class="visit-meta">· ${escapeHtml(fmtDate(v.visit_date))}</span></div>
           ${(v.transport && v.transport.length) ? `<div class="visit-transport">${transportLabels(v.transport).map(l => `<span class="tp-badge">${escapeHtml(l)}</span>`).join('')}</div>` : ''}
           ${v.note ? `<div class="visit-note">${escapeHtml(v.note)}</div>` : ''}
         </div>
         <div class="visit-actions">
+          <button class="btn btn-ghost btn-sm visit-share" type="button" title="分享" aria-label="分享">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          </button>
           <button class="btn btn-ghost btn-sm" onclick="startEdit(${v.id})">编辑</button>
           <button class="btn btn-danger btn-sm" onclick="delVisit(${v.id})">删除</button>
         </div>`;
