@@ -1,9 +1,8 @@
 package top.qxwkstudio.travel.data
 
-import kotlinx.serialization.Serializable
 import top.qxwkstudio.travel.Api
+import top.qxwkstudio.travel.logic.MyVisits
 import top.qxwkstudio.travel.logic.SiteStats
-import top.qxwkstudio.travel.logic.Visit
 import top.qxwkstudio.travel.logic.VisitDraft
 import top.qxwkstudio.travel.net.Http
 
@@ -17,17 +16,16 @@ import top.qxwkstudio.travel.net.Http
  */
 object VisitRepo {
 
-    /** /api/my-visits 的报文：`{ "visits": [...] }`。缺字段当空列表（与旧 optJSONArray 的兜底一致）。 */
-    @Serializable
-    private data class MyVisitsBody(val visits: List<Visit> = emptyList())
-
-    /** GET /api/my-visits → 已按 created_at DESC, id DESC 排好序（后端排的，客户端不再重排）。 */
-    fun myVisits(token: String): List<Visit> {
+    /**
+     * GET /api/my-visits → 行程已按 created_at DESC, id DESC 排好序（后端排的，客户端不再重排），
+     * 成就是后端按这批行就地判定后一起回来的（所以「我的成就」页也只用这一个请求）。
+     */
+    fun myVisits(token: String): MyVisits {
         val result = Http.request("GET", Api.MY_VISITS, token = token)
         if (!result.ok) throw apiException(result, "获取足迹失败（HTTP ${result.code}）")
         return runCatching {
-            json.decodeFromString(MyVisitsBody.serializer(), result.body).visits
-        }.getOrDefault(emptyList())
+            json.decodeFromString(MyVisits.serializer(), result.body)
+        }.getOrDefault(MyVisits())
     }
 
     /** POST /api/visits → 201。 */

@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 「我的成就」独立页：内容即原统计页底部那张成就卡，按 tab 拆出来单独成页。
-     判定用的是「我自己的足迹」，所以这一页只发 GET /api/my-visits 一个请求。
-     用 NestedScrollView 而不是 RecyclerView：成就总共约 42 条，一次铺开最省事。
+<!-- 「我的成就」页：版面照网页端足迹管理页的**右侧栏**（docs/visits.html 的 .achievement-card）。
+     网页那一栏没有外层大卡：标题、摘要行、成就卡都直接落在页面灰底上，这里同样不套卡片。
+     自上而下：🏆 成就（区块标题）→ 摘要行「已点亮 X / Y」+ 通栏进度条 → 各分类（分类头条 + 条目）。
+
+     用 NestedScrollView 而不是 RecyclerView：成就总共 42 条、结构是「分类套条目」两层，
+     一次铺开最省事（RecyclerView 还得为此写多 viewType 的适配器）。
 
      外壳套 SwipeRefreshLayout：数据页（主页 / 成就 / 统计）统一走下拉刷新，
-     原先那个居中 ProgressBar 已去掉 —— 加载态改由下拉指示器表达（见 AchievementsFragment.load）。
-
-     样式按设计稿重做：卡片标题行右侧放「已点亮 / 总数」比值，下面一条圆角进度条，
-     再往下是分组列表（未达成的整组压灰，见 item_achievement）。 -->
+     加载态由下拉指示器表达，没有居中 ProgressBar（见 AchievementsFragment.load）。 -->
 <androidx.swiperefreshlayout.widget.SwipeRefreshLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/swipe"
@@ -33,61 +33,66 @@
                 android:textSize="13sp"
                 android:visibility="gone" />
 
-            <com.google.android.material.card.MaterialCardView
+            <!-- 区块标题：与主页「📊 足迹统计 / 📍 行程记录」同一个样式（网页 .section-title） -->
+            <TextView
+                style="@style/CardTitle"
+                android:layout_marginBottom="12dp"
+                android:text="@string/stats_achievements_title" />
+
+            <!-- ===== 摘要行：已点亮 X / Y + 通栏进度条（网页 .achievement-summary） =====
+                 数字单独一个 TextView、染主色并加粗，等价网页 .sum-label b。 -->
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp">
+                android:layout_marginBottom="14dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
 
-                <LinearLayout
-                    android:layout_width="match_parent"
+                <TextView
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp">
+                    android:text="@string/achievement_summary_label"
+                    android:textColor="@color/muted_fg"
+                    android:textSize="13sp" />
 
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
+                <TextView
+                    android:id="@+id/textSummaryDone"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="4dp"
+                    android:textColor="@color/accent"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
 
-                        <TextView
-                            style="@style/CardTitle"
-                            android:layout_width="0dp"
-                            android:layout_weight="1"
-                            android:text="@string/stats_achievements_title" />
+                <TextView
+                    android:id="@+id/textSummaryTotal"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="4dp"
+                    android:textColor="@color/muted_fg"
+                    android:textSize="13sp" />
 
-                        <TextView
-                            android:id="@+id/textProgressRatio"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="8dp"
-                            android:fontFamily="monospace"
-                            android:textColor="@color/fg"
-                            android:textSize="13sp"
-                            android:textStyle="bold" />
-                    </LinearLayout>
+                <!-- 通栏进度条：轨道用 border（白卡上 muted 几乎看不见）、填充主色；
+                     网页是 8px 高、胶囊圆角，所以 corner 取高度的一半 -->
+                <com.google.android.material.progressindicator.LinearProgressIndicator
+                    android:id="@+id/achievementBar"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="10dp"
+                    android:layout_weight="1"
+                    android:max="100"
+                    app:indicatorColor="@color/accent"
+                    app:trackColor="@color/border"
+                    app:trackCornerRadius="4dp"
+                    app:trackThickness="8dp" />
+            </LinearLayout>
 
-                    <!-- 总进度可视化：与网页端成就卡顶部的进度条对齐（轨道用 muted，填充用主色） -->
-                    <com.google.android.material.progressindicator.LinearProgressIndicator
-                        android:id="@+id/achievementBar"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:max="100"
-                        app:indicatorColor="@color/accent"
-                        app:trackColor="@color/muted"
-                        app:trackCornerRadius="3dp"
-                        app:trackThickness="6dp" />
-
-                    <!-- 分组与条目由代码 inflate（item_achievement_group.xml / item_achievement.xml）后 add 进来 -->
-                    <LinearLayout
-                        android:id="@+id/achievementsContainer"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:orientation="vertical" />
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
+            <!-- 分类与条目由代码 inflate（item_achievement_group.xml / item_achievement.xml）后 add 进来 -->
+            <LinearLayout
+                android:id="@+id/achievementsContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>

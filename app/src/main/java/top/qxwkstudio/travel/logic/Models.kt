@@ -12,12 +12,14 @@ import kotlinx.serialization.encoding.Encoder
 /**
  * 纯数据模型。**为什么可以标 @Serializable**：
  * kotlinx.serialization 的序列化器在**编译期**生成、运行时不用反射，也不依赖 android.* 或 org.json，
- * 所以这些模型仍然能在 JVM 上直接跑单测（见 src/test 下的成就 / 日期 / 城市搜索测试）。
- * @SerialName 只是把后端的 snake_case 字段名挂到属性上；判定逻辑（Achievements / VisitDate /
- * CitySearch）拿到的仍是普通 data class，解析细节不会渗进判定里。
+ * 所以这些模型仍然能在 JVM 上直接跑单测（见 src/test 下的日期 / 城市搜索测试）。
+ * @SerialName 只是把后端的 snake_case 字段名挂到属性上；判定逻辑（VisitDate / CitySearch）
+ * 拿到的仍是普通 data class，解析细节不会渗进判定里。
+ * 成就**没有**客户端判定：名称/图标/阈值全在后端 backend/src/achievements.js，
+ * 这里只声明接口回给我们的形状（见下面的 AchievementGroup 说明）。
  *
  * 字段名/类型对齐后端（backend/src/worker.js）：
- *   my-visits：{id, city, lat, lng, visit_date, note, is_private, transport[]}
+ *   my-visits：{visits: [{id, city, lat, lng, visit_date, note, is_private, transport[]}], achievements[]}
  *   is_private 后端是 0/1，到 Kotlin 侧就翻成 Boolean（见文件末尾的 IntBooleanSerializer），
  *   界面不再关心它是几。
  *
@@ -90,35 +92,79 @@ data class Me(
 )
 
 /**
+ * GET /api/my-visits 的完整报文：我的行程 + 我的成就。
+ *
+ * 成就由后端 dispatch worker.js 就着**已经取出来的那批行**就地判定后一起回给我们
+ * （backend/src/achievements.js 的 getAchievements），客户端**不再自带一份判定表**：
+ * 名字/图标/阈值改一次就只改后端一个文件，App 与网页不会各算一个结果。
+ */
+@Serializable
+data class MyVisits(
+    val visits: List<Visit> = emptyList(),
+    val achievements: List<AchievementGroup> = emptyList(),
+)
+
+/**
+ * 一个成就分类（如「🌟 足迹丰碑」）+ 它下面的条目。
+ * 顺序即后端数组顺序（分类顺序、条目顺序都是后端定的），客户端不重排。
+ */
+@Serializable
+data class AchievementGroup(
+    val title: String = "",
+    val items: List<Achievement> = emptyList(),
+)
+
+/**
+ * 一条成就（「我的成就」页用）。[done] 由后端按「我去过哪些城市」判定。
+ * 后端的 code（稳定标识）只在服务端按 code 累计达成人数时有用，客户端按数组顺序渲染，故不声明。
+ */
+@Serializable
+data class Achievement(
+    val icon: String = "",
+    val name: String = "",
+    val desc: String = "",
+    val done: Boolean = false,
+)
+
+/**
+ * 「全站统计」页的成就达成人数：形状与 [AchievementGroup] 一样，只是每条的 done 换成 [AchievementCount.count]。
+ * 单独一组模型而不是复用上面那对：done（我有没有达成）与 count（多少人达成）是两件事，
+ * 塞进同一个类里会让「这个字段在这一页有没有意义」变成要靠约定记住的事。
+ */
+@Serializable
+data class AchievementCountGroup(
+    val title: String = "",
+    val items: List<AchievementCount> = emptyList(),
+)
+
+@Serializable
+data class AchievementCount(
+    val icon: String = "",
+    val name: String = "",
+    val desc: String = "",
+    val count: Int = 0,
+)
+
+/**
  * GET /api/stats（公开接口）。
  * 字段名照抄 worker.js 里 /api/stats 的实现，别猜：
- *   cityRank: [{city, count, people}]   count = 打卡次数，people = 打卡人数
- *   users:    [{nickname, color, cities}]  cities 是后端 GROUP_CONCAT 拼出来的逗号串
+ *   cityRank:     [{city, count, people}]   count = 打卡次数，people = 打卡人数
+ *   achievements: [{title, items:[{icon, name, desc, count}]}]   count = 达成人数
+ * 注意**没有** users[] 明细了（worker.js:168 的说明）：成就达成人数由后端算好，
+ * 只回一个 totalUsers 数字 —— 客户端不再需要 users[].cities 去本地判定。
  */
 @Serializable
 data class SiteStats(
     val totalVisits: Int = 0,
     val totalCities: Int = 0,
+    val totalUsers: Int = 0,
     val cityRank: List<CityRank> = emptyList(),
-    val users: List<UserStat> = emptyList(),
+    val achievements: List<AchievementCountGroup> = emptyList(),
     val isAdmin: Boolean = false,
 )
 
 @Serializable
 data class CityRank(val city: String = "", val count: Int = 0, val people: Int = 0)
-
-/**
- * 全站统计里的一行「参与用户」。
- * [cities] 是后端 GROUP_CONCAT 拼出来的城市名串（worker.js 的 /api/stats）——
- * 「成就达成人数」要拿它逐人跑一遍成就判定，数出每个成就被多少人达成（见 StatsFragment），
- * 所以原样保留、按逗号切分的活交给调用方。
- */
-@Serializable
-data class UserStat(
-    val nickname: String = "",
-    val color: String = "",
-    val cities: String = "",
-)
 
 /**
  * 后端 D1 里**没有布尔类型**：`is_private` 存的就是 0/1。这个序列化器把 0/1 与 Boolean 互转，

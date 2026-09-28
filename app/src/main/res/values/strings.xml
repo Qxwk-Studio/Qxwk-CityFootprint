@@ -101,8 +101,14 @@
     <string name="stats_achv_count_title">🏅 成就达成人数</string>
     <string name="stats_achv_count_num">%1$d 人</string>
 
-    <!-- 成就页顶部「已点亮 / 总数」的比值 -->
-    <string name="achievement_progress_ratio">%1$d / %2$d</string>
+    <!-- 成就页顶部摘要行「已点亮 X / Y」（对齐网页 .achievement-summary）：
+         拆成三段是因为网页把中间那个数字加粗并染成主色（.sum-label b），
+         Android 要同样的效果就得分开两个 TextView（数字不加千分位、无需格式化串）。
+         「/ Y」写成带前导空格的格式串，拼出来就是网页的「X / Y」。 -->
+    <string name="achievement_summary_label">已点亮</string>
+    <string name="achievement_summary_total">/ %1$d</string>
+    <!-- 分类头条右侧的「X/Y」：网页 .category-progress 里斜杠两侧**没有**空格，这里照抄 -->
+    <string name="achievement_progress_ratio">%1$d/%2$d</string>
     <!-- 已达成成就右侧那个勾（网页用的是同一个 "✓" 字符） -->
     <string name="achievement_check">✓</string>
 

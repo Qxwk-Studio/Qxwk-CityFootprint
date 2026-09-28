@@ -14,14 +14,15 @@ import top.qxwkstudio.travel.data.VisitRepo
 import top.qxwkstudio.travel.databinding.FragmentAchievementsBinding
 import top.qxwkstudio.travel.databinding.ItemAchievementBinding
 import top.qxwkstudio.travel.databinding.ItemAchievementGroupBinding
-import top.qxwkstudio.travel.logic.Achievements
-import top.qxwkstudio.travel.logic.Visit
+import top.qxwkstudio.travel.logic.Achievement
+import top.qxwkstudio.travel.logic.AchievementGroup
 
 /**
- * 「我的成就」：页面内容即网页端足迹管理页的成就区（原先是统计页底部那张卡，按 tab 拆出来）。
+ * 「我的成就」：页面内容即网页端足迹管理页的**右侧栏**（标题 / 摘要行 / 分类 / 成就卡）。
  *
- * 成就只能按「我去过哪些城市」判定，所以这一页只发一个请求 GET /api/my-visits，
- * 不碰全站统计 —— 判定逻辑与网页版同一份定义（见 logic/Achievements 的说明）。
+ * 名称、图标、说明、判定全部来自后端：GET /api/my-visits 就着那批足迹行就地判定后
+ * 把 achievements 一起回给我们（backend/src/achievements.js 是唯一一份定义）。
+ * 所以这一页只发这一个请求，客户端也不再自带一份成就判定表。
  */
 class AchievementsFragment : Fragment() {
 
@@ -69,8 +70,8 @@ class AchievementsFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.runIo({ VisitRepo.myVisits(token) }) { result ->
             binding.swipe.isRefreshing = false
 
-            val visits = result.getOrNull()
-            if (visits == null) {
+            val data = result.getOrNull()
+            if (data == null) {
                 val e = result.exceptionOrNull() ?: RuntimeException()
                 if (e is ApiException && e.code == 401) {
                     Session.expired(requireActivity())
@@ -81,19 +82,24 @@ class AchievementsFragment : Fragment() {
                 binding.textError.visibility = View.VISIBLE
                 return@runIo
             }
-            render(visits)
+            render(data.achievements)
         }
     }
 
-    private fun render(visits: List<Visit>) {
-        val groups = Achievements.all(visits.map { it.city })
-        val (done, total) = Achievements.progress(groups)
-        binding.textProgressRatio.text = getString(R.string.achievement_progress_ratio, done, total)
+    /**
+     * 摘要行按「所有分类合计」算：已点亮 X / Y —— 与网页 renderAchievements 里
+     * doneAll / totalAll 的算法一致（两边都是把各分类的条目摊平再数）。
+     */
+    private fun render(groups: List<AchievementGroup>) {
+        val done = groups.sumOf { group -> group.items.count { it.done } }
+        val total = groups.sumOf { it.items.size }
+        binding.textSummaryDone.text = done.toString()
+        binding.textSummaryTotal.text = getString(R.string.achievement_summary_total, total)
         // 进度条按 0-100 整数百分比，total 为 0 时不画（NaN/除零都不该发生）
         binding.achievementBar.progress = if (total > 0) done * 100 / total else 0
 
         binding.achievementsContainer.removeAllViews()
-        groups.forEachIndexed { groupIndex, group ->
+        groups.forEach { group ->
             val header = ItemAchievementGroupBinding.inflate(layoutInflater, binding.achievementsContainer, false)
             header.textGroupTitle.text = group.title
             val groupDone = group.items.count { it.done }
@@ -101,32 +107,27 @@ class AchievementsFragment : Fragment() {
                 getString(R.string.achievement_progress_ratio, groupDone, group.items.size)
             // 该组的小进度条（与网页 .category-bar 同口径）：0-100 整数百分比
             header.groupBar.progress = if (group.items.isEmpty()) 0 else groupDone * 100 / group.items.size
-            // 第一组上方不画分隔线（前面就是进度条）
-            header.groupTopDivider.visibility = if (groupIndex == 0) View.GONE else View.VISIBLE
+            group.items.forEach { achievement -> header.groupItems.addView(itemView(achievement, header.groupItems)) }
             binding.achievementsContainer.addView(header.root)
-
-            group.items.forEachIndexed { itemIndex, achievement ->
-                val item = ItemAchievementBinding.inflate(layoutInflater, binding.achievementsContainer, false)
-                item.textIcon.text = achievement.icon
-                item.textName.text = achievement.name
-                item.textDesc.text = achievement.desc
-
-                // 未达成的只把「名字/说明」压灰。图标是 emoji（彩色字体），
-                // 给它 setTextColor 反而会出奇怪的颜色，所以图标不染
-                val nameColor = color(if (achievement.done) R.color.text_primary else R.color.achievement_todo)
-                val subColor = color(if (achievement.done) R.color.text_secondary else R.color.achievement_todo)
-                item.textName.setTextColor(nameColor)
-                item.textDesc.setTextColor(subColor)
-
-                // 达成的在行尾打勾（网页 .achievement.done .check）
-                item.textCheck.visibility = if (achievement.done) View.VISIBLE else View.GONE
-
-                // 每组第一条不画顶部分隔线（分组标题已经把它和上一条隔开了）
-                if (itemIndex == 0) item.root.setBackgroundResource(0)
-
-                binding.achievementsContainer.addView(item.root)
-            }
         }
+    }
+
+    /** 铺一条成就卡：达成与否只体现在这张卡自己身上（整卡压暗 / 换底色描边 / 露出勾）。 */
+    private fun itemView(achievement: Achievement, parent: ViewGroup): View {
+        val item = ItemAchievementBinding.inflate(layoutInflater, parent, false)
+        item.textIcon.text = achievement.icon
+        item.textName.text = achievement.name
+        item.textDesc.text = achievement.desc
+        item.textCheck.visibility = if (achievement.done) View.VISIBLE else View.GONE
+
+        if (achievement.done) {
+            item.root.setCardBackgroundColor(color(R.color.accent_light))
+            item.root.setStrokeColor(color(R.color.achievement_done_stroke))
+        } else {
+            // 未达成整卡压暗（网页 .achievement 的 opacity: 0.55）
+            item.root.alpha = 0.55f
+        }
+        return item.root
     }
 
     private fun color(resId: Int): Int = ContextCompat.getColor(requireContext(), resId)

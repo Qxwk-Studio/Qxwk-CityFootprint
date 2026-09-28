@@ -113,11 +113,13 @@ class MapFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.runIo({ VisitRepo.myVisits(token) }) { result ->
             binding.progress.visibility = View.GONE
 
-            val visits = result.getOrNull()
-            if (visits == null) {
+            val data = result.getOrNull()
+            if (data == null) {
                 activity?.handleApiFailure(result.exceptionOrNull() ?: RuntimeException())
                 return@runIo
             }
+            // 这一页只要行程（成就在「我的成就」页用），/api/my-visits 顺手带回来的不去看
+            val visits = data.visits
             loaded = true
             binding.textEmpty.visibility = if (visits.isEmpty()) View.VISIBLE else View.GONE
 

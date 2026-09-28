@@ -47,8 +47,9 @@
 
     <!-- 私密标记：设计稿是 accent 药丸底 + accent-foreground 字，不再是灰紫文字 -->
     <color name="private_badge">#003E8F</color>
-    <!-- 未达成的成就：图标与文字整体压灰 -->
-    <color name="achievement_todo">#9A9AA5</color>
+    <!-- 已达成成就那张卡的描边：网页 .achievement.done 是 rgba(primary, .4)，
+         即主色叠四成透明度（#66 = 102 ≈ 40%）。卡片底色用 accent_light（见 AchievementsFragment）。 -->
+    <color name="achievement_done_stroke">#664285F4</color>
 
     <!-- 图表色（设计稿 chart-1..5）：地图图例等备用 -->
     <color name="chart_1">#4285F4</color>

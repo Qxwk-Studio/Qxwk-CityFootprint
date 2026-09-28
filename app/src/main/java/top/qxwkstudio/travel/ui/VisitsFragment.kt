@@ -87,12 +87,13 @@ class VisitsFragment : Fragment() {
             // 下拉刷新转圈必须停：失败时不停，用户会以为还在加载
             binding.swipe.isRefreshing = false
 
-            val visits = result.getOrNull()
-            if (visits == null) {
+            val data = result.getOrNull()
+            if (data == null) {
                 // 401 在这条链路里统一处理（清 token 回登录页 + 只弹一次），其余弹后端文案
                 activity?.handleApiFailure(result.exceptionOrNull() ?: RuntimeException())
                 return@runIo
             }
+            val visits = data.visits
             adapter.submit(visits)
             binding.textEmpty.visibility = if (visits.isEmpty()) View.VISIBLE else View.GONE
             renderOverview(visits)

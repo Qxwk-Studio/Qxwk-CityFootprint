@@ -1,63 +1,71 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 一条成就：图标（emoji）/ 名称+说明。
-     未达成的**不整行变灰**，而是把名字与说明压到灰色（代码里 setTextColor）——
-     图标是 emoji（彩色字体），压不灰，硬压反而出奇怪的颜色。
+<!-- 一条成就 = 一张独立小卡（网页 docs/visits.html 的 .achievement）：
+     图标、名称、说明、勾**都在同一行**（网页是 flex 横排：name 不收缩、desc 占满剩余宽度并自行折行）。
 
-     行上方那条 1px 线是设计稿的 border-t；每组的第一条由代码把背景置空。 -->
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+     未达成 / 达成不靠两套布局区分，都由代码改这张卡本身（看 AchievementsFragment）：
+       - 未达成：整卡 alpha 0.55（网页 .achievement 的 opacity）；
+       - 达成：alpha 1 + 底色换 accent_light + 描边换 achievement_done_stroke，
+         并让右侧那个勾出现（勾的样式是 bg_check_circle 的实心主色圆 + 白 ✓，网页同款）。
+
+     圆角用全 app 的默认卡片样式（8dp）而不是网页 .achievement 的 radius-md(14px)：
+     已经同步过的行程卡 item_visit.xml 也是这么处理的，两处保持一致比逐像素对齐网页更重要。
+
+     卡片下边距 8dp 与 item_achievement_group 的组下边距 16dp 相加，正好等于网页的组间 24px。 -->
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="@drawable/divider_top_bg"
-    android:gravity="top"
-    android:orientation="horizontal"
-    android:paddingTop="8dp"
-    android:paddingBottom="8dp">
-
-    <TextView
-        android:id="@+id/textIcon"
-        android:layout_width="20dp"
-        android:layout_height="wrap_content"
-        android:gravity="center_horizontal"
-        android:textSize="16sp" />
+    android:layout_marginBottom="8dp">
 
     <LinearLayout
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginStart="10dp"
-        android:layout_weight="1"
-        android:orientation="vertical">
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="14dp"
+        android:paddingTop="12dp"
+        android:paddingEnd="14dp"
+        android:paddingBottom="12dp">
+
+        <!-- 图标是 emoji（彩色字体）：不给它 setTextColor，压不灰反而会出奇怪的颜色（见 AchievementsFragment） -->
+        <TextView
+            android:id="@+id/textIcon"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="18sp" />
 
         <TextView
             android:id="@+id/textName"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
             android:ellipsize="end"
             android:maxLines="1"
             android:textColor="@color/fg"
-            android:textSize="13sp"
+            android:textSize="14sp"
             android:textStyle="bold" />
 
+        <!-- 说明占满剩余宽度、按需折行（网页 .desc 的 flex:1 + min-width:0 + overflow-wrap:anywhere） -->
         <TextView
             android:id="@+id/textDesc"
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
+            android:layout_marginStart="10dp"
+            android:layout_weight="1"
             android:textColor="@color/muted_fg"
-            android:textSize="11sp" />
-    </LinearLayout>
+            android:textSize="12sp" />
 
-    <!-- 已达成才出现的勾：主色圆底 + 白勾（等价网页 .achievement.done .check）。
-         放在行尾、纵向居中；未达成时 GONE，不占视觉重心。 -->
-    <TextView
-        android:id="@+id/textCheck"
-        android:layout_width="18dp"
-        android:layout_height="18dp"
-        android:layout_gravity="center_vertical"
-        android:layout_marginStart="8dp"
-        android:background="@drawable/bg_check_circle"
-        android:gravity="center"
-        android:text="@string/achievement_check"
-        android:textColor="@color/on_accent"
-        android:textSize="11sp"
-        android:visibility="gone" />
-</LinearLayout>
+        <!-- 已达成才出现的勾：主色圆底 + 白勾（网页 .achievement .check）。
+             未达成时 GONE，不占视觉重心。 -->
+        <TextView
+            android:id="@+id/textCheck"
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:layout_marginStart="8dp"
+            android:background="@drawable/bg_check_circle"
+            android:gravity="center"
+            android:text="@string/achievement_check"
+            android:textColor="@color/on_accent"
+            android:textSize="11sp"
+            android:visibility="gone" />
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

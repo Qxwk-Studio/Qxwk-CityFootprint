@@ -1,60 +1,75 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 成就分组标题（「🌟 足迹丰碑」这种）+ 右侧该组进度「4 / 8」。
-     整组整组地插进 LinearLayout，所以没有自己的容器 —— 一条标题 + 若干条成就，顺序即插入顺序。
-     第一组不画上方那条分隔线（由代码把 groupTopDivider 置 GONE）。 -->
+<!-- 一个成就分类 = 分类头条 + 它下面的条目（网页 docs/visits.html 的 .achievement-category）。
+     整组整组地插进 achievementsContainer，所以这层是「一组」的容器，自己带组间间距。
+
+     间距账（照网页的 px 折算）：
+       网页 .achievement-grid 的 gap 10px + .achievement-category 的 margin-bottom 14px = 组间 24px；
+       条目的下边距 8dp + 本层下边距 16dp 也正好 24dp，于是「一组最后一条的下边距」自然接上下一组。
+       分类头条到第一条：网页 .category-header 的 margin-bottom 8px = groupItems 的 marginTop 8dp。
+
+     分类头条自己是一块带描边的浅色标题条（网页 .category-header 的 bg surface + 1px border + radius-sm 8px
+     + padding 8px 10px）→ 直接用全 app 的默认卡片样式（Widget.App.CardView 就是 8dp 圆角 + 1dp 描边）。 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:layout_marginBottom="16dp"
     android:orientation="vertical">
 
-    <View
-        android:id="@+id/groupTopDivider"
+    <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:layout_marginTop="16dp"
-        android:background="@color/border"
-        android:visibility="gone" />
+        android:layout_height="wrap_content">
 
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="10dp"
+            android:paddingTop="8dp"
+            android:paddingEnd="10dp"
+            android:paddingBottom="8dp">
+
+            <TextView
+                android:id="@+id/textGroupTitle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textColor="@color/fg"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <!-- 该组的小进度条：等价网页 .category-bar（74px 宽、6px 高，轨道 border、填充主色）。
+                 网页顺序是 标题 | 进度条 | 进度文字，这里照排。 -->
+            <com.google.android.material.progressindicator.LinearProgressIndicator
+                android:id="@+id/groupBar"
+                android:layout_width="74dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:max="100"
+                app:indicatorColor="@color/accent"
+                app:trackColor="@color/border"
+                app:trackCornerRadius="3dp"
+                app:trackThickness="6dp" />
+
+            <TextView
+                android:id="@+id/textGroupCount"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:fontFamily="monospace"
+                android:textColor="@color/muted_fg"
+                android:textSize="12sp" />
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- 本组的条目光在这一层，由代码把 item_achievement.xml 一条条 add 进来 -->
     <LinearLayout
+        android:id="@+id/groupItems"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:paddingTop="12dp"
-        android:paddingBottom="2dp">
-
-        <TextView
-            android:id="@+id/textGroupTitle"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:ellipsize="end"
-            android:maxLines="1"
-            android:textColor="@color/fg"
-            android:textSize="14sp"
-            android:textStyle="bold" />
-
-        <!-- 该组的小进度条：等价网页 .category-bar（74px 宽、6px 高，轨道 border、填充主色）。
-             网页顺序是 标题 | 进度条 | 进度文字，这里照排。 -->
-        <com.google.android.material.progressindicator.LinearProgressIndicator
-            android:id="@+id/groupBar"
-            android:layout_width="74dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:max="100"
-            app:indicatorColor="@color/accent"
-            app:trackColor="@color/border"
-            app:trackCornerRadius="3dp"
-            app:trackThickness="6dp" />
-
-        <TextView
-            android:id="@+id/textGroupCount"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:fontFamily="monospace"
-            android:textColor="@color/muted_fg"
-            android:textSize="11sp" />
-    </LinearLayout>
+        android:layout_marginTop="8dp"
+        android:orientation="vertical" />
 </LinearLayout>

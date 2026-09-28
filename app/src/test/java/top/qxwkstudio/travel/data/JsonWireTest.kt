@@ -10,6 +10,8 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import top.qxwkstudio.travel.logic.Me
+import top.qxwkstudio.travel.logic.MyVisits
+import top.qxwkstudio.travel.logic.SiteStats
 import top.qxwkstudio.travel.logic.Visit
 import top.qxwkstudio.travel.logic.VisitDraft
 
@@ -122,5 +124,40 @@ class JsonWireTest {
         assertTrue(me.isAdmin)
         assertEquals("2024-01-01T00:00:00Z", me.createdAt)
         assertNull(me.avatar)
+    }
+
+    // ── 成就（判定在后端，客户端只解析，所以这里钉的是字段名与「多出来的键要能忽略」）──
+
+    @Test
+    fun `解析 my-visits 里的成就 并忽略后端的 code 键`() {
+        // 成就定义只在 backend/src/achievements.js：客户端按数组顺序渲染，不声明 code。
+        // 那条键必须被 ignoreUnknownKeys 忽略掉 —— 否则整个 /my-visits 解析失败，
+        // 主页会跟着一起变成空列表（症状与「成就显示不出来」完全不像同一件事）
+        val data = json.decodeFromString(
+            MyVisits.serializer(),
+            """{"visits":[],"achievements":[{"title":"🌟 足迹丰碑","items":[
+               {"code":"first_trip","icon":"🚀","name":"初次启程","desc":"到访过 2 座及以上城市","done":true}]}]}""",
+        )
+
+        assertEquals(0, data.visits.size)
+        assertEquals("🌟 足迹丰碑", data.achievements.single().title)
+        assertTrue(data.achievements.single().items.single().done)
+    }
+
+    @Test
+    fun `解析 stats 的 totalUsers 与成就达成人数`() {
+        // worker.js 的 /api/stats 已**不再回 users[] 明细**，只回 totalUsers 数字 +
+        // 后端算好的 achievements[].items[].count；解析成 users 的话这一页会一直显示 0 个用户
+        val stats = json.decodeFromString(
+            SiteStats.serializer(),
+            """{"totalVisits":9,"totalCities":3,"totalUsers":2,
+               "cityRank":[{"city":"北京","count":5,"people":2}],
+               "achievements":[{"title":"🌟 足迹丰碑","items":[
+                 {"code":"first_trip","icon":"🚀","name":"初次启程","desc":"到访过 2 座及以上城市","count":1}]}],
+               "isAdmin":false}""",
+        )
+
+        assertEquals(2, stats.totalUsers)
+        assertEquals(1, stats.achievements.single().items.single().count)
     }
 }

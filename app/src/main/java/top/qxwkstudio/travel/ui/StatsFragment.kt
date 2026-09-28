@@ -17,20 +17,19 @@ import top.qxwkstudio.travel.databinding.FragmentStatsBinding
 import top.qxwkstudio.travel.databinding.ItemAchievementCountBinding
 import top.qxwkstudio.travel.databinding.ItemAchievementCountCategoryBinding
 import top.qxwkstudio.travel.databinding.ItemRankBinding
-import top.qxwkstudio.travel.logic.Achievements
+import top.qxwkstudio.travel.logic.AchievementCountGroup
 import top.qxwkstudio.travel.logic.City
 import top.qxwkstudio.travel.logic.SiteStats
-import top.qxwkstudio.travel.logic.UserStat
 
 /**
  * 「全站统计」：版面与口径都对齐网页端 docs/stats.html ——
  * 四张数字卡（总行程 / 总城市 / 覆盖省份 / 总用户）、城市次数排名（默认 10 名、可展开到 50）、
  * 成就达成人数。只发一个公开请求 GET /api/stats。
  *
- * 覆盖省份与成就达成人数都在**客户端从 /stats 已有数据推出来**（网页也是这么算的，不额外开接口）：
- *  - 省份：把 cityRank 的城市名拿去 assets/cities.json 查省份，再算种类数；
- *  - 成就达成人数：把 users[].cities 按逗号拆开，逐人跑一遍 logic/Achievements 的判定，
- *    数出每个成就被多少人达成 —— 与「我的成就」页同一份判定逻辑，两边不会算出不同结果。
+ * 覆盖省份在**客户端从 /stats 已有数据推出来**（网页也是这么算的，不额外开接口）：
+ * 把 cityRank 的城市名拿去 assets/cities.json 查省份，再算种类数。
+ * 成就达成人数则**由后端算好**（backend/src/achievements.js 的 achievementCounts），
+ * App 不再自带一份判定表 —— 定义只有一处，两端不会算出不同结果。
  */
 class StatsFragment : Fragment() {
 
@@ -115,12 +114,12 @@ class StatsFragment : Fragment() {
         // 覆盖省份：从城市排名去重省份（与网页 stats.html 同口径）
         binding.valueProvinces.text =
             stats.cityRank.mapNotNull { provinceOf(it.city, allCities) }.distinct().size.toString()
-        binding.valueUsers.text = stats.users.size.toString()
+        binding.valueUsers.text = stats.totalUsers.toString()
         // 管理员看到的数字含私密足迹，必须说明白，否则会以为统计把别人的私密记录抖出来了
         binding.textAdminNote.visibility = if (stats.isAdmin) View.VISIBLE else View.GONE
 
         renderRank(stats, allCities)
-        renderAchievementCounts(stats.users)
+        renderAchievementCounts(stats.achievements)
     }
 
     /** 城市排行：行样式照网页 .rank-item（名次圆 + 城市·省份 + 去过 N 人 + N 次），+ 展开/收起。 */
@@ -153,21 +152,13 @@ class StatsFragment : Fragment() {
     }
 
     /**
-     * 成就达成人数：逐个用户跑一遍成就判定再计数。
-     * 分类骨架取自 `Achievements.all(emptyList())` —— 空城市集就得到「全部成就、全部未达成」的模板，
-     * 与「我的成就」页用的是同一份定义，不会出现两边成就列表不一致。
+     * 成就达成人数：数字直接用后端算好的 achievements[].items[].count。
+     * 后端按成就的**稳定 code** 累计，客户端不再自己跑一遍判定 ——
+     * 原先这里是逐人跑 logic/Achievements 再拿中文 name 当键计数，改一次展示文案就会静默错位。
      */
-    private fun renderAchievementCounts(users: List<UserStat>) {
-        val counts = HashMap<String, Int>()
-        for (u in users) {
-            val cities = u.cities.split(",").filter { it.isNotEmpty() }
-            for (cat in Achievements.all(cities)) {
-                for (a in cat.items) if (a.done) counts[a.name] = (counts[a.name] ?: 0) + 1
-            }
-        }
-
+    private fun renderAchievementCounts(groups: List<AchievementCountGroup>) {
         binding.achCountContainer.removeAllViews()
-        Achievements.all(emptyList()).forEachIndexed { catIndex, cat ->
+        groups.forEachIndexed { catIndex, cat ->
             val header = ItemAchievementCountCategoryBinding.inflate(layoutInflater, binding.achCountContainer, false)
             header.textCategoryTitle.text = cat.title
             // 第一个分类不画上方分隔线（前面就是卡片标题）
@@ -175,14 +166,13 @@ class StatsFragment : Fragment() {
             binding.achCountContainer.addView(header.root)
 
             for (a in cat.items) {
-                val n = counts[a.name] ?: 0
                 val item = ItemAchievementCountBinding.inflate(layoutInflater, binding.achCountContainer, false)
                 item.textIcon.text = a.icon
                 item.textName.text = a.name
                 item.textDesc.text = a.desc
-                item.textNum.text = getString(R.string.stats_achv_count_num, n)
+                item.textNum.text = getString(R.string.stats_achv_count_num, a.count)
                 // 有人达成才用主色（等价网页 .ach-count-num.done）
-                item.textNum.setTextColor(color(if (n > 0) R.color.accent else R.color.muted_fg))
+                item.textNum.setTextColor(color(if (a.count > 0) R.color.accent else R.color.muted_fg))
                 binding.achCountContainer.addView(item.root)
             }
         }
