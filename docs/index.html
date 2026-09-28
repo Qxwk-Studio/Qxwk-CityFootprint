@@ -9,104 +9,12 @@
 <meta name="description" content="City Footprint 城市足迹地图 —— 记录每个人去过的城市，点亮属于自己的颜色，与朋友们一起拼出一张五彩斑斓的足迹大地图。">
 <link rel="icon" type="image/webp" href="/favicon.webp">
 <link rel="stylesheet" href="vendor/leaflet.css">
+<link rel="stylesheet" href="/style.css">
 <style>
-  /* ========= Reset & Base ========= */
-  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-  :root {
-    --primary: #2563eb;
-    --primary-hover: #1d4ed8;
-    --primary-light: #eff6ff;
-    --secondary: #0d9488;
-    --surface: #ffffff;
-    --bg: #f8fafc;
-    --text-primary: #0f172a;
-    --text-secondary: #64748b;
-    --text-tertiary: #94a3b8;
-    --border: #e2e8f0;
-    --navbar-bg: rgba(255, 255, 255, 0.8);
-    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
-    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
-    --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.12);
-    --radius-sm: 8px;
-    --radius-md: 14px;
-    --radius-lg: 20px;
-    --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
-    --container: 1100px;
-    --nav-height: 64px;
-  }
-  html { scroll-behavior: smooth; }
-  body {
-    font-family: var(--font-sans);
-    background: var(--bg);
-    color: var(--text-primary);
-    line-height: 1.6;
-    -webkit-font-smoothing: antialiased;
-    overflow-x: hidden;
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh;
-  }
 
-  /* ========= Navbar ========= */
-  .navbar {
-    position: sticky;
-    top: 0;
-    z-index: 1000;
-    height: var(--nav-height);
-    background: var(--navbar-bg);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border-bottom: 1px solid var(--border);
-  }
-  .navbar-inner {
-    max-width: var(--container);
-    margin: 0 auto;
-    padding: 0 24px;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-  }
-  .navbar-brand {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    text-decoration: none;
-    color: var(--text-primary);
-    font-weight: 600;
-    font-size: 1.15rem;
-    letter-spacing: 0.3px;
-    flex-shrink: 0;
-    transition: opacity var(--transition);
-  }
-  .navbar-brand:hover { opacity: 0.85; }
-
-  /* 返回主页（导航栏右侧，与 webs 其他页面一致） */
-  .back-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 18px;
-    background: rgba(37, 99, 235, 0.15);
-    color: var(--text-primary);
-    text-decoration: none;
-    border-radius: 40px;
-    font-size: 0.88rem;
-    font-weight: 500;
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
-    border: 1px solid rgba(147, 197, 253, 0.35);
-    transition: all var(--transition);
-    white-space: nowrap;
-    flex-shrink: 0;
-  }
-  .back-link:hover {
-    background: rgba(37, 99, 235, 0.3);
-    border-color: rgba(147, 197, 253, 0.6);
-    transform: scale(1.02);
-  }
+  /* 地图页专有：横向锁定，避免地图/弹窗撑出横向滚动条。
+     其余基础样式（含导航栏）见 style.css，本页不再另调间距 */
+  body { overflow-x: hidden; }
 
   /* 右下角：汉堡菜单按钮 */
   .fab-btn {
@@ -163,17 +71,6 @@
     visibility: visible;
     transform: translateY(0);
   }
-  .brand-logo {
-    width: 34px;
-    height: 34px;
-    border-radius: 50%;
-    flex-shrink: 0;
-    object-fit: cover;
-    box-shadow: 0 2px 10px rgba(37, 99, 235, 0.25);
-  }
-  .brand-text { line-height: 1.25; }
-  .brand-text b { display: block; font-size: 16px; font-weight: 600; letter-spacing: 0.3px; }
-  .brand-text span { font-size: 11px; color: var(--text-tertiary); }
 
   .btn-nav {
     display: inline-flex;
@@ -318,7 +215,6 @@
     border-top-color: var(--primary);
     animation: spin .8s linear infinite;
   }
-  @keyframes spin { to { transform: rotate(360deg); } }
 
   /* ========= Leaflet 弹窗美化 ========= */
   .leaflet-container { font-family: var(--font-sans); }
@@ -432,13 +328,6 @@
   }
   .modal-close:hover { background: var(--primary-subtle); color: var(--text-primary); }
   .modal-field { margin-bottom: 14px; }
-  .modal-field label {
-    display: block;
-    font-size: 0.82rem;
-    font-weight: 500;
-    color: var(--text-secondary);
-    margin-bottom: 6px;
-  }
   .modal-info {
     display: flex;
     align-items: center;
@@ -454,16 +343,13 @@
   .modal-info + .modal-info { margin-top: 8px; }
   .modal-info svg { color: var(--primary); flex-shrink: 0; }
   .modal-info .info-date { color: var(--text-secondary); font-weight: 500; margin-left: auto; }
-  .modal-locate { display: flex; gap: 8px; align-items: stretch; }
-  /* 城市这一格用输入框（可手输 + datalist 联想），配右侧的定位按钮 */
-  .modal-locate .modal-input { flex: 1; min-width: 0; }
+  /* 城市这一格是国/省/市三级下拉（.city-selects 见 style.css），右侧再配定位按钮 */
   /* 年 / 月并排 */
   .modal-date { display: flex; gap: 8px; }
   .modal-date .modal-input { flex: 1; min-width: 0; }
   /* 备注字数：label 与计数同一行，label 自己的下边距让给这一行 */
   .field-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 6px; }
   .field-head label { margin-bottom: 0; }
-  .field-head .note-count { font-size: 0.76rem; color: var(--text-tertiary); }
   .modal-relocate {
     display: inline-flex;
     align-items: center;
@@ -478,52 +364,9 @@
     transition: all var(--transition);
   }
   .modal-relocate:hover { color: var(--primary); border-color: var(--primary); }
-  .modal-input {
-    width: 100%;
-    padding: 10px 12px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    background: var(--bg);
-    color: var(--text-primary);
-    font: inherit;
-    font-size: 0.92rem;
-    transition: border-color var(--transition);
-  }
-  .modal-input:focus { outline: none; border-color: var(--primary); }
-  .modal-input::placeholder { color: var(--text-tertiary); }
-  .modal-check {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 0.88rem;
-    color: var(--text-secondary);
-    cursor: pointer;
-    user-select: none;
-  }
-  .modal-check input { width: 16px; height: 16px; accent-color: var(--primary); flex-shrink: 0; }
-  /* 出行方式多选 chips：隐藏原生复选框，用相邻的 span 当胶囊，选中态靠 `input:checked + span` */
-  .transport-chips { display: flex; flex-wrap: wrap; gap: 8px; }
-  .tp-chip { cursor: pointer; user-select: none; }
-  .tp-chip input { position: absolute; opacity: 0; width: 0; height: 0; }
-  .tp-chip span {
-    display: inline-block;
-    padding: 6px 12px;
-    border: 1px solid var(--border);
-    border-radius: 40px;
-    background: var(--surface);
-    color: var(--text-secondary);
-    font-size: 0.8rem;
-    line-height: 1.3;
-    transition: all var(--transition);
-  }
-  .tp-chip:hover span { border-color: var(--text-tertiary); }
-  .tp-chip input:checked + span {
-    background: var(--primary-light);
-    border-color: var(--primary);
-    color: var(--primary);
-    font-weight: 600;
-  }
-  .tp-chip input:focus-visible + span { outline: 2px solid var(--primary); outline-offset: 1px; }
+  /* 设置项（记不清了 / 不公开行程）用滑动开关 .switch-row，见 style.css；
+     输入框外观（1.5px 边框 + 聚焦光圈）同样在 style.css，与 visits/account 表单同一套 */
+
   .modal-actions { display: flex; gap: 10px; margin-top: 18px; }
   .modal-btn {
     flex: 1;
@@ -541,9 +384,7 @@
   .modal-btn-cancel { background: var(--bg); color: var(--text-secondary); border: 1px solid var(--border); }
   .modal-btn-cancel:hover { color: var(--text-primary); border-color: var(--text-tertiary); }
   .modal-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-  .modal-msg { font-size: 0.82rem; margin-top: 10px; min-height: 1.2em; }
-  .modal-msg.error { color: #dc2626; }
-  .modal-msg.ok { color: #16a34a; }
+  /* 弹窗提示文案 .msg / .msg.error 见 style.css */
 
   /* ========= 我的位置蓝点（定位成功后标在地图上） ========= */
   .my-loc-wrap { background: none; border: none; }
@@ -557,10 +398,9 @@
     box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.45), 0 2px 8px rgba(0, 0, 0, 0.3);
   }
 
-  /* ========= Responsive ========= */
+  /* ========= Responsive =========
+     导航/页脚的手机端缩进见 style.css，这里只写地图页自己的浮动组件 */
   @media (max-width: 640px) {
-    .navbar-inner { padding: 0 12px; gap: 10px; }
-    .back-link { padding: 6px 12px; font-size: 0.82rem; }
     .btn-nav { padding: 8px 16px; font-size: 0.84rem; }
     /* 浮动组件：手机上靠边更紧凑 */
     .legend { top: calc(var(--nav-height) + 10px); left: 10px; padding: 10px 12px; min-width: 150px; }
@@ -572,9 +412,6 @@
     .modal { padding: 18px 16px 14px; }
     .modal-actions { margin-top: 16px; }
     .toast { padding: 10px 16px; font-size: 0.85rem; white-space: nowrap; }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
   }
 </style>
 <meta name="color-scheme" content="light dark">
@@ -602,27 +439,6 @@
 })();
 </script>
 <style>
-  /* ===== 黑夜模式：主题切换按钮 ===== */
-  .theme-toggle { display:inline-flex; align-items:center; justify-content:center; width:32px; height:32px; padding:0; background:none; border:none; border-radius:50%; color:var(--text-primary); cursor:pointer; transition:background var(--transition), color var(--transition); position:relative; z-index:5; touch-action:manipulation; }
-  .theme-toggle:hover { background:var(--primary-subtle); color:var(--primary); }
-  .theme-toggle svg { width:22px; height:22px; }
-  .theme-toggle .icon-sun { display:none; }
-  :root[data-theme="dark"] .theme-toggle .icon-sun { display:block; }
-  :root[data-theme="dark"] .theme-toggle .icon-moon { display:none; }
-
-  /* ===== 黑夜模式：深色变量 ===== */
-  :root { color-scheme: light; --primary-subtle: rgba(37,99,235,0.08); }
-  :root[data-theme="dark"] {
-    color-scheme: dark;
-    --primary-light: rgba(59,130,246,0.16);
-    --primary-subtle: rgba(59,130,246,0.16);
-    --surface:#1e293b; --bg:#0f172a;
-    --text-primary:#e2e8f0; --text-secondary:#94a3b8; --text-tertiary:#64748b;
-    --border:#334155; --navbar-bg:rgba(15,23,42,0.8);
-    --shadow-sm:0 1px 3px rgba(0,0,0,0.4); --shadow-md:0 4px 16px rgba(0,0,0,0.5); --shadow-lg:0 12px 40px rgba(0,0,0,0.6);
-  }
-  :root[data-theme="dark"] .back-link { background:rgba(59,130,246,0.16); border-color:rgba(96,165,250,0.35); }
-  :root[data-theme="dark"] .back-link:hover { background:rgba(59,130,246,0.30); border-color:rgba(96,165,250,0.60); }
 
   /* ===== 黑夜模式：地图页元素覆盖 ===== */
   :root[data-theme="dark"] #map { background:#0f172a; }
@@ -714,10 +530,11 @@
       </button>
     </div>
     <div class="modal-field">
-      <label for="quickCity">城市</label>
-      <div class="modal-locate">
-        <input class="modal-input" id="quickCity" list="quickCityList" placeholder="输入城市名选择" autocomplete="off">
-        <datalist id="quickCityList"></datalist>
+      <label>城市（国 · 省 · 市）</label>
+      <div class="city-selects" id="quickCitySelects">
+        <select id="quickCountry" data-city="country" aria-label="国家"></select>
+        <select id="quickProvince" data-city="province" aria-label="省份"></select>
+        <select id="quickCity" data-city="city" aria-label="城市"></select>
         <button type="button" class="modal-relocate" onclick="locateCity()" aria-label="定位到最近的城市" title="定位到最近的城市">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/></svg>
         </button>
@@ -729,9 +546,9 @@
         <select class="modal-input" id="quickYear"></select>
         <select class="modal-input" id="quickMonth"></select>
       </div>
-      <label class="modal-check" style="margin-top:8px;">
-        <input type="checkbox" id="quickForgot" onchange="toggleQuickDate()">
+      <label class="switch-row" style="margin-top:8px;">
         <span>记不清了</span>
+        <span class="switch"><input type="checkbox" id="quickForgot" onchange="toggleQuickDate()"><span class="switch-track"></span></span>
       </label>
     </div>
     <div class="modal-field">
@@ -746,16 +563,16 @@
       <input class="modal-input" id="quickNote" maxlength="100" placeholder="一句话留下回忆…" autocomplete="off" oninput="updateQuickNoteCount()">
     </div>
     <div class="modal-field">
-      <label class="modal-check">
-        <input type="checkbox" id="quickPrivate">
+      <label class="switch-row">
         <span>不公开行程（仅自己可见）</span>
+        <span class="switch"><input type="checkbox" id="quickPrivate"><span class="switch-track"></span></span>
       </label>
     </div>
     <div class="modal-actions">
       <button type="button" class="modal-btn modal-btn-cancel" onclick="closeQuickModal()">取消</button>
       <button type="button" class="modal-btn modal-btn-primary" id="quickSubmit" onclick="submitQuickAdd()">添加行程</button>
     </div>
-    <div class="modal-msg" id="quickMsg"></div>
+    <div class="msg" id="quickMsg"></div>
   </div>
 </div>
 
@@ -1136,21 +953,18 @@ function locateCity() {
       updateMyLocation(pos.coords.latitude, pos.coords.longitude);
       const city = nearestCity(pos.coords.latitude, pos.coords.longitude);
       if (!city) { showToast('未找到附近城市'); return; }
-      document.getElementById('quickCity').value = city.name;
+      quickCitySelects.setCity(city.name); // 三级下拉一起回填（省也得跟着选中）
     },
     (err) => { showToast(geoErrorMsg(err)); },
     { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
   );
 }
 
-// 城市联想与年 / 月下拉的选项只在启动时铺一次（与足迹管理页同一份 window.CITIES）
+// 城市三级下拉与年 / 月下拉的选项只在启动时铺一次（与足迹管理页同一份 window.CITIES）
+let quickCitySelects = null;
 (function initQuickForm() {
-  const cityList = document.getElementById('quickCityList');
-  (window.CITIES || []).forEach(c => {
-    const opt = document.createElement('option');
-    opt.value = c.name;
-    cityList.appendChild(opt);
-  });
+  // 国 → 省 → 市三级联动（逻辑在 app.js，与足迹管理页编辑弹窗共用一份）
+  quickCitySelects = initCitySelects(document.getElementById('quickCitySelects'));
 
   // 出行方式 chips（枚举与渲染逻辑在 app.js，与足迹管理页共用）
   renderTransportChips(document.getElementById('quickTransport'));
@@ -1232,7 +1046,7 @@ function updateQuickNoteCount() {
 // 开弹窗并复位：时间默认填「本月」——添加行程时最常见的值，用户不动就是对的
 function openQuickModal() {
   const now = new Date();
-  document.getElementById('quickCity').value = '';
+  quickCitySelects.reset();
   document.getElementById('quickYear').value = String(now.getFullYear());
   document.getElementById('quickMonth').value = String(now.getMonth() + 1).padStart(2, '0');
   document.getElementById('quickForgot').checked = false;
@@ -1244,7 +1058,7 @@ function openQuickModal() {
   document.getElementById('quickMsg').textContent = '';
   document.getElementById('quickSubmit').disabled = false;
   document.getElementById('quickModal').classList.add('show');
-  document.getElementById('quickCity').focus();
+  document.getElementById('quickProvince').focus();
 }
 
 function closeQuickModal() {
@@ -1255,16 +1069,16 @@ async function submitQuickAdd() {
   const btn = document.getElementById('quickSubmit');
   const msg = document.getElementById('quickMsg');
   // 城市必须来自城市表：坐标由它带出来（后端只校验坐标是数字，认不认得出城市名是前端的事）。
-  // findCity 只回 {lat,lng}，城市名就用输入框里的原值
-  const name = document.getElementById('quickCity').value.trim();
+  // findCity 只回 {lat,lng}，城市名用下拉选中的原值；三级没选完时 getCity() 为空串
+  const name = quickCitySelects.getCity();
   const c = findCity(name);
   if (!c) {
-    msg.className = 'modal-msg error';
-    msg.textContent = '未找到该城市，请从下拉列表选择';
+    msg.className = 'msg error';
+    msg.textContent = '请选择省份和城市';
     return;
   }
   btn.disabled = true;
-  msg.className = 'modal-msg error';
+  msg.className = 'msg error';
   msg.textContent = '正在添加…';
 
   const payload = {
@@ -1283,7 +1097,7 @@ async function submitQuickAdd() {
     showToast('已添加');
     reloadMap();
   } catch (err) {
-    msg.className = 'modal-msg error';
+    msg.className = 'msg error';
     msg.textContent = err.message;
     btn.disabled = false;
   }

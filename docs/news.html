@@ -6,127 +6,10 @@
 <title>公告与更新日志 · City Footprint - 青翔未阔工作室</title>
 <meta name="description" content="City Footprint 的公告与更新日志，了解最新动态与版本历史。">
 <link rel="icon" type="image/webp" href="/favicon.webp">
+<link rel="stylesheet" href="/style.css">
 <style>
-  /* ========= Reset & Base ========= */
-  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-  :root {
-    --primary: #2563eb;
-    --primary-hover: #1d4ed8;
-    --primary-light: #eff6ff;
-    --secondary: #0d9488;
-    --surface: #ffffff;
-    --bg: #f8fafc;
-    --text-primary: #0f172a;
-    --text-secondary: #64748b;
-    --text-tertiary: #94a3b8;
-    --border: #e2e8f0;
-    --navbar-bg: rgba(255, 255, 255, 0.8);
-    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
-    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
-    --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.12);
-    --radius-sm: 8px;
-    --radius-md: 14px;
-    --radius-lg: 20px;
-    --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
-    --container: 1100px;
-    --nav-height: 64px;
-  }
-  html { scroll-behavior: smooth; }
-  body {
-    font-family: var(--font-sans);
-    background: var(--bg);
-    color: var(--text-primary);
-    line-height: 1.6;
-    -webkit-font-smoothing: antialiased;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-  }
-
-  /* ========= Navbar ========= */
-  .navbar {
-    position: sticky;
-    top: 0;
-    z-index: 1000;
-    height: var(--nav-height);
-    background: var(--navbar-bg);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border-bottom: 1px solid var(--border);
-  }
-  .navbar-inner {
-    max-width: var(--container);
-    margin: 0 auto;
-    padding: 0 24px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    height: 100%;
-    gap: 12px;
-  }
-  .navbar-brand {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    text-decoration: none;
-    color: var(--text-primary);
-    font-weight: 600;
-    font-size: 1.15rem;
-    letter-spacing: 0.3px;
-    transition: opacity var(--transition);
-    flex-shrink: 0;
-  }
-  .navbar-brand:hover { opacity: 0.85; }
-  .brand-logo {
-    width: 34px;
-    height: 34px;
-    border-radius: 50%;
-    flex-shrink: 0;
-    object-fit: cover;
-    box-shadow: 0 2px 10px rgba(37, 99, 235, 0.25);
-  }
-  .brand-text { line-height: 1.25; }
-  .brand-text b { display: block; font-size: 16px; font-weight: 600; letter-spacing: 0.3px; }
-  .brand-text span { font-size: 11px; color: var(--text-tertiary); }
-  .back-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 18px;
-    background: rgba(37, 99, 235, 0.15);
-    color: var(--text-primary);
-    text-decoration: none;
-    border-radius: 40px;
-    font-size: 0.88rem;
-    font-weight: 500;
-    backdrop-filter: blur(4px);
-    border: 1px solid rgba(147, 197, 253, 0.35);
-    transition: all var(--transition);
-    white-space: nowrap;
-  }
-  .back-link:hover {
-    background: rgba(37, 99, 235, 0.3);
-    border-color: rgba(147, 197, 253, 0.6);
-    transform: scale(1.02);
-  }
-
-  /* ========= Main ========= */
-  .main { flex: 1; padding: 36px 24px 60px; }
-  .container { max-width: var(--container); margin: 0 auto; }
-  .page-header { display: flex; align-items: center; margin-bottom: 28px; }
-  .page-header h1 { font-size: clamp(1.4rem, 3vw, 1.8rem); font-weight: 700; color: var(--text-primary); }
-
-  /* ========= Card ========= */
-  .card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
-    padding: 24px;
-    box-shadow: var(--shadow-sm);
-    margin-bottom: 20px;
-  }
-  .card h3 { font-size: 1.02rem; font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+  /* 标题字号/字重/下边距继承 style.css 的 .card h3，这里只加图标与文字的对齐 */
+  .card h3 { display: flex; align-items: center; gap: 8px; }
 
   /* ========= 公告 ========= */
   .notice-item {
@@ -199,30 +82,11 @@
     margin: 3px 0;
   }
 
-  /* ========= Footer ========= */
-  .footer {
-    background: #0f172a;
-    text-align: center;
-    padding: 28px 24px;
-    color: var(--text-tertiary);
-    font-size: 0.82rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
-  }
-  .footer-copy { opacity: 0.6; }
-
-  /* ========= Responsive ========= */
+  /* ========= Responsive =========
+     导航/页脚的手机端缩进见 style.css，本页只有时间轴要缩进 */
   @media (max-width: 640px) {
-    .navbar-inner { padding: 0 12px; }
-    .main { padding: 20px 12px 32px; }
-    .card { padding: 14px; }
-    .back-link { padding: 6px 12px; font-size: 0.82rem; }
-    .footer { padding: 20px 12px; }
-    .page-header { margin-bottom: 20px; }
     .timeline { padding-left: 20px; }
     .timeline-item::before { left: -20px; }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
   }
 </style>
 <meta name="color-scheme" content="light dark">
@@ -249,30 +113,6 @@
   window.addEventListener('storage', function (e) { if (e.key === KEY) apply(current()); });
 })();
 </script>
-<style>
-  /* ===== 黑夜模式：主题切换按钮 ===== */
-  .theme-toggle { display:inline-flex; align-items:center; justify-content:center; width:32px; height:32px; padding:0; background:none; border:none; border-radius:50%; color:var(--text-primary); cursor:pointer; transition:background var(--transition), color var(--transition); position:relative; z-index:5; touch-action:manipulation; }
-  .theme-toggle:hover { background:var(--primary-subtle); color:var(--primary); }
-  .theme-toggle svg { width:22px; height:22px; }
-  .theme-toggle .icon-sun { display:none; }
-  :root[data-theme="dark"] .theme-toggle .icon-sun { display:block; }
-  :root[data-theme="dark"] .theme-toggle .icon-moon { display:none; }
-
-  /* ===== 黑夜模式：深色变量 ===== */
-  :root { color-scheme: light; --primary-subtle: rgba(37,99,235,0.08); }
-  :root[data-theme="dark"] {
-    color-scheme: dark;
-    --primary-light: rgba(59,130,246,0.16);
-    --primary-subtle: rgba(59,130,246,0.16);
-    --surface:#1e293b; --bg:#0f172a;
-    --text-primary:#e2e8f0; --text-secondary:#94a3b8; --text-tertiary:#64748b;
-    --border:#334155; --navbar-bg:rgba(15,23,42,0.8);
-    --shadow-sm:0 1px 3px rgba(0,0,0,0.4); --shadow-md:0 4px 16px rgba(0,0,0,0.5); --shadow-lg:0 12px 40px rgba(0,0,0,0.6);
-  }
-  :root[data-theme="dark"] .footer { background:#111827; }
-  :root[data-theme="dark"] .back-link { background:rgba(59,130,246,0.16); border-color:rgba(96,165,250,0.35); }
-  :root[data-theme="dark"] .back-link:hover { background:rgba(59,130,246,0.30); border-color:rgba(96,165,250,0.60); }
-</style>
 </head>
 <body>
 

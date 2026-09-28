@@ -70,6 +70,63 @@ function findCity(name) {
   return c ? { lat: c.lat, lng: c.lng } : null;
 }
 
+// ========= 城市三级下拉（国 → 省 → 市） =========
+// 主页「添加行程」弹窗与足迹管理「编辑行程」弹窗共用这一份联动逻辑。
+// 国家这一级当前只有「中国」—— cities.js 是纯国内地级市表，没有 country 字段；
+// 但仍照三级铺开并在这里按 country 过滤，将来数据带上 country 就能自动多出选项，
+// 页面不用改结构（跨端契约：城市名仍是提交给后端的 city 原值）。
+// box 是含 data-city="country|province|city" 三个 <select> 的容器。
+// 返回值供定位回填 / 编辑回填 / 提交取值用，页面里不要再自己去读写 select。
+function initCitySelects(box) {
+  const countrySel = box.querySelector('[data-city="country"]');
+  const provSel = box.querySelector('[data-city="province"]');
+  const citySel = box.querySelector('[data-city="city"]');
+  const cities = window.CITIES || [];
+  const countryOf = c => c.country || '中国';
+  const countries = [...new Set(cities.map(countryOf))];
+
+  function fillCities() {
+    const list = provSel.value
+      ? cities.filter(c => countryOf(c) === countrySel.value && c.province === provSel.value)
+      : [];
+    citySel.innerHTML = '<option value="">城市</option>' +
+      list.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+  }
+
+  function fillProvinces() {
+    const provs = [...new Set(cities.filter(c => countryOf(c) === countrySel.value).map(c => c.province))];
+    provSel.innerHTML = '<option value="">省份</option>' +
+      provs.map(p => `<option value="${p}">${p}</option>`).join('');
+    fillCities();
+  }
+
+  countrySel.innerHTML = (countries.length ? countries : ['中国'])
+    .map(n => `<option value="${n}">${n}</option>`).join('');
+  countrySel.addEventListener('change', fillProvinces);
+  provSel.addEventListener('change', fillCities);
+  fillProvinces();
+
+  return {
+    // 当前选中的城市名（没选完为空串）
+    getCity() { return citySel.value; },
+    // 按城市名回填三级（定位回填、编辑回填共用）；名字不在城市表里则清空
+    setCity(name) {
+      const c = cities.find(x => x.name === name);
+      countrySel.value = c ? countryOf(c) : (countries[0] || '中国');
+      fillProvinces();
+      if (!c) return;
+      provSel.value = c.province;
+      fillCities();
+      citySel.value = c.name;
+    },
+    // 复位到初始态（打开添加弹窗时用）：省/市都回到占位项
+    reset() {
+      countrySel.value = countries[0] || '中国';
+      fillProvinces();
+    },
+  };
+}
+
 // 出行方式枚举：code 必须与后端白名单一致（backend/src/worker.js 的 TRANSPORTS），
 // 这里的顺序即展示顺序，也是后端落库时的排序依据。label 供 UI 展示。
 window.TRANSPORTS = [

@@ -6,190 +6,28 @@
 <title>足迹管理 · City Footprint - 青翔未阔工作室</title>
 <meta name="description" content="管理你在 City Footprint 的城市足迹：添加、修改、删除行程，查看成就进度。">
 <link rel="icon" type="image/webp" href="/favicon.webp">
+<link rel="stylesheet" href="/style.css">
 <style>
-  /* ========= Reset & Base ========= */
-  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-  :root {
-    --primary: #2563eb;
-    --primary-hover: #1d4ed8;
-    --primary-light: #eff6ff;
-    --secondary: #0d9488;
-    --surface: #ffffff;
-    --bg: #f8fafc;
-    --text-primary: #0f172a;
-    --text-secondary: #64748b;
-    --text-tertiary: #94a3b8;
-    --border: #e2e8f0;
-    --navbar-bg: rgba(255, 255, 255, 0.8);
-    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
-    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
-    --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.12);
-    --radius-sm: 8px;
-    --radius-md: 14px;
-    --radius-lg: 20px;
-    --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
-    --container: 1100px;
-    --nav-height: 64px;
-  }
-  html { scroll-behavior: smooth; }
-  body {
-    font-family: var(--font-sans);
-    background: var(--bg);
-    color: var(--text-primary);
-    line-height: 1.6;
-    -webkit-font-smoothing: antialiased;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-  }
-
-  /* ========= Navbar ========= */
-  .navbar {
-    position: sticky;
-    top: 0;
-    z-index: 1000;
-    height: var(--nav-height);
-    background: var(--navbar-bg);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border-bottom: 1px solid var(--border);
-  }
-  .navbar-inner {
-    max-width: var(--container);
-    margin: 0 auto;
-    padding: 0 24px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    height: 100%;
-    gap: 12px;
-  }
-  .navbar-brand {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    text-decoration: none;
-    color: var(--text-primary);
-    font-weight: 600;
-    font-size: 1.15rem;
-    letter-spacing: 0.3px;
-    transition: opacity var(--transition);
-    flex-shrink: 0;
-  }
-  .navbar-brand:hover { opacity: 0.85; }
-  .brand-logo {
-    width: 34px;
-    height: 34px;
-    border-radius: 50%;
-    flex-shrink: 0;
-    object-fit: cover;
-    box-shadow: 0 2px 10px rgba(37, 99, 235, 0.25);
-  }
-  .brand-text { line-height: 1.25; }
-  .brand-text b { display: block; font-size: 16px; font-weight: 600; letter-spacing: 0.3px; }
-  .brand-text span { font-size: 11px; color: var(--text-tertiary); }
-  .back-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 18px;
-    background: rgba(37, 99, 235, 0.15);
-    color: var(--text-primary);
-    text-decoration: none;
-    border-radius: 40px;
-    font-size: 0.88rem;
-    font-weight: 500;
-    backdrop-filter: blur(4px);
-    border: 1px solid rgba(147, 197, 253, 0.35);
-    transition: all var(--transition);
-    white-space: nowrap;
-  }
-  .back-link:hover {
-    background: rgba(37, 99, 235, 0.3);
-    border-color: rgba(147, 197, 253, 0.6);
-    transform: scale(1.02);
-  }
-
-  /* ========= Main ========= */
-  .main { flex: 1; padding: 36px 24px 60px; }
-  .container { max-width: var(--container); margin: 0 auto; }
-  .page-header { display: flex; align-items: center; margin-bottom: 28px; }
-  .page-header h1 { font-size: clamp(1.4rem, 3vw, 1.8rem); font-weight: 700; color: var(--text-primary); }
-
-  /* ========= Card ========= */
-  .card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
-    padding: 24px;
-    box-shadow: var(--shadow-sm);
-    margin-bottom: 20px;
-  }
-  .card h3 { font-size: 1.02rem; font-weight: 600; margin-bottom: 16px; }
-
-  /* ========= Form ========= */
-  label { display: block; font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500; }
-  input, select, textarea {
-    width: 100%;
-    padding: 10px 14px;
-    border: 1.5px solid var(--border);
-    border-radius: var(--radius-sm);
-    font-size: 0.9rem;
-    font-family: inherit;
-    color: var(--text-primary);
-    background: var(--surface);
-    transition: border-color var(--transition), box-shadow var(--transition);
-  }
-  input:focus, select:focus, textarea:focus {
-    outline: none;
-    border-color: var(--primary);
-    box-shadow: 0 0 0 3px var(--primary-light);
-  }
-  .field { margin-bottom: 16px; }
+  /* ========= Form =========
+     控件外观（label / input / select / textarea / .field）见 style.css，与 account 登录表单同一套 */
   .row { display: flex; gap: 12px; }
   .row > div { flex: 1; }
-
-  /* ========= Buttons ========= */
-  .btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    border: none;
-    border-radius: 40px;
-    padding: 11px 18px;
-    font-size: 0.9rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all var(--transition);
-    font-family: inherit;
-  }
-  .btn-primary {
-    background: linear-gradient(135deg, var(--primary), var(--secondary));
-    color: #fff;
-    width: 100%;
-  }
-  .btn-primary:hover {
-    background: linear-gradient(135deg, var(--primary-hover), #0f766e);
-    box-shadow: var(--shadow-md);
-    transform: translateY(-1px);
-  }
-  .btn-ghost { background: var(--bg); color: var(--text-secondary); border: 1px solid var(--border); }
-  .btn-ghost:hover { background: var(--border); color: var(--text-primary); }
   .btn-danger { background: #fee2e2; color: #dc2626; }
   .btn-danger:hover { background: #fecaca; }
-  .btn-sm { padding: 6px 12px; font-size: 0.8rem; border-radius: 6px; }
 
-  /* ========= 足迹列表 ========= */
+  /* ========= 足迹列表 =========
+     每条足迹独立成卡（外层大卡片已去掉），因此不再用分隔线，靠卡片间距区分 */
+  #visitList { display: flex; flex-direction: column; gap: 10px; }
   .visit-item {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 14px 4px;
-    border-bottom: 1px solid var(--border);
+    padding: 14px 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
   }
-  .visit-item:last-child { border-bottom: none; }
   .visit-dot {
     width: 24px;
     height: 24px;
@@ -235,64 +73,14 @@
   }
   .visit-actions { display: flex; gap: 6px; flex-shrink: 0; }
 
-  .empty { text-align: center; color: var(--text-tertiary); font-size: 0.9rem; padding: 36px 0; }
-
-  /* ========= 加载中：校验会话时的过渡界面 ========= */
-  .loading-view {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 16px;
-    color: var(--text-secondary);
-    font-size: 0.92rem;
-  }
-  .loading-spinner {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    border: 3px solid var(--border);
-    border-top-color: var(--primary);
-    animation: spin 0.9s linear infinite;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  .msg { font-size: 0.84rem; margin-top: 10px; }
-  .msg.error { color: #dc2626; }
-  .msg.ok { color: #16a34a; }
+  /* .empty 空态、.loading-view / .loading-spinner 加载态、.hint / .note-count 小字、
+     .msg 提示文案都见 style.css */
 
   .date-selects { display: flex; gap: 8px; }
   .date-selects select { flex: 1; }
 
-  .check-row { display: flex; align-items: center; gap: 8px; }
-  .check-row input[type=checkbox] { width: auto; }
-  .check-row label { margin-bottom: 0; }
-  /* 出行方式多选 chips（与主页添加弹窗同一套结构，选中态靠 `input:checked + span`） */
-  .transport-chips { display: flex; flex-wrap: wrap; gap: 8px; }
-  .tp-chip { cursor: pointer; user-select: none; }
-  .tp-chip input { position: absolute; opacity: 0; width: 0; height: 0; }
-  .tp-chip span {
-    display: inline-block;
-    padding: 6px 12px;
-    border: 1px solid var(--border);
-    border-radius: 40px;
-    background: var(--surface);
-    color: var(--text-secondary);
-    font-size: 0.8rem;
-    line-height: 1.3;
-    transition: all var(--transition);
-  }
-  .tp-chip:hover span { border-color: var(--text-tertiary); }
-  .tp-chip input:checked + span {
-    background: var(--primary-light);
-    border-color: var(--primary);
-    color: var(--primary);
-    font-weight: 600;
-  }
-  .tp-chip input:focus-visible + span { outline: 2px solid var(--primary); outline-offset: 1px; }
-  .hint { font-size: 0.78rem; color: var(--text-tertiary); margin-top: 4px; }
-
-  .note-count { font-size: 0.78rem; color: var(--text-tertiary); }
+  /* 设置项（记不清了 / 不公开行程）用滑动开关 .switch-row，见 style.css；
+     出行方式多选 chips（.transport-chips / .tp-chip）也见 style.css：与主页添加弹窗同一套 */
 
   /* ===== 编辑行程弹窗 =====
      用原生 <dialog>：遮罩、Esc 关闭、焦点陷阱都由浏览器给，不必再手写一套 overlay */
@@ -331,24 +119,16 @@
   .field-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 6px; }
   .field-head label { margin-bottom: 0; }
 
-  /* 足迹统计卡 */
+  /* 足迹统计：改用与全站统计同一套小卡（.stat-card / .label / .value 见 style.css）。
+     第一行是「时间跨度」整行长卡，其余每行两个 */
   .visit-stats {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 14px 16px;
-    margin-top: 10px;
-    padding-top: 14px;
-    border-top: 1px solid var(--border);
+    gap: 12px;
   }
-  .visit-stats .stat {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 2px;
-  }
-  .visit-stats .stat b { font-size: 1.3rem; font-weight: 700; color: var(--primary); line-height: 1.15; }
-  .visit-stats .stat b.date-range { font-size: 1.02rem; }
-  .stat-label { font-size: 0.82rem; font-weight: 600; color: var(--text-secondary); }
+  .visit-stats .stat-wide { grid-column: 1 / -1; }
+  /* 日期串比纯数字长一倍，字号收一档免得撑满整行 */
+  .visit-stats .value.date-range { font-size: 1.25rem; }
 
   /* 个人中心两列布局（电脑端两列；手机端单列） */
   .personal-layout {
@@ -369,7 +149,9 @@
     user-select: none;
     margin-bottom: 12px;
   }
-  .card-header h3 { margin-bottom: 0; }
+  /* 行程记录 / 成就两节已不再套外层 .card，标题字号得自己写一份；
+     取值与 style.css 的 .card h3 一致，改那边时这里跟着改 */
+  .card-header h3 { font-size: 1.15rem; font-weight: 600; margin-bottom: 0; }
   .card-toggle { color: var(--text-tertiary); transition: transform 0.2s ease; flex-shrink: 0; }
   .visit-list-card.collapsed .card-toggle { transform: rotate(-90deg); }
   .visit-list-card.collapsed #visitList { display: none; }
@@ -377,22 +159,24 @@
   .achievement-card.collapsed .card-toggle { transform: rotate(-90deg); }
   .achievement-card.collapsed .achievement-grid { display: none; }
 
-  /* 成就卡片 */
+  /* 成就卡片：单列堆叠，每个成就独立成卡（同样没有外层大卡片） */
   .achievement-grid {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
   }
   .achievement {
     display: flex;
     align-items: center;
     gap: 10px;
-    background: var(--bg);
+    background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    padding: 8px 12px;
+    border-radius: var(--radius-md);
+    padding: 12px 14px;
+    box-shadow: var(--shadow-sm);
     text-align: left;
-    opacity: 0.45;
+    /* 未达成的整卡压暗（白卡落到灰底上会显得偏白，0.45 太淡看不见，抬到 0.55） */
+    opacity: 0.55;
     transition: all var(--transition);
     overflow: hidden;
   }
@@ -461,14 +245,15 @@
     user-select: none;
     padding: 8px 10px;
     border-radius: var(--radius-sm);
-    background: var(--bg);
+    /* 分类头现在直接落在页面灰底上，用 --surface 才有一块「可点区域」的观感 */
+    background: var(--surface);
     border: 1px solid var(--border);
     margin-bottom: 8px;
     transition: all var(--transition);
   }
   .category-header:hover { border-color: var(--primary); }
   .category-title { font-size: 0.9rem; font-weight: 600; flex: 1; }
-  /* 分类细进度条：轨道用 --border（分类头背景是 --bg，用 --bg 会看不见） */
+  /* 分类细进度条：轨道用 --border（分类头背景是 --surface，用 --surface 会看不见） */
   .category-bar {
     width: 74px;
     height: 6px;
@@ -489,32 +274,15 @@
   .achievement-category.collapsed .category-toggle { transform: rotate(-90deg); }
   .achievement-category.collapsed .category-body { display: none; }
 
-  /* ========= Footer ========= */
-  .footer {
-    background: #0f172a;
-    text-align: center;
-    padding: 28px 24px;
-    color: var(--text-tertiary);
-    font-size: 0.82rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
-  }
-  .footer-copy { opacity: 0.6; }
-
-  /* ========= Responsive ========= */
-  @media (max-width: 768px) {
-    .personal-layout { grid-template-columns: 1fr; }
-  }
+  /* ========= Responsive =========
+     导航/页脚的手机端缩进见 style.css，本页只有表单的 .row 要竖排 */
   @media (max-width: 640px) {
-    .navbar-inner { padding: 0 12px; }
-    .main { padding: 20px 12px 32px; }
-    .card { padding: 14px; }
-    .back-link { padding: 6px 12px; font-size: 0.82rem; }
-    .footer { padding: 20px 12px; }
-    .page-header { margin-bottom: 20px; }
     .row { flex-direction: column; gap: 10px; }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+    /* 统计小卡与全站统计一致地收一档 */
+    .visit-stats { gap: 10px; }
+    .visit-stats .stat-card { padding: 14px; }
+    .visit-stats .value { font-size: 1.6rem; }
+    .visit-stats .value.date-range { font-size: 1.1rem; }
   }
 </style>
 <meta name="color-scheme" content="light dark">
@@ -542,30 +310,8 @@
 })();
 </script>
 <style>
-  /* ===== 黑夜模式：主题切换按钮 ===== */
-  .theme-toggle { display:inline-flex; align-items:center; justify-content:center; width:32px; height:32px; padding:0; background:none; border:none; border-radius:50%; color:var(--text-primary); cursor:pointer; transition:background var(--transition), color var(--transition); position:relative; z-index:5; touch-action:manipulation; }
-  .theme-toggle:hover { background:var(--primary-subtle); color:var(--primary); }
-  .theme-toggle svg { width:22px; height:22px; }
-  .theme-toggle .icon-sun { display:none; }
-  :root[data-theme="dark"] .theme-toggle .icon-sun { display:block; }
-  :root[data-theme="dark"] .theme-toggle .icon-moon { display:none; }
-
-  /* ===== 黑夜模式：深色变量 ===== */
-  :root { color-scheme: light; --primary-subtle: rgba(37,99,235,0.08); }
-  :root[data-theme="dark"] {
-    color-scheme: dark;
-    --primary-light: rgba(59,130,246,0.16);
-    --primary-subtle: rgba(59,130,246,0.16);
-    --surface:#1e293b; --bg:#0f172a;
-    --text-primary:#e2e8f0; --text-secondary:#94a3b8; --text-tertiary:#64748b;
-    --border:#334155; --navbar-bg:rgba(15,23,42,0.8);
-    --shadow-sm:0 1px 3px rgba(0,0,0,0.4); --shadow-md:0 4px 16px rgba(0,0,0,0.5); --shadow-lg:0 12px 40px rgba(0,0,0,0.6);
-  }
-  :root[data-theme="dark"] .footer { background:#111827; }
-  :root[data-theme="dark"] .back-link { background:rgba(59,130,246,0.16); border-color:rgba(96,165,250,0.35); }
-  :root[data-theme="dark"] .back-link:hover { background:rgba(59,130,246,0.30); border-color:rgba(96,165,250,0.60); }
-
-  /* ===== 黑夜模式：页面元素覆盖 ===== */
+  /* ===== 黑夜模式：页面元素覆盖 =====
+     footer 的深色覆盖在 style.css 里 */
   :root[data-theme="dark"] .btn-danger { background:rgba(239,68,68,0.16); color:#f87171; }
   :root[data-theme="dark"] .btn-danger:hover { background:rgba(239,68,68,0.25); }
 </style>
@@ -611,12 +357,19 @@
         <div class="card">
           <h3>📊 足迹统计</h3>
           <div class="visit-stats" id="visitStats">
-            <span class="stat">✈️ 去过 <b>0</b> 座城市</span>
-            <span class="stat">📍 足迹 <b>0</b> 条</span>
+            <div class="stat-card stat-wide">
+              <div class="label">⏳ 时间跨度</div>
+              <div class="value date-range">— → —</div>
+            </div>
+            <div class="stat-card"><div class="label">✈️ 去过城市</div><div class="value">0</div></div>
+            <div class="stat-card"><div class="label">📍 足迹</div><div class="value">0</div></div>
+            <div class="stat-card"><div class="label">🗺️ 省份</div><div class="value">0</div></div>
+            <div class="stat-card"><div class="label">🚆 出行方式</div><div class="value">0</div></div>
           </div>
         </div>
 
-        <div class="card visit-list-card collapsed" id="visitListCard">
+        <!-- 行程记录：去掉外层大卡片，每条足迹自成一张卡；默认展开，点标题行可收起 -->
+        <div class="visit-list-card" id="visitListCard">
           <div class="card-header" onclick="toggleVisitList()">
             <h3>📍 行程记录</h3>
             <svg class="card-toggle" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
@@ -626,7 +379,8 @@
       </div>
 
       <div class="personal-col">
-        <div class="card achievement-card" id="achievementCard">
+        <!-- 成就：同样去掉外层大卡片，每个成就自成一张卡 -->
+        <div class="achievement-card" id="achievementCard">
           <div class="card-header" onclick="toggleAchievement()">
             <h3>🏆 成就</h3>
             <svg class="card-toggle" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
@@ -657,9 +411,12 @@
       </button>
     </div>
     <div class="field">
-      <label for="visitCity">城市</label>
-      <input list="cityList" id="visitCity" placeholder="输入城市名选择" required autocomplete="off">
-      <datalist id="cityList"></datalist>
+      <label>城市（国 · 省 · 市）</label>
+      <div class="city-selects" id="visitCitySelects">
+        <select id="visitCountry" data-city="country" aria-label="国家"></select>
+        <select id="visitProvince" data-city="province" aria-label="省份"></select>
+        <select id="visitCity" data-city="city" aria-label="城市"></select>
+      </div>
     </div>
     <div class="field">
       <label for="visitYear">时间</label>
@@ -667,10 +424,10 @@
         <select id="visitYear"></select>
         <select id="visitMonth"></select>
       </div>
-      <div class="check-row" style="margin-top:8px;">
-        <input type="checkbox" id="forgotDate" onchange="toggleDate()">
-        <label for="forgotDate">记不清了</label>
-      </div>
+      <label class="switch-row" style="margin-top:8px;">
+        <span>记不清了</span>
+        <span class="switch"><input type="checkbox" id="forgotDate" onchange="toggleDate()"><span class="switch-track"></span></span>
+      </label>
     </div>
     <div class="field">
       <label>出行方式（可多选）</label>
@@ -683,10 +440,10 @@
       </div>
       <input id="visitNote" maxlength="100" placeholder="一句话留下回忆…" autocomplete="off" oninput="updateNoteCount()">
     </div>
-    <div class="check-row" style="margin-bottom:16px;">
-      <input type="checkbox" id="visitPrivate">
-      <label for="visitPrivate">不公开行程（仅自己可见）</label>
-    </div>
+    <label class="switch-row" style="margin-bottom:16px;">
+      <span>不公开行程（仅自己可见）</span>
+      <span class="switch"><input type="checkbox" id="visitPrivate"><span class="switch-track"></span></span>
+    </label>
     <div class="dialog-actions">
       <button class="btn btn-ghost" type="button" onclick="closeEditModal()">取消</button>
       <button class="btn btn-primary" type="submit">保存修改</button>
@@ -718,13 +475,8 @@ if (!getSession()) {
     });
 }
 
-// 城市下拉数据
-const datalist = document.getElementById('cityList');
-(window.CITIES || []).forEach(c => {
-  const opt = document.createElement('option');
-  opt.value = c.name;
-  datalist.appendChild(opt);
-});
+// 城市三级下拉（国 → 省 → 市）：联动逻辑在 app.js，与主页添加弹窗共用一份
+const visitCitySelects = initCitySelects(document.getElementById('visitCitySelects'));
 
 // 出行方式 chips（枚举与渲染逻辑在 app.js，与主页添加弹窗共用）
 renderTransportChips(document.getElementById('visitTransport'));
@@ -797,25 +549,31 @@ function updateVisitStats() {
   if (!el) return;
   const cityCount = new Set(myVisits.map(v => v.city)).size;
   const provinceCount = new Set(myVisits.map(v => findProvince(v.city))).size;
+  const transportCount = new Set(myVisits.flatMap(v => v.transport || [])).size;
   const dates = myVisits.map(v => v.visit_date).filter(Boolean).sort();
   const first = dates[0] || '—';
   const last = dates[dates.length - 1] || '—';
+  // 第一行整行是时间跨度长卡，其余四张按每行两个排（布局见页内 .visit-stats）
   el.innerHTML = `
-    <div class="stat">
-      <span class="stat-label">✈️ 去过城市</span>
-      <b>${cityCount}</b>
+    <div class="stat-card stat-wide">
+      <div class="label">⏳ 时间跨度</div>
+      <div class="value date-range">${first} → ${last}</div>
     </div>
-    <div class="stat">
-      <span class="stat-label">📍 足迹</span>
-      <b>${myVisits.length}</b>
+    <div class="stat-card">
+      <div class="label">✈️ 去过城市</div>
+      <div class="value">${cityCount}</div>
     </div>
-    <div class="stat">
-      <span class="stat-label">🗺️ 省份</span>
-      <b>${provinceCount}</b>
+    <div class="stat-card">
+      <div class="label">📍 足迹</div>
+      <div class="value">${myVisits.length}</div>
     </div>
-    <div class="stat">
-      <span class="stat-label">⏳ 最早 · 最近</span>
-      <b class="date-range">${first} → ${last}</b>
+    <div class="stat-card">
+      <div class="label">🗺️ 省份</div>
+      <div class="value">${provinceCount}</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">🚆 出行方式</div>
+      <div class="value">${transportCount}</div>
     </div>`;
 }
 
@@ -911,9 +669,9 @@ async function saveEdit(e) {
   if (!editingId) return false;
   const msg = document.getElementById('addMsg');
   msg.className = 'msg error';
-  const name = document.getElementById('visitCity').value.trim();
+  const name = visitCitySelects.getCity();
   const c = findCity(name);
-  if (!c) { msg.textContent = '未找到该城市，请从下拉列表选择'; return false; }
+  if (!c) { msg.textContent = '请选择省份和城市'; return false; }
 
   const payload = {
     city: name,
@@ -937,7 +695,7 @@ function startEdit(id) {
   const v = myVisits.find(x => x.id === id);
   if (!v) return;
   editingId = id;
-  document.getElementById('visitCity').value = v.city;
+  visitCitySelects.setCity(v.city); // 三级下拉一起回填
   document.getElementById('visitNote').value = v.note || '';
   document.getElementById('visitPrivate').checked = !!v.is_private;
   setCheckedTransports(document.getElementById('visitTransport'), v.transport);
