@@ -88,8 +88,7 @@
 │   ├── test/
 │   │   └── achievements.test.js  # 成就判定与达成人数的单测（cd backend && npm test）
 │   ├── migrations/
-│   │   ├── 0001_init.sql     # 建表：users（原与 Qxwk-Blog 共享）/ cf_visits（足迹，本站独占）
-│   │   └── 0002_cf_users.sql # 用户表搬到本站独占的 cf_users，并把 cf_visits 的外键改指过去；顺带给 cf_visits 加 adcode / transport 与 CHECK 约束
+│   │   └── 0001_init.sql     # 建表：users（与 Qxwk-Blog 共享）/ cf_users（本站独占）/ cf_visits（足迹，含 adcode / transport 与 CHECK 约束）
 │   ├── package.json        # 只声明 ESM（"type":"module"）+ npm test，无任何依赖
 │   └── wrangler.toml       # Worker 配置（只有 D1 绑定；静态资源段已删 —— 页面在 GitHub Pages）
 ├── app/                    # 安卓 app，见 app/README.md（Kotlin + XML View/viewBinding，原生 osmdroid 地图，不用 WebView）
@@ -166,31 +165,19 @@ npx wrangler d1 migrations apply qxwk-data --remote
 
 > PowerShell 下请把 `npx` 写成 `npx.cmd`（执行策略会拦掉 `npx`；下同，所有 wrangler 命令都适用）。
 
-迁移会创建本站所需的全部表：`cf_users`（`is_admin` 管理员标志、`color` 颜色随通行证同步、`passport_id` 通行证 userId，本站独占）与 `cf_visits`（足迹，含 `is_private` / `adcode` / `transport`），并一并建出 `passport_id` 的唯一索引。
+迁移会创建本站所需的全部表：`cf_users`（`is_admin` 管理员标志、`color` 颜色随通行证同步、`passport_id` 通行证 userId，本站独占）、`cf_visits`（足迹，含 `is_private` / `adcode` / `transport` 与一批 CHECK 约束）与 `users`（**与 Qxwk-Blog 共享**，博客的 `bg_*` 表外键指着它，本站已不再读写），并建出两个 `passport_id` 唯一索引。
 
+#### 历史：用户表为什么独立，以及 0002 的合并
 
-#### ⚠️ 从 0001 升级：用户表已搬到 `cf_users`
+`users` 原先与 [Qxwk-Blog](https://github.com/Qxwk-Studio/Qxwk-Blog) **共享**（那边把 `users.avatar` 当作者头像读），两站的行混在一张表里，本站的统计与查询都得绕开博客那些无关行。于是改用独占的 `cf_users`，并把 `cf_visits.user_id` 的外键改指过去 —— 这一步由当时的 `0002_cf_users.sql` 完成，**`users` 表原样保留**（博客还在用）。
 
-`users` 原先与 [Qxwk-Blog](https://github.com/Qxwk-Studio/Qxwk-Blog) **共享**（那边把 `users.avatar` 当作者头像读），两站的行混在一张表里。`0002_cf_users.sql` 把本站的用户搬进独占的 `cf_users`，并把 `cf_visits.user_id` 的外键改指过去 —— **`users` 表保持原样不动**（博客还在用），只是本站从此不再读写它。
+那个迁移的几个关键点：只搬「有足迹的 + `is_admin = 1` 的管理员」；改外键必须重建 `cf_visits`（SQLite 改不了已有表的外键），重建时靠 `PRAGMA defer_foreign_keys = on` 兜住悬空那一刻；CHECK 约束 `ALTER TABLE` 也加不了，所以一并借重建这趟加上，因此 `adcode` / `transport` 两列与那批 CHECK 都落在 `0002` 里。
 
-```bash
-cd backend
-npx wrangler d1 migrations apply qxwk-data --remote
-```
+搬迁在 2026-09 已跑完（`cf_users` 30 行、342 条足迹、0 条孤立足迹），于是把 `0002` **合并进 `0001_init.sql`** 并删掉中间文件 —— `cf_visits` 现在直接建成最终形态，全新库一个文件一步到位。合并时有意去掉了 `0002` 里那段 `INSERT ... SELECT ... FROM users`：那是把历史行从共享表搬进来的一次性动作，全新库没有历史行可搬。
 
-迁移只搬「本站自己的人」—— 有足迹的 + `is_admin = 1` 的管理员（`users` 里还躺着大量博客那边、与本站无关的行）—— 并连带重建 `cf_visits` 以改外键指向：SQLite 改不了已有表的外键，重建时必须 `PRAGMA defer_foreign_keys = on`（原因写在 `0002_cf_users.sql` 开头）。跑完可以核对一下：
-
-```bash
-npx wrangler d1 execute qxwk-data --remote --command "SELECT (SELECT COUNT(*) FROM cf_users) AS cf_users, (SELECT COUNT(DISTINCT user_id) FROM cf_visits) AS visited_users"
-```
-
-**同一趟重建还顺带加了 `adcode` / `transport` 两列与一批 CHECK 约束**（`visit_date` 格式、`note`/`city` 长度、`is_private ∈ {0,1}`、`transport` 必须是合法 JSON）。CHECK 约束 `ALTER TABLE` 加不了，只有重建这趟能加 —— 所以这些一并塞进 `0002`，不另开 `0003`。老数据的两个新列自然是 `NULL`（读取时后端按城市名字典兜底 `adcode`，无需回填）。
-
-**部署必须紧跟迁移**：中间那段窗口里线上还是老代码（查 `users`），读没问题，但**新用户加足迹会被挡下** —— 外键此时已指向 `cf_users`，而老代码刚建的那行在共享表里、`cf_users` 中并不存在。
-
-> **副作用**：博客 feed 原先靠本站登录时同步 `users.avatar` 拿到头像，现在本站不再写共享表，那部分头像要博客自己接通行证。
+> 合并残留：线上 `d1_migrations` 还留着一条没有对应文件的 `0002_cf_users.sql` 记录。实测 `wrangler d1 migrations list` 只回 `No migrations to apply!`，不影响后续迁移；想干净可以删掉那一行（可选）。
 >
-> 历史记录：`passport_id` 这一列早先是 `users` 上手补的（共享表里的列，`CREATE TABLE IF NOT EXISTS` 补不了，只能 `ALTER TABLE`）。`cf_users` 是全新表，由迁移直接建全，不再需要那套手工步骤。
+> **副作用**（仍然成立）：博客 feed 原先靠本站登录时同步 `users.avatar` 拿头像，现在本站不再写共享表，那部分头像要博客自己接通行证。
 
 ### 3️⃣ 在通行证注册本站
 
