@@ -3,6 +3,39 @@
 // 这个 Worker 挂在 api.travel.qxwkstudio.top 上，前后端不同源，故末尾统一挂 CORS 头
 import { json, error, getUserId, resolveViewer, visibility } from './lib.js';
 import { getAchievements, achievementCounts } from './achievements.js';
+import { CITY_CODES } from './city-codes.js';
+
+// ---------- 城市字典与出行方式 ----------
+
+// 按城市名派生 adcode：命中字典就落库（前端地图据此取边界填色，web/app 都不用再自带映射）。
+// 字典未命中（用户自造的城市名）留 NULL，**不因此拒绝请求** —— 前端本来就有「找不到就画圆点」的回退。
+// 与 docs/city-codes.js 同源（都由 scripts/gen-city-codes.js 生成）。
+function adcodeOf(city) {
+  const code = CITY_CODES[city];
+  return code == null ? null : String(code);
+}
+
+// 出行方式白名单 + 固定顺序：入库前过滤未知 code、按下面的顺序去重排序，落成 JSON 数组字符串。
+// 顺序写死而不是沿用用户勾选顺序 —— 否则同一组选择会落出不同的字符串，比较/统计都不方便。
+// code 列表必须与前端 docs/app.js 的 window.TRANSPORTS 保持一致。
+const TRANSPORTS = ['plane', 'train', 'hsr', 'car', 'bus', 'ship', 'bike', 'walk', 'other'];
+
+// 请求里的 transport（数组）→ 白名单内的 code 数组（无效输入返回空数组 = 不记录）
+function pickTransports(value) {
+  if (!Array.isArray(value)) return [];
+  return TRANSPORTS.filter((t) => value.includes(t));
+}
+
+// 库里的 transport（JSON 数组字符串）→ 数组（NULL / 坏数据都回空数组，不让读取接口炸）
+function parseTransports(raw) {
+  if (!raw) return [];
+  try {
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) ? arr : [];
+  } catch {
+    return [];
+  }
+}
 
 // ---------- API 处理 ----------
 
@@ -68,7 +101,7 @@ async function handleApi(request, env) {
     const viewer = await getViewer(DB, request);
     const vis = visibility(viewer, 'v.is_private', 'v.user_id');
     const rows = await DB.prepare(
-      `SELECT v.city, v.lat, v.lng, v.created_at, u.nickname, u.color
+      `SELECT v.city, v.adcode, v.lat, v.lng, v.created_at, u.nickname, u.color
        FROM cf_visits v JOIN cf_users u ON v.user_id = u.id
        ${vis.sql ? `WHERE ${vis.sql}` : ''}
        ORDER BY v.created_at ASC, v.id ASC`
@@ -79,7 +112,8 @@ async function handleApi(request, env) {
     const cityMap = new Map();
     for (const r of rows.results) {
       if (!cityMap.has(r.city)) {
-        cityMap.set(r.city, { city: r.city, lat: r.lat, lng: r.lng, people: [] });
+        // adcode 优先取库里存的，旧行（加列前）没有就按城市名字典兜底 → 客户端拿到即可直接取边界
+        cityMap.set(r.city, { city: r.city, adcode: r.adcode || adcodeOf(r.city), lat: r.lat, lng: r.lng, people: [] });
       }
       const entry = cityMap.get(r.city);
       entry.people.push({ nickname: r.nickname, color: r.color });
@@ -109,13 +143,20 @@ async function handleApi(request, env) {
     const viewer = await getViewer(DB, request);
     const vis = visibility(viewer, 'v.is_private', 'v.user_id');
     const rows = await DB.prepare(
-      `SELECT u.nickname, u.color, v.visit_date, v.note, v.is_private
+      `SELECT u.nickname, u.color, v.adcode, v.visit_date, v.note, v.is_private, v.transport
        FROM cf_visits v JOIN cf_users u ON v.user_id = u.id
        WHERE v.city = ? ${vis.sql ? `AND ${vis.sql}` : ''}
        ORDER BY v.created_at DESC, v.id DESC LIMIT 10`
     ).bind(city, ...vis.params).all();
-    // 该城市没有记录也回 200 + 空数组：空不是错误
-    return json({ city, visits: rows.results });
+    // 该城市没有记录也回 200 + 空数组：空不是错误。
+    // transport 从 JSON 字符串还原成数组再给前端（前端不做 JSON.parse 的活）；
+    // adcode 逐条兜底成字典值，旧行也有值。
+    const visits = rows.results.map((r) => ({
+      nickname: r.nickname, color: r.color, visit_date: r.visit_date, note: r.note, is_private: r.is_private,
+      adcode: r.adcode || adcodeOf(city),
+      transport: parseTransports(r.transport),
+    }));
+    return json({ city, visits });
   }
 
   // GET /api/stats（公开：全站统计；管理员统计全部行程含私密）
@@ -158,11 +199,15 @@ async function handleApi(request, env) {
     const userId = await getUserId(DB, request);
     if (!userId) return error('未登录', 401);
     const visits = await DB.prepare(
-      'SELECT id, city, lat, lng, visit_date, note, is_private FROM cf_visits WHERE user_id = ? ORDER BY created_at DESC, id DESC'
+      'SELECT id, city, adcode, lat, lng, visit_date, note, is_private, transport FROM cf_visits WHERE user_id = ? ORDER BY created_at DESC, id DESC'
     ).bind(userId).all();
+    // transport 还原成数组、adcode 兜底（旧行没有），再一并给前端的列表 / 编辑弹窗用
+    const rows = visits.results.map((v) => ({
+      ...v, adcode: v.adcode || adcodeOf(v.city), transport: parseTransports(v.transport),
+    }));
     return json({
-      visits: visits.results,
-      achievements: getAchievements(visits.results.map(v => v.city)),
+      visits: rows,
+      achievements: getAchievements(rows.map(v => v.city)),
     });
   }
 
@@ -178,15 +223,20 @@ async function handleApi(request, env) {
     const visitDate = body.visit_date || null;
     const note = String(body.note || '').trim().slice(0, 100);
     const isPrivate = body.is_private ? 1 : 0;
+    const transport = pickTransports(body.transport);
 
     if (!city || city.length > 30) return error('请选择城市');
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) return error('城市坐标无效');
     if (visitDate !== null && !/^\d{4}(-\d{2})?$/.test(visitDate)) return error('日期格式应为 2024 或 2024-08');
 
+    // adcode 由后端按城市名字典派生（前端不用带），字典未命中留 NULL
+    const adcode = adcodeOf(city);
+    const transportJson = transport.length ? JSON.stringify(transport) : null;
+
     const res = await DB.prepare(
-      'INSERT INTO cf_visits (user_id, city, lat, lng, visit_date, note, is_private) VALUES (?, ?, ?, ?, ?, ?, ?)'
-    ).bind(userId, city, lat, lng, visitDate, note, isPrivate).run();
-    return json({ id: res.meta.last_row_id, city, lat, lng, visit_date: visitDate, note, is_private: isPrivate }, 201);
+      'INSERT INTO cf_visits (user_id, city, adcode, lat, lng, visit_date, note, is_private, transport) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+    ).bind(userId, city, adcode, lat, lng, visitDate, note, isPrivate, transportJson).run();
+    return json({ id: res.meta.last_row_id, city, adcode, lat, lng, visit_date: visitDate, note, is_private: isPrivate, transport }, 201);
   }
 
   // PUT/DELETE /api/visits/:id（登录：仅本人）
@@ -212,14 +262,19 @@ async function handleApi(request, env) {
     const visitDate = body.visit_date || null;
     const note = String(body.note || '').trim().slice(0, 100);
     const isPrivate = body.is_private ? 1 : 0;
+    const transport = pickTransports(body.transport);
 
     if (!city || city.length > 30) return error('请选择城市');
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) return error('城市坐标无效');
     if (visitDate !== null && !/^\d{4}(-\d{2})?$/.test(visitDate)) return error('日期格式应为 2024 或 2024-08');
 
-    await DB.prepare('UPDATE cf_visits SET city = ?, lat = ?, lng = ?, visit_date = ?, note = ?, is_private = ? WHERE id = ?')
-      .bind(city, lat, lng, visitDate, note, isPrivate, id).run();
-    return json({ id, city, lat, lng, visit_date: visitDate, note, is_private: isPrivate });
+    // 与 POST 同：adcode 按（可能改过的）城市名重算，transport 过滤白名单后落 JSON
+    const adcode = adcodeOf(city);
+    const transportJson = transport.length ? JSON.stringify(transport) : null;
+
+    await DB.prepare('UPDATE cf_visits SET city = ?, adcode = ?, lat = ?, lng = ?, visit_date = ?, note = ?, is_private = ?, transport = ? WHERE id = ?')
+      .bind(city, adcode, lat, lng, visitDate, note, isPrivate, transportJson, id).run();
+    return json({ id, city, adcode, lat, lng, visit_date: visitDate, note, is_private: isPrivate, transport });
   }
 
   return null; // 不是已知 API 路由

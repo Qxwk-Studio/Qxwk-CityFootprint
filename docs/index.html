@@ -501,6 +501,29 @@
     user-select: none;
   }
   .modal-check input { width: 16px; height: 16px; accent-color: var(--primary); flex-shrink: 0; }
+  /* 出行方式多选 chips：隐藏原生复选框，用相邻的 span 当胶囊，选中态靠 `input:checked + span` */
+  .transport-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .tp-chip { cursor: pointer; user-select: none; }
+  .tp-chip input { position: absolute; opacity: 0; width: 0; height: 0; }
+  .tp-chip span {
+    display: inline-block;
+    padding: 6px 12px;
+    border: 1px solid var(--border);
+    border-radius: 40px;
+    background: var(--surface);
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    line-height: 1.3;
+    transition: all var(--transition);
+  }
+  .tp-chip:hover span { border-color: var(--text-tertiary); }
+  .tp-chip input:checked + span {
+    background: var(--primary-light);
+    border-color: var(--primary);
+    color: var(--primary);
+    font-weight: 600;
+  }
+  .tp-chip input:focus-visible + span { outline: 2px solid var(--primary); outline-offset: 1px; }
   .modal-actions { display: flex; gap: 10px; margin-top: 18px; }
   .modal-btn {
     flex: 1;
@@ -710,6 +733,10 @@
         <input type="checkbox" id="quickForgot" onchange="toggleQuickDate()">
         <span>记不清了</span>
       </label>
+    </div>
+    <div class="modal-field">
+      <label>出行方式（可多选）</label>
+      <div class="transport-chips" id="quickTransport"></div>
     </div>
     <div class="modal-field">
       <div class="field-head">
@@ -953,7 +980,9 @@ function renderFilter() {
     // （people 由后端按 created_at 升序给出，末位 = 最新，见 worker.js /api/cities）
     const color = people[people.length - 1].color;
 
-    const adcode = CITY_CODES[c.city];
+    // adcode 现在由后端随 /api/cities 一起下发（写入时按城市字典派生），旧数据没有时再用
+    // 本地城市表兜底 —— 两者都拿不到才回退圆点
+    const adcode = c.adcode || CITY_CODES[c.city];
     if (!adcode) { addFallbackDot(c, color); continue; }
 
     // 异步加载边界，渲染半透明多边形；失败回退圆点
@@ -1123,6 +1152,9 @@ function locateCity() {
     cityList.appendChild(opt);
   });
 
+  // 出行方式 chips（枚举与渲染逻辑在 app.js，与足迹管理页共用）
+  renderTransportChips(document.getElementById('quickTransport'));
+
   const yearSel = document.getElementById('quickYear');
   const monthSel = document.getElementById('quickMonth');
   const currentYear = new Date().getFullYear();
@@ -1207,6 +1239,7 @@ function openQuickModal() {
   toggleQuickDate();
   document.getElementById('quickNote').value = '';
   updateQuickNoteCount();
+  setCheckedTransports(document.getElementById('quickTransport'), []);
   document.getElementById('quickPrivate').checked = false;
   document.getElementById('quickMsg').textContent = '';
   document.getElementById('quickSubmit').disabled = false;
@@ -1241,6 +1274,7 @@ async function submitQuickAdd() {
     visit_date: quickVisitDate(),
     note: document.getElementById('quickNote').value.trim(),
     is_private: document.getElementById('quickPrivate').checked,
+    transport: getCheckedTransports(document.getElementById('quickTransport')),
   };
 
   try {

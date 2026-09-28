@@ -40,8 +40,10 @@ FROM users
 WHERE is_admin = 1
    OR id IN (SELECT DISTINCT user_id FROM cf_visits);
 
--- 重建 cf_visits：只为改外键指向（SQLite 改不了已有表的外键）。
--- 列顺序与 0001_init.sql 一致，用列名显式列出而不是 SELECT *，将来加列也不会错位。
+-- 重建 cf_visits：① 改外键指向 cf_users（SQLite 改不了已有表的外键）；② 顺手加 adcode /
+-- transport 两列并补 CHECK 约束 —— ALTER TABLE 加不了 CHECK，只有重建这一趟能加。
+-- 列顺序与 0001_init.sql 一致，新列追加在尾部，用列名显式列出而不是 SELECT *，将来加列也不会错位。
+-- 旧行没有 adcode / transport，拷数据时不带上它们，自然落成 NULL（无妨：读取时后端按城市名字典兜底 adcode）。
 CREATE TABLE cf_visits_new (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id INTEGER NOT NULL,
@@ -52,6 +54,15 @@ CREATE TABLE cf_visits_new (
   note TEXT,                            -- 可选备注
   is_private INTEGER NOT NULL DEFAULT 0,-- 1 = 不公开（本人可见）
   created_at TEXT DEFAULT (datetime('now')),
+  adcode TEXT,                          -- 行政区划代码（后端按城市名字典派生；字典未命中留 NULL）
+  transport TEXT,                       -- 出行方式：JSON 数组存英文 code（可多选），如 ["plane","train"]
+  -- 下面这些约束原来靠后端代码兜着，重建时落到库里做最后一道关（后端仍然照旧校验，给人话错误提示）。
+  -- visit_date：GLOB 不支持 \d，用 [0-9] 逐位写死，等价于后端的 ^\d{4}(-\d{2})?$
+  CHECK (visit_date IS NULL OR visit_date GLOB '[0-9][0-9][0-9][0-9]' OR visit_date GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]'),
+  CHECK (note IS NULL OR length(note) <= 100),
+  CHECK (is_private IN (0, 1)),
+  CHECK (length(city) BETWEEN 1 AND 30),
+  CHECK (transport IS NULL OR json_valid(transport)),
   FOREIGN KEY (user_id) REFERENCES cf_users(id)
 );
 INSERT INTO cf_visits_new (id, user_id, city, lat, lng, visit_date, note, is_private, created_at)

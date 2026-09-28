@@ -70,6 +70,48 @@ function findCity(name) {
   return c ? { lat: c.lat, lng: c.lng } : null;
 }
 
+// 出行方式枚举：code 必须与后端白名单一致（backend/src/worker.js 的 TRANSPORTS），
+// 这里的顺序即展示顺序，也是后端落库时的排序依据。label 供 UI 展示。
+window.TRANSPORTS = [
+  { code: 'plane', label: '✈️ 飞机' },
+  { code: 'train', label: '🚆 火车' },
+  { code: 'hsr',   label: '🚄 高铁' },
+  { code: 'car',   label: '🚗 自驾' },
+  { code: 'bus',   label: '🚌 大巴' },
+  { code: 'ship',  label: '🚢 轮船' },
+  { code: 'bike',  label: '🚲 骑行' },
+  { code: 'walk',  label: '🥾 徒步' },
+  { code: 'other', label: '🧭 其他' },
+];
+
+// 出行方式多选 chips：主页添加弹窗与足迹管理编辑弹窗共用这一套（结构 input + span，
+// 选中态靠 CSS 的 `input:checked + span`，不需要 JS 逐个切 class）
+function renderTransportChips(container) {
+  if (!container) return;
+  container.innerHTML = (window.TRANSPORTS || []).map(t =>
+    `<label class="tp-chip"><input type="checkbox" value="${t.code}"><span>${t.label}</span></label>`
+  ).join('');
+}
+
+// 读容器里勾选的 code（DOM 顺序 = 展示顺序）
+function getCheckedTransports(container) {
+  if (!container) return [];
+  return [...container.querySelectorAll('input:checked')].map(i => i.value);
+}
+
+// 按 code 数组回填勾选状态（编辑已有行程时用）
+function setCheckedTransports(container, codes) {
+  if (!container) return;
+  const set = new Set(codes || []);
+  container.querySelectorAll('input').forEach(i => { i.checked = set.has(i.value); });
+}
+
+// code 数组 -> 展示标签数组（列表徽章用）
+function transportLabels(codes) {
+  const map = new Map((window.TRANSPORTS || []).map(t => [t.code, t.label]));
+  return (codes || []).map(c => map.get(c)).filter(Boolean);
+}
+
 // 直接使用头像链接（由通行证 /api/me 返回的 avatar 字段）设置头像；
 // 无链接或图片加载失败时，回退为昵称首字 + 专属颜色
 function setAvatarFromUrl(el, avatarUrl, nickname, color) {

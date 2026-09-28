@@ -81,10 +81,20 @@ async function main() {
   const EXTRA_CODES = { '台湾': 710000, '香港': 810000, '澳门': 820000, '大兴安岭': 232700, '克孜勒苏': 653000, '文昌': 469005, '那曲': 540600, '伊犁': 654000, '博尔塔拉': 652700, '巴音郭楞': 652800 };
   Object.assign(codes, EXTRA_CODES);
 
-  // 输出
-  const out = '// 城市名 -> 行政区划代码(adcode) 映射\n// 由 scripts/gen-city-codes.js 从阿里 DataV GeoAtlas 生成，可重复运行更新\nconst CITY_CODES = ' + JSON.stringify(codes, null, 2) + ';\n';
-  fs.writeFileSync(path.join(__dirname, '..', 'docs', 'city-codes.js'), out);
-  console.log('已生成 docs/city-codes.js，映射', Object.keys(codes).length, '个城市');
+  // 输出两份：前端（docs/，浏览器全局常量，地图上色用）与后端（backend/src/，ESM 导出，写入
+  // 行程时按城市名派生 adcode 用）。同一份 codes 序列化两次 —— 单一数据源，避免两端各存一份
+  // 字典后慢慢漂移。改这里的同时两份都会更新。
+  const json = JSON.stringify(codes, null, 2);
+  const HEADER = '// 城市名 -> 行政区划代码(adcode) 映射\n// 由 scripts/gen-city-codes.js 从阿里 DataV GeoAtlas 生成，可重复运行更新';
+  fs.writeFileSync(
+    path.join(__dirname, '..', 'docs', 'city-codes.js'),
+    HEADER + '\nconst CITY_CODES = ' + json + ';\n'
+  );
+  fs.writeFileSync(
+    path.join(__dirname, '..', 'backend', 'src', 'city-codes.js'),
+    HEADER + '\n// 后端侧：写入行程时按城市名派生 adcode；旧行 adcode 为空时读取兜底（见 worker.js）\nexport const CITY_CODES = ' + json + ';\n'
+  );
+  console.log('已生成 docs/city-codes.js 与 backend/src/city-codes.js，映射', Object.keys(codes).length, '个城市');
   console.log('未匹配（将回退为圆点）:', missing.length ? missing.join(', ') : '无');
 }
 

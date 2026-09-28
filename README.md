@@ -12,7 +12,7 @@
 - **按人筛选**：点击图例中的昵称，只看某一个人的足迹
 - **私密行程**：本人登录时可见自己的不公开足迹（弹窗带 🔒），他人不可见
 - **管理员视图**：管理员可查看所有人的行程（含私密），右上角显示 👑 标识
-- **添加行程**：右下角菜单里的唯一新建入口 —— 打开即尝试定位并把城市填成最近的一座（可手输检索），再选年 / 月（或勾「记不清了」）、填备注、勾「不公开行程」
+- **添加行程**：右下角菜单里的唯一新建入口 —— 打开即尝试定位并把城市填成最近的一座（可手输检索），再选年 / 月（或勾「记不清了」）、多选出行方式、填备注、勾「不公开行程」
 
 ### 👤 个人中心 (`account.html`)
 - **本站登录表单**：未登录视图直接给出「昵称或邮箱 + 密码」表单，提交后由本站前端 JS 跨域调通行证 `/api/login` 换取 token（密码只从浏览器发给通行证，不经过本站服务器）；下方保留「打开通行证」外链用于注册 / 找回密码
@@ -22,7 +22,7 @@
 - **退出登录**：清掉本地 token 后，顺带跨域 POST 通行证 `/api/logout` 撤销该会话（请求失败不影响本地登出）
 
 ### ✈️ 足迹管理 (`visits.html`)
-- **足迹修改与删除**：列表里点「编辑」弹出原生 `<dialog>` 改这一条（城市联想、时间/备注/私密开关），点「删除」移除；**新建入口统一在主页**，这里不再有第二个添加表单
+- **足迹修改与删除**：列表里点「编辑」弹出原生 `<dialog>` 改这一条（城市联想、时间/出行方式/备注/私密开关），点「删除」移除；**新建入口统一在主页**，这里不再有第二个添加表单
 - **足迹统计**：去过城市数、覆盖省份、足迹总数、最早·最近行程
 - **成就系统**：4 大分类（足迹丰碑 / 巡游四方 / 城市打卡 / 极限挑战），自动判定解锁，成就卡片整体折叠
 - **不公开行程**：添加 / 编辑时可勾选"仅自己可见"，不出现在公开地图与统计中
@@ -74,27 +74,28 @@
 │   ├── setup.html          # 欢迎动画页（嵌入 account 未登录左侧，跟随主题同步）
 │   ├── stats.html          # 全站统计
 │   ├── news.html           # 公告与更新日志
-│   ├── app.js              # API 客户端 + 通行证登录/会话（直调 /api/login、401 兜底） + setAvatarFromUrl()（头像渲染）
+│   ├── app.js              # API 客户端 + 通行证登录/会话（直调 /api/login、401 兜底） + setAvatarFromUrl()（头像渲染）；window.TRANSPORTS 出行方式枚举与多选 chips 工具
 │   ├── cities.js           # 国内地级市坐标数据
-│   ├── city-codes.js       # 城市 adcode（地图边界用）
+│   ├── city-codes.js       # 城市 adcode（地图边界用）；与 backend/src/city-codes.js 同源，都由 scripts/gen-city-codes.js 生成
 │   ├── favicon.webp        # 站点图标（lossless webp，与安卓启动图标同一张源图，见 app/README.md）
 │   └── robots.txt          # 爬虫规则（屏蔽登录页与足迹管理页；接口在另一个域上，这里管不到）
 ├── backend/                # 后端（Cloudflare Worker + D1）；后端命令都在这个目录里执行
 │   ├── src/
 │   │   ├── worker.js       # Worker 入口（/api/* 接口 + CORS；静态资源回退已删）
 │   │   ├── lib.js          # 通行证 token 验证 + 本地用户映射 + 私密可见性片段 visibility()
-│   │   └── achievements.js # 成就定义与判定（**全站唯一一份**，网页/app 都只消费接口结果）
+│   │   ├── achievements.js # 成就定义与判定（**全站唯一一份**，网页/app 都只消费接口结果）
+│   │   └── city-codes.js   # 城市 adcode 字典（写入行程时按城市名派生 adcode 用；与 docs/city-codes.js 同源）
 │   ├── test/
 │   │   └── achievements.test.js  # 成就判定与达成人数的单测（cd backend && npm test）
 │   ├── migrations/
 │   │   ├── 0001_init.sql     # 建表：users（原与 Qxwk-Blog 共享）/ cf_visits（足迹，本站独占）
-│   │   └── 0002_cf_users.sql # 用户表搬到本站独占的 cf_users，并把 cf_visits 的外键改指过去
+│   │   └── 0002_cf_users.sql # 用户表搬到本站独占的 cf_users，并把 cf_visits 的外键改指过去；顺带给 cf_visits 加 adcode / transport 与 CHECK 约束
 │   ├── package.json        # 只声明 ESM（"type":"module"）+ npm test，无任何依赖
 │   └── wrangler.toml       # Worker 配置（只有 D1 绑定；静态资源段已删 —— 页面在 GitHub Pages）
 ├── app/                    # 安卓 app，见 app/README.md（Kotlin + XML View/viewBinding，原生 osmdroid 地图，不用 WebView）
 ├── scripts/                # 城市数据维护脚本（Node，本地手动跑，不参与部署）
 │   ├── complete-cities.js  # 从 DataV 补齐 docs/cities.js 缺失的地级行政区
-│   └── gen-city-codes.js   # 由 DataV 生成 docs/city-codes.js（城市名 → adcode）
+│   └── gen-city-codes.js   # 由 DataV 生成 docs/city-codes.js 与 backend/src/city-codes.js（城市名 → adcode，单一数据源出两份）
 ├── .github/
 │   └── workflows/
 │       └── build-android.yml  # 手动触发的安卓打包（JDK 17 + Secrets 里的签名密钥 → 签名 APK artifact）
@@ -106,12 +107,12 @@
 | 方法 | 路径 | 鉴权 | 说明 |
 |------|------|------|------|
 | GET | `/api/me` | Bearer | 当前用户信息（token 经通行证验证，返回 `userId/nickname/color/avatar/is_admin/created_at`） |
-| GET | `/api/cities` | 可选 Bearer | 地图数据：城市 + 坐标 + 去过的人（仅 `nickname/color`；登录可见本人私密，管理员可见全部）。日期/备注等明细不在这里下发 |
-| GET | `/api/cities/:city` | 可选 Bearer | 某座城市的最近 10 条行程（地图弹窗**点开时才拉**；无记录回 200 + 空数组）。城市名直接当路径参数，库里没有 adcode |
+| GET | `/api/cities` | 可选 Bearer | 地图数据：城市 + 坐标 + `adcode` + 去过的人（仅 `nickname/color`；登录可见本人私密，管理员可见全部）。日期/备注等明细不在这里下发 |
+| GET | `/api/cities/:city` | 可选 Bearer | 某座城市的最近 10 条行程（地图弹窗**点开时才拉**；无记录回 200 + 空数组）。城市名直接当路径参数，每条带 `adcode` 与 `transport`（数组） |
 | GET | `/api/stats` | 可选 Bearer | 全站统计（`totalVisits/totalCities/totalUsers/cityRank/achievements/isAdmin`，管理员含私密行程） |
-| GET | `/api/my-visits` | Bearer | 自己的足迹（含 is_private）+ 我的成就 |
-| POST | `/api/visits` | Bearer | 添加足迹（可带 is_private） |
-| PUT | `/api/visits/:id` | Bearer | 修改（仅本人，可改 is_private） |
+| GET | `/api/my-visits` | Bearer | 自己的足迹（含 `is_private/adcode/transport`）+ 我的成就 |
+| POST | `/api/visits` | Bearer | 添加足迹（可带 `is_private`、`transport` 多选数组；`adcode` 由后端按城市名派生） |
+| PUT | `/api/visits/:id` | Bearer | 修改（仅本人，可改 `is_private` / `transport`；`adcode` 随城市名重算） |
 | DELETE | `/api/visits/:id` | Bearer | 删除（仅本人） |
 | GET | `/api/geo/:adcode` | 无 | 代理 DataV 边界接口（规避浏览器跨域，结果缓存 24h） |
 
@@ -126,6 +127,8 @@
 - **私密行程接口层过滤**：`is_private` 过滤在 Worker 侧做，而不是前端，防止有人抓接口构造出别人的私密足迹。规则只写一处 —— `lib.js` 的 `visibility(viewer)`（管理员不过滤；其余放行「非私密」或「自己的」），`/api/cities`、`/api/cities/:city`、`/api/stats` 共用它。凡是新增「面向他人数据」的接口，都必须套这一段，别各自手抄。
 - **成就系统**：判定逻辑只有一份，在 `backend/src/achievements.js` —— "足迹丰碑 / 巡游四方 / 城市打卡 / 极限挑战"四大类共 42 条，每条带**稳定的 `code`**（早期拿中文 name 当计数键，改文案就会静默错位）。网页与 app **都不再自带定义**，只消费接口：`GET /api/my-visits` 下发 `done`（我的成就），`GET /api/stats` 下发 `count`（达成人数），两者都把 `icon/name/desc` 一起给，所以客户端零定义也能渲染。新增成就只改这一个文件，并同步 `backend/test/achievements.test.js`。
 - **地图边界与瓦片缓存**：DataV GeoAtlas 边界由 Worker `/api/geo/:adcode` 代理并缓存 24h；浏览器侧再用 IndexedDB 保存 24h，打开地图时只拉取缺省的边界。瓦片用高德免 Key 内网直出、Leaflet 资源自托管到 `docs/vendor/`，避免外链失效与 CORS 折腾。
+- **城市字典与 adcode 由后端派生**：`cf_visits.adcode` 在**写入时**由后端按城市名从字典取出（`backend/src/city-codes.js`），字典与前端 `docs/city-codes.js` **同源** —— `scripts/gen-city-codes.js` 一次生成两份，避免两端各存一份后慢慢漂移。字典未命中（用户自造的城市名）留 `NULL` 而**不拒绝请求**；读取时用 `v.adcode || 字典[city]` 兜底，加列前的老行也有值。这样 web 与 app 都不必再自带「城市名 → adcode」映射，直接拿接口给的 `adcode` 取边界。
+- **出行方式（`transport`）**：一条行程可多选（飞机 / 火车 / 高铁 / 自驾 / 大巴 / 轮船 / 骑行 / 徒步 / 其他），库里存英文 code 的 **JSON 数组**（`CHECK json_valid` 兜底）；code 白名单与固定排序都在 `worker.js` 的 `TRANSPORTS`，前端枚举在 `docs/app.js` 的 `window.TRANSPORTS`（两处必须同步）。入库前会过滤未知 code、去重并按固定顺序排，前端可以放心直接提交勾选结果。
 - **页面链接不带 `.html`**：GitHub Pages 对 `/xxx` 会自动回落到 `xxx.html`（`travel.qxwkstudio.top/account`、`/stats` 已线上验证），所以站内导航统一写裸路径（`/account`、`/visits`…），浏览器地址栏就不露后缀。`docs/app.js` 的 401 兜底与 `docs/robots.txt` 的路径都已按裸路径对齐 —— 改导航时别把后缀加回来。
 - **响应式边距规范**：全站 6 页（index / account / visits / stats / news / setup）沿用同一套间距规范，新增页面或模块**务必遵守**，避免不同页面在手机/桌面上松紧不一。
 
@@ -163,7 +166,7 @@ npx wrangler d1 migrations apply qxwk-data --remote
 
 > PowerShell 下请把 `npx` 写成 `npx.cmd`（执行策略会拦掉 `npx`；下同，所有 wrangler 命令都适用）。
 
-迁移会创建本站所需的全部表：`cf_users`（`is_admin` 管理员标志、`color` 颜色随通行证同步、`passport_id` 通行证 userId，本站独占）与 `cf_visits`（足迹，含 `is_private`），并一并建出 `passport_id` 的唯一索引。
+迁移会创建本站所需的全部表：`cf_users`（`is_admin` 管理员标志、`color` 颜色随通行证同步、`passport_id` 通行证 userId，本站独占）与 `cf_visits`（足迹，含 `is_private` / `adcode` / `transport`），并一并建出 `passport_id` 的唯一索引。
 
 
 #### ⚠️ 从 0001 升级：用户表已搬到 `cf_users`
@@ -180,6 +183,8 @@ npx wrangler d1 migrations apply qxwk-data --remote
 ```bash
 npx wrangler d1 execute qxwk-data --remote --command "SELECT (SELECT COUNT(*) FROM cf_users) AS cf_users, (SELECT COUNT(DISTINCT user_id) FROM cf_visits) AS visited_users"
 ```
+
+**同一趟重建还顺带加了 `adcode` / `transport` 两列与一批 CHECK 约束**（`visit_date` 格式、`note`/`city` 长度、`is_private ∈ {0,1}`、`transport` 必须是合法 JSON）。CHECK 约束 `ALTER TABLE` 加不了，只有重建这趟能加 —— 所以这些一并塞进 `0002`，不另开 `0003`。老数据的两个新列自然是 `NULL`（读取时后端按城市名字典兜底 `adcode`，无需回填）。
 
 **部署必须紧跟迁移**：中间那段窗口里线上还是老代码（查 `users`），读没问题，但**新用户加足迹会被挡下** —— 外键此时已指向 `cf_users`，而老代码刚建的那行在共享表里、`cf_users` 中并不存在。
 
@@ -271,7 +276,7 @@ localhost 的任意端口（见 `backend/src/worker.js` 的 `ALLOWED_ORIGINS`）
 
 **1. 补充城市数据**
 - 编辑 `docs/cities.js`，往对应省份数组里加 `{ name, province, lat, lng }` 即可
-- 想批量补全（自治州 / 地区 / 盟 / 直辖县级）或重算 adcode，用 `scripts/` 下的两个脚本：`node scripts/complete-cities.js`（补 `cities.js`）、`node scripts/gen-city-codes.js`（重生成 `city-codes.js`），数据都来自阿里 DataV GeoAtlas
+- 想批量补全（自治州 / 地区 / 盟 / 直辖县级）或重算 adcode，用 `scripts/` 下的两个脚本：`node scripts/complete-cities.js`（补 `cities.js`）、`node scripts/gen-city-codes.js`（重生成 `docs/city-codes.js` + `backend/src/city-codes.js` 两份），数据都来自阿里 DataV GeoAtlas
 - 改完 `docs/` 的城市数据后**必须重跑** `node app/tools/gen-cities.mjs` 并提交 `app/src/main/assets/cities.json`，否则安卓端的城市表与网页版分叉
 
 **2. 更换地图瓦片**
