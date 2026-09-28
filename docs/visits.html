@@ -364,7 +364,7 @@
             <div class="stat-card"><div class="label">✈️ 去过城市</div><div class="value">0</div></div>
             <div class="stat-card"><div class="label">📍 足迹</div><div class="value">0</div></div>
             <div class="stat-card"><div class="label">🗺️ 省份</div><div class="value">0</div></div>
-            <div class="stat-card"><div class="label">🚆 出行方式</div><div class="value">0</div></div>
+            <div class="stat-card"><div class="label">🚆 最常用出行</div><div class="value">—</div></div>
           </div>
         </div>
 
@@ -544,12 +544,26 @@ function findProvince(city) {
   return c ? c.province : '未知';
 }
 
+// 最常用出行方式：把每条足迹的 transport 数组摊平计票，取票数最高的一种。
+// 并列时取 TRANSPORTS 展示顺序靠前的（filter 已按原顺序，稳定排序保住同票的名次）；
+// 一条出行方式都没填则回「—」。返回的是中文名，去掉 label 里的 emoji ——
+// 卡片标题已经带了 🚆，值里再来一个就重了。
+function topTransportName() {
+  const votes = {};
+  myVisits.forEach(v => (v.transport || []).forEach(code => { votes[code] = (votes[code] || 0) + 1; }));
+  const top = (window.TRANSPORTS || []).map(t => t.code)
+    .filter(code => votes[code])
+    .sort((a, b) => votes[b] - votes[a])[0];
+  const label = top ? transportLabels([top])[0] : null;
+  return label ? label.replace(/^\S+\s+/, '') : '—';
+}
+
 function updateVisitStats() {
   const el = document.getElementById('visitStats');
   if (!el) return;
   const cityCount = new Set(myVisits.map(v => v.city)).size;
   const provinceCount = new Set(myVisits.map(v => findProvince(v.city))).size;
-  const transportCount = new Set(myVisits.flatMap(v => v.transport || [])).size;
+  const topTransport = topTransportName();
   const dates = myVisits.map(v => v.visit_date).filter(Boolean).sort();
   const first = dates[0] || '—';
   const last = dates[dates.length - 1] || '—';
@@ -572,8 +586,8 @@ function updateVisitStats() {
       <div class="value">${provinceCount}</div>
     </div>
     <div class="stat-card">
-      <div class="label">🚆 出行方式</div>
-      <div class="value">${transportCount}</div>
+      <div class="label">🚆 最常用出行</div>
+      <div class="value">${topTransport}</div>
     </div>`;
 }
 
