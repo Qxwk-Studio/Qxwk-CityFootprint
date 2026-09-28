@@ -108,7 +108,7 @@
 |------|------|------|------|
 | GET | `/api/me` | Bearer | 当前用户信息（token 经通行证验证，返回 `userId/nickname/color/avatar/is_admin/created_at`） |
 | GET | `/api/cities` | 可选 Bearer | 地图数据：城市 + 坐标 + `adcode` + 去过的人（仅 `nickname/color`；登录可见本人私密，管理员可见全部）。日期/备注等明细不在这里下发 |
-| GET | `/api/city/:city` | 可选 Bearer | 某座城市的最近 10 条行程（地图弹窗**点开时才拉**；无记录回 200 + 空数组）。城市名直接当路径参数，每条带 `adcode` 与 `transport`（数组） |
+| GET | `/api/city/:city` | 可选 Bearer | 某座城市的全部行程（地图弹窗**点开时才拉**；无记录回 200 + 空数组，前端只铺最近 10 条）。城市名直接当路径参数，每条带 `adcode` 与 `transport`（数组） |
 | GET | `/api/stats` | 可选 Bearer | 全站统计（`totalVisits/totalCities/totalUsers/cityRank/achievements/isAdmin`，管理员含私密行程） |
 | GET | `/api/my-visits` | Bearer | 自己的足迹（含 `is_private/adcode/transport`）+ 我的成就 |
 | POST | `/api/visits` | Bearer | 添加足迹（可带 `is_private`、`transport` 多选数组；`adcode` 由后端按城市名派生） |

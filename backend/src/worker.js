@@ -129,12 +129,12 @@ async function handleApi(request, env) {
     return json({ cities, isAdmin: viewer.isAdmin });
   }
 
-  // GET /api/city/:city（公开：某座城市的最近 10 条行程，供地图弹窗按需拉取）
+  // GET /api/city/:city（公开：某座城市的全部行程，供地图弹窗按需拉取）
   // 路径用单数 /api/city/，与列表接口 /api/cities 明确区分（复数列表、单数明细），
   // 免得两者只差一个斜杠、看路径分不清是列表还是明细。
   // 城市名直接当路径参数 —— 库里只有 city 名、没有 adcode（见 migrations/0001_init.sql），
-  // adcode 由客户端用本地城市表映射。只给最新 10 条，且**不按 visit_date 排**：
-  // 它可空、还允许只填年份，拿它排序口径会打架。
+  // adcode 由客户端用本地城市表映射。这里一次给全，截断交给客户端（弹窗只铺最近 10 条），
+  // 且**不按 visit_date 排**：它可空、还允许只填年份，拿它排序口径会打架。
   const cityMatch = path.match(/^\/api\/city\/(.+)$/);
   if (method === 'GET' && cityMatch) {
     let city = '';
@@ -151,7 +151,7 @@ async function handleApi(request, env) {
       `SELECT u.nickname, u.color, v.adcode, v.visit_date, v.note, v.is_private, v.transport
        FROM cf_visits v JOIN cf_users u ON v.user_id = u.id
        WHERE v.city = ? ${vis.sql ? `AND ${vis.sql}` : ''}
-       ORDER BY v.created_at DESC, v.id DESC LIMIT 10`
+       ORDER BY v.created_at DESC, v.id DESC`
     ).bind(city, ...vis.params).all();
     // 该城市没有记录也回 200 + 空数组：空不是错误。
     // transport 从 JSON 字符串还原成数组再给前端（前端不做 JSON.parse 的活）；

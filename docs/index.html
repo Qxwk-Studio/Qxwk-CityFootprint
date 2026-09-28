@@ -876,11 +876,13 @@ function bindCityPopup(layer, city) {
 }
 
 // 弹窗内容：城市名 + 最近 10 条行程（长备注自动换行）。
+// 接口现在回该城市全部行程，截断只在这里做，保持弹窗体积原来的样子。
 // rows 已在服务端按可见性筛过；这里再按图例勾选过滤一次，
 // 保持「取消勾选谁，弹窗里也就没有谁」的既有行为。
 function buildPopupHtml(city, rows, selected) {
   const allChecked = selected.size === userInfo.size;
-  const shown = allChecked ? rows : rows.filter(r => selected.has(r.nickname));
+  const filtered = allChecked ? rows : rows.filter(r => selected.has(r.nickname));
+  const shown = filtered.slice(0, 10); // 服务端已按 created_at 倒序，前 10 条即最近 10 条
   let html = `<div class="popup-title">${escapeHtml(city)}</div>`;
   if (!shown.length) return html + '<div class="popup-more">没有符合条件的行程</div>';
   html += shown.map(q => `
@@ -889,7 +891,7 @@ function buildPopupHtml(city, rows, selected) {
       <span class="meta">${escapeHtml(fmtDate(q.visit_date))}</span>
       ${q.note ? `<span class="note">${escapeHtml(q.note)}</span>` : ''}
     </div>`).join('');
-  if (shown.length >= 10) html += '<div class="popup-more">仅显示最近 10 条</div>';
+  if (filtered.length > 10) html += '<div class="popup-more">仅显示最近 10 条</div>';
   return html;
 }
 
