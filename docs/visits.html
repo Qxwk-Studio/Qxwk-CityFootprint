@@ -258,6 +258,43 @@
 
   .note-count { font-size: 0.78rem; color: var(--text-tertiary); }
 
+  /* ===== 编辑行程弹窗 =====
+     用原生 <dialog>：遮罩、Esc 关闭、焦点陷阱都由浏览器给，不必再手写一套 overlay */
+  .edit-dialog {
+    width: calc(100% - 32px);
+    max-width: 420px;
+    margin: auto;
+    padding: 20px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--surface);
+    color: var(--text-primary);
+    box-shadow: var(--shadow-lg);
+  }
+  .edit-dialog::backdrop { background: rgba(0, 0, 0, 0.45); }
+  .dialog-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .dialog-header h3 { margin-bottom: 0; }
+  .dialog-close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: none;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    font-family: inherit;
+    transition: background var(--transition), color var(--transition);
+  }
+  .dialog-close:hover { background: var(--primary-subtle); color: var(--text-primary); }
+  .dialog-actions { display: flex; gap: 10px; }
+  .dialog-actions .btn { flex: 1; }
+  .field-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 6px; }
+  .field-head label { margin-bottom: 0; }
+
   /* 足迹统计卡 */
   .visit-stats {
     display: grid;
@@ -543,43 +580,6 @@
           </div>
         </div>
 
-        <div class="card">
-          <h3 id="formTitle">✈️ 创建行程</h3>
-          <form id="addForm" onsubmit="return addVisit(event)">
-            <div class="field">
-              <label>城市</label>
-              <input list="cityList" id="visitCity" placeholder="输入城市名选择" required autocomplete="off">
-              <datalist id="cityList"></datalist>
-            </div>
-            <div class="row">
-              <div>
-                <label>时间</label>
-                <div class="date-selects">
-                  <select id="visitYear"></select>
-                  <select id="visitMonth"></select>
-                </div>
-              </div>
-              <div class="check-row" style="align-self:flex-end;padding-bottom:10px;">
-                <input type="checkbox" id="forgotDate" onchange="toggleDate()">
-                <label for="forgotDate">记不清了</label>
-              </div>
-            </div>
-            <div class="field">
-              <div style="display:flex;justify-content:space-between;align-items:baseline;">
-                <label>备注（可选）</label>
-                <span class="note-count" id="noteCount">0/100</span>
-              </div>
-              <input id="visitNote" maxlength="100" placeholder="一句话留下回忆…" autocomplete="off" oninput="updateNoteCount()">
-            </div>
-            <div class="check-row" style="margin-bottom:16px;">
-              <input type="checkbox" id="visitPrivate">
-              <label for="visitPrivate">不公开行程（仅自己可见）</label>
-            </div>
-            <button class="btn btn-primary" type="submit">添加行程</button>
-            <div class="msg" id="addMsg"></div>
-          </form>
-        </div>
-
         <div class="card visit-list-card collapsed" id="visitListCard">
           <div class="card-header" onclick="toggleVisitList()">
             <h3>📍 行程记录</h3>
@@ -608,6 +608,52 @@
 
   </div>
 </div>
+
+<!-- 编辑行程弹窗：添加行程已统一到主页（index.html 的「添加行程」弹窗），这里只负责改一条已有记录。
+     字段 id 沿用原表单那套（visitCity / visitYear / …），toggleDate / getVisitDate / updateNoteCount
+     三个小工具因此原样保留，弹窗里外共用一份。 -->
+<dialog class="edit-dialog" id="editDialog" aria-label="编辑行程">
+  <form id="editForm" onsubmit="return saveEdit(event)">
+    <div class="dialog-header">
+      <h3>✏️ 编辑行程</h3>
+      <button type="button" class="dialog-close" onclick="closeEditModal()" aria-label="关闭">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="field">
+      <label for="visitCity">城市</label>
+      <input list="cityList" id="visitCity" placeholder="输入城市名选择" required autocomplete="off">
+      <datalist id="cityList"></datalist>
+    </div>
+    <div class="field">
+      <label for="visitYear">时间</label>
+      <div class="date-selects">
+        <select id="visitYear"></select>
+        <select id="visitMonth"></select>
+      </div>
+      <div class="check-row" style="margin-top:8px;">
+        <input type="checkbox" id="forgotDate" onchange="toggleDate()">
+        <label for="forgotDate">记不清了</label>
+      </div>
+    </div>
+    <div class="field">
+      <div class="field-head">
+        <label for="visitNote">备注（可选）</label>
+        <span class="note-count" id="noteCount">0/100</span>
+      </div>
+      <input id="visitNote" maxlength="100" placeholder="一句话留下回忆…" autocomplete="off" oninput="updateNoteCount()">
+    </div>
+    <div class="check-row" style="margin-bottom:16px;">
+      <input type="checkbox" id="visitPrivate">
+      <label for="visitPrivate">不公开行程（仅自己可见）</label>
+    </div>
+    <div class="dialog-actions">
+      <button class="btn btn-ghost" type="button" onclick="closeEditModal()">取消</button>
+      <button class="btn btn-primary" type="submit">保存修改</button>
+    </div>
+    <div class="msg" id="addMsg"></div>
+  </form>
+</dialog>
 
 <footer class="footer">
   <div class="footer-copy">2026 青翔未阔工作室 · City Footprint</div>
@@ -788,7 +834,7 @@ async function loadVisits() {
     myVisits = data.visits;
     updateVisitStats();
     renderAchievements(data.achievements || []);
-    if (!myVisits.length) { list.innerHTML = '<div class="empty">还没有足迹，添加第一座城市吧 ✈️</div>'; return; }
+    if (!myVisits.length) { list.innerHTML = '<div class="empty">还没有足迹，回主页点右下角「添加行程」记一笔 ✈️</div>'; return; }
     list.innerHTML = '';
     for (let i = 0; i < myVisits.length; i++) {
       const v = myVisits[i];
@@ -813,10 +859,12 @@ async function loadVisits() {
 }
 
 let editingId = null;
-const submitBtn = () => document.querySelector('#addForm .btn-primary');
 
-async function addVisit(e) {
+// 保存编辑。添加行程不在这里 —— 已统一到主页的「添加行程」弹窗（index.html），
+// 全站只有那一处能新建，避免两个入口各写一份校验。
+async function saveEdit(e) {
   e.preventDefault();
+  if (!editingId) return false;
   const msg = document.getElementById('addMsg');
   msg.className = 'msg error';
   const name = document.getElementById('visitCity').value.trim();
@@ -833,18 +881,8 @@ async function addVisit(e) {
   };
 
   try {
-    if (editingId) {
-      await api('/visits/' + editingId, { method: 'PUT', body: JSON.stringify(payload) });
-      msg.textContent = '已保存修改 ✅';
-      resetForm();
-    } else {
-      await api('/visits', { method: 'POST', body: JSON.stringify(payload) });
-      msg.textContent = '已添加 ✅';
-      document.getElementById('visitCity').value = '';
-      document.getElementById('visitNote').value = '';
-      document.getElementById('visitPrivate').checked = false;
-    }
-    msg.className = 'msg ok';
+    await api('/visits/' + editingId, { method: 'PUT', body: JSON.stringify(payload) });
+    closeEditModal();
     loadVisits();
   } catch (err) { msg.textContent = err.message; }
   return false;
@@ -874,31 +912,22 @@ function startEdit(id) {
     yearSel.disabled = true;
     monthSel.disabled = true;
   }
-  const btn = submitBtn();
-  btn.textContent = '保存修改';
-  document.getElementById('formTitle').textContent = '✏️ 编辑行程';
-  document.getElementById('addMsg').textContent = '正在编辑：' + v.city;
-  document.getElementById('addMsg').className = 'msg ok';
-  document.getElementById('addForm').scrollIntoView({ behavior: 'smooth' });
+  const msg = document.getElementById('addMsg');
+  msg.textContent = '正在编辑：' + v.city;
+  msg.className = 'msg ok';
+  document.getElementById('editDialog').showModal();
 }
 
-function resetForm() {
+// 关弹窗即清编辑态：点「取消」/ 保存成功直接走这里
+function closeEditModal() {
   editingId = null;
-  const yearSel = document.getElementById('visitYear');
-  const monthSel = document.getElementById('visitMonth');
-  document.getElementById('visitCity').value = '';
-  yearSel.value = '';
-  monthSel.value = '';
-  document.getElementById('forgotDate').checked = false;
-  yearSel.disabled = false;
-  monthSel.disabled = false;
-  document.getElementById('visitNote').value = '';
-  document.getElementById('visitPrivate').checked = false;
-  updateNoteCount();
-  submitBtn().textContent = '添加';
-  document.getElementById('formTitle').textContent = '✈️ 创建行程';
+  document.getElementById('editDialog').close();
   document.getElementById('addMsg').textContent = '';
 }
+
+// Esc 关闭是 <dialog> 的原生行为，不经过上面的按钮，得靠 close 事件兜住 ——
+// 否则 editingId 会残留成上一条，虽然弹窗已关不会误提交，但留个脏状态迟早坑人
+document.getElementById('editDialog').addEventListener('close', () => { editingId = null; });
 
 async function delVisit(id) {
   if (!confirm('确定删除这条足迹吗？')) return;

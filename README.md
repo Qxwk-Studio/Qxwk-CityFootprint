@@ -12,6 +12,7 @@
 - **按人筛选**：点击图例中的昵称，只看某一个人的足迹
 - **私密行程**：本人登录时可见自己的不公开足迹（弹窗带 🔒），他人不可见
 - **管理员视图**：管理员可查看所有人的行程（含私密），右上角显示 👑 标识
+- **添加行程**：右下角菜单里的唯一新建入口 —— 打开即尝试定位并把城市填成最近的一座（可手输检索），再选年 / 月（或勾「记不清了」）、填备注、勾「不公开行程」
 
 ### 👤 个人中心 (`account.html`)
 - **本站登录表单**：未登录视图直接给出「昵称或邮箱 + 密码」表单，提交后由本站前端 JS 跨域调通行证 `/api/login` 换取 token（密码只从浏览器发给通行证，不经过本站服务器）；下方保留「打开通行证」外链用于注册 / 找回密码
@@ -21,10 +22,10 @@
 - **退出登录**：清掉本地 token 后，顺带跨域 POST 通行证 `/api/logout` 撤销该会话（请求失败不影响本地登出）
 
 ### ✈️ 足迹管理 (`visits.html`)
-- **足迹增删改**：添加 / 修改 / 删除自己的城市足迹（城市联想、时间/备注/私密开关）
+- **足迹修改与删除**：列表里点「编辑」弹出原生 `<dialog>` 改这一条（城市联想、时间/备注/私密开关），点「删除」移除；**新建入口统一在主页**，这里不再有第二个添加表单
 - **足迹统计**：去过城市数、覆盖省份、足迹总数、最早·最近行程
 - **成就系统**：4 大分类（足迹丰碑 / 巡游四方 / 城市打卡 / 极限挑战），自动判定解锁，成就卡片整体折叠
-- **不公开行程**：可勾选"仅自己可见"，不出现在公开地图与统计中
+- **不公开行程**：添加 / 编辑时可勾选"仅自己可见"，不出现在公开地图与统计中
 
 ### 📊 全站统计 (`stats.html`)
 - 总行程、总城市、总用户、覆盖省份（4 卡网格排版）
@@ -86,7 +87,8 @@
 │   ├── test/
 │   │   └── achievements.test.js  # 成就判定与达成人数的单测（cd backend && npm test）
 │   ├── migrations/
-│   │   └── 0001_init.sql   # 建表：users（两站共享）/ cf_visits（本站独占，含 is_private）
+│   │   ├── 0001_init.sql     # 建表：users（原与 Qxwk-Blog 共享）/ cf_visits（足迹，本站独占）
+│   │   └── 0002_cf_users.sql # 用户表搬到本站独占的 cf_users，并把 cf_visits 的外键改指过去
 │   ├── package.json        # 只声明 ESM（"type":"module"）+ npm test，无任何依赖
 │   └── wrangler.toml       # Worker 配置（只有 D1 绑定；静态资源段已删 —— 页面在 GitHub Pages）
 ├── app/                    # 安卓 app，见 app/README.md（Kotlin + XML View/viewBinding，原生 osmdroid 地图，不用 WebView）
@@ -161,41 +163,29 @@ npx wrangler d1 migrations apply qxwk-data --remote
 
 > PowerShell 下请把 `npx` 写成 `npx.cmd`（执行策略会拦掉 `npx`；下同，所有 wrangler 命令都适用）。
 
-迁移会创建本站所需的全部表：`users`（`is_admin` 管理员标志、`color` 颜色随通行证同步、`passport_id` 通行证 userId，两站共享）与 `cf_visits`（足迹，含 `is_private`，本站独占），并一并建出 `passport_id` 的唯一索引。
+迁移会创建本站所需的全部表：`cf_users`（`is_admin` 管理员标志、`color` 颜色随通行证同步、`passport_id` 通行证 userId，本站独占）与 `cf_visits`（足迹，含 `is_private`），并一并建出 `passport_id` 的唯一索引。
 
 
-#### ⚠️ 线上已有库必须手工补 `passport_id` 列
+#### ⚠️ 从 0001 升级：用户表已搬到 `cf_users`
 
-线上 `users` 表已经存在（且是与 [Qxwk-Blog](https://github.com/Qxwk-Studio/Qxwk-Blog) **共享**的库 `qxwk-data`），`CREATE TABLE IF NOT EXISTS` 和 `npx wrangler d1 migrations apply qxwk-data --remote` **都补不了这个新列**，必须手工执行。**按下面顺序走**，命令都在 `backend/` 目录里跑（PowerShell 下 `npx` 写成 `npx.cmd`）：
-
-```bash
-# ① 补 passport_id 列（通行证 userId）
-npx wrangler d1 execute qxwk-data --remote --command "ALTER TABLE users ADD COLUMN passport_id INTEGER"
-
-# ② 补唯一索引：SQLite 的 ALTER TABLE 加不了 UNIQUE 列约束，
-#    唯一性只能靠显式唯一索引兜住（多行 NULL 是允许的，不影响 Qxwk-Blog 的老行）
-npx wrangler d1 execute qxwk-data --remote --command "CREATE UNIQUE INDEX IF NOT EXISTS idx_users_passport ON users(passport_id)"
-
-# ③ 核对结构：三条命令都该各回一行（列名 / 索引名 / 列名），查不到就是没补上。
-#    avatar 是第三项：本站登录时会写它（把通行证头像同步给共用这张表的 Qxwk-Blog 的 feed），
-#    缺列会让登录 500；线上一般早已由 Qxwk-Blog 侧补过，这里只是顺手确认
-npx wrangler d1 execute qxwk-data --remote --command "SELECT name FROM pragma_table_info('users') WHERE name = 'passport_id'"
-npx wrangler d1 execute qxwk-data --remote --command "SELECT name FROM sqlite_master WHERE type = 'index' AND name = 'idx_users_passport'"
-npx wrangler d1 execute qxwk-data --remote --command "SELECT name FROM pragma_table_info('users') WHERE name = 'avatar'"
-
-# ④ 部署后端（必须在补列之后）
-npx wrangler deploy
-```
-
-⑤ 部署后用通行证账号登录一次本站，再查存量行有没有被认领 —— `passport_id` 应从 NULL 变成你的通行证 userId（**仍在 `backend/` 目录**）：
+`users` 原先与 [Qxwk-Blog](https://github.com/Qxwk-Studio/Qxwk-Blog) **共享**（那边把 `users.avatar` 当作者头像读），两站的行混在一张表里。`0002_cf_users.sql` 把本站的用户搬进独占的 `cf_users`，并把 `cf_visits.user_id` 的外键改指过去 —— **`users` 表保持原样不动**（博客还在用），只是本站从此不再读写它。
 
 ```bash
-npx wrangler d1 execute qxwk-data --remote --command "SELECT id, nickname, passport_id, is_admin FROM users ORDER BY id"
+cd backend
+npx wrangler d1 migrations apply qxwk-data --remote
 ```
 
-只有「昵称与通行证一致、且 `passport_id IS NULL`」的老行会被自动认领；昵称已经和通行证对不上、且此前从没走过新逻辑的老行认不出来，会在下次登录时新建一行，**旧行及其足迹需要人工在库里合并**。
+迁移只搬「本站自己的人」—— 有足迹的 + `is_admin = 1` 的管理员（`users` 里还躺着大量博客那边、与本站无关的行）—— 并连带重建 `cf_visits` 以改外键指向：SQLite 改不了已有表的外键，重建时必须 `PRAGMA defer_foreign_keys = on`（原因写在 `0002_cf_users.sql` 开头）。跑完可以核对一下：
 
-漏加这一列会让所有需要登录的接口直接 500（`resolveViewer()` 的第一条 SQL 就查 `passport_id`）。
+```bash
+npx wrangler d1 execute qxwk-data --remote --command "SELECT (SELECT COUNT(*) FROM cf_users) AS cf_users, (SELECT COUNT(DISTINCT user_id) FROM cf_visits) AS visited_users"
+```
+
+**部署必须紧跟迁移**：中间那段窗口里线上还是老代码（查 `users`），读没问题，但**新用户加足迹会被挡下** —— 外键此时已指向 `cf_users`，而老代码刚建的那行在共享表里、`cf_users` 中并不存在。
+
+> **副作用**：博客 feed 原先靠本站登录时同步 `users.avatar` 拿到头像，现在本站不再写共享表，那部分头像要博客自己接通行证。
+>
+> 历史记录：`passport_id` 这一列早先是 `users` 上手补的（共享表里的列，`CREATE TABLE IF NOT EXISTS` 补不了，只能 `ALTER TABLE`）。`cf_users` 是全新表，由迁移直接建全，不再需要那套手工步骤。
 
 ### 3️⃣ 在通行证注册本站
 
@@ -248,17 +238,17 @@ npx wrangler deploy
 
 ### 👑 管理员
 
-管理员标志存在本站 users 表，由通行证登录后映射到本地用户时保留。直接改 D1：
+管理员标志存在本站 `cf_users` 表，由通行证登录后映射到本地用户时保留。直接改 D1：
 
 ```sql
 -- 把某用户设为管理员
-UPDATE users SET is_admin = 1 WHERE nickname = '你的昵称';
+UPDATE cf_users SET is_admin = 1 WHERE nickname = '你的昵称';
 
 -- 取消管理员
-UPDATE users SET is_admin = 0 WHERE nickname = '你的昵称';
+UPDATE cf_users SET is_admin = 0 WHERE nickname = '你的昵称';
 
 -- 查看所有管理员
-SELECT id, nickname, is_admin FROM users WHERE is_admin = 1;
+SELECT id, nickname, is_admin FROM cf_users WHERE is_admin = 1;
 ```
 
 ### 💻 本地开发
@@ -298,7 +288,7 @@ localhost 的任意端口（见 `backend/src/worker.js` 的 `ALLOWED_ORIGINS`）
 - 地图边界数据已做浏览器 IndexedDB 缓存（24h 过期），重复打开不重复请求
 
 **5. 用户颜色来源**
-- 本站 users.color 不再独立分配，每次用户访问时由通行证 `/api/me` 返回的 color 同步覆盖
+- 本站 `cf_users.color` 不再独立分配，每次用户访问时由通行证 `/api/me` 返回的 color 同步覆盖
 - 颜色的源头是通行证侧：注册时按用户数 `count % 60` 顺序分配 60 个预设色，用户也可在通行证个人中心自定义
 - 用户在通行证改了颜色，下次访问本站会自动同步过来
 

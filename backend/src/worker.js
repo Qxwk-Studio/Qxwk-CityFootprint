@@ -24,7 +24,7 @@ async function handleApi(request, env) {
   if (method === 'GET' && path === '/api/me') {
     const v = await resolveViewer(DB, request);
     if (!v) return error('未登录', 401);
-    const u = await DB.prepare('SELECT created_at FROM users WHERE id = ?').bind(v.id).first();
+    const u = await DB.prepare('SELECT created_at FROM cf_users WHERE id = ?').bind(v.id).first();
     return json({ userId: v.id, nickname: v.nickname, color: v.color, is_admin: v.isAdmin, created_at: u && u.created_at, avatar: v.avatar });
   }
   // GET /api/geo/:adcode（代理 DataV 边界接口，规避浏览器跨域/来源限制）
@@ -69,7 +69,7 @@ async function handleApi(request, env) {
     const vis = visibility(viewer, 'v.is_private', 'v.user_id');
     const rows = await DB.prepare(
       `SELECT v.city, v.lat, v.lng, v.created_at, u.nickname, u.color
-       FROM cf_visits v JOIN users u ON v.user_id = u.id
+       FROM cf_visits v JOIN cf_users u ON v.user_id = u.id
        ${vis.sql ? `WHERE ${vis.sql}` : ''}
        ORDER BY v.created_at ASC, v.id ASC`
     ).bind(...vis.params).all();
@@ -110,7 +110,7 @@ async function handleApi(request, env) {
     const vis = visibility(viewer, 'v.is_private', 'v.user_id');
     const rows = await DB.prepare(
       `SELECT u.nickname, u.color, v.visit_date, v.note, v.is_private
-       FROM cf_visits v JOIN users u ON v.user_id = u.id
+       FROM cf_visits v JOIN cf_users u ON v.user_id = u.id
        WHERE v.city = ? ${vis.sql ? `AND ${vis.sql}` : ''}
        ORDER BY v.created_at DESC, v.id DESC LIMIT 10`
     ).bind(city, ...vis.params).all();
@@ -121,6 +121,7 @@ async function handleApi(request, env) {
   // GET /api/stats（公开：全站统计；管理员统计全部行程含私密）
   // 成就达成人数由后端算（定义唯一一份在 achievements.js），所以**不再回 users[] 明细**，
   // 只回一个 totalUsers 数字 —— 客户端不再需要 users[].cities 去本地判定。
+  // user 侧一律查 cf_users（本站独占）：原先查的共享 users 里还躺着 Qxwk-Blog 的行，totalUsers 会虚高。
   if (method === 'GET' && path === '/api/stats') {
     const viewer = await getViewer(DB, request);
     // 落 WHERE 用的片段（FROM cf_visits，无别名）与落 JOIN 的 ON 用的片段（别名 v）分开取
@@ -129,7 +130,7 @@ async function handleApi(request, env) {
 
     const totalVisits = (await DB.prepare(`SELECT COUNT(*) as c FROM cf_visits ${whereVisit}`).bind(...visVisit.params).first()).c;
     const totalCities = (await DB.prepare(`SELECT COUNT(DISTINCT city) as c FROM cf_visits ${whereVisit}`).bind(...visVisit.params).first()).c;
-    const totalUsers = (await DB.prepare('SELECT COUNT(*) as c FROM users').first()).c;
+    const totalUsers = (await DB.prepare('SELECT COUNT(*) as c FROM cf_users').first()).c;
     const cityRank = await DB.prepare(
       `SELECT city, COUNT(*) as count, COUNT(DISTINCT user_id) as people FROM cf_visits ${whereVisit} GROUP BY city ORDER BY count DESC, city ASC`
     ).bind(...visVisit.params).all();
@@ -139,7 +140,7 @@ async function handleApi(request, env) {
     const visJoin = visibility(viewer, 'v.is_private', 'v.user_id');
     const userCities = await DB.prepare(
       `SELECT COALESCE(GROUP_CONCAT(DISTINCT v.city), '') as cities
-       FROM users u LEFT JOIN cf_visits v ON v.user_id = u.id ${visJoin.sql ? `AND ${visJoin.sql}` : ''}
+       FROM cf_users u LEFT JOIN cf_visits v ON v.user_id = u.id ${visJoin.sql ? `AND ${visJoin.sql}` : ''}
        GROUP BY u.id ORDER BY u.id`
     ).bind(...visJoin.params).all();
     const achievements = achievementCounts(userCities.results.map(r => (r.cities ? r.cities.split(',') : [])));

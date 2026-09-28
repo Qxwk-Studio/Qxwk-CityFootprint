@@ -380,7 +380,7 @@
   .toast svg { color: var(--primary); flex-shrink: 0; }
   .toast.show { top: 80px; opacity: 1; }
 
-  /* ========= 快捷添加弹窗 ========= */
+  /* ========= 添加行程弹窗 ========= */
   .modal-overlay {
     position: fixed;
     inset: 0;
@@ -455,8 +455,15 @@
   .modal-info svg { color: var(--primary); flex-shrink: 0; }
   .modal-info .info-date { color: var(--text-secondary); font-weight: 500; margin-left: auto; }
   .modal-locate { display: flex; gap: 8px; align-items: stretch; }
-  .modal-locate .modal-info { flex: 1; margin: 0; min-width: 0; }
-  .modal-locate .modal-info #quickCity { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* 城市这一格用输入框（可手输 + datalist 联想），配右侧的定位按钮 */
+  .modal-locate .modal-input { flex: 1; min-width: 0; }
+  /* 年 / 月并排 */
+  .modal-date { display: flex; gap: 8px; }
+  .modal-date .modal-input { flex: 1; min-width: 0; }
+  /* 备注字数：label 与计数同一行，label 自己的下边距让给这一行 */
+  .field-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 6px; }
+  .field-head label { margin-bottom: 0; }
+  .field-head .note-count { font-size: 0.76rem; color: var(--text-tertiary); }
   .modal-relocate {
     display: inline-flex;
     align-items: center;
@@ -657,7 +664,7 @@
 </a>
 <a class="fab-item" href="javascript:void(0)" onclick="openQuickAdd()" style="bottom:188px">
   <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-  快捷添加
+  添加行程
 </a>
 <a class="fab-item" href="/news" style="bottom:244px">
   <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
@@ -671,38 +678,45 @@
 
 <div id="adminViewNote" class="admin-view-note" style="display:none;">👑 管理员视图</div>
 
-<!-- 快捷添加弹窗 -->
-<div class="modal-overlay" id="quickModal" role="dialog" aria-modal="true" aria-label="快捷添加行程">
+<!-- 添加行程弹窗 —— 全站唯一的「添加」入口。
+     原先主页的「快捷添加」（只有定位 + 本月 + 备注）与足迹管理页的「创建行程」表单（城市联想 +
+     年月 + 记不清了 + 备注 + 私密）是两套东西，现已合并到这里；visits.html 那边只剩编辑。
+     定位（右侧准心按钮）只是帮忙把城市填成最近的一座，失败也不影响手输。 -->
+<div class="modal-overlay" id="quickModal" role="dialog" aria-modal="true" aria-label="添加行程">
   <div class="modal">
     <div class="modal-header">
-      <h3>快捷添加行程</h3>
+      <h3>添加行程</h3>
       <button type="button" class="modal-close" onclick="closeQuickModal()" aria-label="关闭">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
     </div>
     <div class="modal-field">
-      <label>地点</label>
+      <label for="quickCity">城市</label>
       <div class="modal-locate">
-        <div class="modal-info">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-          <span id="quickCity"></span>
-        </div>
-        <button type="button" class="modal-relocate" onclick="relocateCity()" aria-label="重新定位">
+        <input class="modal-input" id="quickCity" list="quickCityList" placeholder="输入城市名选择" autocomplete="off">
+        <datalist id="quickCityList"></datalist>
+        <button type="button" class="modal-relocate" onclick="locateCity()" aria-label="定位到最近的城市" title="定位到最近的城市">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/></svg>
         </button>
       </div>
     </div>
     <div class="modal-field">
-      <label>日期</label>
-      <div class="modal-info">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-        <span id="quickDate"></span>
-        <span class="info-date">今天</span>
+      <label for="quickYear">时间</label>
+      <div class="modal-date">
+        <select class="modal-input" id="quickYear"></select>
+        <select class="modal-input" id="quickMonth"></select>
       </div>
+      <label class="modal-check" style="margin-top:8px;">
+        <input type="checkbox" id="quickForgot" onchange="toggleQuickDate()">
+        <span>记不清了</span>
+      </label>
     </div>
     <div class="modal-field">
-      <label>备注（可选）</label>
-      <input class="modal-input" id="quickNote" maxlength="100" placeholder="一句话留下回忆…" autocomplete="off">
+      <div class="field-head">
+        <label for="quickNote">备注（可选）</label>
+        <span class="note-count" id="quickNoteCount">0/100</span>
+      </div>
+      <input class="modal-input" id="quickNote" maxlength="100" placeholder="一句话留下回忆…" autocomplete="off" oninput="updateQuickNoteCount()">
     </div>
     <div class="modal-field">
       <label class="modal-check">
@@ -841,7 +855,7 @@ function loadCityGeo(adcode) {
 }
 
 function render(data) {
-  // 首次加载时移除全屏加载层；快捷添加后的局部刷新无需重复移除
+  // 首次加载时移除全屏加载层；添加行程后的局部刷新无需重复移除
   const loadingEl = document.getElementById('loading');
   if (loadingEl) loadingEl.remove();
 
@@ -1074,10 +1088,17 @@ function hideToast() {
   if (window._toastTimer) clearTimeout(window._toastTimer);
 }
 
-// ---------- 快捷添加 ----------
-// 打开快捷添加：未登录先提示；已登录请求 GPS 定位反查最近城市
+// ---------- 添加行程 ----------
+// 打开添加行程：先开弹窗再尽力定位 —— 定位只是帮忙把城市填成最近的一座，
+// 没权限 / 超时都不该把入口堵死（这里已是全站唯一的添加入口）。
 function openQuickAdd() {
   if (!getSession()) { showToast('还未登录'); return; }
+  openQuickModal();
+  locateCity();
+}
+
+// 定位并把「城市」填成最近的一座。开弹窗与手点准心按钮都走这里 —— 一处实现两个入口
+function locateCity() {
   if (!navigator.geolocation) { showToast('浏览器不支持定位'); return; }
   showToast('正在定位…');
   navigator.geolocation.getCurrentPosition(
@@ -1086,12 +1107,40 @@ function openQuickAdd() {
       updateMyLocation(pos.coords.latitude, pos.coords.longitude);
       const city = nearestCity(pos.coords.latitude, pos.coords.longitude);
       if (!city) { showToast('未找到附近城市'); return; }
-      showQuickModal(city);
+      document.getElementById('quickCity').value = city.name;
     },
     (err) => { showToast(geoErrorMsg(err)); },
     { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
   );
 }
+
+// 城市联想与年 / 月下拉的选项只在启动时铺一次（与足迹管理页同一份 window.CITIES）
+(function initQuickForm() {
+  const cityList = document.getElementById('quickCityList');
+  (window.CITIES || []).forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c.name;
+    cityList.appendChild(opt);
+  });
+
+  const yearSel = document.getElementById('quickYear');
+  const monthSel = document.getElementById('quickMonth');
+  const currentYear = new Date().getFullYear();
+  yearSel.innerHTML = '<option value="">年份</option>';
+  for (let y = currentYear; y >= 2000; y--) {
+    const opt = document.createElement('option');
+    opt.value = String(y);
+    opt.textContent = y + ' 年';
+    yearSel.appendChild(opt);
+  }
+  monthSel.innerHTML = '<option value="">仅年份</option>';
+  for (let m = 1; m <= 12; m++) {
+    const opt = document.createElement('option');
+    opt.value = String(m).padStart(2, '0');
+    opt.textContent = m + ' 月';
+    monthSel.appendChild(opt);
+  }
+})();
 
 // 定位错误 → 差异化提示（GPS 关闭时浏览器多表现为超时，需引导检查定位开关）
 function geoErrorMsg(err) {
@@ -1116,23 +1165,6 @@ function updateMyLocation(lat, lng) {
   myLocationMarker = L.marker([lat, lng], { icon, zIndexOffset: 1000 }).addTo(map);
 }
 
-// 弹窗内重新定位：更新地点为当前位置最近的城市
-function relocateCity() {
-  if (!navigator.geolocation) { showToast('浏览器不支持定位'); return; }
-  showToast('正在定位…');
-  navigator.geolocation.getCurrentPosition(
-    (pos) => {
-      hideToast();
-      const city = nearestCity(pos.coords.latitude, pos.coords.longitude);
-      if (!city) { showToast('未找到附近城市'); return; }
-      quickCity = city;
-      document.getElementById('quickCity').textContent = city.name;
-    },
-    (err) => { showToast(geoErrorMsg(err)); },
-    { enableHighAccuracy: false, timeout: 10000, maximumAge: 0 }
-  );
-}
-
 // 在 CITIES 中找离指定坐标最近的城市（城市级反查，忽略坐标系偏移影响）
 function nearestCity(lat, lng) {
   let best = null, bestD = Infinity;
@@ -1143,44 +1175,70 @@ function nearestCity(lat, lng) {
   return best;
 }
 
-// 今天年月（与足迹系统一致的 YYYY-MM 格式）
-function quickTodayStr() {
-  const d = new Date();
-  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+// 「记不清了」：禁用并清空年月下拉（与后端 ^\d{4}(-\d{2})?$ 的可空规则对齐）
+function toggleQuickDate() {
+  const forgot = document.getElementById('quickForgot').checked;
+  const yearSel = document.getElementById('quickYear');
+  const monthSel = document.getElementById('quickMonth');
+  yearSel.disabled = forgot;
+  monthSel.disabled = forgot;
+  if (forgot) { yearSel.value = ''; monthSel.value = ''; }
 }
 
-let quickCity = null;
+// 年 / 月组合成 '2024' 或 '2024-08'，未选年返回 null（= 记不清）
+function quickVisitDate() {
+  const y = document.getElementById('quickYear').value;
+  const m = document.getElementById('quickMonth').value;
+  if (!y) return null;
+  return m ? y + '-' + m : y;
+}
 
-function showQuickModal(city) {
-  quickCity = city;
-  document.getElementById('quickCity').textContent = city.name;
-  document.getElementById('quickDate').textContent = quickTodayStr();
+function updateQuickNoteCount() {
+  document.getElementById('quickNoteCount').textContent = document.getElementById('quickNote').value.length + '/100';
+}
+
+// 开弹窗并复位：时间默认填「本月」——添加行程时最常见的值，用户不动就是对的
+function openQuickModal() {
+  const now = new Date();
+  document.getElementById('quickCity').value = '';
+  document.getElementById('quickYear').value = String(now.getFullYear());
+  document.getElementById('quickMonth').value = String(now.getMonth() + 1).padStart(2, '0');
+  document.getElementById('quickForgot').checked = false;
+  toggleQuickDate();
   document.getElementById('quickNote').value = '';
+  updateQuickNoteCount();
   document.getElementById('quickPrivate').checked = false;
   document.getElementById('quickMsg').textContent = '';
   document.getElementById('quickSubmit').disabled = false;
   document.getElementById('quickModal').classList.add('show');
-  document.getElementById('quickNote').focus();
+  document.getElementById('quickCity').focus();
 }
 
 function closeQuickModal() {
   document.getElementById('quickModal').classList.remove('show');
-  quickCity = null;
 }
 
 async function submitQuickAdd() {
-  if (!quickCity) return;
   const btn = document.getElementById('quickSubmit');
   const msg = document.getElementById('quickMsg');
+  // 城市必须来自城市表：坐标由它带出来（后端只校验坐标是数字，认不认得出城市名是前端的事）。
+  // findCity 只回 {lat,lng}，城市名就用输入框里的原值
+  const name = document.getElementById('quickCity').value.trim();
+  const c = findCity(name);
+  if (!c) {
+    msg.className = 'modal-msg error';
+    msg.textContent = '未找到该城市，请从下拉列表选择';
+    return;
+  }
   btn.disabled = true;
   msg.className = 'modal-msg error';
   msg.textContent = '正在添加…';
 
   const payload = {
-    city: quickCity.name,
-    lat: quickCity.lat,
-    lng: quickCity.lng,
-    visit_date: quickTodayStr(),
+    city: name,
+    lat: c.lat,
+    lng: c.lng,
+    visit_date: quickVisitDate(),
     note: document.getElementById('quickNote').value.trim(),
     is_private: document.getElementById('quickPrivate').checked,
   };
