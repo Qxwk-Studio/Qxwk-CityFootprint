@@ -88,7 +88,10 @@ async function handleApi(request, env) {
         }
       }
       if (!resp.ok) return error('边界获取失败', resp.status);
-      return json(await resp.json());
+      // 返回给浏览器的这一份也要带 24h：上面 put 进 caches.default 的是**缓存副本**，它头上的
+      // max-age 只管 Worker 内部那份；json() 现造的这个响应原先一个缓存头都没有，浏览器 HTTP
+      // 缓存完全不吃（只剩前端 IndexedDB 顶 24h）。补上后三层 TTL 一致。
+      return json(await resp.json(), 200, { 'Cache-Control': 'public, max-age=86400' });
     } catch (e) {
       return error('边界获取失败', 502);
     }

@@ -5,10 +5,12 @@
 // 通行证地址（本地 dev 改 http://localhost:8787）
 const PASSPORT_URL = 'https://account.qxwkstudio.top';
 
-export function json(data, status = 200) {
+// headers 可选：给需要自带缓存声明的接口用（如 /api/geo 的 24h Cache-Control）。
+// 默认不设任何缓存头 —— 其余接口带用户态数据，不该被缓存。
+export function json(data, status = 200, headers = null) {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { 'Content-Type': 'application/json; charset=utf-8' },
+    headers: { 'Content-Type': 'application/json; charset=utf-8', ...headers },
   });
 }
 
