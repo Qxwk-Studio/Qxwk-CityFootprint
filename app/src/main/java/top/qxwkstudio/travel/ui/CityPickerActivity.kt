@@ -11,6 +11,7 @@ import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import top.qxwkstudio.travel.R
 import top.qxwkstudio.travel.data.CityStore
 import top.qxwkstudio.travel.databinding.ActivityCityPickerBinding
 import top.qxwkstudio.travel.databinding.ItemCityBinding
