@@ -68,6 +68,7 @@
 ```
 ├── docs/                   # 静态前端（GitHub Pages 就发布这个目录）
 │   ├── vendor/             # 自托管前端依赖（Leaflet JS + CSS + 标记图标，避免外链与 CORS）
+│   ├── style.css           # index/account/visits/stats/news 五个内容页共用的样式（导航、卡片、按钮、表单控件、加载态、断点、主题变量…）；各页 <link> 它在自己的 <style> 之前，页面内仍可覆盖（setup.html 是独立落地页，不引入）。**凡是各页应该长得一样的样式都写这里，页内不要再抄一份**
 │   ├── index.html          # 足迹大地图
 │   ├── account.html        # 个人中心（本站登录表单 + 资料卡）
 │   ├── visits.html         # 足迹管理（增删改/统计/成就）
@@ -107,7 +108,7 @@
 |------|------|------|------|
 | GET | `/api/me` | Bearer | 当前用户信息（token 经通行证验证，返回 `userId/nickname/color/avatar/is_admin/created_at`） |
 | GET | `/api/cities` | 可选 Bearer | 地图数据：城市 + 坐标 + `adcode` + 去过的人（仅 `nickname/color`；登录可见本人私密，管理员可见全部）。日期/备注等明细不在这里下发 |
-| GET | `/api/cities/:city` | 可选 Bearer | 某座城市的最近 10 条行程（地图弹窗**点开时才拉**；无记录回 200 + 空数组）。城市名直接当路径参数，每条带 `adcode` 与 `transport`（数组） |
+| GET | `/api/city/:city` | 可选 Bearer | 某座城市的最近 10 条行程（地图弹窗**点开时才拉**；无记录回 200 + 空数组）。城市名直接当路径参数，每条带 `adcode` 与 `transport`（数组） |
 | GET | `/api/stats` | 可选 Bearer | 全站统计（`totalVisits/totalCities/totalUsers/cityRank/achievements/isAdmin`，管理员含私密行程） |
 | GET | `/api/my-visits` | Bearer | 自己的足迹（含 `is_private/adcode/transport`）+ 我的成就 |
 | POST | `/api/visits` | Bearer | 添加足迹（可带 `is_private`、`transport` 多选数组；`adcode` 由后端按城市名派生） |
@@ -123,7 +124,7 @@
 - **前后端跨域，接口自带 CORS**：页面在 `travel.qxwkstudio.top`（GitHub Pages）、接口在 `api.travel.qxwkstudio.top`（Worker），不同源。前端请求带 `Authorization` / `Content-Type`，浏览器会先发 `OPTIONS` 预检，所以 Worker 必须处理预检并回 `Access-Control-Allow-*`；**4xx/5xx 也要带头**，否则浏览器只报 "CORS error"，前端那套 401 清 token / 回登录视图的逻辑永远触发不了。白名单（`backend/src/worker.js` 的 `ALLOWED_ORIGINS`）只放行前端域与 localhost —— 身份靠 Bearer token、不用 cookie，本就没有「靠 CORS 挡人」的安全边界，但也没必要让任意站点读响应。
 - **本地身份按 `passport_id` 映射**：`resolveViewer()` 用通行证 `/api/me` 返回的 `userId` 认人（`cf_users.passport_id`，唯一索引 `idx_cf_users_passport`）。通行证里改昵称不会改 userId，所以改昵称不会在本站多出一条行；升级前的老行按「同昵称且 `passport_id IS NULL`」自动回填认领，保住原有足迹与管理员标志。
 - **颜色与头像都由 Account 输出**：`cf_users.color` 和用户头像 URL 都是通行证"单一事实源"，本站每次用户访问时同步覆盖。这样用户在通行证改颜色 / 改邮箱（头像 hash 变化）后，访问本站自动生效，避免两端数据漂移。
-- **私密行程接口层过滤**：`is_private` 过滤在 Worker 侧做，而不是前端，防止有人抓接口构造出别人的私密足迹。规则只写一处 —— `lib.js` 的 `visibility(viewer)`（管理员不过滤；其余放行「非私密」或「自己的」），`/api/cities`、`/api/cities/:city`、`/api/stats` 共用它。凡是新增「面向他人数据」的接口，都必须套这一段，别各自手抄。
+- **私密行程接口层过滤**：`is_private` 过滤在 Worker 侧做，而不是前端，防止有人抓接口构造出别人的私密足迹。规则只写一处 —— `lib.js` 的 `visibility(viewer)`（管理员不过滤；其余放行「非私密」或「自己的」），`/api/cities`、`/api/city/:city`、`/api/stats` 共用它。凡是新增「面向他人数据」的接口，都必须套这一段，别各自手抄。
 - **成就系统**：判定逻辑只有一份，在 `backend/src/achievements.js` —— "足迹丰碑 / 巡游四方 / 城市打卡 / 极限挑战"四大类共 42 条，每条带**稳定的 `code`**（早期拿中文 name 当计数键，改文案就会静默错位）。网页与 app **都不再自带定义**，只消费接口：`GET /api/my-visits` 下发 `done`（我的成就），`GET /api/stats` 下发 `count`（达成人数），两者都把 `icon/name/desc` 一起给，所以客户端零定义也能渲染。新增成就只改这一个文件，并同步 `backend/test/achievements.test.js`。
 - **地图边界与瓦片缓存**：DataV GeoAtlas 边界由 Worker `/api/geo/:adcode` 代理，三层都按 24h 缓存 —— Worker 内部 `caches.default` 的副本带 `Cache-Control: public, max-age=86400`，返回给浏览器的响应也带同一个头（浏览器 HTTP 缓存才吃得到），前端再用 IndexedDB 存 24h，打开地图时只拉取缺省的边界。瓦片用高德免 Key 内网直出、Leaflet 资源自托管到 `docs/vendor/`，避免外链失效与 CORS 折腾。
 - **城市字典与 adcode 由后端派生**：`cf_visits.adcode` 在**写入时**由后端按城市名从字典取出（`backend/src/city-codes.js`），字典与前端 `docs/city-codes.js` **同源** —— `scripts/gen-city-codes.js` 一次生成两份，避免两端各存一份后慢慢漂移。字典未命中（用户自造的城市名）留 `NULL` 而**不拒绝请求**；读取时用 `v.adcode || 字典[city]` 兜底，加列前的老行也有值。这样 web 与 app 都不必再自带「城市名 → adcode」映射，直接拿接口给的 `adcode` 取边界。

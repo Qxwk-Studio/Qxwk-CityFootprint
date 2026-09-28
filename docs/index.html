@@ -859,7 +859,7 @@ function updateSelectAllState() {
 const cityDetailCache = new Map();
 function loadCityDetail(city) {
   if (!cityDetailCache.has(city)) {
-    cityDetailCache.set(city, api('/cities/' + encodeURIComponent(city)).then(d => d.visits));
+    cityDetailCache.set(city, api('/city/' + encodeURIComponent(city)).then(d => d.visits));
   }
   return cityDetailCache.get(city);
 }

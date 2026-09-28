@@ -107,7 +107,7 @@ export async function getUserId(DB, request) {
 }
 
 /**
- * 私密可见性过滤片段 —— 全站唯一一处（cities / cities/{city} / stats 共用）。
+ * 私密可见性过滤片段 —— 全站唯一一处（cities / city/{city} / stats 共用）。
  * 管理员无过滤；其余只放行「非私密的」或「自己的」。未登录时 viewer.userId 为 0，
  * 而 user_id 不会是 0，等价于只看非私密。
  *

@@ -99,7 +99,7 @@ async function handleApi(request, env) {
 
   // GET /api/cities（公开：地图数据；已登录用户可见自己的私密行程，管理员可见全部）
   // 只回「城市 + 坐标 + 去过的人（昵称/颜色）」—— 这三样正是地图上色和「谁的足迹」图例筛选取的。
-  // 日期 / 备注 / 私密标记这些明细不在这里铺开：点开某座城市时再调 GET /api/cities/{城市名} 按需拉。
+  // 日期 / 备注 / 私密标记这些明细不在这里铺开：点开某座城市时再调 GET /api/city/{城市名} 按需拉。
   if (method === 'GET' && path === '/api/cities') {
     const viewer = await getViewer(DB, request);
     const vis = visibility(viewer, 'v.is_private', 'v.user_id');
@@ -129,11 +129,13 @@ async function handleApi(request, env) {
     return json({ cities, isAdmin: viewer.isAdmin });
   }
 
-  // GET /api/cities/:city（公开：某座城市的最近 10 条行程，供地图弹窗按需拉取）
+  // GET /api/city/:city（公开：某座城市的最近 10 条行程，供地图弹窗按需拉取）
+  // 路径用单数 /api/city/，与列表接口 /api/cities 明确区分（复数列表、单数明细），
+  // 免得两者只差一个斜杠、看路径分不清是列表还是明细。
   // 城市名直接当路径参数 —— 库里只有 city 名、没有 adcode（见 migrations/0001_init.sql），
   // adcode 由客户端用本地城市表映射。只给最新 10 条，且**不按 visit_date 排**：
   // 它可空、还允许只填年份，拿它排序口径会打架。
-  const cityMatch = path.match(/^\/api\/cities\/(.+)$/);
+  const cityMatch = path.match(/^\/api\/city\/(.+)$/);
   if (method === 'GET' && cityMatch) {
     let city = '';
     try {
