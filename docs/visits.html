@@ -8,6 +8,10 @@
 <link rel="icon" type="image/webp" href="/favicon.webp">
 <link rel="stylesheet" href="/style.css">
 <style>
+  /* 编辑弹窗打开时锁住背后页面：原生模态只让背景 inert，滚轮照样能滚到页面，
+     所以照 account 页的 .no-scroll 套路手动加/去（见 startEdit 与 dialog 的 close 事件） */
+  body.no-scroll { overflow: hidden; }
+
   /* ========= Form =========
      控件外观（label / input / select / textarea / .field）见 style.css，与 account 登录表单同一套 */
   .row { display: flex; gap: 12px; }
@@ -138,26 +142,10 @@
     align-items: start;
   }
   .personal-col { display: flex; flex-direction: column; gap: 20px; }
-  .personal-col .card { margin-bottom: 0; }
 
-  /* 可折叠卡片 */
-  .card-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    cursor: pointer;
-    user-select: none;
-    margin-bottom: 12px;
-  }
-  /* 行程记录 / 成就两节已不再套外层 .card，标题字号得自己写一份；
-     取值与 style.css 的 .card h3 一致，改那边时这里跟着改 */
-  .card-header h3 { font-size: 1.15rem; font-weight: 600; margin-bottom: 0; }
-  .card-toggle { color: var(--text-tertiary); transition: transform 0.2s ease; flex-shrink: 0; }
-  .visit-list-card.collapsed .card-toggle { transform: rotate(-90deg); }
-  .visit-list-card.collapsed #visitList { display: none; }
-  .achievement-card .card-header { margin-bottom: 18px; }
-  .achievement-card.collapsed .card-toggle { transform: rotate(-90deg); }
-  .achievement-card.collapsed .achievement-grid { display: none; }
+  /* 三节（足迹统计 / 行程记录 / 成就）都不套外层 .card、也不再折叠，标题用这个；
+     字号取值与 style.css 的 .card h3 一致，改那边时这里跟着改 */
+  .section-title { font-size: 1.15rem; font-weight: 600; margin-bottom: 12px; }
 
   /* 成就卡片：单列堆叠，每个成就独立成卡（同样没有外层大卡片） */
   .achievement-grid {
@@ -234,24 +222,20 @@
     gap: 8px;
   }
 
-  /* 成就分类折叠 */
+  /* 成就分类：不再折叠，分类头只作标题行 */
   .achievement-category { margin-bottom: 14px; }
   .achievement-category:last-child { margin-bottom: 0; }
   .category-header {
     display: flex;
     align-items: center;
     gap: 8px;
-    cursor: pointer;
-    user-select: none;
     padding: 8px 10px;
     border-radius: var(--radius-sm);
-    /* 分类头现在直接落在页面灰底上，用 --surface 才有一块「可点区域」的观感 */
+    /* 分类头直接落在页面灰底上，用 --surface 才有一块「标题区」的观感 */
     background: var(--surface);
     border: 1px solid var(--border);
     margin-bottom: 8px;
-    transition: all var(--transition);
   }
-  .category-header:hover { border-color: var(--primary); }
   .category-title { font-size: 0.9rem; font-weight: 600; flex: 1; }
   /* 分类细进度条：轨道用 --border（分类头背景是 --surface，用 --surface 会看不见） */
   .category-bar {
@@ -270,9 +254,6 @@
     transition: width 0.4s ease;
   }
   .category-progress { font-size: 0.75rem; color: var(--text-tertiary); }
-  .category-toggle { color: var(--text-tertiary); transition: transform 0.2s ease; flex-shrink: 0; }
-  .achievement-category.collapsed .category-toggle { transform: rotate(-90deg); }
-  .achievement-category.collapsed .category-body { display: none; }
 
   /* ========= Responsive =========
      导航/页脚的手机端缩进见 style.css，本页只有表单的 .row 要竖排 */
@@ -354,8 +335,10 @@
 
     <div class="personal-layout">
       <div class="personal-col">
-        <div class="card">
-          <h3>📊 足迹统计</h3>
+        <!-- 足迹统计：不套外层大卡片，五张小卡直接落在页面上。
+             外面这层 <div> 不画任何框，只为让 .personal-col 的 gap 把三节拉开 -->
+        <div>
+          <h3 class="section-title">📊 足迹统计</h3>
           <div class="visit-stats" id="visitStats">
             <div class="stat-card stat-wide">
               <div class="label">⏳ 时间跨度</div>
@@ -368,25 +351,18 @@
           </div>
         </div>
 
-        <!-- 行程记录：去掉外层大卡片，每条足迹自成一张卡；默认展开，点标题行可收起 -->
-        <div class="visit-list-card" id="visitListCard">
-          <div class="card-header" onclick="toggleVisitList()">
-            <h3>📍 行程记录</h3>
-            <svg class="card-toggle" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-          </div>
+        <!-- 行程记录：每条足迹自成一张卡，标题行不可折叠 -->
+        <div class="visit-list-card">
+          <h3 class="section-title">📍 行程记录</h3>
           <div id="visitList"><div class="empty">正在加载…</div></div>
         </div>
       </div>
 
       <div class="personal-col">
-        <!-- 成就：同样去掉外层大卡片，每个成就自成一张卡 -->
-        <div class="achievement-card" id="achievementCard">
-          <div class="card-header" onclick="toggleAchievement()">
-            <h3>🏆 成就</h3>
-            <svg class="card-toggle" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-          </div>
-          <!-- 总进度：数字由 renderAchievements() 填。折叠整卡时这一行仍然留着 ——
-               收起后还想一眼看到「点亮了几座里程碑」，只把分类列表藏起来 -->
+        <!-- 成就：每个成就自成一张卡，分类不再折叠 -->
+        <div class="achievement-card">
+          <h3 class="section-title">🏆 成就</h3>
+          <!-- 总进度：数字由 renderAchievements() 填 -->
           <div class="achievement-summary">
             <span class="sum-label">已点亮 <b id="achvDone">0</b> / <span id="achvTotal">0</span></span>
             <span class="sum-bar"><i id="achvBar" style="width:0%"></i></span>
@@ -532,11 +508,6 @@ function updateNoteCount() {
   if (el && input) el.textContent = input.value.length + '/100';
 }
 
-// 行程记录折叠开关
-function toggleVisitList() {
-  document.getElementById('visitListCard').classList.toggle('collapsed');
-}
-
 // 更新足迹统计：去过几座城市（去重）+ 足迹总数
 // 城市 → 省份
 function findProvince(city) {
@@ -613,11 +584,10 @@ function renderAchievements(CATEGORIES) {
     const pct = cat.items.length ? (doneCount / cat.items.length) * 100 : 0;
     return `
       <div class="achievement-category">
-        <div class="category-header" onclick="toggleCategory(this)">
+        <div class="category-header">
           <span class="category-title">${cat.title}</span>
           <span class="category-bar"><i style="width:${pct}%"></i></span>
           <span class="category-progress">${doneCount}/${cat.items.length}</span>
-          <svg class="category-toggle" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
         <div class="category-body">
           ${cat.items.map(a => `
@@ -630,16 +600,6 @@ function renderAchievements(CATEGORIES) {
         </div>
       </div>`;
   }).join('');
-}
-
-// 分类折叠：点分类标题行切换（原先只有 CSS、没有触发点，折叠一直没生效）
-function toggleCategory(header) {
-  header.closest('.achievement-category').classList.toggle('collapsed');
-}
-
-// 成就卡片整体折叠开关
-function toggleAchievement() {
-  document.getElementById('achievementCard').classList.toggle('collapsed');
 }
 
 async function loadVisits() {
@@ -733,6 +693,7 @@ function startEdit(id) {
   const msg = document.getElementById('addMsg');
   msg.textContent = '正在编辑：' + v.city;
   msg.className = 'msg ok';
+  document.body.classList.add('no-scroll'); // 锁住背后页面：原生模态挡不住滚轮
   document.getElementById('editDialog').showModal();
 }
 
@@ -745,7 +706,10 @@ function closeEditModal() {
 
 // Esc 关闭是 <dialog> 的原生行为，不经过上面的按钮，得靠 close 事件兜住 ——
 // 否则 editingId 会残留成上一条，虽然弹窗已关不会误提交，但留个脏状态迟早坑人
-document.getElementById('editDialog').addEventListener('close', () => { editingId = null; });
+document.getElementById('editDialog').addEventListener('close', () => {
+  editingId = null;
+  document.body.classList.remove('no-scroll'); // 关弹窗（含 Esc）恢复页面滚动
+});
 
 async function delVisit(id) {
   if (!confirm('确定删除这条足迹吗？')) return;

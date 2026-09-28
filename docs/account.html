@@ -13,7 +13,6 @@
     font-family: 'Consolas', 'Courier New', monospace; }
   .user-color-dot { width: 16px; height: 16px; border-radius: 50%; border: 2px solid #fff;
     box-shadow: 0 0 0 1px var(--border); flex-shrink: 0; }
-  .user-regtime { margin-top: 6px; font-size: 0.78rem; color: var(--text-tertiary); }
   #userView .card { padding: 28px; }
   .profile-card { background: linear-gradient(135deg, color-mix(in srgb, var(--user-color, #2563eb) 15%, #ffffff), var(--surface) 80%);
     border-color: color-mix(in srgb, var(--user-color, #2563eb) 22%, #e2e8f0); }
@@ -241,7 +240,6 @@
                 <div class="profile-meta">
                   <span class="user-uid" id="userUid"></span>
                 </div>
-                <div class="user-regtime" id="userRegTime"></div>
               </div>
               <span id="adminBadge" class="admin-badge-head" style="display:none;">👑 管理员</span>
             </div>
@@ -359,18 +357,10 @@ function enterUserView() {
     colorDot.style.background = s.color;
     colorDot.style.boxShadow = '0 0 0 3px ' + s.color + '40';
   }
-  // 注册时间（来自 /api/me 的 created_at）
-  const regEl = document.getElementById('userRegTime');
-  if (regEl && window._regTime) regEl.textContent = '注册于 ' + window._regTime;
 }
 
-// /api/me 返回值的落地：写回本地会话缓存 + 记录注册时间，然后渲染已登录界面
+// /api/me 返回值的落地：写回本地会话缓存，然后渲染已登录界面
 function onMeLoaded(data) {
-  if (data && data.created_at) {
-    const s = String(data.created_at);
-    const d = new Date(s.replace(' ', 'T'));
-    window._regTime = isNaN(d.getTime()) ? s.slice(0, 10) : d.toLocaleDateString('zh-CN');
-  }
   if (data && data.userId) {
     localStorage.setItem('qxwf_user', JSON.stringify({
       userId: data.userId,
