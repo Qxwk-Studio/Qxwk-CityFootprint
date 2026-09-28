@@ -102,14 +102,18 @@
          顶栏（view_top_bar.xml）、主壳底栏（BottomNavigationView 那条）、登录页底栏共用这两个样式，
          免得三处各写一遍底色/分隔线，哪天改色漏掉一处就在那页露出半截白边。 -->
 
-    <style name="Widget.App.ShellBand">
+    <!-- parent="" 不能省：样式名带点号时，AAPT 会把最后一段之前的部分**当成父样式**去解析，
+         于是 Widget.App.ShellBand 会被推断成「继承 Widget.App」——而这个样式并不存在，
+         直接报 resource style/Widget.App not found、整个 processDebugResources 挂掉。
+         空 parent 就是显式声明「不继承」，其余几个同前缀的样式因为都写了真父样式才没踩到。 -->
+    <style name="Widget.App.ShellBand" parent="">
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">wrap_content</item>
         <item name="android:background">@color/sidebar</item>
         <item name="android:orientation">vertical</item>
     </style>
 
-    <style name="Widget.App.ShellDivider">
+    <style name="Widget.App.ShellDivider" parent="">
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">1dp</item>
         <item name="android:background">@color/sidebar_border</item>
