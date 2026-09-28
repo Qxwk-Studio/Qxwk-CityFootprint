@@ -53,6 +53,9 @@ class StatsFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         store = Store(requireContext())
+        // 与主页/成就页同一套下拉刷新：指示器统一用主色（SwipeRefreshLayout 没有 XML 配色属性）
+        binding.swipe.setColorSchemeResources(R.color.accent)
+        binding.swipe.setOnRefreshListener { load() }
         binding.btnRankMore.setOnClickListener {
             rankExpanded = !rankExpanded
             lastStats?.let { renderRank(it, lastCities) }
@@ -80,11 +83,11 @@ class StatsFragment : Fragment() {
             Session.expired(requireActivity())
             return
         }
-        binding.progress.visibility = View.VISIBLE
+        binding.swipe.isRefreshing = true
         binding.textError.visibility = View.GONE
 
         viewLifecycleOwner.lifecycleScope.runIo({ VisitRepo.stats() }) { result ->
-            binding.progress.visibility = View.GONE
+            binding.swipe.isRefreshing = false
 
             val stats = result.getOrNull()
             if (stats == null) {

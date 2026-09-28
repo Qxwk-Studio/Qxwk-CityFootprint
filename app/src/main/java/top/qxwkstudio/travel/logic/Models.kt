@@ -17,7 +17,7 @@ import kotlinx.serialization.encoding.Encoder
  * CitySearch）拿到的仍是普通 data class，解析细节不会渗进判定里。
  *
  * 字段名/类型对齐后端（backend/src/worker.js）：
- *   my-visits：{id, city, lat, lng, visit_date, note, is_private}
+ *   my-visits：{id, city, lat, lng, visit_date, note, is_private, transport[]}
  *   is_private 后端是 0/1，到 Kotlin 侧就翻成 Boolean（见文件末尾的 IntBooleanSerializer），
  *   界面不再关心它是几。
  *
@@ -35,6 +35,8 @@ data class Visit(
     @SerialName("is_private")
     @Serializable(with = IntBooleanSerializer::class)
     val isPrivate: Boolean = false,
+    /** 出行方式 code 数组（后端已按白名单顺序排好，并把库里那串 JSON 还原成数组）。 */
+    val transport: List<String> = emptyList(),
 )
 
 /**
@@ -55,6 +57,11 @@ data class VisitDraft(
     @SerialName("is_private")
     @Serializable(with = IntBooleanSerializer::class)
     val isPrivate: Boolean = false,
+    /**
+     * 出行方式（可多选，存 code 数组）。后端 [worker.js pickTransports] 会拿白名单过滤一遍，
+     * 所以这里发出去的即使带脏 code 也落不了库 —— 客户端不做「过滤」这层假动作，只管收集用户勾的。
+     */
+    val transport: List<String> = emptyList(),
 )
 
 /**

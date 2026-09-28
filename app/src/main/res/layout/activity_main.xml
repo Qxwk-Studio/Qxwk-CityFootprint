@@ -13,38 +13,15 @@
     android:background="@color/bg"
     android:orientation="vertical">
 
-    <!-- ===== 顶栏 ===== -->
-    <LinearLayout
+    <!-- ===== 顶栏 =====
+         id=topBar 是给 edge-to-edge 用的：状态栏 / 刘海那截高度会加到这个容器的 paddingTop 上
+         （见 ui/EdgeToEdge.kt）。顶栏底色与状态栏底色同为 sidebar，所以不必再设 android:statusBarColor。
+         布局本体在 view_top_bar.xml（全 app 共用一份），标题文字由 MainActivity 按选中的 tab 填。 -->
+    <include
+        android:id="@+id/topBar"
+        layout="@layout/view_top_bar"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@color/sidebar"
-        android:orientation="vertical">
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:paddingStart="16dp"
-            android:paddingEnd="16dp">
-
-            <TextView
-                android:id="@+id/title"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:ellipsize="end"
-                android:maxLines="1"
-                android:textColor="@color/sidebar_fg"
-                android:textSize="16sp"
-                android:textStyle="bold" />
-        </LinearLayout>
-
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:background="@color/sidebar_border" />
-    </LinearLayout>
+        android:layout_height="wrap_content" />
 
     <FrameLayout
         android:id="@+id/container"
@@ -53,21 +30,23 @@
         android:layout_weight="1" />
 
     <!-- ===== 底部导航 ===== -->
+    <!-- id=bottomBar 同上：手势条 / 虚拟导航栏那截高度加到 paddingBottom 上，
+         底栏的 sidebar 底色顺势铺到屏幕最下边。容器形态与顶栏共用 Widget.App.ShellBand
+         （分隔线朝上，也是 Widget.App.ShellDivider）。 -->
     <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@color/sidebar"
-        android:orientation="vertical">
+        android:id="@+id/bottomBar"
+        style="@style/Widget.App.ShellBand">
 
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:background="@color/sidebar_border" />
+        <View style="@style/Widget.App.ShellDivider" />
 
         <!-- 五个 tab 都在 menu/bottom_nav.xml 里定义（图标 + 文案）；
              选中态样式见 themes.xml 的 Widget.App.BottomNav（主色药丸 + 白字）。
-             高度用 wrap_content：M3 那条 56dp 是 minHeight，而图标(24dp + 上下各 8dp) 加
-             文案(12sp + 下方 10dp) 本身就要 ~66dp —— 之前写死 56dp 把图标和文字挤到一起了。 -->
+             高度仍是 wrap_content（M3 的 56dp 只是 minHeight），但三处内边距从默认收紧：
+               默认 itemPaddingTop 12dp / itemPaddingBottom 16dp / itemIconSize 24dp，
+               加起来 ~66dp 高、图标与文字之间还空一大截；
+               改成 6dp / 8dp / 22dp 后约 52dp，紧凑但不挤（图标与文案之间仍有呼吸）。
+             两个 itemPadding 是 BottomNavigationView 自己的属性（app: 命名空间），
+             不是 android:padding —— 后者会被 item 的测量逻辑忽略。 -->
         <com.google.android.material.bottomnavigation.BottomNavigationView
             android:id="@+id/bottomNav"
             style="@style/Widget.App.BottomNav"
@@ -75,6 +54,9 @@
             android:layout_height="wrap_content"
             android:paddingStart="4dp"
             android:paddingEnd="4dp"
+            app:itemIconSize="22dp"
+            app:itemPaddingTop="6dp"
+            app:itemPaddingBottom="8dp"
             app:labelVisibilityMode="labeled"
             app:menu="@menu/bottom_nav" />
     </LinearLayout>

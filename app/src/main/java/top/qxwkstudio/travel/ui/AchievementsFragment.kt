@@ -37,6 +37,9 @@ class AchievementsFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         store = Store(requireContext())
+        // 与主页/统计页同一套下拉刷新：指示器统一用主色（SwipeRefreshLayout 没有 XML 配色属性）
+        binding.swipe.setColorSchemeResources(R.color.accent)
+        binding.swipe.setOnRefreshListener { load() }
         load()
     }
 
@@ -60,11 +63,11 @@ class AchievementsFragment : Fragment() {
             Session.expired(requireActivity())
             return
         }
-        binding.progress.visibility = View.VISIBLE
+        binding.swipe.isRefreshing = true
         binding.textError.visibility = View.GONE
 
         viewLifecycleOwner.lifecycleScope.runIo({ VisitRepo.myVisits(token) }) { result ->
-            binding.progress.visibility = View.GONE
+            binding.swipe.isRefreshing = false
 
             val visits = result.getOrNull()
             if (visits == null) {

@@ -97,6 +97,24 @@
         <item name="android:height">0dp</item>
     </style>
 
+    <!-- ===== 外壳的两条边栏（顶栏 / 底栏） =====
+         全 app 只有这一种外壳形态：sidebar 底色的一条横带 + 朝内容那一侧 1dp 分隔线。
+         顶栏（view_top_bar.xml）、主壳底栏（BottomNavigationView 那条）、登录页底栏共用这两个样式，
+         免得三处各写一遍底色/分隔线，哪天改色漏掉一处就在那页露出半截白边。 -->
+
+    <style name="Widget.App.ShellBand">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:background">@color/sidebar</item>
+        <item name="android:orientation">vertical</item>
+    </style>
+
+    <style name="Widget.App.ShellDivider">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">1dp</item>
+        <item name="android:background">@color/sidebar_border</item>
+    </style>
+
     <!-- ===== 文字样式 ===== -->
 
     <!-- 卡片 / 区块小标题（设计稿 16px semibold） -->
@@ -131,6 +149,53 @@
         <item name="android:layout_marginTop">4dp</item>
         <item name="android:textSize">11sp</item>
         <item name="android:textColor">@color/muted_fg</item>
+    </style>
+
+    <!-- 主页「足迹统计」小卡的标签（对齐网页 .stat-card .label：0.82rem 粗体 次要色 居中）。
+         与上面的 StatLabel 不是同一档：那个是旧卡里 11sp 的小字，这个是网页改小卡后的 13sp 粗体 -->
+    <style name="StatCardLabel">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:gravity">center</item>
+        <item name="android:textSize">13sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/text_secondary</item>
+    </style>
+
+    <!-- ===== 出行方式 =====
+         三方同一组 code（logic/Transport.kt ↔ backend worker.js ↔ docs/app.js） -->
+
+    <!-- 编辑表单里的多选 chip：Filter 芯片自带可勾选语义，选中态换底色描边（对齐网页 .tp-chip） -->
+    <style name="Widget.App.TpChip" parent="Widget.Material3.Chip.Filter">
+        <item name="chipMinHeight">32dp</item>
+        <item name="chipBackgroundColor">@color/tp_chip_bg</item>
+        <item name="chipStrokeColor">@color/tp_chip_stroke</item>
+        <item name="chipStrokeWidth">1dp</item>
+        <item name="chipCornerRadius">16dp</item>
+        <item name="android:textColor">@color/tp_chip_text</item>
+        <item name="android:textSize">13sp</item>
+        <!-- 网页端选中态只换底色/描边，不显示 Filter 芯片默认那颗前置勾 -->
+        <item name="checkedIconVisible">false</item>
+        <!-- 表单里已有 9 个 chip 排开，再给每个撑 48dp 触摸区会把这块拉得很高；
+             chip 本身 32dp 已经够点 -->
+        <item name="ensureMinTouchTargetSize">false</item>
+    </style>
+
+    <!-- 列表里那条出行方式徽章：只读、比 chip 小一号（对齐网页 .tp-badge 的小胶囊） -->
+    <style name="Widget.App.TpBadge" parent="Widget.Material3.Chip.Assist">
+        <item name="android:clickable">false</item>
+        <item name="android:focusable">false</item>
+        <item name="android:checkable">false</item>
+        <item name="chipMinHeight">20dp</item>
+        <item name="chipBackgroundColor">@color/bg</item>
+        <item name="chipStrokeColor">@color/border</item>
+        <item name="chipStrokeWidth">1dp</item>
+        <item name="chipCornerRadius">10dp</item>
+        <item name="chipStartPadding">8dp</item>
+        <item name="chipEndPadding">8dp</item>
+        <item name="android:textColor">@color/text_secondary</item>
+        <item name="android:textSize">11sp</item>
+        <item name="ensureMinTouchTargetSize">false</item>
     </style>
 
     <!-- 次要说明文字（设计稿 11~12px muted-foreground） -->

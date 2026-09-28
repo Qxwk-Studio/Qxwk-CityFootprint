@@ -1,91 +1,106 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 一条足迹：单行卡片里的一个「行」（设计稿 .visit-row）。
-     城市名 + 私密药丸一行，日期 · 备注一行，右侧一个进入箭头；行与行之间靠底部 1px 分隔线。
-     分隔线由 row_divider_bg 画，最后一行由适配器把背景置空，免得和卡片底描边叠成双线。 -->
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<!-- 一条足迹 = 一张独立小卡（对齐网页 docs/visits.html 的 .visit-item）：
+     网页已把每条行程拆成独立卡片（外层大卡与行分隔线都去掉了），这里同步。
+     卡内自左向右：序号圆点 →（城市 + 私密标记 + 「· 时间」同一行）→ 出行方式徽章 → 备注。
+     点击进编辑、长按删除，不给显式按钮（见 VisitAdapter 的说明）。 -->
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="@drawable/row_divider_bg"
-    android:foreground="?attr/selectableItemBackground"
-    android:gravity="center_vertical"
-    android:orientation="horizontal"
-    android:paddingStart="14dp"
-    android:paddingTop="12dp"
-    android:paddingEnd="14dp"
-    android:paddingBottom="12dp">
+    android:layout_marginBottom="10dp"
+    android:foreground="?attr/selectableItemBackground">
 
     <LinearLayout
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:orientation="vertical">
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="16dp"
+        android:paddingTop="14dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="14dp">
+
+        <!-- 序号圆点：越新的排在上面、号越大（网页 .visit-dot 的「列表长度 - 下标」同口径） -->
+        <TextView
+            android:id="@+id/textIndex"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:background="@drawable/bg_visit_dot"
+            android:gravity="center"
+            android:textColor="@color/muted_fg"
+            android:textSize="12sp"
+            android:textStyle="bold" />
 
         <LinearLayout
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
+            android:layout_marginStart="12dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
 
-            <TextView
-                android:id="@+id/textCity"
-                android:layout_width="wrap_content"
+            <!-- 城市与时间同一行（网页 .visit-city 里内联的 .visit-meta）：
+                 时间字号降一档、颜色更浅，但不再另起一行 -->
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:ellipsize="end"
-                android:maxLines="1"
-                android:textColor="@color/fg"
-                android:textSize="15sp"
-                android:textStyle="bold" />
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
 
-            <!-- 私密标记：accent 药丸（设计稿标签样式），只在私密时出现 -->
-            <TextView
-                android:id="@+id/textPrivate"
-                android:layout_width="wrap_content"
+                <TextView
+                    android:id="@+id/textCity"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:textColor="@color/fg"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+
+                <!-- 私密标记：accent 药丸，只在私密时出现 -->
+                <TextView
+                    android:id="@+id/textPrivate"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:background="@drawable/bg_badge_accent"
+                    android:paddingStart="8dp"
+                    android:paddingTop="2dp"
+                    android:paddingEnd="8dp"
+                    android:paddingBottom="2dp"
+                    android:text="@string/visits_private"
+                    android:textColor="@color/private_badge"
+                    android:textSize="11sp"
+                    android:visibility="gone" />
+
+                <!-- 文本形如「· 2024年8月」（前缀由适配器按 strings 的 visits_meta 拼） -->
+                <TextView
+                    android:id="@+id/textMeta"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:textColor="@color/muted_fg"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
+            <!-- 出行方式徽章（可多选，超出一行自动折行）：没有填时整组隐藏 -->
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/groupTransport"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:background="@drawable/bg_badge_accent"
-                android:paddingStart="8dp"
-                android:paddingTop="2dp"
-                android:paddingEnd="8dp"
-                android:paddingBottom="2dp"
-                android:text="@string/visits_private"
-                android:textColor="@color/private_badge"
-                android:textSize="11sp"
-                android:visibility="gone" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
-
-            <TextView
-                android:id="@+id/textDate"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:ellipsize="end"
-                android:fontFamily="monospace"
-                android:maxLines="1"
-                android:textColor="@color/muted_fg"
-                android:textSize="12sp" />
-
-            <TextView
-                android:id="@+id/textSep"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="6dp"
-                android:text="·"
-                android:textColor="@color/muted_fg"
-                android:textSize="12sp"
-                android:visibility="gone" />
+                android:layout_marginTop="4dp"
+                android:visibility="gone"
+                app:chipSpacingHorizontal="4dp"
+                app:chipSpacingVertical="4dp"
+                app:singleLine="false"
+                app:singleSelection="false" />
 
             <TextView
                 android:id="@+id/textNote"
-                android:layout_width="0dp"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="6dp"
-                android:layout_weight="1"
+                android:layout_marginTop="2dp"
                 android:ellipsize="end"
                 android:maxLines="1"
                 android:textColor="@color/muted_fg"
@@ -93,12 +108,4 @@
                 android:visibility="gone" />
         </LinearLayout>
     </LinearLayout>
-
-    <ImageView
-        android:layout_width="16dp"
-        android:layout_height="16dp"
-        android:layout_marginStart="8dp"
-        android:contentDescription="@null"
-        android:src="@drawable/ic_chevron_right"
-        android:tint="@color/muted_fg" />
-</LinearLayout>
+</com.google.android.material.card.MaterialCardView>

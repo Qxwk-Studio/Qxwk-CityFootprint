@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 出行方式 chip 的描边：未选 = 卡片描边灰，选中 = 主色 -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_checked="true" android:color="@color/accent" />
+    <item android:color="@color/border" />
+</selector>

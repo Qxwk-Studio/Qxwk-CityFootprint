@@ -2,6 +2,7 @@ package top.qxwkstudio.travel.data
 
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonPrimitive
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -32,6 +33,17 @@ class JsonWireTest {
         assertEquals("北京", obj["city"]!!.jsonPrimitive.content)
         assertEquals("看升旗", obj["note"]!!.jsonPrimitive.content)
         assertTrue("后端按 visit_date 取字段，改名或发成 visitDate 就丢日期", obj.containsKey("visit_date"))
+        assertTrue("后端按 transport 取字段（worker.js pickTransports），名字要对上", obj.containsKey("transport"))
+    }
+
+    @Test
+    fun `出行方式按 code 数组发出`() {
+        // 后端 pickTransports 拿 TRANSPORTS 白名单去过滤数组里的每个字符串；
+        // 发成 "plane,train" 这种逗号串的话，白名单一条都认不出，出行方式会静默丢光
+        val draft = VisitDraft(city = "北京", lat = 39.9, lng = 116.4, transport = listOf("plane", "hsr"))
+        val obj = json.parseToJsonElement(json.encodeToString(VisitDraft.serializer(), draft)) as JsonObject
+
+        assertEquals(listOf("plane", "hsr"), obj["transport"]!!.jsonArray.map { it.jsonPrimitive.content })
     }
 
     @Test
@@ -64,17 +76,18 @@ class JsonWireTest {
     fun `解析足迹的蛇形字段`() {
         val visit = json.decodeFromString(
             Visit.serializer(),
-            """{"id":7,"city":"广州","lat":23.1,"lng":113.2,"visit_date":"2024-08","note":"早茶","is_private":1}""",
+            """{"id":7,"city":"广州","lat":23.1,"lng":113.2,"visit_date":"2024-08","note":"早茶","is_private":1,"transport":["train","walk"]}""",
         )
 
         assertEquals(7L, visit.id)
         assertEquals("2024-08", visit.visitDate)
         assertTrue(visit.isPrivate)
+        assertEquals(listOf("train", "walk"), visit.transport)
     }
 
     @Test
-    fun `多出来的键被忽略 缺失字段退回默认值`() {
-        // 通行证/足迹后端加字段不能把我们搞崩；缺字段等价于旧 optString().orEmpty()
+    fun `后端没带 transport 时退回空列表`() {
+        // 老数据 / 后端还没上这一版时，不能因为缺字段就崩，也不能显示一个假的出行方式
         val visit = json.decodeFromString(
             Visit.serializer(),
             """{"id":3,"city":"深圳","lat":22.5,"lng":114.0,"unknown":"x"}""",
@@ -84,6 +97,7 @@ class JsonWireTest {
         assertEquals("", visit.note)
         assertFalse(visit.isPrivate)
         assertNull(visit.visitDate)
+        assertTrue(visit.transport.isEmpty())
     }
 
     @Test

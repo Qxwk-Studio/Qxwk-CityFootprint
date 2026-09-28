@@ -35,9 +35,16 @@ class CityPickerActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityCityPickerBinding.inflate(layoutInflater)
         val b = binding
+        // 必须在 setContentView 之前（见 ui/EdgeToEdge.kt）。
+        // 这一页没有底栏，把列表外壳 content 当「底」交给它吃导航栏那截高度。
+        // topBar 是带 id 的 <include>，ViewBinding 里是 ViewTopBarBinding 而不是 View，取 .root 才是那条栏本身
+        applyEdgeToEdge(b.topBar.root, b.content)
         setContentView(b.root)
 
-        b.btnBack.setOnClickListener { finish() }
+        // 顶栏（view_top_bar.xml）不自带文案，返回按钮也默认隐藏：这一页两样都要自己填
+        b.topBar.title.setText(R.string.edit_city)
+        b.topBar.btnBack.visibility = View.VISIBLE
+        b.topBar.btnBack.setOnClickListener { finish() }
 
         // 同步读一次 asset（四百多条，几毫秒）：为了它做异步反而让页面先空一下再闪出列表。
         // CityStore 内部有内存缓存，第二次打开不再重复解析

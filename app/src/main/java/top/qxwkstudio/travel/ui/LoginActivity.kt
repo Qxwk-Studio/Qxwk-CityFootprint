@@ -37,8 +37,15 @@ class LoginActivity : AppCompatActivity() {
         }
 
         binding = ActivityLoginBinding.inflate(layoutInflater)
-        setContentView(binding.root)
-        binding.btnLogin.setOnClickListener { submit() }
+        val b = binding
+        // 必须在 setContentView 之前（见 ui/EdgeToEdge.kt）。底栏（账号说明那条）也在这里吃 inset。
+        // topBar 是带 id 的 <include>，ViewBinding 里是 ViewTopBarBinding 而不是 View，取 .root 才是那条栏本身
+        applyEdgeToEdge(b.topBar.root, b.bottomBar)
+        setContentView(b.root)
+
+        // 顶栏是四页共用的（view_top_bar.xml），不自带文案，标题在本页填
+        b.topBar.title.setText(R.string.login_bar_title)
+        b.btnLogin.setOnClickListener { submit() }
     }
 
     private fun submit() {

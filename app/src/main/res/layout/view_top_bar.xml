@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 全 app 唯一的顶栏。主壳 / 登录 / 编辑足迹 / 城市选择四页都用 <include> 引入，
+     改高度、改配色、改返回按钮形态只动这一处（原先四个页面各抄了一份，56dp 与 48dp 还不一致）。
+
+     用法：<include android:id="@+id/topBar" layout="@layout/view_top_bar" ... />
+     带 id 的 include 在 ViewBinding 里会生成一个 ViewTopBarBinding 字段，
+     所以调用方写 binding.topBar.title / binding.topBar.btnBack。
+
+     返回按钮**默认隐藏**（gone）：只有需要返回的页面（编辑 / 城市选择）在代码里置 VISIBLE
+     并挂点击回调。做成默认隐藏而不是默认显示，是因为「多出一个不该有的返回箭头」
+     比「少一个箭头」更容易在开发期被发现 —— 后者只是点不动，前者会把用户带到上一页。
+
+     返回按钮的间距放在它自己的 layout_marginEnd 上，而不是标题的 marginStart：
+     LinearLayout 会整段跳过 GONE 的子 View（连它的 margin 一起跳过），
+     所以没有返回按钮的页面标题正好从 16dp 内边距起排，不会凭空偏出 10dp。 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    style="@style/Widget.App.ShellBand">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp">
+
+        <ImageButton
+            android:id="@+id/btnBack"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_marginEnd="10dp"
+            android:background="@drawable/bg_action_button"
+            android:contentDescription="@string/common_back"
+            android:padding="6dp"
+            android:src="@drawable/ic_back"
+            android:tint="@color/sidebar_fg"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/title"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textColor="@color/sidebar_fg"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <View style="@style/Widget.App.ShellDivider" />
+</LinearLayout>

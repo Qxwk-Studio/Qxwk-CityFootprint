@@ -9,51 +9,18 @@
     android:background="@color/bg"
     android:orientation="vertical">
 
-    <!-- ===== 顶栏（返回 + 标题） ===== -->
-    <LinearLayout
+    <!-- ===== 顶栏（返回 + 标题）=====
+         布局本体在 view_top_bar.xml（全 app 共用一份），返回按钮由 VisitEditActivity 置为可见。 -->
+    <include
+        android:id="@+id/topBar"
+        layout="@layout/view_top_bar"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@color/sidebar"
-        android:orientation="vertical">
+        android:layout_height="wrap_content" />
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:paddingStart="16dp"
-            android:paddingEnd="16dp">
-
-            <ImageButton
-                android:id="@+id/btnBack"
-                android:layout_width="36dp"
-                android:layout_height="36dp"
-                android:background="@drawable/bg_action_button"
-                android:contentDescription="@string/common_back"
-                android:padding="6dp"
-                android:src="@drawable/ic_back"
-                android:tint="@color/sidebar_fg" />
-
-            <TextView
-                android:id="@+id/title"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="10dp"
-                android:layout_weight="1"
-                android:ellipsize="end"
-                android:maxLines="1"
-                android:textColor="@color/sidebar_fg"
-                android:textSize="16sp"
-                android:textStyle="bold" />
-        </LinearLayout>
-
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:background="@color/sidebar_border" />
-    </LinearLayout>
-
+    <!-- id=content 是给 edge-to-edge 用的：导航栏那截高度加到它的 paddingBottom 上，
+         表单滚到底时不会被手势条盖住（见 ui/EdgeToEdge.kt） -->
     <ScrollView
+        android:id="@+id/content"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1">
@@ -116,6 +83,29 @@
                             android:inputType="none"
                             android:maxLines="1" />
                     </com.google.android.material.textfield.TextInputLayout>
+
+                    <!-- 出行方式：可多选、也可一个都不选（老数据本来就没这个概念）。
+                         9 个 chip 由 VisitEditActivity 按 logic/Transport.kt 的顺序铺进来，
+                         不在这里写死选项 —— 选项集合必须与后端 TRANSPORTS、网页端同源，
+                         在布局里再抄一份迟早会漂。也没有用 TextInputLayout 包住：
+                         那套是给单行文本框的浮动标签，套 ChipGroup 只会多一层没意义的壳。 -->
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:text="@string/edit_transport"
+                        android:textColor="@color/fg"
+                        android:textSize="14sp" />
+
+                    <com.google.android.material.chip.ChipGroup
+                        android:id="@+id/groupTransport"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        app:chipSpacingHorizontal="6dp"
+                        app:chipSpacingVertical="6dp"
+                        app:singleLine="false"
+                        app:singleSelection="false" />
 
                     <!-- maxLength=100 与后端 slice(0,100) 同一口径：超过就不让再打，
                          而不是打完再被截断（被静默截断的输入最让人恼火）。

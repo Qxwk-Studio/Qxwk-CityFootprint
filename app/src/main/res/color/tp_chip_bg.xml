@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 出行方式 chip 的底色：未选 = 卡片白，选中 = 主色浅蓝
+     （对齐网页端 style.css 的 `.tp-chip input:checked + span`） -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_checked="true" android:color="@color/accent_light" />
+    <item android:color="@color/card" />
+</selector>

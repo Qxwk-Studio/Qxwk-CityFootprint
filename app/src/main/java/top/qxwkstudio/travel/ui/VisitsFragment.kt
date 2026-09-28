@@ -9,6 +9,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.ConcatAdapter
 import androidx.recyclerview.widget.LinearLayoutManager
 import top.qxwkstudio.travel.R
 import top.qxwkstudio.travel.data.CityStore
@@ -16,6 +17,7 @@ import top.qxwkstudio.travel.data.Store
 import top.qxwkstudio.travel.data.VisitRepo
 import top.qxwkstudio.travel.databinding.FragmentVisitsBinding
 import top.qxwkstudio.travel.logic.Visit
+import top.qxwkstudio.travel.logic.topTransportLabel
 
 /**
  * 「主页」：网页端「足迹管理页」的内容 —— 顶部足迹统计概览 + 行程列表（下拉刷新 + 新增/编辑/删除）。
@@ -27,6 +29,7 @@ class VisitsFragment : Fragment() {
     private val binding get() = _binding!!
     private lateinit var store: Store
     private lateinit var adapter: VisitAdapter
+    private lateinit var headerAdapter: VisitsHeaderAdapter
 
     /**
      * 新增/编辑页回来就重新拉一次列表。
@@ -49,11 +52,16 @@ class VisitsFragment : Fragment() {
 
         adapter = VisitAdapter(onEdit = { visit -> editResult.launch(VisitEditActivity.intent(requireContext(), visit)) },
             onLongPress = { visit -> confirmDelete(visit) })
+        // 页头也是列表的一项（第 0 项），这样整页共用一个滚动容器（见 fragment_visits.xml / VisitsHeaderAdapter）
+        headerAdapter = VisitsHeaderAdapter { editResult.launch(VisitEditActivity.intent(requireContext(), null)) }
 
         binding.list.layoutManager = LinearLayoutManager(requireContext())
-        binding.list.adapter = adapter
+        binding.list.adapter = ConcatAdapter(headerAdapter, adapter)
+        binding.swipe.setColorSchemeResources(R.color.accent)
         binding.swipe.setOnRefreshListener { load() }
-        binding.btnAdd.setOnClickListener { editResult.launch(VisitEditActivity.intent(requireContext(), null)) }
+        // 列表外垫了层 FrameLayout（放空态提示），SwipeRefreshLayout 默认会去问它「滚过没有」，
+        // 它永远答没有 —— 于是滑到中间也能下拉。这里把判断交回真正的列表
+        binding.swipe.setOnChildScrollUpCallback { _, _ -> binding.list.canScrollVertically(-1) }
 
         load()
     }
@@ -70,13 +78,12 @@ class VisitsFragment : Fragment() {
             Session.expired(requireActivity())
             return
         }
-        binding.progress.visibility = View.VISIBLE
+        binding.swipe.isRefreshing = true
         binding.textEmpty.visibility = View.GONE
 
         // 挂在 viewLifecycleOwner 上：页面销毁时协程自动取消，
         // 所以回调里不用再判 binding 是否还在（见 ui/Coroutines 的说明）
         viewLifecycleOwner.lifecycleScope.runIo({ VisitRepo.myVisits(token) }) { result ->
-            binding.progress.visibility = View.GONE
             // 下拉刷新转圈必须停：失败时不停，用户会以为还在加载
             binding.swipe.isRefreshing = false
 
@@ -93,33 +100,33 @@ class VisitsFragment : Fragment() {
     }
 
     /**
-     * 概览卡：去过城市 / 足迹总数 / 覆盖省份 / 最早·最近。
+     * 概览：时间跨度 / 去过城市 / 足迹总数 / 覆盖省份 / 最常用出行。
      * 与网页端 docs/visits.html 的 updateVisitStats 同口径：
      *  - 城市去重（同一座城打卡多次只算一座）；
      *  - 省份按城市名在本机 assets/cities.json 里查，查不到记「未知」（仍占一个名额，跟网页端一致）；
-     *  - 日期直接按字符串排序取首尾（数据形如 2024 或 2024-08，字典序即时间序）。
+     *  - 日期直接按字符串排序取首尾（数据形如 2024 或 2024-08，字典序即时间序）；
+     *  - 最常用出行按「有多少条足迹用过它」投票，并列时取枚举里靠前的那个（见 logic/Transport）。
      */
     private fun renderOverview(visits: List<Visit>) {
         val cityNames = visits.map { it.city }.distinct()
-        binding.valueCities.text = cityNames.size.toString()
-        binding.valueVisits.text = visits.size.toString()
 
         val allCities = CityStore.all(requireContext())
         val unknown = getString(R.string.visits_overview_unknown_province)
         val provinces = cityNames.map { name ->
             allCities.firstOrNull { it.name == name }?.province?.takeIf { it.isNotBlank() } ?: unknown
         }.toSet()
-        binding.valueProvinces.text = provinces.size.toString()
 
         val dates = visits.mapNotNull { it.visitDate }.filter { it.isNotBlank() }.sorted()
-        binding.valueRange.text = if (dates.isEmpty()) "—" else "${dates.first()} → ${dates.last()}"
 
-        // 标题行右侧那条「共 N 条，最近更新 YYYY-MM」：没有带日期的足迹时就只报条数
-        binding.textListSubtitle.text = if (dates.isEmpty()) {
-            getString(R.string.visits_list_subtitle_plain, visits.size)
-        } else {
-            getString(R.string.visits_list_subtitle, visits.size, dates.last())
-        }
+        headerAdapter.submit(
+            VisitsOverview(
+                range = if (dates.isEmpty()) "—" else "${dates.first()} → ${dates.last()}",
+                cities = cityNames.size.toString(),
+                visits = visits.size.toString(),
+                provinces = provinces.size.toString(),
+                transport = topTransportLabel(visits) ?: "—",
+            )
+        )
     }
 
     /** 删除要二次确认：点错了没有回收站。文案里带上城市名，让人看清删的是哪一条。 */
@@ -134,11 +141,11 @@ class VisitsFragment : Fragment() {
 
     private fun delete(visit: Visit) {
         val token = store.token ?: return
-        binding.progress.visibility = View.VISIBLE
+        binding.swipe.isRefreshing = true
         viewLifecycleOwner.lifecycleScope.runIo({ VisitRepo.delete(token, visit.id) }) { result ->
             val e = result.exceptionOrNull()
             if (e != null) {
-                binding.progress.visibility = View.GONE
+                binding.swipe.isRefreshing = false
                 activity?.handleApiFailure(e)
                 return@runIo
             }

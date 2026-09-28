@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 出行方式 chip 的文字色：未选 = 次要文字色，选中 = 主色（网页端未选是 text-secondary、选中是 primary） -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_checked="true" android:color="@color/accent" />
+    <item android:color="@color/text_secondary" />
+</selector>

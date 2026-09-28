@@ -28,15 +28,19 @@
     <string name="visits_empty">还没有记录。点右上角「添加足迹」添加第一条</string>
     <string name="visits_add">添加足迹</string>
     <string name="visits_private">私密</string>
+    <!-- 行程条目里「城市 · 时间」那段：分隔点与时间一起给出，避免在代码里拼字符串 -->
+    <string name="visits_meta">· %1$s</string>
     <string name="visits_delete_confirm_title">删除这条足迹？</string>
     <string name="visits_delete_confirm_message">删除后无法恢复（%1$s）。</string>
 
-    <!-- 主页顶部的「足迹统计」概览（对齐网页端 docs/visits.html 的成就卡上方那块） -->
+    <!-- 主页顶部的「足迹统计」小卡（对齐网页端 docs/visits.html 的 .visit-stats：
+         首行「时间跨度」整行长卡，其余四张每行两个） -->
     <string name="visits_overview_title">📊 足迹统计</string>
+    <string name="visits_overview_range">⏳ 时间跨度</string>
     <string name="visits_overview_cities">✈️ 去过城市</string>
     <string name="visits_overview_visits">📍 足迹</string>
     <string name="visits_overview_provinces">🗺️ 省份</string>
-    <string name="visits_overview_range">⏳ 最早 · 最近</string>
+    <string name="visits_overview_transport">🚆 最常用出行</string>
     <!-- 城市名在本机 cities.json 里查不到省份时的占位（与网页端 findProvince 返回「未知」同口径） -->
     <string name="visits_overview_unknown_province">未知</string>
 
@@ -50,6 +54,8 @@
     <string name="edit_date_year_only">仅年份</string>
     <string name="edit_date_clear">清除</string>
     <string name="edit_note">备注（选填，最多 100 字）</string>
+    <!-- 出行方式多选（与网页端 .tp-chip 同一组 code，见 logic/Transport.kt） -->
+    <string name="edit_transport">出行方式（可多选）</string>
     <string name="edit_private">仅自己可见</string>
     <string name="edit_private_hint">开启后不出现在公开地图与统计里</string>
     <string name="edit_footnote">城市与坐标来自内置城市表，保存后地图上会自动落点；日期留空表示「去过但记不清了」</string>
@@ -83,10 +89,6 @@
     <string name="profile_logout_confirm">退出后本地登录态会被清除，需要重新登录。</string>
     <string name="profile_version">版本 %1$s</string>
     <string name="profile_account_note">登录由「Qxwk 通行证」(account.qxwkstudio.top) 提供，密码不经过足迹后端</string>
-
-    <!-- 主页「我的足迹」标题行右侧的条数说明 -->
-    <string name="visits_list_subtitle">共 %1$d 条，最近更新 %2$s</string>
-    <string name="visits_list_subtitle_plain">共 %1$d 条</string>
 
     <!-- 统计页排行行的文案与展开/收起（对齐网页 .rank-item / .rank-toggle） -->
     <string name="stats_rank_people">去过 %1$d 人</string>

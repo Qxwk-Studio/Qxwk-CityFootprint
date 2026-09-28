@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 编辑表单里的一个出行方式 chip：文字与 code 由 VisitEditActivity 填（枚举见 logic/Transport.kt）。
+     做成布局（而不是代码里 new Chip）是为了让外观留在 XML + 样式里，与 item_rank / item_achievement 等条目同一套路 -->
+<com.google.android.material.chip.Chip xmlns:android="http://schemas.android.com/apk/res/android"
+    style="@style/Widget.App.TpChip"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content" />

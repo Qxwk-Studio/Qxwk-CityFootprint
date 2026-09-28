@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 行程条目前的序号圆点（对齐网页 docs/visits.html 的 .visit-dot：
+     浅灰底 + 1px 描边 + 圆形）。序号由适配器按「列表长度 - 位置」填，越新的排在上面、号越大 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <solid android:color="@color/muted" />
+    <stroke
+        android:width="1dp"
+        android:color="@color/border" />
+</shape>

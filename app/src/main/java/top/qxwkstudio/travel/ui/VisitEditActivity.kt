@@ -14,11 +14,13 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
+import com.google.android.material.chip.Chip
 import top.qxwkstudio.travel.R
 import top.qxwkstudio.travel.data.ApiException
 import top.qxwkstudio.travel.data.Store
 import top.qxwkstudio.travel.data.VisitRepo
 import top.qxwkstudio.travel.databinding.ActivityVisitEditBinding
+import top.qxwkstudio.travel.logic.Transport
 import top.qxwkstudio.travel.logic.Visit
 import top.qxwkstudio.travel.logic.VisitDate
 import top.qxwkstudio.travel.logic.VisitDraft
@@ -69,13 +71,19 @@ class VisitEditActivity : AppCompatActivity() {
 
         binding = ActivityVisitEditBinding.inflate(layoutInflater)
         val b = binding
+        // 必须在 setContentView 之前（见 ui/EdgeToEdge.kt）。
+        // 这一页没有底栏，把表单滚动容器 content 当「底」交给它吃导航栏那截高度。
+        // topBar 是带 id 的 <include>，ViewBinding 里是 ViewTopBarBinding 而不是 View，取 .root 才是那条栏本身
+        applyEdgeToEdge(b.topBar.root, b.content)
         setContentView(b.root)
 
-        b.btnBack.setOnClickListener { finish() }
+        // 顶栏（view_top_bar.xml）不自带文案，返回按钮也默认隐藏：这一页两样都要自己填
+        b.topBar.btnBack.visibility = View.VISIBLE
+        b.topBar.btnBack.setOnClickListener { finish() }
 
         editId = intent.getLongExtra(EXTRA_ID, 0L)
         val editing = editId != 0L
-        b.title.text = getString(if (editing) R.string.edit_title_old else R.string.edit_title_new)
+        b.topBar.title.text = getString(if (editing) R.string.edit_title_old else R.string.edit_title_new)
         // 新增时没有「删除」这回事
         b.btnDelete.visibility = if (editing) View.VISIBLE else View.GONE
 
@@ -87,6 +95,9 @@ class VisitEditActivity : AppCompatActivity() {
             lat = intent.getDoubleExtra(EXTRA_LAT, Double.NaN).takeIf { !it.isNaN() }
             lng = intent.getDoubleExtra(EXTRA_LNG, Double.NaN).takeIf { !it.isNaN() }
         }
+
+        // 出行方式 chips：新增时没有「已选」（getStringArrayListExtra 回 null），编辑时按已存的回填
+        buildTransportChips(intent.getStringArrayListExtra(EXTRA_TRANSPORT).orEmpty())
 
         // 字数提示（0/100）。用 maxLength 从源头挡住超过 100，提示只是让人有预期，
         // 而不是打完再被静默截断
@@ -172,6 +183,36 @@ class VisitEditActivity : AppCompatActivity() {
         binding.textNoteCounter.text = getString(R.string.edit_note_counter, length)
     }
 
+    /**
+     * 铺出行方式 chips：按 [Transport] 的枚举顺序（= 后端 TRANSPORTS、网页端顺序），
+     * 把 [selected] 里已存的 code 勾上。选项不写在布局里就是为了这个同源约束（见 activity_visit_edit.xml）。
+     *
+     * 必须给每个 chip 生成独立 id：ChipGroup 内部按 id 记勾选状态，若全是没有 id（NO_ID，都是 -1）的
+     * 视图，它会通过 findViewById 找到**第一个** chip 去改状态 —— 症状是勾任意一个都只亮第一个。
+     * code 挂在 tag 上，收集时直接用 tag，不依赖 id 的可读性。
+     */
+    private fun buildTransportChips(selected: List<String>) {
+        val checked = selected.toSet()
+        Transport.entries.forEach { transport ->
+            val chip = layoutInflater.inflate(R.layout.item_tp_chip, binding.groupTransport, false) as Chip
+            chip.id = View.generateViewId()
+            chip.text = transport.label
+            chip.tag = transport.code
+            chip.isChecked = transport.code in checked
+            binding.groupTransport.addView(chip)
+        }
+    }
+
+    /**
+     * 收集勾选的 code。按子 View 顺序（= 枚举顺序）返回，与后端 pickTransports 的落库顺序一致
+     * —— 后端会重排，但两端顺序相同，报文与库里就对得上，看日志时不必再脑内换算。
+     */
+    private fun selectedTransports(): List<String> =
+        (0 until binding.groupTransport.childCount)
+            .mapNotNull { i -> binding.groupTransport.getChildAt(i) as? Chip }
+            .filter { it.isChecked }
+            .mapNotNull { it.tag as? String }
+
     private fun save() {
         val b = binding
         b.textEditError.visibility = View.GONE
@@ -201,6 +242,8 @@ class VisitEditActivity : AppCompatActivity() {
             // 与后端 trim 口径一致；长度已由 maxLength=100 挡住
             note = b.inputNote.text?.toString()?.trim().orEmpty(),
             isPrivate = b.switchPrivate.isChecked,
+            // 一个都没勾就发空数组：与后端 pickTransports 的「空 → 存 []」一致
+            transport = selectedTransports(),
         )
 
         val token = store.token
@@ -280,6 +323,9 @@ class VisitEditActivity : AppCompatActivity() {
         private const val EXTRA_NOTE = "visit_note"
         private const val EXTRA_PRIVATE = "visit_private"
 
+        /** 出行方式 code 数组。用 StringArrayList 传（ArrayList<String> 才有现成的 getStringArrayListExtra）。 */
+        private const val EXTRA_TRANSPORT = "visit_transport"
+
         /** 新增传 null，编辑传列表里的那条。extras 只在「本 app 内部」用，不对外暴露。 */
         fun intent(context: Context, visit: Visit?): Intent =
             Intent(context, VisitEditActivity::class.java).apply {
@@ -291,6 +337,7 @@ class VisitEditActivity : AppCompatActivity() {
                 putExtra(EXTRA_DATE, visit.visitDate)
                 putExtra(EXTRA_NOTE, visit.note)
                 putExtra(EXTRA_PRIVATE, visit.isPrivate)
+                putStringArrayListExtra(EXTRA_TRANSPORT, ArrayList(visit.transport))
             }
     }
 }

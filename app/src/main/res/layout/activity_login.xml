@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 登录页（通行证）。与主页用同一套外壳：顶栏（sidebar 底）+ 内容。
-     内容沿用现有（大标题 / 副标题 / 账号密码 / 登录 / 错误提示 / 账号说明脚注），
-     样式按设计稿重做（圆角描边卡片装表单、主色全宽按钮带箭头）。 -->
+<!-- 登录页（通行证）。与主页用同一套外壳：顶栏 + 内容 + 底栏。
+     顶栏与底栏都来自公共样式（Widget.App.ShellBand，即 sidebar 底色那条横带）；
+     顶栏本体在 view_top_bar.xml（无返回按钮，标题在代码里填）。
+     内容沿用现有（大标题 / 副标题 / 账号密码 / 登录 / 错误提示），
+     账号说明脚注从滚动区里挪到固定底栏 —— 与主壳「底栏也是 sidebar 一条」的形态对齐。 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
@@ -9,40 +11,18 @@
     android:background="@color/bg"
     android:orientation="vertical">
 
-    <!-- ===== 顶栏（登录页只有标题，没有右侧动作按钮） ===== -->
-    <LinearLayout
+    <!-- ===== 顶栏（登录页只有标题，没有返回按钮） ===== -->
+    <include
+        android:id="@+id/topBar"
+        layout="@layout/view_top_bar"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@color/sidebar"
-        android:orientation="vertical">
+        android:layout_height="wrap_content" />
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:paddingStart="16dp"
-            android:paddingEnd="16dp">
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:ellipsize="end"
-                android:maxLines="1"
-                android:text="@string/login_bar_title"
-                android:textColor="@color/sidebar_fg"
-                android:textSize="16sp"
-                android:textStyle="bold" />
-        </LinearLayout>
-
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:background="@color/sidebar_border" />
-    </LinearLayout>
-
+    <!-- id=content 是给 edge-to-edge 用的：导航栏那截高度加到它的 paddingBottom 上
+         （见 ui/EdgeToEdge.kt）。这一页底栏固定在下面，所以不加也没关系，
+         但留着一个 id 是为了四个 Activity 的调用形状一致。 -->
     <ScrollView
+        android:id="@+id/content"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
@@ -157,13 +137,26 @@
                         android:visibility="gone" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
-
-            <TextView
-                style="@style/BodyMuted"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:text="@string/profile_account_note" />
         </LinearLayout>
     </ScrollView>
+
+    <!-- ===== 底栏：账号说明 =====
+         与主壳底栏同一形态（sidebar 底 + 朝上的 1dp 分隔线），只是内容从导航换成一行说明。
+         id=bottomBar 给 edge-to-edge 用：手势条那截高度加到 paddingBottom 上（见 ui/EdgeToEdge.kt）。 -->
+    <LinearLayout
+        android:id="@+id/bottomBar"
+        style="@style/Widget.App.ShellBand">
+
+        <View style="@style/Widget.App.ShellDivider" />
+
+        <TextView
+            style="@style/BodyMuted"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingStart="16dp"
+            android:paddingTop="10dp"
+            android:paddingEnd="16dp"
+            android:layout_marginBottom="10dp"
+            android:text="@string/profile_account_note" />
+    </LinearLayout>
 </LinearLayout>

@@ -39,11 +39,14 @@ class MainActivity : AppCompatActivity() {
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         val b = binding
+        // 必须在 setContentView 之前（见 ui/EdgeToEdge.kt）。
+        // topBar 是带 id 的 <include>，ViewBinding 里是 ViewTopBarBinding 而不是 View，取 .root 才是那条栏本身
+        applyEdgeToEdge(b.topBar.root, b.bottomBar)
         setContentView(b.root)
 
         b.bottomNav.setOnItemSelectedListener { item ->
             show(tagOf(item.itemId))
-            b.title.text = getString(titleOf(item.itemId))
+            b.topBar.title.text = getString(titleOf(item.itemId))
             true
         }
 
@@ -54,7 +57,7 @@ class MainActivity : AppCompatActivity() {
         } else {
             // 重建时 Fragment 由 FragmentManager 自己恢复（选中的那一项也恢复了），
             // 这里只需要把标题补上
-            b.title.text = getString(titleOf(b.bottomNav.selectedItemId))
+            b.topBar.title.text = getString(titleOf(b.bottomNav.selectedItemId))
         }
 
         verifySession()
