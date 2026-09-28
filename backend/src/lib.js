@@ -105,4 +105,24 @@ export async function getUserId(DB, request) {
   return v ? v.id : null;
 }
 
+/**
+ * 私密可见性过滤片段 —— 全站唯一一处（cities / cities/{city} / stats 共用）。
+ * 管理员无过滤；其余只放行「非私密的」或「自己的」。未登录时 viewer.userId 为 0，
+ * 而 user_id 不会是 0，等价于只看非私密。
+ *
+ * 返回的 sql **不带** WHERE / AND 关键字 —— 因为落点有两处：
+ *   - WHERE（普通查询）：`WHERE ${vis.sql}`
+ *   - JOIN 的 ON：`LEFT JOIN cf_visits v ON v.user_id = u.id AND ${vis.sql}`
+ *     落 ON 才不会把「零足迹的用户」从 LEFT JOIN 里整行滤掉（WHERE 里 NULL 比较为假）
+ *
+ * @param {{userId: number, isAdmin: boolean}} viewer
+ * @param {string} isPrivateCol 限定过的列名，如 'v.is_private'
+ * @param {string} userIdCol    限定过的列名，如 'v.user_id'
+ * @returns {{sql: string, params: number[]}}
+ */
+export function visibility(viewer, isPrivateCol = 'is_private', userIdCol = 'user_id') {
+  if (viewer.isAdmin) return { sql: '', params: [] };
+  return { sql: `(${isPrivateCol} = 0 OR ${userIdCol} = ?)`, params: [viewer.userId] };
+}
+
 export { resolveViewer };

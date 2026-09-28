@@ -1,7 +1,8 @@
 // Qxwk-CityFootprint · Worker
 // 只提供 /api/* 接口：页面已搬去 GitHub Pages（仓库 docs/，域名 travel.qxwkstudio.top），
 // 这个 Worker 挂在 api.travel.qxwkstudio.top 上，前后端不同源，故末尾统一挂 CORS 头
-import { json, error, getUserId, resolveViewer } from './lib.js';
+import { json, error, getUserId, resolveViewer, visibility } from './lib.js';
+import { getAchievements, achievementCounts } from './achievements.js';
 
 // ---------- API 处理 ----------
 
@@ -61,56 +62,107 @@ async function handleApi(request, env) {
   }
 
   // GET /api/cities（公开：地图数据；已登录用户可见自己的私密行程，管理员可见全部）
+  // 只回「城市 + 坐标 + 去过的人（昵称/颜色）」—— 这三样正是地图上色和「谁的足迹」图例筛选取的。
+  // 日期 / 备注 / 私密标记这些明细不在这里铺开：点开某座城市时再调 GET /api/cities/{城市名} 按需拉。
   if (method === 'GET' && path === '/api/cities') {
-    const { userId, isAdmin } = await getViewer(DB, request);
-    const sql = `SELECT v.id, v.city, v.lat, v.lng, v.visit_date, v.note, v.is_private,
-                        u.id AS user_id, u.nickname, u.color
-                 FROM cf_visits v JOIN users u ON v.user_id = u.id
-                 ${isAdmin ? '' : 'WHERE v.is_private = 0 OR v.user_id = ?'}
-                 ORDER BY v.created_at ASC`;
-    const rows = await DB.prepare(sql).bind(...(isAdmin ? [] : [userId])).all();
+    const viewer = await getViewer(DB, request);
+    const vis = visibility(viewer, 'v.is_private', 'v.user_id');
+    const rows = await DB.prepare(
+      `SELECT v.city, v.lat, v.lng, v.created_at, u.nickname, u.color
+       FROM cf_visits v JOIN users u ON v.user_id = u.id
+       ${vis.sql ? `WHERE ${vis.sql}` : ''}
+       ORDER BY v.created_at ASC, v.id ASC`
+    ).bind(...vis.params).all();
+
+    // people 保持 created_at 升序（末位 = 最新），客户端沿用「取 people 末位的颜色」上色；
+    // last 只是排序用的临时字段，下面会剥掉
     const cityMap = new Map();
     for (const r of rows.results) {
       if (!cityMap.has(r.city)) {
         cityMap.set(r.city, { city: r.city, lat: r.lat, lng: r.lng, people: [] });
       }
-      cityMap.get(r.city).people.push({
-        nickname: r.nickname,
-        color: r.color,
-        visit_date: r.visit_date,
-        note: r.note,
-        is_private: r.is_private,
-      });
+      const entry = cityMap.get(r.city);
+      entry.people.push({ nickname: r.nickname, color: r.color });
+      entry.last = r.created_at;
     }
-    return json({ cities: [...cityMap.values()], isAdmin });
+    // 最近有活动的城市排在后（绘制时盖在上层）
+    const cities = [...cityMap.values()]
+      .sort((a, b) => (a.last < b.last ? -1 : a.last > b.last ? 1 : 0))
+      .map(({ last, ...c }) => c);
+    return json({ cities, isAdmin: viewer.isAdmin });
+  }
+
+  // GET /api/cities/:city（公开：某座城市的最近 10 条行程，供地图弹窗按需拉取）
+  // 城市名直接当路径参数 —— 库里只有 city 名、没有 adcode（见 migrations/0001_init.sql），
+  // adcode 由客户端用本地城市表映射。只给最新 10 条，且**不按 visit_date 排**：
+  // 它可空、还允许只填年份，拿它排序口径会打架。
+  const cityMatch = path.match(/^\/api\/cities\/(.+)$/);
+  if (method === 'GET' && cityMatch) {
+    let city = '';
+    try {
+      city = decodeURIComponent(cityMatch[1]).trim();
+    } catch {
+      return error('城市名无效', 400);
+    }
+    if (!city || city.length > 30) return error('城市名无效', 400);
+
+    const viewer = await getViewer(DB, request);
+    const vis = visibility(viewer, 'v.is_private', 'v.user_id');
+    const rows = await DB.prepare(
+      `SELECT u.nickname, u.color, v.visit_date, v.note, v.is_private
+       FROM cf_visits v JOIN users u ON v.user_id = u.id
+       WHERE v.city = ? ${vis.sql ? `AND ${vis.sql}` : ''}
+       ORDER BY v.created_at DESC, v.id DESC LIMIT 10`
+    ).bind(city, ...vis.params).all();
+    // 该城市没有记录也回 200 + 空数组：空不是错误
+    return json({ city, visits: rows.results });
   }
 
   // GET /api/stats（公开：全站统计；管理员统计全部行程含私密）
+  // 成就达成人数由后端算（定义唯一一份在 achievements.js），所以**不再回 users[] 明细**，
+  // 只回一个 totalUsers 数字 —— 客户端不再需要 users[].cities 去本地判定。
   if (method === 'GET' && path === '/api/stats') {
-    const { isAdmin } = await getViewer(DB, request);
-    const visFilter = isAdmin ? '' : 'WHERE is_private = 0';
-    const joinFilter = isAdmin ? '' : 'AND v.is_private = 0';
-    const totalVisits = (await DB.prepare(`SELECT COUNT(*) as c FROM cf_visits ${visFilter}`).first()).c;
-    const totalCities = (await DB.prepare(`SELECT COUNT(DISTINCT city) as c FROM cf_visits ${visFilter}`).first()).c;
+    const viewer = await getViewer(DB, request);
+    // 落 WHERE 用的片段（FROM cf_visits，无别名）与落 JOIN 的 ON 用的片段（别名 v）分开取
+    const visVisit = visibility(viewer);
+    const whereVisit = visVisit.sql ? `WHERE ${visVisit.sql}` : '';
+
+    const totalVisits = (await DB.prepare(`SELECT COUNT(*) as c FROM cf_visits ${whereVisit}`).bind(...visVisit.params).first()).c;
+    const totalCities = (await DB.prepare(`SELECT COUNT(DISTINCT city) as c FROM cf_visits ${whereVisit}`).bind(...visVisit.params).first()).c;
+    const totalUsers = (await DB.prepare('SELECT COUNT(*) as c FROM users').first()).c;
     const cityRank = await DB.prepare(
-      `SELECT city, COUNT(*) as count, COUNT(DISTINCT user_id) as people FROM cf_visits ${visFilter} GROUP BY city ORDER BY count DESC, city ASC`
-    ).all();
-    const users = await DB.prepare(
-      `SELECT u.nickname, u.color, COALESCE(GROUP_CONCAT(DISTINCT v.city), '') as cities
-       FROM users u LEFT JOIN cf_visits v ON v.user_id = u.id ${joinFilter}
+      `SELECT city, COUNT(*) as count, COUNT(DISTINCT user_id) as people FROM cf_visits ${whereVisit} GROUP BY city ORDER BY count DESC, city ASC`
+    ).bind(...visVisit.params).all();
+
+    // 每个用户的「去过的城市」集合，供成就判定。可见性片段必须落在 JOIN 的 ON 上，
+    // 否则 LEFT JOIN 出来的 NULL 行会让 WHERE 判定为假、把零足迹的用户整行滤掉。
+    const visJoin = visibility(viewer, 'v.is_private', 'v.user_id');
+    const userCities = await DB.prepare(
+      `SELECT COALESCE(GROUP_CONCAT(DISTINCT v.city), '') as cities
+       FROM users u LEFT JOIN cf_visits v ON v.user_id = u.id ${visJoin.sql ? `AND ${visJoin.sql}` : ''}
        GROUP BY u.id ORDER BY u.id`
-    ).all();
-    return json({ totalVisits, totalCities, cityRank: cityRank.results, users: users.results, isAdmin });
+    ).bind(...visJoin.params).all();
+    const achievements = achievementCounts(userCities.results.map(r => (r.cities ? r.cities.split(',') : [])));
+
+    return json({
+      totalVisits, totalCities, totalUsers,
+      cityRank: cityRank.results, achievements, isAdmin: viewer.isAdmin,
+    });
   }
 
-  // GET /api/my-visits（登录）
+  // GET /api/my-visits（登录：我的行程 + 我的成就）
+  // 成就直接用这一批**已经取出来的行**就地判定（城市名去重），零额外查询 ——
+  // 这也是不单开 /api/my-achievements 的原因。
   if (method === 'GET' && path === '/api/my-visits') {
     const userId = await getUserId(DB, request);
     if (!userId) return error('未登录', 401);
     const visits = await DB.prepare(
       'SELECT id, city, lat, lng, visit_date, note, is_private FROM cf_visits WHERE user_id = ? ORDER BY created_at DESC, id DESC'
     ).bind(userId).all();
-    return json({ visits: visits.results });
+    return json({
+      visits: visits.results,
+      achievements: getAchievements(visits.results.map(v => v.city)),
+    });
   }
 
   // POST /api/visits（登录：添加）

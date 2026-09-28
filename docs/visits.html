@@ -615,7 +615,6 @@
 
 <script src="cities.js"></script>
 <script src="app.js"></script>
-<script src="achievements.js"></script>
 <script>
 // 未登录跳个人中心（那里是登录入口），已登录校验凭证后加载
 if (!getSession()) {
@@ -732,11 +731,11 @@ function updateVisitStats() {
 }
 
 // 渲染成就卡片：先算总进度写到卡片顶部，再按 4 个分类铺开（每类可折叠）
-function renderAchievements() {
+// CATEGORIES 直接来自 /api/my-visits 的 achievements —— 判定逻辑只留在后端
+// （backend/src/achievements.js），网页不再自带一份定义，两端也不会算出不同结果。
+function renderAchievements(CATEGORIES) {
   const el = document.getElementById('achievementGrid');
   if (!el) return;
-  // 判定逻辑在 achievements.js 的 getAchievements
-  const CATEGORIES = getAchievements(myVisits.map(v => v.city));
 
   // 总进度（卡片头部那一行）：「已点亮 X / Y」+ 进度条宽度
   const doneAll = CATEGORIES.reduce((n, c) => n + c.items.filter(a => a.done).length, 0);
@@ -788,7 +787,7 @@ async function loadVisits() {
     const data = await api('/my-visits');
     myVisits = data.visits;
     updateVisitStats();
-    renderAchievements();
+    renderAchievements(data.achievements || []);
     if (!myVisits.length) { list.innerHTML = '<div class="empty">还没有足迹，添加第一座城市吧 ✈️</div>'; return; }
     list.innerHTML = '';
     for (let i = 0; i < myVisits.length; i++) {

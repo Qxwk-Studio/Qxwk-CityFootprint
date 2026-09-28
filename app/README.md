@@ -108,7 +108,7 @@ node app/tools/gen-cities.mjs
 | tab | 图标 | 正文 = 网页端的 | Fragment |
 | --- | --- | --- | --- |
 | 主页 | `ic_home` | 足迹管理页（`visits.html`，含顶部「足迹统计」概览） | `VisitsFragment` |
-| 我的成就 | `ic_achievement` | 足迹管理页的成就区（`visits.html` + `achievements.js`） | `AchievementsFragment` |
+| 我的成就 | `ic_achievement` | 足迹管理页的成就区（`visits.html`，成就结果由后端 `backend/src/achievements.js` 下发） | `AchievementsFragment` |
 | 地图 | `ic_map` | 首页足迹大地图（`index.html`） | `MapFragment` |
 | 全站统计 | `ic_stats` | 全站统计页（`stats.html`） | `StatsFragment` |
 | 我的 | `ic_person` | 个人中心（`account.html`）与设置 | `ProfileFragment` |

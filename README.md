@@ -73,7 +73,6 @@
 │   ├── setup.html          # 欢迎动画页（嵌入 account 未登录左侧，跟随主题同步）
 │   ├── stats.html          # 全站统计
 │   ├── news.html           # 公告与更新日志
-│   ├── achievements.js     # 成就定义与判定
 │   ├── app.js              # API 客户端 + 通行证登录/会话（直调 /api/login、401 兜底） + setAvatarFromUrl()（头像渲染）
 │   ├── cities.js           # 国内地级市坐标数据
 │   ├── city-codes.js       # 城市 adcode（地图边界用）
@@ -82,9 +81,13 @@
 ├── backend/                # 后端（Cloudflare Worker + D1）；后端命令都在这个目录里执行
 │   ├── src/
 │   │   ├── worker.js       # Worker 入口（/api/* 接口 + CORS；静态资源回退已删）
-│   │   └── lib.js          # 通行证 token 验证 + 本地用户映射 + 工具
+│   │   ├── lib.js          # 通行证 token 验证 + 本地用户映射 + 私密可见性片段 visibility()
+│   │   └── achievements.js # 成就定义与判定（**全站唯一一份**，网页/app 都只消费接口结果）
+│   ├── test/
+│   │   └── achievements.test.js  # 成就判定与达成人数的单测（cd backend && npm test）
 │   ├── migrations/
 │   │   └── 0001_init.sql   # 建表：users（两站共享）/ cf_visits（本站独占，含 is_private）
+│   ├── package.json        # 只声明 ESM（"type":"module"）+ npm test，无任何依赖
 │   └── wrangler.toml       # Worker 配置（只有 D1 绑定；静态资源段已删 —— 页面在 GitHub Pages）
 ├── app/                    # 安卓 app，见 app/README.md（Kotlin + XML View/viewBinding，原生 osmdroid 地图，不用 WebView）
 ├── scripts/                # 城市数据维护脚本（Node，本地手动跑，不参与部署）
@@ -101,9 +104,10 @@
 | 方法 | 路径 | 鉴权 | 说明 |
 |------|------|------|------|
 | GET | `/api/me` | Bearer | 当前用户信息（token 经通行证验证，返回 `userId/nickname/color/avatar/is_admin/created_at`） |
-| GET | `/api/cities` | 可选 Bearer | 城市 + 谁去过（地图用；登录可见本人私密，管理员可见全部） |
-| GET | `/api/stats` | 可选 Bearer | 全站统计（管理员含私密行程） |
-| GET | `/api/my-visits` | Bearer | 自己的足迹（含 is_private） |
+| GET | `/api/cities` | 可选 Bearer | 地图数据：城市 + 坐标 + 去过的人（仅 `nickname/color`；登录可见本人私密，管理员可见全部）。日期/备注等明细不在这里下发 |
+| GET | `/api/cities/:city` | 可选 Bearer | 某座城市的最近 10 条行程（地图弹窗**点开时才拉**；无记录回 200 + 空数组）。城市名直接当路径参数，库里没有 adcode |
+| GET | `/api/stats` | 可选 Bearer | 全站统计（`totalVisits/totalCities/totalUsers/cityRank/achievements/isAdmin`，管理员含私密行程） |
+| GET | `/api/my-visits` | Bearer | 自己的足迹（含 is_private）+ 我的成就 |
 | POST | `/api/visits` | Bearer | 添加足迹（可带 is_private） |
 | PUT | `/api/visits/:id` | Bearer | 修改（仅本人，可改 is_private） |
 | DELETE | `/api/visits/:id` | Bearer | 删除（仅本人） |
@@ -117,8 +121,8 @@
 - **前后端跨域，接口自带 CORS**：页面在 `travel.qxwkstudio.top`（GitHub Pages）、接口在 `api.travel.qxwkstudio.top`（Worker），不同源。前端请求带 `Authorization` / `Content-Type`，浏览器会先发 `OPTIONS` 预检，所以 Worker 必须处理预检并回 `Access-Control-Allow-*`；**4xx/5xx 也要带头**，否则浏览器只报 "CORS error"，前端那套 401 清 token / 回登录视图的逻辑永远触发不了。白名单（`backend/src/worker.js` 的 `ALLOWED_ORIGINS`）只放行前端域与 localhost —— 身份靠 Bearer token、不用 cookie，本就没有「靠 CORS 挡人」的安全边界，但也没必要让任意站点读响应。
 - **本地身份按 `passport_id` 映射**：`resolveViewer()` 用通行证 `/api/me` 返回的 `userId` 认人（`users.passport_id`，唯一索引 `idx_users_passport`）。通行证里改昵称不会改 userId，所以改昵称不会在本站多出一条行；升级前的老行按「同昵称且 `passport_id IS NULL`」自动回填认领，保住原有足迹与管理员标志。
 - **颜色与头像都由 Account 输出**：`users.color` 和用户头像 URL 都是通行证"单一事实源"，本站每次用户访问时同步覆盖。这样用户在通行证改颜色 / 改邮箱（头像 hash 变化）后，访问本站自动生效，避免两端数据漂移。
-- **私密行程接口层过滤**：`is_private` 过滤在 Worker 侧（`lib.js` / worker 查询）做，而不是前端，防止有人抓接口构造出别人的私密足迹。管理员用 `is_admin=1` 标志绕过过滤查看全部。
-- **成就系统**：判定逻辑在 `achievements.js` 前端执行，按"足迹丰碑 / 巡游四方 / 城市打卡 / 极限挑战"四大类分组。新增成就时在成就定义数组追加即可，判定函数拿到 `stats + myVisits` 上下文。
+- **私密行程接口层过滤**：`is_private` 过滤在 Worker 侧做，而不是前端，防止有人抓接口构造出别人的私密足迹。规则只写一处 —— `lib.js` 的 `visibility(viewer)`（管理员不过滤；其余放行「非私密」或「自己的」），`/api/cities`、`/api/cities/:city`、`/api/stats` 共用它。凡是新增「面向他人数据」的接口，都必须套这一段，别各自手抄。
+- **成就系统**：判定逻辑只有一份，在 `backend/src/achievements.js` —— "足迹丰碑 / 巡游四方 / 城市打卡 / 极限挑战"四大类共 42 条，每条带**稳定的 `code`**（早期拿中文 name 当计数键，改文案就会静默错位）。网页与 app **都不再自带定义**，只消费接口：`GET /api/my-visits` 下发 `done`（我的成就），`GET /api/stats` 下发 `count`（达成人数），两者都把 `icon/name/desc` 一起给，所以客户端零定义也能渲染。新增成就只改这一个文件，并同步 `backend/test/achievements.test.js`。
 - **地图边界与瓦片缓存**：DataV GeoAtlas 边界由 Worker `/api/geo/:adcode` 代理并缓存 24h；浏览器侧再用 IndexedDB 保存 24h，打开地图时只拉取缺省的边界。瓦片用高德免 Key 内网直出、Leaflet 资源自托管到 `docs/vendor/`，避免外链失效与 CORS 折腾。
 - **页面链接不带 `.html`**：GitHub Pages 对 `/xxx` 会自动回落到 `xxx.html`（`travel.qxwkstudio.top/account`、`/stats` 已线上验证），所以站内导航统一写裸路径（`/account`、`/visits`…），浏览器地址栏就不露后缀。`docs/app.js` 的 401 兜底与 `docs/robots.txt` 的路径都已按裸路径对齐 —— 改导航时别把后缀加回来。
 - **响应式边距规范**：全站 6 页（index / account / visits / stats / news / setup）沿用同一套间距规范，新增页面或模块**务必遵守**，避免不同页面在手机/桌面上松紧不一。

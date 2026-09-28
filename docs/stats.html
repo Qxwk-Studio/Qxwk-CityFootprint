@@ -401,7 +401,6 @@
 
 <script src="cities.js"></script>
 <script src="app.js"></script>
-<script src="achievements.js"></script>
 <script>
 // 城市→省份（从内置城市数据查询）
 function findProvince(city) {
@@ -418,7 +417,7 @@ api('/stats')
 
     document.getElementById('totalVisits').textContent = data.totalVisits;
     document.getElementById('totalCities').textContent = data.totalCities;
-    document.getElementById('totalUsers').textContent = (data.users || []).length;
+    document.getElementById('totalUsers').textContent = data.totalUsers;
     // 覆盖省份数：从城市排名去重省份
     const provs = new Set((data.cityRank || []).map(c => findProvince(c.city)).filter(Boolean));
     document.getElementById('totalProvinces').textContent = provs.size;
@@ -461,20 +460,12 @@ api('/stats')
     }
     drawCityRank();
 
-    // 成就达成人数：统计每个成就被多少用户达成
-    const achCount = {};
-    for (const u of (data.users || [])) {
-      const cities = (u.cities || '').split(',').filter(Boolean);
-      const cats = getAchievements(cities);
-      for (const cat of cats) {
-        for (const a of cat.items) {
-          if (a.done) achCount[a.name] = (achCount[a.name] || 0) + 1;
-        }
-      }
-    }
+    // 成就达成人数：由后端算好（判定逻辑只存在于 backend/src/achievements.js），
+    // 连同 42 条成就的图标/名称/说明一起收到 —— 网页不再自带定义，也不再本地跑判定。
+    // 这正是 /api/stats 不再回 users[].cities 的原因：只有 totalUsers 一个数字。
     const achList = document.getElementById('achievementCountList');
     achList.innerHTML = '';
-    getAchievements([]).forEach(cat => {
+    (data.achievements || []).forEach(cat => {
       const catEl = document.createElement('div');
       catEl.className = 'ach-count-cat';
       catEl.textContent = cat.title;
@@ -482,11 +473,10 @@ api('/stats')
       cat.items.forEach(a => {
         const item = document.createElement('div');
         item.className = 'ach-count-item';
-        const n = achCount[a.name] || 0;
         item.innerHTML = `
           <span class="ach-count-icon">${a.icon}</span>
           <span class="ach-count-name">${a.name}${a.desc ? '<span class="ach-count-desc">' + a.desc + '</span>' : ''}</span>
-          <span class="ach-count-num ${n > 0 ? 'done' : ''}">${n} 人</span>`;
+          <span class="ach-count-num ${a.count > 0 ? 'done' : ''}">${a.count} 人</span>`;
         achList.appendChild(item);
       });
     });
