@@ -55,12 +55,13 @@ class TransportTest {
 
     @Test
     fun `并列时取枚举里靠前的那个`() {
-        // 与网页 topTransportName 同口径：火车排在飞机之前，各一票时选火车
+        // 与网页 topTransportName 同口径：候选先照 TRANSPORTS 顺序排（plane 在最前）再稳定排序，
+        // 所以同票时 plane 胜出。注意这跟「足迹出现的先后」无关 —— 故意把 train 写在前面来钉住这点
         val visits = listOf(
-            Visit(city = "北京", transport = listOf("plane")),
             Visit(city = "上海", transport = listOf("train")),
+            Visit(city = "北京", transport = listOf("plane")),
         )
-        assertEquals("火车", topTransportLabel(visits))
+        assertEquals("飞机", topTransportLabel(visits))
     }
 
     @Test
