@@ -118,8 +118,19 @@ class MapFragment : Fragment() {
         // 瓦片按屏幕 DPI 缩放。osmdroid 默认是 false —— 每块 256px 的瓦片只画 256 个**物理**像素，
         // 于是在高密度屏上瓦片被画成应有尺寸的 1/density：一行里挤进好几块、标注字号被一并缩小，
         // 看着就像「还没怎么放大就进了下一级」。开启后瓦片按 density 绘制，与网页 Leaflet（一块瓦片
-        // 对应 256 CSS 像素）同一口径，标注字号才正常（代价：瓦片源本身只有 256px，边缘会略糊）。
+        // 对应 256 CSS 像素）同一口径，标注字号才正常。
         b.map.setTilesScaledToDpi(true)
+        // 「满密度」只有开/关这一档，倍数本身要另用 setTilesScaleFactor(6.1.0+) 传一个 float：
+        // 最终绘制尺寸 = 源图边长 × density × 本系数，两个开关相乘（osmdroid 6.1.x 的
+        // MapView.updateTileSizeForDensity 就是这么算的，最后落到全局的 TileSystem.setTileSize）。
+        // 源图是 256 的高德瓦片（见 AmapTileSource），所以这个系数同时也在决定**糊不糊**：
+        // 一块瓦片画 256×density×系数 个物理像素，源图每个像素就被拉伸同样多倍 —— 字号与清晰度
+        // 在这里是反比的一条线，只能取中间：
+        //   1.0（满密度，704px）：字号与网页一致，但每像素拉 2.75 倍，糊（上一版就是这档）；
+        //   ≈0.364（1/density，256px）：源图 1:1 不拉伸，最清晰，但字号只有三成六（最早那版）。
+        // 0.5：字号为满密度的一半，每像素拉伸 1.375 倍（正好比满密度轻一半）—— 拿字号换清晰度。
+        // 往大调字更大更糊，往小调更清楚更小 —— 就这一个数，直接在 AMAP_TILE_SCALE 上改。
+        b.map.setTilesScaleFactor(AMAP_TILE_SCALE)
         b.map.setMultiTouchControls(true)
         // 关掉 osmdroid 自带那对 +/- 缩放按钮：**6.0 起默认开启**，叠在底部中间，与网页版（Leaflet 只有
         // 左上角那颗）不一致，也会盖住底部城市明细卡。只关按钮，捏合缩放靠上面那行 setMultiTouchControls 照旧
@@ -557,12 +568,24 @@ class MapFragment : Fragment() {
         /** 同时最多拉几条城市边界（与网页 GEO_CONCURRENCY 同值）。 */
         const val GEO_CONCURRENCY = 6
 
+        /** 高德 256 瓦片的放大倍数：最终绘制尺寸 = 256(源图边长) × density × 本值。
+         *  1.0 = 满密度，字号与网页一致但拉伸 2.75 倍（糊）；≈1/density(0.364) = 源图 1:1 不拉伸
+         *  （最清晰但字号最小）；0.5 = 每像素只拉伸 1.375 倍、字号为满密度的一半。
+         *  调大更糊、调小更清楚，详见 onViewCreated 里的说明。 */
+        const val AMAP_TILE_SCALE = 0.5f
+
         val AMAP_TILES = AmapTileSource()
     }
 }
 
 /**
  * 高德免 Key 瓦片，URL 与网页 docs/index.html 的 Leaflet 图层完全一致（style=8 街道图）。
+ *
+ * 这里刻意**不带** `scl=2`：高德那档能返回 512×512、且是同一块地理范围（实测四台子域在 z=12/18 都稳定
+ * 给 512，不是把 256 简单放大），换上去就能「不放大的前提下把字号做大」，代价是单块瓦片 5.6KB → 12KB。
+ * 考虑到流量先按 256 用，字号/清晰度改由 MapFragment 的 AMAP_TILE_SCALE 取舍。
+ * 若哪天愿意吃这 2.2 倍瓦片流量，把 scl=2 加回去时**必须把下面的 256 一起改成 512** ——
+ * tileSizePixels 就是源图边长，osmdroid 拿它当基准算绘制尺寸与投影，两者不一致图就错位。
  *
  * 为什么不直接用 osmdroid 自带的 XYTileSource：它拼的是 `z/x/y.png` 那种路径式地址，
  * 套不进高德这种查询串 URL，所以覆写 [getTileURLString] 自己拼 —— 与 osmdroid 示例里
