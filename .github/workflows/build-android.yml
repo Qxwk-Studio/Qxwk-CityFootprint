@@ -15,7 +15,29 @@ on:
         default: '1'
 
 jobs:
+  # 后端单测：成就定义与达成人数全站只有 backend/src/achievements.js 这一份（app 里那份判定表
+  # 连同它的单测已删），阈值改错不会崩、只会悄悄少给一个成就，所以发版前必须跑。
+  # 与 app 单测一样放在打包之前：这里红了，build 就不会开始。
+  backend-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        # 显式钉版本：node --test 要 Node ≥ 20，而 runner 自带的 node 会随镜像变
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Run backend unit tests
+        # backend 没有任何依赖（package.json 里只有 test 脚本），不用先 npm ci
+        run: npm test
+        working-directory: backend
+
   build:
+    needs: backend-tests
     runs-on: ubuntu-latest
 
     steps:

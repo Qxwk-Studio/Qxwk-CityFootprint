@@ -25,8 +25,9 @@
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
 
-        <!-- 主页：底部四个 tab（我的足迹 / 统计 / 地图 / 我的），入口 Activity。
-             singleTop + 不写 configChanges：旋转时重建，四个 Fragment 由 FragmentManager 自己恢复。 -->
+        <!-- 主页：底部五个 tab（主页 / 我的成就 / 地图 / 全站统计 / 我的），LAUNCHER 入口
+             （LoginActivity 只是启动后转发，未登录才留在它那）。
+             singleTop + 不写 configChanges：旋转时重建，五个 Fragment 由 FragmentManager 自己恢复。 -->
         <activity
             android:name=".ui.MainActivity"
             android:exported="true"
