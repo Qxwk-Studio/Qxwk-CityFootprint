@@ -269,6 +269,11 @@ window.addEventListener('resize', resize);
 const orbs = [];
 const ORB_COUNT = 3;
 
+// 尊重「减少动态效果」：本页不引 style.css（独立落地页，自带全部样式），
+// 全局那条 prefers-reduced-motion 降级覆盖不到这里，得自己判。
+// reduce 时只画首帧静态光晕，不再逐帧重绘（下面的 draw 末尾据此决定要不要续帧）
+const REDUCE_MOTION = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
 for (let i = 0; i < ORB_COUNT; i++) {
   const angle = Math.random() * Math.PI * 2;
   orbs.push({
@@ -317,7 +322,7 @@ function draw(t) {
     ctx.fillRect(o.x - r, o.y - r, r * 2, r * 2);
   }
 
-  requestAnimationFrame(draw);
+  if (!REDUCE_MOTION) requestAnimationFrame(draw);
 }
 draw(0);
 

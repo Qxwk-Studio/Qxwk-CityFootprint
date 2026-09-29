@@ -159,7 +159,9 @@ body {
 
 .btn-ghost:hover { background: var(--border); color: var(--text-primary); }
 
-.btn-sm { padding: 6px 12px; font-size: 0.8rem; border-radius: var(--radius-sm); }
+/* 小按钮只收内边距与字号，圆角仍随 .btn 的胶囊档。
+   按钮一律胶囊（见 :root 里圆角 token 的约定），这里再覆盖成 --radius-sm 就破了这个体系 */
+.btn-sm { padding: 6px 12px; font-size: 0.8rem; }
 
 /* ========= 表单控件 =========
    visits 的行程表单、account 的登录表单、index 添加弹窗的 .modal-input 共用这一套
@@ -221,6 +223,23 @@ input::placeholder, textarea::placeholder { color: var(--text-tertiary); }
 .stat-card .value { font-size: 2rem; font-weight: 700; color: var(--primary); line-height: 1.2; }
 
 .stat-card .value .stat-loading { font-size: 1rem; font-weight: 500; color: var(--text-tertiary); }
+
+/* ========= 管理员视图提示 =========
+   index（浮在地图右上角）与 stats（页面流内）是同一个概念，外观统一到这一套：
+   琥珀色渐变胶囊 + 白字，与 account 的「管理员」徽章同一套管理员视觉语言
+   （原先 index 是渐变胶囊、stats 是浅黄描边横条，两套外观）。
+   位置差异各页自己补：index 是 position:fixed，stats 用外边距跟统计卡拉距 */
+.admin-view-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 16px;
+  border-radius: var(--radius-pill);
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
 
 @keyframes spin { to { transform: rotate(360deg); } }
 

@@ -9,7 +9,11 @@ const LS_TOKEN = 'qxwf_token';
 const LS_USER = 'qxwf_user';
 
 async function api(path, options = {}) {
-  const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
+  // Content-Type 只在真的带 body 时设：GET 也挂一个 application/json 会让
+  // 「没带 Authorization 的公开请求」（/api/cities、/api/geo/:adcode）变成非简单请求，
+  // 白白多一次 CORS 预检。带 body 的 PUT/POST 照旧。
+  const headers = { ...(options.headers || {}) };
+  if (options.body) headers['Content-Type'] = 'application/json';
   const token = localStorage.getItem(LS_TOKEN);
   if (token) headers['Authorization'] = 'Bearer ' + token;
   const res = await fetch(API_BASE + path, { ...options, headers });

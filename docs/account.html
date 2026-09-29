@@ -126,27 +126,9 @@
     #userView .profile-card { padding: 20px; }
   }
 </style>
-<meta name="color-scheme" content="light dark"><script>
-(function () {
-  var KEY = 'theme';
-  var root = document.documentElement;
-  var mq = window.matchMedia('(prefers-color-scheme: dark)');
-  function system() { return mq.matches ? 'dark' : 'light'; }
-  function stored() { try { var v = localStorage.getItem(KEY); return (v === 'dark' || v === 'light') ? v : null; } catch (e) { return null; } }
-  function apply(t) { root.setAttribute('data-theme', t); }
-  function current() { return stored() || system(); }
-  apply(current());
-  function toggle() { var next = current() === 'dark' ? 'light' : 'dark'; apply(next); try { localStorage.setItem(KEY, next); } catch (e) {} }
-  (function tryBind() {
-    var btn = document.getElementById('themeToggle');
-    if (btn) btn.addEventListener('click', toggle);
-    else setTimeout(tryBind, 50);
-  })();
-  if (mq.addEventListener) mq.addEventListener('change', function (e) { if (!stored()) apply(e.matches ? 'dark' : 'light'); });
-  else if (mq.addListener) mq.addListener(function (e) { if (!stored()) apply(e.matches ? 'dark' : 'light'); });
-  window.addEventListener('storage', function (e) { if (e.key === KEY) apply(current()); });
-})();
-</script>
+<meta name="color-scheme" content="light dark">
+<!-- 主题切换：见 theme.js。必须留在 <head>、body 渲染之前，否则会闪色 -->
+<script src="theme.js"></script>
 <style>
   :root[data-theme="dark"] .auth-right { background: var(--surface); }
   :root[data-theme="dark"] .auth-left { background: #0f172a; }
@@ -194,7 +176,9 @@
 
 <div id="authView" style="display:none">
   <div class="auth-left">
-    <iframe src="setup.html" class="setup-frame" title="欢迎" loading="lazy"></iframe>
+    <!-- 站内路径一律不带 .html（GitHub Pages 会把 /setup 回落到 setup.html），
+         与 /account、/visits 那些链接同一套写法 -->
+    <iframe src="/setup" class="setup-frame" title="欢迎" loading="lazy"></iframe>
   </div>
   <div class="auth-right">
     <div class="auth-form">
@@ -361,7 +345,9 @@ function enterUserView() {
 // /api/me 返回值的落地：写回本地会话缓存，然后渲染已登录界面
 function onMeLoaded(data) {
   if (data && data.userId) {
-    localStorage.setItem('qxwf_user', JSON.stringify({
+    // 键名用 app.js 里的 LS_USER 常量，别再写一遍字面量 —— 两处各写一份，
+    // 将来改键名必漏一处，登录态就会「存进去读不出来」。script 级 const 对后续经典脚本可见
+    localStorage.setItem(LS_USER, JSON.stringify({
       userId: data.userId,
       nickname: data.nickname,
       color: data.color,

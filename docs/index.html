@@ -3,7 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<!-- 边界接口(DataV)有来源检查，去掉 Referer 以绕过 403 -->
+<!-- 全站外发请求一律不带 Referer（隐私考虑）。
+     最早是为了绕过 DataV 边界接口的来源检查，但现在边界数据已改由 Worker 服务端代理
+     （backend/src/worker.js 的 /api/geo/:adcode），DataV 不再直接面对浏览器，
+     这条 meta 对那个接口已经不起作用了；保留它的是高德瓦片等其余第三方请求 ——
+     真机 Referer 行为本地验证不了，没必要为了「注释对不上」去删一行能用的隐私设置 -->
 <meta name="referrer" content="no-referrer">
 <title>City Footprint - 青翔未阔工作室</title>
 <meta name="description" content="City Footprint 城市足迹地图 —— 记录每个人去过的城市，点亮属于自己的颜色，与朋友们一起拼出一张五彩斑斓的足迹大地图。">
@@ -178,18 +182,13 @@
   }
   .legend .empty { font-size: 0.8rem; color: var(--text-tertiary); text-align: center; padding: 8px 0; }
 
-  /* 管理员视图提示（地图右上角） */
+  /* 管理员视图提示（地图右上角）：外观（琥珀渐变胶囊）见 style.css 的 .admin-view-note，
+     这里只补本页特有的定位与浮起阴影；短徽章不换行 */
   .admin-view-note {
     position: fixed;
     top: calc(var(--nav-height) + 12px);
     right: 16px;
     z-index: 1200;
-    background: linear-gradient(135deg, #f59e0b, #d97706);
-    color: #fff;
-    padding: 6px 16px;
-    border-radius: var(--radius-lg);
-    font-size: 0.78rem;
-    font-weight: 600;
     box-shadow: var(--shadow-md);
     white-space: nowrap;
   }
@@ -377,7 +376,7 @@
     flex: 1;
     padding: 10px 0;
     border: none;
-    border-radius: var(--radius-sm);
+    border-radius: var(--radius-pill);
     font-size: 0.9rem;
     font-weight: 600;
     cursor: pointer;
@@ -420,29 +419,8 @@
   }
 </style>
 <meta name="color-scheme" content="light dark">
-<script>
-/* 主题切换：localStorage('theme') 优先，其次跟随系统 prefers-color-scheme；同步写入 <html> 的 data-theme 防闪烁 */
-(function () {
-  var KEY = 'theme';
-  var root = document.documentElement;
-  var mq = window.matchMedia('(prefers-color-scheme: dark)');
-  function system() { return mq.matches ? 'dark' : 'light'; }
-  function stored() { try { var v = localStorage.getItem(KEY); return (v === 'dark' || v === 'light') ? v : null; } catch (e) { return null; } }
-  function apply(t) { root.setAttribute('data-theme', t); }
-  function current() { return stored() || system(); }
-  apply(current());
-  function toggle() { var next = current() === 'dark' ? 'light' : 'dark'; apply(next); try { localStorage.setItem(KEY, next); } catch (e) {} }
-  // 按钮轮询绑定（不依赖 DOMContentLoaded，避免被外部脚本阻塞导致按钮长时间无效）
-  (function tryBind() {
-    var btn = document.getElementById('themeToggle');
-    if (btn) btn.addEventListener('click', toggle);
-    else setTimeout(tryBind, 50);
-  })();
-  if (mq.addEventListener) mq.addEventListener('change', function (e) { if (!stored()) apply(e.matches ? 'dark' : 'light'); });
-  else if (mq.addListener) mq.addListener(function (e) { if (!stored()) apply(e.matches ? 'dark' : 'light'); });
-  window.addEventListener('storage', function (e) { if (e.key === KEY) apply(current()); });
-})();
-</script>
+<!-- 主题切换：见 theme.js。必须留在 <head>、body 渲染之前，否则会闪色 -->
+<script src="theme.js"></script>
 <style>
 
   /* ===== 黑夜模式：地图页元素覆盖 ===== */
@@ -535,8 +513,10 @@
       </button>
     </div>
     <div class="modal-field">
-      <label>城市（国 · 省 · 市）</label>
-      <div class="city-selects" id="quickCitySelects">
+      <!-- 这一格是「国 · 省 · 市」三个下拉 + 定位按钮的组合，没有单个能当 for 目标，
+           所以用 role=group + aria-labelledby 整组关联（出行方式那组同理） -->
+      <label id="quickCityLabel">城市（国 · 省 · 市）</label>
+      <div class="city-selects" id="quickCitySelects" role="group" aria-labelledby="quickCityLabel">
         <select id="quickCountry" data-city="country" aria-label="国家"></select>
         <select id="quickProvince" data-city="province" aria-label="省份"></select>
         <select id="quickCity" data-city="city" aria-label="城市"></select>
@@ -557,8 +537,8 @@
       </label>
     </div>
     <div class="modal-field">
-      <label>出行方式（可多选）</label>
-      <div class="transport-chips" id="quickTransport"></div>
+      <label id="quickTransportLabel">出行方式（可多选）</label>
+      <div class="transport-chips" id="quickTransport" role="group" aria-labelledby="quickTransportLabel"></div>
     </div>
     <div class="modal-field">
       <div class="field-head">

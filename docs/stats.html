@@ -19,20 +19,9 @@
   /* 小卡外观（.stat-card / .label / .value / .stat-loading）见 style.css：
      与足迹管理页的足迹统计同一套，页内只留本页的网格列数与断点 */
 
-  /* 管理员视图提示 */
-  .admin-view-note {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 16px;
-    padding: 10px 16px;
-    border-radius: var(--radius-sm);
-    background: #fffbeb;
-    border: 1px solid #fcd34d;
-    color: #92400e;
-    font-size: 0.85rem;
-    font-weight: 600;
-  }
+  /* 管理员视图提示：外观（琥珀渐变胶囊）见 style.css 的 .admin-view-note，
+     这里只补本页特有的「页面流内、与统计卡拉距」；文案较长，允许换行不设 nowrap */
+  .admin-view-note { margin-bottom: 16px; }
   .rank-item {
     display: flex;
     align-items: center;
@@ -61,7 +50,7 @@
     margin: 14px auto 0;
     padding: 8px 18px;
     border: 1px solid var(--border);
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-pill);
     background: var(--bg);
     color: var(--primary);
     font-size: 0.85rem;
@@ -110,33 +99,8 @@
   }
 </style>
 <meta name="color-scheme" content="light dark">
-<script>
-/* 主题切换：localStorage('theme') 优先，其次跟随系统 prefers-color-scheme；同步写入 <html> 的 data-theme 防闪烁 */
-(function () {
-  var KEY = 'theme';
-  var root = document.documentElement;
-  var mq = window.matchMedia('(prefers-color-scheme: dark)');
-  function system() { return mq.matches ? 'dark' : 'light'; }
-  function stored() { try { var v = localStorage.getItem(KEY); return (v === 'dark' || v === 'light') ? v : null; } catch (e) { return null; } }
-  function apply(t) { root.setAttribute('data-theme', t); }
-  function current() { return stored() || system(); }
-  apply(current());
-  function toggle() { var next = current() === 'dark' ? 'light' : 'dark'; apply(next); try { localStorage.setItem(KEY, next); } catch (e) {} }
-  // 按钮轮询绑定（不依赖 DOMContentLoaded，避免被外部脚本阻塞导致按钮长时间无效）
-  (function tryBind() {
-    var btn = document.getElementById('themeToggle');
-    if (btn) btn.addEventListener('click', toggle);
-    else setTimeout(tryBind, 50);
-  })();
-  if (mq.addEventListener) mq.addEventListener('change', function (e) { if (!stored()) apply(e.matches ? 'dark' : 'light'); });
-  else if (mq.addListener) mq.addListener(function (e) { if (!stored()) apply(e.matches ? 'dark' : 'light'); });
-  window.addEventListener('storage', function (e) { if (e.key === KEY) apply(current()); });
-})();
-</script>
-<style>
-  /* ===== 黑夜模式：页面元素覆盖（footer 的深色覆盖在 style.css） ===== */
-  :root[data-theme="dark"] .admin-view-note { background:rgba(245,158,11,0.12); border-color:rgba(245,158,11,0.35); color:#fbbf24; }
-</style>
+<!-- 主题切换：见 theme.js。必须留在 <head>、body 渲染之前，否则会闪色 -->
+<script src="theme.js"></script>
 </head>
 <body>
 
