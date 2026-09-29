@@ -30,6 +30,7 @@ import org.osmdroid.config.Configuration
 import org.osmdroid.tileprovider.tilesource.XYTileSource
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.util.MapTileIndex
+import org.osmdroid.views.CustomZoomButtonsController
 import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.Overlay
 import org.osmdroid.views.overlay.Polygon
@@ -132,9 +133,12 @@ class MapFragment : Fragment() {
         // 往大调字更大更糊，往小调更清楚更小 —— 就这一个数，直接在 AMAP_TILE_SCALE 上改。
         b.map.setTilesScaleFactor(AMAP_TILE_SCALE)
         b.map.setMultiTouchControls(true)
-        // 关掉 osmdroid 自带那对 +/- 缩放按钮：**6.0 起默认开启**，叠在底部中间，与网页版（Leaflet 只有
-        // 左上角那颗）不一致，也会盖住底部城市明细卡。只关按钮，捏合缩放靠上面那行 setMultiTouchControls 照旧
-        b.map.setBuiltInZoomControls(false)
+        // 关掉 osmdroid 自带那对 +/- 缩放按钮：**6.0 起默认开启**（SHOW_AND_FADEOUT），叠在底部中间，
+        // 与网页版（Leaflet 只有左上角那颗）不一致，也会盖住底部城市明细卡。只关按钮，捏合缩放靠上面
+        // 那行 setMultiTouchControls 照旧。
+        // 走 setVisibility(NEVER) 而不是 setBuiltInZoomControls(false)：后者在 6.1.x 已标废弃，内部就是
+        // 转发到 setVisibility，继续用它只会留一条编译告警
+        b.map.zoomController.setVisibility(CustomZoomButtonsController.Visibility.NEVER)
         b.map.setMaxZoomLevel(18.0)
         b.map.controller.setZoom(4.0)
         // 先给一个能看见全国的视野（中国大致中心），用户再自己缩放
