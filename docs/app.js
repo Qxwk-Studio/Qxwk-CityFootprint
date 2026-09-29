@@ -225,6 +225,31 @@ async function passportLogin(nickname, password) {
   return data;
 }
 
+// ========= data-action 事件委托 =========
+// 站点 CSP 是 script-src 'self'（没有 unsafe-inline），写在 HTML 里的 onclick / onchange
+// 会被浏览器直接拦掉，所以各页交互一律写成 data-action="动作名"，由这里集中分发。
+// 页面脚本调用 bindActions({ 动作名: 处理函数 }) 注册自己那批动作即可，不用再往元素上绑监听。
+// 只监听 click / change / input 三种冒泡事件；取事件源最近的一个 [data-action] 命中即调用。
+function bindActions(map) {
+  const run = (e) => {
+    const el = e.target.closest && e.target.closest('[data-action]');
+    if (!el || !map[el.dataset.action]) return;
+    if (e.type === 'click') {
+      // 动作挂在复选框/下拉这类表单控件自身上时（如「记不清了」的开关），
+      // 点击的默认行为就是切换选中，在这里 preventDefault 会被浏览器当成「取消」，
+      // 把选中状态撤回去、change 也不再触发 —— 这类控件交给 change 分支跑，click 直接放过
+      if (/^(INPUT|SELECT|TEXTAREA)$/.test(el.tagName)) return;
+      // 其余入口（<a href="#">、按钮、可点区域）挡掉默认行为，
+      // 免得 href="#" 把锚点写进地址栏
+      e.preventDefault();
+    }
+    map[el.dataset.action](el, e);
+  };
+  document.addEventListener('click', run);
+  document.addEventListener('change', run);
+  document.addEventListener('input', run);
+}
+
 // 拉取本站 /me 并写入本地会话缓存（登录成功后调用）
 async function applyMe(token) {
   try {

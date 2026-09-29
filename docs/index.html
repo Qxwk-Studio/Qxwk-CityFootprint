@@ -445,7 +445,7 @@
 
 <header class="navbar">
   <div class="navbar-inner">
-    <a href="#" class="navbar-brand" onclick="return false;">
+    <a href="/" class="navbar-brand">
       <img class="brand-logo" src="/favicon.webp" alt="City Footprint">
       <span class="brand-text"><b>City Footprint</b><span>我们走过的城市</span></span>
     </a>
@@ -463,14 +463,14 @@
 </header>
 
 <div class="legend collapsed" id="legend">
-  <div class="legend-header" onclick="toggleLegend()" title="点击收起/展开">
+  <div class="legend-header" data-action="toggle-legend" title="点击收起/展开">
     <h4>谁的足迹</h4>
     <svg class="legend-toggle" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
   </div>
   <div id="legendList"><div class="empty">正在加载…</div></div>
 </div>
 
-<button class="fab-btn" id="fabBtn" onclick="toggleFabMenu()" aria-label="菜单">
+<button class="fab-btn" id="fabBtn" data-action="toggle-fab" aria-label="菜单">
   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
 </button>
 
@@ -484,7 +484,7 @@
   <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
   足迹管理
 </a>
-<a class="fab-item" href="javascript:void(0)" onclick="openQuickAdd()" style="bottom:188px">
+<a class="fab-item" href="#" data-action="open-quick-add" style="bottom:188px">
   <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
   添加行程
 </a>
@@ -508,7 +508,7 @@
   <div class="modal">
     <div class="modal-header">
       <h3>添加行程</h3>
-      <button type="button" class="modal-close" onclick="closeQuickModal()" aria-label="关闭">
+      <button type="button" class="modal-close" data-action="close-quick-modal" aria-label="关闭">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
     </div>
@@ -520,7 +520,7 @@
         <select id="quickCountry" data-city="country" aria-label="国家"></select>
         <select id="quickProvince" data-city="province" aria-label="省份"></select>
         <select id="quickCity" data-city="city" aria-label="城市"></select>
-        <button type="button" class="modal-relocate" onclick="locateCity()" aria-label="定位到最近的城市" title="定位到最近的城市">
+        <button type="button" class="modal-relocate" data-action="locate-city" aria-label="定位到最近的城市" title="定位到最近的城市">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/></svg>
         </button>
       </div>
@@ -533,7 +533,7 @@
       </div>
       <label class="switch-row" style="margin-top:8px;">
         <span>记不清了</span>
-        <span class="switch"><input type="checkbox" id="quickForgot" onchange="toggleQuickDate()"><span class="switch-track"></span></span>
+        <span class="switch"><input type="checkbox" id="quickForgot" data-action="toggle-quick-date"><span class="switch-track"></span></span>
       </label>
     </div>
     <div class="modal-field">
@@ -545,7 +545,7 @@
         <label for="quickNote">备注（可选）</label>
         <span class="note-count" id="quickNoteCount">0/100</span>
       </div>
-      <input class="modal-input" id="quickNote" maxlength="100" placeholder="一句话留下回忆…" autocomplete="off" oninput="updateQuickNoteCount()">
+      <input class="modal-input" id="quickNote" maxlength="100" placeholder="一句话留下回忆…" autocomplete="off" data-action="update-quick-note-count">
     </div>
     <div class="modal-field">
       <label class="switch-row">
@@ -554,8 +554,8 @@
       </label>
     </div>
     <div class="modal-actions">
-      <button type="button" class="modal-btn modal-btn-cancel" onclick="closeQuickModal()">取消</button>
-      <button type="button" class="modal-btn modal-btn-primary" id="quickSubmit" onclick="submitQuickAdd()">添加行程</button>
+      <button type="button" class="modal-btn modal-btn-cancel" data-action="close-quick-modal">取消</button>
+      <button type="button" class="modal-btn modal-btn-primary" id="quickSubmit" data-action="submit-quick-add">添加行程</button>
     </div>
     <div class="msg" id="quickMsg"></div>
   </div>
@@ -573,552 +573,6 @@
 <script src="cities.js"></script>
 <script src="city-codes.js"></script>
 <script src="app.js"></script>
-<script>
-const map = L.map('map', { zoomControl: false }).setView([35.5, 105], 4);
-// 高德免 Key 瓦片（国内加载快），style=8 街道图
-L.tileLayer('https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}', {
-  subdomains: ['1', '2', '3', '4'],
-  maxZoom: 18,
-  attribution: '&copy; <a href="https://www.amap.com/" target="_blank" rel="noopener">高德地图</a>',
-}).addTo(map);
-
-let markers = [];
-// 空态提示控件：只建一次，且有数据后要移除 —— 否则「空态下加了第一条足迹」之后，
-// 这块「还没有足迹」会一直挂在图上
-let emptyCtl = null;
-const userInfo = new Map(); // nickname -> { color }
-const offset = 0.15;         // 同城多点错开距离
-const geoCache = new Map();  // adcode -> Promise<geojson|null>，边界缓存
-let renderSeq = 0;           // 渲染批次号，避免异步竞态
-
-// 边界请求并发控制：最多同时发起 GEO_CONCURRENCY 个，避免几十个城市同时请求
-const GEO_CONCURRENCY = 6;
-let geoActive = 0;
-const geoQueue = [];
-function geoFetch(url) {
-  return new Promise((resolve, reject) => {
-    const run = () => {
-      geoActive++;
-      fetch(url).then(resolve).catch(reject).finally(() => {
-        geoActive--;
-        if (geoQueue.length) geoQueue.shift()();
-      });
-    };
-    if (geoActive < GEO_CONCURRENCY) run();
-    else geoQueue.push(run);
-  });
-}
-
-// ---------- 边界 IndexedDB 缓存（跨刷新生效，24h 过期，与服务端 Cache-Control 一致） ----------
-const GEO_DB_NAME = 'cityfootprint-geo';
-const GEO_STORE = 'boundaries';
-const GEO_MAX_AGE = 24 * 60 * 60 * 1000; // 24h
-
-let geoDBPromise = null;
-// 打开数据库（复用同一连接；不支持/失败时返回 null → 退化为无缓存）
-function getGeoDB() {
-  if (!geoDBPromise) {
-    geoDBPromise = new Promise((resolve) => {
-      try {
-        const req = indexedDB.open(GEO_DB_NAME, 1);
-        req.onupgradeneeded = () => {
-          if (!req.result.objectStoreNames.contains(GEO_STORE)) {
-            req.result.createObjectStore(GEO_STORE, { keyPath: 'adcode' });
-          }
-        };
-        req.onsuccess = () => resolve(req.result);
-        req.onerror = () => resolve(null);
-      } catch { resolve(null); }
-    });
-  }
-  return geoDBPromise;
-}
-
-// 读缓存：命中且未过期返回 geojson，否则 null
-async function geoDBRead(adcode) {
-  const db = await getGeoDB();
-  if (!db) return null;
-  return new Promise((resolve) => {
-    try {
-      const tx = db.transaction(GEO_STORE, 'readonly');
-      const get = tx.objectStore(GEO_STORE).get(adcode);
-      get.onsuccess = () => {
-        const row = get.result;
-        resolve(row && Date.now() - row.ts < GEO_MAX_AGE ? row.data : null);
-      };
-      get.onerror = () => resolve(null);
-    } catch { resolve(null); }
-  });
-}
-
-// 写缓存（异步，失败静默）
-async function geoDBWrite(adcode, data) {
-  const db = await getGeoDB();
-  if (!db) return;
-  try {
-    const tx = db.transaction(GEO_STORE, 'readwrite');
-    tx.objectStore(GEO_STORE).put({ adcode, data, ts: Date.now() });
-  } catch { /* 忽略 */ }
-}
-
-// 加载城市边界（经 Worker 代理请求 DataV，规避浏览器跨域/来源限制）
-// 命中顺序：内存缓存 → IndexedDB → 网络（并发受控）；失败返回 null（回退圆点）
-function loadCityGeo(adcode) {
-  if (!geoCache.has(adcode)) {
-    const p = (async () => {
-      // 1) IndexedDB 缓存
-      const cached = await geoDBRead(adcode);
-      if (cached) return cached;
-      // 2) 网络请求（经 geoFetch 并发控制）；API_BASE 来自 app.js（后端与页面不同源，必须绝对地址）
-      const r = await geoFetch(`${API_BASE}/geo/${adcode}`);
-      if (!r.ok) return null; // 404/错误 → 回退圆点
-      let g = null;
-      try {
-        g = await r.json();
-        // 校验是合法 GeoJSON，避免把错误对象传给 Leaflet
-        if (!(g && g.type === 'FeatureCollection' && Array.isArray(g.features))) g = null;
-      } catch { g = null; }
-      if (g) geoDBWrite(adcode, g); // 写入 IndexedDB，下次打开直接命中
-      return g;
-    })();
-    geoCache.set(adcode, p);
-  }
-  return geoCache.get(adcode);
-}
-
-function render(data) {
-  // 首次加载时移除全屏加载层；添加行程后的局部刷新无需重复移除
-  const loadingEl = document.getElementById('loading');
-  if (loadingEl) loadingEl.remove();
-
-  // 管理员视图提示（数据来自后端 isAdmin，始终与所见一致）
-  const adminNote = document.getElementById('adminViewNote');
-  if (adminNote) adminNote.style.display = data.isAdmin ? '' : 'none';
-
-  if (!data.cities.length) {
-    // 空态：隐藏图例面板，仅保留左上角的空态提示，避免两者重叠。
-    // 控件只建一次（render 会被反复调用，每次都新建就叠起来了）
-    document.getElementById('legend').style.display = 'none';
-    if (!emptyCtl) {
-      emptyCtl = L.control({ position: 'topleft' });
-      emptyCtl.onAdd = () => {
-        const div = L.DomUtil.create('div');
-        div.className = 'leaflet-control';
-        div.style.cssText = 'background:var(--surface);padding:16px 20px;border-radius:var(--radius-md);box-shadow:var(--shadow-md);font-size:14px;color:var(--text-secondary);border:1px solid var(--border);';
-        div.textContent = '还没有足迹，去添加第一座城市吧 ✈️';
-        return div;
-      };
-      emptyCtl.addTo(map);
-    }
-    return;
-  }
-  // 有数据了：撤掉空态提示、把图例恢复显示。这一支在「空态下加了第一条足迹」时会走到，
-  // 少了这两句，图例就会一直停在 display:none（直到刷新页面）
-  if (emptyCtl) { emptyCtl.remove(); emptyCtl = null; }
-  document.getElementById('legend').style.display = '';
-
-  // 收集用户信息
-  for (const c of data.cities) {
-    for (const p of c.people) {
-      userInfo.set(p.nickname, p.color);
-    }
-  }
-
-  // 图例（复选框多选，默认全选）
-  const legendList = document.getElementById('legendList');
-  legendList.innerHTML = '';
-  // 全选行
-  const allLabel = document.createElement('label');
-  allLabel.className = 'user user-all';
-  const allCb = document.createElement('input');
-  allCb.type = 'checkbox';
-  allCb.id = 'selectAll';
-  allCb.checked = true;
-  allCb.addEventListener('change', () => {
-    const checked = allCb.checked;
-    legendList.querySelectorAll('.user-check').forEach(cb => { cb.checked = checked; });
-    updateSelectAllState();
-    renderFilter();
-  });
-  const allTxt = document.createElement('span');
-  allTxt.textContent = '全选';
-  allLabel.append(allCb, allTxt);
-  legendList.appendChild(allLabel);
-  // 用户行
-  for (const [name, color] of userInfo) {
-    const label = document.createElement('label');
-    label.className = 'user';
-    const cb = document.createElement('input');
-    cb.type = 'checkbox';
-    cb.className = 'user-check';
-    cb.checked = true;
-    cb.dataset.nick = name;
-    cb.addEventListener('change', () => { updateSelectAllState(); renderFilter(); });
-    const dot = document.createElement('span');
-    dot.className = 'dot';
-    dot.style.background = color;
-    const txt = document.createElement('span');
-    txt.textContent = name; // textContent 自动转义，安全
-    label.append(cb, dot, txt);
-    legendList.appendChild(label);
-  }
-  if (!userInfo.size) legendList.innerHTML = '<div class="empty">暂无数据</div>';
-
-  renderFilter();
-}
-
-// 当前勾选的用户集合（图例筛选用）
-function currentSelected() {
-  return new Set(
-    [...document.querySelectorAll('#legendList .user-check:checked')].map(cb => cb.dataset.nick)
-  );
-}
-
-function renderFilter() {
-  // 清掉旧图层
-  const seq = ++renderSeq;
-  markers.forEach(m => m.remove());
-  markers = [];
-
-  // 读取勾选的用户（全勾选 = 显示全部；全不勾 = 显示空）
-  const selected = currentSelected();
-  const allChecked = selected.size === userInfo.size;
-
-  const cities = window.__citiesData;
-  for (const c of cities) {
-    const people = allChecked ? c.people : c.people.filter(p => selected.has(p.nickname));
-    if (!people.length) continue;
-    // 城市颜色：取该城市被勾选人中最后一位的颜色
-    // （people 由后端按 created_at 升序给出，末位 = 最新，见 worker.js /api/cities）
-    const color = people[people.length - 1].color;
-
-    // adcode 现在由后端随 /api/cities 一起下发（写入时按城市字典派生），旧数据没有时再用
-    // 本地城市表兜底 —— 两者都拿不到才回退圆点
-    const adcode = c.adcode || CITY_CODES[c.city];
-    if (!adcode) { addFallbackDot(c, color); continue; }
-
-    // 异步加载边界，渲染半透明多边形；失败回退圆点
-    loadCityGeo(adcode).then(geo => {
-      if (seq !== renderSeq) return; // 本次渲染已被新筛选作废
-      if (geo) addPolygon(geo, color, c.city);
-      else addFallbackDot(c, color);
-    });
-  }
-}
-
-// 收起/展开图例面板，折叠状态用 localStorage('legendCollapsed') 记忆
-const LEGEND_KEY = 'legendCollapsed';
-function toggleLegend() {
-  const collapsed = document.getElementById('legend').classList.toggle('collapsed');
-  try { localStorage.setItem(LEGEND_KEY, collapsed ? '1' : '0'); } catch (e) {}
-}
-// 恢复上次折叠状态；无记录时保持默认折叠（见 HTML 里的 collapsed class）
-(function restoreLegend() {
-  let v = null;
-  try { v = localStorage.getItem(LEGEND_KEY); } catch (e) {}
-  if (v === '0') document.getElementById('legend').classList.remove('collapsed');
-})();
-
-// 汉堡菜单开关（独立按钮展开/收起）
-function toggleFabMenu() {
-  const open = document.getElementById('fabBtn').classList.toggle('active');
-  document.querySelectorAll('.fab-item').forEach(item => item.classList.toggle('open', open));
-}
-// 点击外部收起
-document.addEventListener('click', (e) => {
-  if (!e.target.closest('.fab-btn') && !e.target.closest('.fab-item')) {
-    document.getElementById('fabBtn').classList.remove('active');
-    document.querySelectorAll('.fab-item').forEach(i => i.classList.remove('open'));
-  }
-});
-// 点击按钮后收起
-document.querySelectorAll('.fab-item').forEach(item => {
-  item.addEventListener('click', () => {
-    document.getElementById('fabBtn').classList.remove('active');
-    document.querySelectorAll('.fab-item').forEach(i => i.classList.remove('open'));
-  });
-});
-
-// 同步"全选"复选框状态（全选 / 半选 / 全不选）
-function updateSelectAllState() {
-  const cbs = document.querySelectorAll('#legendList .user-check');
-  const allCb = document.getElementById('selectAll');
-  if (!allCb || !cbs.length) return;
-  const checkedCount = [...cbs].filter(cb => cb.checked).length;
-  allCb.checked = checkedCount === cbs.length;
-  allCb.indeterminate = checkedCount > 0 && checkedCount < cbs.length;
-}
-
-// 城市行程明细：点开弹窗时才请求 —— /api/cities 现在只回「城市 + 坐标 + 去过的人（昵称/颜色）」，
-// 日期/备注/私密标记不再随地图数据一起下发。结果按城市缓存，避免反复开关同一弹窗时重复请求。
-const cityDetailCache = new Map();
-function loadCityDetail(city) {
-  if (!cityDetailCache.has(city)) {
-    cityDetailCache.set(city, api('/city/' + encodeURIComponent(city)).then(d => d.visits));
-  }
-  return cityDetailCache.get(city);
-}
-
-// 绑定「按需加载」的弹窗：先占位，点开时才拉该城市最近 10 条行程再填内容
-function bindCityPopup(layer, city) {
-  layer.bindPopup(`<div class="popup-title">${escapeHtml(city)}</div><div class="popup-more">加载中…</div>`);
-  layer.on('popupopen', () => {
-    const selected = currentSelected();
-    loadCityDetail(city)
-      .then(rows => layer.setPopupContent(buildPopupHtml(city, rows, selected)))
-      .catch(() => layer.setPopupContent(`<div class="popup-title">${escapeHtml(city)}</div><div class="popup-more">加载失败</div>`));
-  });
-}
-
-// 弹窗内容：城市名 + 最近 10 条行程（长备注自动换行）。
-// 接口现在回该城市全部行程，截断只在这里做，保持弹窗体积原来的样子。
-// rows 已在服务端按可见性筛过；这里再按图例勾选过滤一次，
-// 保持「取消勾选谁，弹窗里也就没有谁」的既有行为。
-function buildPopupHtml(city, rows, selected) {
-  const allChecked = selected.size === userInfo.size;
-  const filtered = allChecked ? rows : rows.filter(r => selected.has(r.nickname));
-  const shown = filtered.slice(0, 10); // 服务端已按 created_at 倒序，前 10 条即最近 10 条
-  let html = `<div class="popup-title">${escapeHtml(city)}</div>`;
-  if (!shown.length) return html + '<div class="popup-more">没有符合条件的行程</div>';
-  html += shown.map(q => `
-    <div class="popup-person">
-      <span class="name" style="color:${q.color}">${escapeHtml(q.nickname)}${q.is_private ? ' 🔒' : ''}</span>
-      <span class="meta">${escapeHtml(fmtDate(q.visit_date))}</span>
-      ${q.note ? `<span class="note">${escapeHtml(q.note)}</span>` : ''}
-    </div>`).join('');
-  if (filtered.length > 10) html += '<div class="popup-more">仅显示最近 10 条</div>';
-  return html;
-}
-
-// 渲染市辖区半透明多边形（weight:1 显示全市边界轮廓，hover 提亮）
-function addPolygon(geo, color, city) {
-  const layer = L.geoJSON(geo, {
-    style: { color, weight: 1, fillColor: color, fillOpacity: 0.4 },
-  });
-  layer.on('mouseover', () => layer.setStyle({ fillOpacity: 0.6 }));
-  layer.on('mouseout', () => layer.setStyle({ fillOpacity: 0.4 }));
-  bindCityPopup(layer, city);
-  layer.addTo(map);
-  markers.push(layer);
-}
-
-// 边界加载失败或无 adcode 时的回退：圆点
-function addFallbackDot(c, color) {
-  const circle = L.circleMarker([c.lat, c.lng], {
-    radius: 7, color: '#fff', weight: 1.5, fillColor: color, fillOpacity: 0.9,
-  });
-  bindCityPopup(circle, c.city);
-  circle.addTo(map);
-  markers.push(circle);
-}
-
-// ---------- Toast 提示（与其他项目统一：顶部滑入 + 信息图标） ----------
-function showToast(msg) {
-  const el = document.getElementById('toast');
-  document.getElementById('toastText').textContent = msg;
-  el.classList.add('show');
-  if (window._toastTimer) clearTimeout(window._toastTimer);
-  window._toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
-}
-function hideToast() {
-  document.getElementById('toast').classList.remove('show');
-  if (window._toastTimer) clearTimeout(window._toastTimer);
-}
-
-// ---------- 添加行程 ----------
-// 打开添加行程：先开弹窗再尽力定位 —— 定位只是帮忙把城市填成最近的一座，
-// 没权限 / 超时都不该把入口堵死（这里已是全站唯一的添加入口）。
-function openQuickAdd() {
-  if (!getSession()) { showToast('还未登录'); return; }
-  openQuickModal();
-  locateCity();
-}
-
-// 定位并把「城市」填成最近的一座。开弹窗与手点准心按钮都走这里 —— 一处实现两个入口
-function locateCity() {
-  if (!navigator.geolocation) { showToast('浏览器不支持定位'); return; }
-  showToast('正在定位…');
-  navigator.geolocation.getCurrentPosition(
-    (pos) => {
-      hideToast();
-      updateMyLocation(pos.coords.latitude, pos.coords.longitude);
-      const city = nearestCity(pos.coords.latitude, pos.coords.longitude);
-      if (!city) { showToast('未找到附近城市'); return; }
-      quickCitySelects.setCity(city.name); // 三级下拉一起回填（省也得跟着选中）
-    },
-    (err) => { showToast(geoErrorMsg(err)); },
-    { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
-  );
-}
-
-// 城市三级下拉与年 / 月下拉的选项只在启动时铺一次（与足迹管理页同一份 window.CITIES）
-let quickCitySelects = null;
-(function initQuickForm() {
-  // 国 → 省 → 市三级联动（逻辑在 app.js，与足迹管理页编辑弹窗共用一份）
-  quickCitySelects = initCitySelects(document.getElementById('quickCitySelects'));
-
-  // 出行方式 chips（枚举与渲染逻辑在 app.js，与足迹管理页共用）
-  renderTransportChips(document.getElementById('quickTransport'));
-
-  const yearSel = document.getElementById('quickYear');
-  const monthSel = document.getElementById('quickMonth');
-  const currentYear = new Date().getFullYear();
-  yearSel.innerHTML = '<option value="">年份</option>';
-  for (let y = currentYear; y >= 2000; y--) {
-    const opt = document.createElement('option');
-    opt.value = String(y);
-    opt.textContent = y + ' 年';
-    yearSel.appendChild(opt);
-  }
-  monthSel.innerHTML = '<option value="">仅年份</option>';
-  for (let m = 1; m <= 12; m++) {
-    const opt = document.createElement('option');
-    opt.value = String(m).padStart(2, '0');
-    opt.textContent = m + ' 月';
-    monthSel.appendChild(opt);
-  }
-})();
-
-// 定位错误 → 差异化提示（GPS 关闭时浏览器多表现为超时，需引导检查定位开关）
-function geoErrorMsg(err) {
-  if (err && err.code === err.PERMISSION_DENIED) return '未获得定位权限，请允许定位';
-  if (err && err.code === err.POSITION_UNAVAILABLE) return '定位失败，请检查 GPS 是否已开启';
-  if (err && err.code === err.TIMEOUT) return '定位超时，请检查定位（GPS）是否已开启';
-  return '定位失败，请重试';
-}
-
-// 我的位置圆点（仅在用户主动定位后显示，不做自动定位），颜色跟随当前登录用户
-let myLocationMarker = null;
-function updateMyLocation(lat, lng) {
-  if (myLocationMarker) map.removeLayer(myLocationMarker);
-  const s = getSession();
-  const color = (s && s.color) || '#3b82f6';
-  const icon = L.divIcon({
-    className: 'my-loc-wrap',
-    html: `<div class="my-loc-dot" style="background:${color};box-shadow:0 0 0 2px ${color}73, 0 2px 8px rgba(0,0,0,.3);"></div>`,
-    iconSize: [20, 20],
-    iconAnchor: [10, 10],
-  });
-  myLocationMarker = L.marker([lat, lng], { icon, zIndexOffset: 1000 }).addTo(map);
-}
-
-// 在 CITIES 中找离指定坐标最近的城市（城市级反查，忽略坐标系偏移影响）
-function nearestCity(lat, lng) {
-  let best = null, bestD = Infinity;
-  for (const c of window.CITIES) {
-    const d = (c.lat - lat) * (c.lat - lat) + (c.lng - lng) * (c.lng - lng);
-    if (d < bestD) { bestD = d; best = c; }
-  }
-  return best;
-}
-
-// 「记不清了」：禁用并清空年月下拉（与后端 ^\d{4}(-\d{2})?$ 的可空规则对齐）
-function toggleQuickDate() {
-  const forgot = document.getElementById('quickForgot').checked;
-  const yearSel = document.getElementById('quickYear');
-  const monthSel = document.getElementById('quickMonth');
-  yearSel.disabled = forgot;
-  monthSel.disabled = forgot;
-  if (forgot) { yearSel.value = ''; monthSel.value = ''; }
-}
-
-// 年 / 月组合成 '2024' 或 '2024-08'，未选年返回 null（= 记不清）
-function quickVisitDate() {
-  const y = document.getElementById('quickYear').value;
-  const m = document.getElementById('quickMonth').value;
-  if (!y) return null;
-  return m ? y + '-' + m : y;
-}
-
-function updateQuickNoteCount() {
-  document.getElementById('quickNoteCount').textContent = document.getElementById('quickNote').value.length + '/100';
-}
-
-// 开弹窗并复位：时间默认填「本月」——添加行程时最常见的值，用户不动就是对的
-function openQuickModal() {
-  const now = new Date();
-  quickCitySelects.reset();
-  document.getElementById('quickYear').value = String(now.getFullYear());
-  document.getElementById('quickMonth').value = String(now.getMonth() + 1).padStart(2, '0');
-  document.getElementById('quickForgot').checked = false;
-  toggleQuickDate();
-  document.getElementById('quickNote').value = '';
-  updateQuickNoteCount();
-  setCheckedTransports(document.getElementById('quickTransport'), []);
-  document.getElementById('quickPrivate').checked = false;
-  document.getElementById('quickMsg').textContent = '';
-  document.getElementById('quickSubmit').disabled = false;
-  document.getElementById('quickModal').classList.add('show');
-  document.getElementById('quickProvince').focus();
-}
-
-function closeQuickModal() {
-  document.getElementById('quickModal').classList.remove('show');
-}
-
-async function submitQuickAdd() {
-  const btn = document.getElementById('quickSubmit');
-  const msg = document.getElementById('quickMsg');
-  // 城市必须来自城市表：坐标由它带出来（后端只校验坐标是数字，认不认得出城市名是前端的事）。
-  // findCity 只回 {lat,lng}，城市名用下拉选中的原值；三级没选完时 getCity() 为空串
-  const name = quickCitySelects.getCity();
-  const c = findCity(name);
-  if (!c) {
-    msg.className = 'msg error';
-    msg.textContent = '请选择省份和城市';
-    return;
-  }
-  btn.disabled = true;
-  msg.className = 'msg error';
-  msg.textContent = '正在添加…';
-
-  const payload = {
-    city: name,
-    lat: c.lat,
-    lng: c.lng,
-    visit_date: quickVisitDate(),
-    note: document.getElementById('quickNote').value.trim(),
-    is_private: document.getElementById('quickPrivate').checked,
-    transport: getCheckedTransports(document.getElementById('quickTransport')),
-  };
-
-  try {
-    await api('/visits', { method: 'POST', body: JSON.stringify(payload) });
-    closeQuickModal();
-    showToast('已添加');
-    reloadMap();
-  } catch (err) {
-    msg.className = 'msg error';
-    msg.textContent = err.message;
-    btn.disabled = false;
-  }
-}
-
-// 添加成功后刷新地图（重新拉取 /api/cities 并渲染）
-function reloadMap() {
-  cityDetailCache.clear(); // 新增了行程，已缓存的弹窗明细作废
-  api('/cities')
-    .then(data => {
-      window.__citiesData = data.cities;
-      render(data);
-    })
-    .catch(err => showToast(err.message));
-}
-
-// 点击遮罩或按 Esc 关闭弹窗
-document.getElementById('quickModal').addEventListener('click', (e) => {
-  if (e.target === e.currentTarget) closeQuickModal();
-});
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && document.getElementById('quickModal').classList.contains('show')) closeQuickModal();
-});
-
-// 拉数据
-api('/cities')
-  .then(data => { window.__citiesData = data.cities; render(data); })
-  .catch(err => {
-    document.getElementById('loading').innerHTML = `<div>❌ ${escapeHtml(err.message)}</div>`;
-  });
-</script>
+<script src="index.js"></script>
 </body>
 </html>
