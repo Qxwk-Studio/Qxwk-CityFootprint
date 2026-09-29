@@ -419,7 +419,11 @@ input::placeholder, textarea::placeholder { color: var(--text-tertiary); }
    个人中心（account.html）与足迹管理（visits.html）共用：电脑端左右两列，窄屏在下面的断点里并成一列。
    基础规则必须留在这里 —— 页内再各写一份 .personal-layout，会排在 <link> 之后把断点里的单列覆盖掉，
    手机上就还是挤成两列（这就是「手机端没上下堆叠」的根因） */
-.personal-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+/* 每列写 minmax(0, 1fr) 而不是光秃秃的 1fr：grid 里 1fr 的下限是**内容的 min-content**（等价
+   minmax(auto, 1fr)），于是内容更长的那一列会被自己撑宽 —— 足迹管理左列（行程记录 + 统计卡）
+   比右列（成就卡）宽，就出现「左宽右窄」、两列不再 1:1。把下限钉成 0 才是真正平分，
+   超宽内容交给列内自己换行 / 省略 */
+.personal-layout { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; align-items: start; }
 .personal-col { display: flex; flex-direction: column; gap: 20px; }
 
 /* ========= Responsive =========
