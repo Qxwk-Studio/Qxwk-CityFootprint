@@ -167,20 +167,26 @@ function renderAchievements(CATEGORIES) {
   }).join('');
 }
 
-async function loadVisits() {
+// SWR：缓存命中先把列表 / 统计卡 / 成就画一版，网络回来再画一版。
+// 增删改之后（本文件 saveEdit / delVisit 末尾）调到这里时，app.js 已把报文缓存整体作废，
+// 只会走网络那一支，不会命中刚写完的旧报文。
+function loadVisits() {
+  apiWatch('/my-visits', renderVisits, showVisitsError);
+}
+
+function renderVisits(data) {
   const list = document.getElementById('visitList');
-  try {
-    const data = await api('/my-visits');
-    myVisits = data.visits;
-    updateVisitStats();
-    renderAchievements(data.achievements || []);
-    if (!myVisits.length) { list.innerHTML = '<div class="empty">还没有足迹，回主页点右下角「添加行程」记一笔 ✈️</div>'; return; }
-    list.innerHTML = '';
-    for (let i = 0; i < myVisits.length; i++) {
-      const v = myVisits[i];
-      const item = document.createElement('div');
-      item.className = 'visit-item';
-      item.innerHTML = `
+  myVisits = data.visits;
+  updateVisitStats();
+  renderAchievements(data.achievements || []);
+  if (!myVisits.length) { list.innerHTML = '<div class="empty">还没有足迹，回主页点右下角「添加行程」记一笔 ✈️</div>'; return; }
+  list.innerHTML = '';
+  for (let i = 0; i < myVisits.length; i++) {
+    const v = myVisits[i];
+    const item = document.createElement('div');
+    item.className = 'visit-item';
+    // 模板里的缩进保持原样不改：它同时是写进 DOM 的字符串，动缩进就等于动输出
+    item.innerHTML = `
         <span class="visit-dot">${myVisits.length - i}</span>
         <div class="visit-main" tabindex="0" role="button">
           <div class="visit-city">${escapeHtml(v.city)}${v.is_private ? '<span class="visit-private-badge" title="不公开行程，仅自己可见">🔒 不公开</span>' : ''}<span class="visit-meta">· ${escapeHtml(fmtDate(v.visit_date))}</span></div>
@@ -194,29 +200,31 @@ async function loadVisits() {
           <button class="btn btn-ghost btn-sm" data-action="edit" data-id="${v.id}">编辑</button>
           <button class="btn btn-danger btn-sm" data-action="del" data-id="${v.id}">删除</button>
         </div>`;
-      // 点整条 = 查看（只读弹窗）。行内按钮各干各的事，点它们时别再顺手弹详情，
-      // 所以先看事件是否落在动作区里
-      item.onclick = (e) => {
-        if (e.target.closest('.visit-actions')) return;
-        showVisitDetail(v.id);
-      };
-      // 键盘等价物：可聚焦的是 .visit-main 而不是整行 —— role=button 放在行上会跟行内的
-      // 编辑/删除按钮形成嵌套交互元素。回车 / 空格与点整行同效
-      item.querySelector('.visit-main').onkeydown = (e) => {
-        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); showVisitDetail(v.id); }
-      };
-      list.appendChild(item);
-    }
-  } catch (err) {
-    list.innerHTML = '<div class="empty">加载失败：' + escapeHtml(err.message) + '</div>';
-    // 同一个请求还供着上方五张统计卡与右侧成就：它们本来是「— → — / 0」和「正在加载…」的占位，
-    // 失败时也得各自收尾，否则看着像还在加载（成就顶部那行「已点亮 X / Y」数据没变，一并写死 0）
-    document.getElementById('visitStats').innerHTML = '<div class="empty stat-wide">统计加载失败</div>';
-    document.getElementById('achievementGrid').innerHTML = '<div class="empty">成就加载失败</div>';
-    document.getElementById('achvDone').textContent = '0';
-    document.getElementById('achvTotal').textContent = '0';
-    document.getElementById('achvBar').style.width = '0%';
+    // 点整条 = 查看（只读弹窗）。行内按钮各干各的事，点它们时别再顺手弹详情，
+    // 所以先看事件是否落在动作区里
+    item.onclick = (e) => {
+      if (e.target.closest('.visit-actions')) return;
+      showVisitDetail(v.id);
+    };
+    // 键盘等价物：可聚焦的是 .visit-main 而不是整行 —— role=button 放在行上会跟行内的
+    // 编辑/删除按钮形成嵌套交互元素。回车 / 空格与点整行同效
+    item.querySelector('.visit-main').onkeydown = (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); showVisitDetail(v.id); }
+    };
+    list.appendChild(item);
   }
+}
+
+function showVisitsError(err) {
+  const list = document.getElementById('visitList');
+  list.innerHTML = '<div class="empty">加载失败：' + escapeHtml(err.message) + '</div>';
+  // 同一个请求还供着上方五张统计卡与右侧成就：它们本来是「— → — / 0」和「正在加载…」的占位，
+  // 失败时也得各自收尾，否则看着像还在加载（成就顶部那行「已点亮 X / Y」数据没变，一并写死 0）
+  document.getElementById('visitStats').innerHTML = '<div class="empty stat-wide">统计加载失败</div>';
+  document.getElementById('achievementGrid').innerHTML = '<div class="empty">成就加载失败</div>';
+  document.getElementById('achvDone').textContent = '0';
+  document.getElementById('achvTotal').textContent = '0';
+  document.getElementById('achvBar').style.width = '0%';
 }
 
 let editingId = null;

@@ -2,9 +2,9 @@
 // 依赖顺序：cities.js / app.js 先，本文件最后。
 // 城市→省份的 findProvince 用的是 app.js 里那一份（足迹管理页共用同一口径，别在这里再抄一份）
 
-// 拉取全站统计（api() 自动携带登录凭证，管理员能看到含私密的完整统计）
-api('/stats')
-  .then(data => {
+// 拉取全站统计（api() 自动携带登录凭证，管理员能看到含私密的完整统计）。
+// 走 apiWatch：命中会话级缓存就先画一版，网络回来再画一版（站点统计 1 天内的变化本来就小）。
+apiWatch('/stats', data => {
     // 管理员视图提示（数据来自后端 isAdmin，始终与所见一致）
     const adminNote = document.getElementById('adminViewNote');
     if (adminNote) adminNote.style.display = data.isAdmin ? '' : 'none';

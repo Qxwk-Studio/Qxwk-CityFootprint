@@ -540,6 +540,8 @@ async function submitQuickAdd() {
 // 添加成功后刷新地图（重新拉取 /api/cities 并渲染）
 function reloadMap() {
   cityDetailCache.clear(); // 新增了行程，已缓存的弹窗明细作废
+  // 这里刻意用 api() 而不是 apiWatch()：刚 POST 成功，app.js 已把报文缓存整体作废，
+  // 这一发必然走网络、拿到含新城市的数据；换 apiWatch 只是多一次必然落空的缓存查询
   api('/cities')
     .then(data => {
       window.__citiesData = data.cities;
@@ -578,9 +580,9 @@ bindActions({
   'retry-load': () => window.location.reload(),
 });
 
-// 拉数据
-api('/cities')
-  .then(data => { window.__citiesData = data.cities; render(data); })
+// 拉数据。用 apiWatch（SWR）：会话级报文缓存命中就先画一版 —— 地图与「谁的足迹」图例
+// 立刻出来，不用等 /api/cities 回来；网络那份回来后照原样再画一次覆盖上去。
+apiWatch('/cities', data => { window.__citiesData = data.cities; render(data); })
   .catch(err => {
     // 失败时不能只把文案塞进加载层：那是一块 inset:0 / z-index 1500 的全屏遮罩，连导航栏一起盖住，
     // 用户看不到任何入口也没法重试，只能靠浏览器后退。就地补一颗「重试」（整页重来，数据会重新拉）

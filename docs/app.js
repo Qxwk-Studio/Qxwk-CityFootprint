@@ -8,12 +8,83 @@ const PASSPORT_URL = 'https://account.qxwkstudio.top';
 const LS_TOKEN = 'qxwf_token';
 const LS_USER = 'qxwf_user';
 
+// ========= 报文缓存（会话级，1 天）+ SWR =========
+// 做在 api() 这一层：它是所有读接口的唯一入口，页面就不必各自记「我缓存过什么」。
+//
+// 为什么用 sessionStorage 而不是 localStorage：报文里可能含自己的私密足迹，
+// 按标签页隔离、关标签即清，比长期留在本机风险小。代价是 **F5 不会清掉它**，
+// 所以「刷新页面」不是一个可用的失效通道 —— 失效只有三条路：
+//   1) 换账号 / 登录 / 登出（见 cacheInvalidate 的三处调用点）
+//   2) 写操作成功后（增删改自己的足迹，地图与统计跟着变）
+//   3) 24 小时自然过期
+const CACHE_PREFIX = 'qxwf_cache_';
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+
+// 刻意不缓存的路径：/me 是会话校验，缓存它会让「token 已被撤销」晚一天才被发现，
+// 那一天的观感是「看着还登录着，点什么都失败」，比多打一次请求糟得多。
+const CACHE_SKIP = ['/me'];
+
+// key 必须按账号隔离：隔离漏了，换账号后（缓存还在 1 天有效期内）会先画出上一个人的
+// 私密足迹与统计。未登录时用 anon —— 匿名能看到的本来就只是公开数据。
+function cacheKey(path) {
+  const u = getSession();
+  return CACHE_PREFIX + ((u && u.userId) || 'anon') + '|' + path;
+}
+
+// 读缓存。隐私模式 / 配额满 / 手里是脏数据，一律当「没有缓存」返回 null：
+// 缓存只是加速，任何异常都不该把页面卡住。
+function cacheRead(path) {
+  if (CACHE_SKIP.indexOf(path) >= 0) return null;
+  try {
+    const raw = sessionStorage.getItem(cacheKey(path));
+    if (!raw) return null;
+    const row = JSON.parse(raw);
+    if (!row || Date.now() - row.at > CACHE_TTL_MS) return null;
+    return row.data;
+  } catch (e) {
+    return null;
+  }
+}
+
+function cacheWrite(path, data) {
+  if (CACHE_SKIP.indexOf(path) >= 0) return;
+  try {
+    sessionStorage.setItem(cacheKey(path), JSON.stringify({ at: Date.now(), data }));
+  } catch (e) { /* 配额满就不存，不是错误 */ }
+}
+
+// 整体作废。与 App 那边 Store.invalidatePayloads() 同一套思路：不按 key 精细区分，
+// 就几份报文，一起丢最省心也不会漏。注意**边界 GeoJSON（IndexedDB）不在这里** ——
+// 它是公共数据，与账号无关，没道理跟着登录态被清（见 index.js 的 GEO_MAX_AGE）。
+function cacheInvalidate() {
+  try {
+    const keys = [];
+    for (let i = 0; i < sessionStorage.length; i++) keys.push(sessionStorage.key(i));
+    keys.filter(k => k && k.indexOf(CACHE_PREFIX) === 0).forEach(k => sessionStorage.removeItem(k));
+  } catch (e) { /* 同上，失败不影响主流程 */ }
+}
+
+/**
+ * 读接口 + SWR：缓存命中就先把缓存交给页面画一版，网络回来再画一版。
+ * 内容相同也照画一次，调用方只要守「渲染是幂等的」这一个约定，省掉一层深度比对。
+ * 需要「必须最新」的场合（比如增删改之后重新拉地图）直接调 api() —— 那种情况下
+ * 缓存已被 cacheInvalidate 清掉，本来也不会命中。
+ */
+function apiWatch(path, onData, onError) {
+  const cached = cacheRead(path);
+  if (cached !== null) {
+    try { onData(cached); } catch (e) { /* 缓存那份渲染出错，不该挡住下面的网络请求 */ }
+  }
+  return api(path).then(onData).catch(onError);
+}
+
 async function api(path, options = {}) {
   // Content-Type 只在真的带 body 时设：GET 也挂一个 application/json 会让
   // 「没带 Authorization 的公开请求」（/api/cities、/api/geo/:adcode）变成非简单请求，
   // 白白多一次 CORS 预检。带 body 的 PUT/POST 照旧。
   const headers = { ...(options.headers || {}) };
   if (options.body) headers['Content-Type'] = 'application/json';
+  const method = (options.method || 'GET').toUpperCase();
   const token = localStorage.getItem(LS_TOKEN);
   if (token) headers['Authorization'] = 'Bearer ' + token;
   const res = await fetch(API_BASE + path, { ...options, headers });
@@ -24,6 +95,8 @@ async function api(path, options = {}) {
     if (res.status === 401 && token) {
       localStorage.removeItem(LS_TOKEN);
       localStorage.removeItem(LS_USER);
+      // 会话没了，报文缓存也一起清：里面是按 userId 存的上一个人的数据
+      cacheInvalidate();
       // 站内路径不带 .html（见 README 设计说明），但旧链接 / 直接手输可能带后缀，也可能被补上末尾斜杠，
       // 所以先归一化再比 —— 否则这层 401 兜底会悄悄失效，用户卡在一个已经没有登录态的页面上
       const p = window.location.pathname.replace(/\.html$/, '').replace(/\/+$/, '');
@@ -35,6 +108,12 @@ async function api(path, options = {}) {
     }
     throw new Error(data.error || '请求失败 (' + res.status + ')');
   }
+  // 读接口成功 → 存起来给 apiWatch 用；写接口成功 → 整体作废（自己的足迹变了，
+  // 地图/统计/足迹三份报文都跟着变，不按 key 精细区分）。
+  // 这是「写完重新拉」那几处（index.js 的 reloadMap、visits.js 的 loadVisits）
+  // 能拿到新数据的保证 —— 少了它，那些地方会命中刚写完的旧缓存，界面像是没保存上。
+  if (method === 'GET') cacheWrite(path, data);
+  else cacheInvalidate();
   return data;
 }
 
@@ -51,6 +130,8 @@ function logout() {
   const token = localStorage.getItem(LS_TOKEN);
   localStorage.removeItem(LS_TOKEN);
   localStorage.removeItem(LS_USER);
+  // 报文缓存按 userId 存，退出登录时一并清掉，别留给下一个人或下一次登录
+  cacheInvalidate();
   // 顺手通知通行证撤销这条会话：只清本地的话，通行证那边仍挂着一个属于本站的登录，
   // 会出现在账号中心「已授权网站」卡里，直到 90 天无活动才被回收。
   // 等请求发完再刷新（失败也无所谓，本地 token 已经没了），失败不影响本地登出。
@@ -236,6 +317,9 @@ async function passportLogin(nickname, password) {
     throw new Error(data.need_set_password ? '该账号还没设置密码，请先到通行证设置密码' : '登录失败：没有拿到登录凭证');
   }
   localStorage.setItem(LS_TOKEN, data.token);
+  // 刚登录：把上一轮的报文缓存清掉。缓存 key 已按 userId 隔离（换账号不会串），
+  // 这里清的是「同一个账号上一次会话留下的旧报文」，让本次登录从新数据开始
+  cacheInvalidate();
   await applyMe(data.token);
   return data;
 }
