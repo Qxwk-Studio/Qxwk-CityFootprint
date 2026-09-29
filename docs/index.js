@@ -314,7 +314,12 @@ function updateSelectAllState() {
 const cityDetailCache = new Map();
 function loadCityDetail(city) {
   if (!cityDetailCache.has(city)) {
-    cityDetailCache.set(city, api('/city/' + encodeURIComponent(city)).then(d => d.visits));
+    const p = api('/city/' + encodeURIComponent(city)).then(d => d.visits);
+    // 失败必须把这个 Promise 从 Map 里删掉：memo 住的 rejected Promise 就**永远**是 rejected，
+    // 之后每次点开同一座城市都直接落到下面的 catch、显示「加载失败」，只能刷新页面。
+    // 与 loadCityGeo 同一类坑（见那边的注释），这里补上；调用方仍能收到这次 reject。
+    p.catch(() => cityDetailCache.delete(city));
+    cityDetailCache.set(city, p);
   }
   return cityDetailCache.get(city);
 }

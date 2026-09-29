@@ -17,11 +17,11 @@ apiWatch('/stats', data => {
     document.getElementById('totalProvinces').textContent = provs.size;
 
     const list = document.getElementById('cityRankList');
-    if (!data.cityRank.length) {
-      list.innerHTML = '<div class="empty">还没有任何足迹，去添加第一座城市吧 ✈️</div>';
-      return;
-    }
-    list.innerHTML = '';
+    // 一座城市都没有时排名处放空态，但**不 return**：下面那份成就骨架（42 条，人数全 0）
+    // 还得照常渲染，早退会让它永远停在 HTML 里的「正在加载统计…」。
+    const hasRank = data.cityRank.length > 0;
+    if (hasRank) list.innerHTML = '';
+    else list.innerHTML = '<div class="empty">还没有任何足迹，去添加第一座城市吧 ✈️</div>';
     const RANK_DEFAULT = 10, RANK_EXPAND = 50; // 默认前 10 名，点击展开到前 50 名
     var expanded = false;
     function drawCityRank() {
@@ -55,7 +55,7 @@ apiWatch('/stats', data => {
       more.addEventListener('click', function () { expanded = !expanded; drawCityRank(); });
       list.appendChild(more);
     }
-    drawCityRank();
+    if (hasRank) drawCityRank();
 
     // 成就达成人数：由后端算好（判定逻辑只存在于 backend/src/achievements.js），
     // 连同 42 条成就的图标/名称/说明一起收到 —— 网页不再自带定义，也不再本地跑判定。
