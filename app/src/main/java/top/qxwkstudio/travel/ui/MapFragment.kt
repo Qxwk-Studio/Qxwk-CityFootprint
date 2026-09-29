@@ -110,7 +110,7 @@ class MapFragment : Fragment() {
         }
         binding.progress.visibility = View.VISIBLE
 
-        viewLifecycleOwner.lifecycleScope.runIo({ VisitRepo.myVisits(token) }) { result ->
+        viewLifecycleOwner.lifecycleScope.runIo({ VisitRepo.myVisits(requireContext(), token) }) { result ->
             binding.progress.visibility = View.GONE
 
             val data = result.getOrNull()

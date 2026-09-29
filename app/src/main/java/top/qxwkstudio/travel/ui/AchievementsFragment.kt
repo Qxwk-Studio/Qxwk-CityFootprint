@@ -40,17 +40,10 @@ class AchievementsFragment : Fragment() {
         store = Store(requireContext())
         // 与主页/统计页同一套下拉刷新：指示器统一用主色（SwipeRefreshLayout 没有 XML 配色属性）
         binding.swipe.setColorSchemeResources(R.color.accent)
-        binding.swipe.setOnRefreshListener { load() }
+        binding.swipe.setOnRefreshListener { load(force = true) }
+        // 只在首次创建时拉一次；切回本 tab 不再自动重拉（那会每次切栏都打网络）。
+        // 数据本身有 Store 的一天缓存兜底，要立刻看新的就下拉刷新（force = true）。
         load()
-    }
-
-    /**
-     * 切回本 tab 时重新拉一次：新加了足迹，成就可能刚好点亮。
-     * 为什么不用 onResume：tab 是 add/hide/show 切换的，隐藏的 Fragment 仍是 RESUMED（见 MainActivity）。
-     */
-    override fun onHiddenChanged(hidden: Boolean) {
-        super.onHiddenChanged(hidden)
-        if (!hidden) load()
     }
 
     override fun onDestroyView() {
@@ -58,7 +51,8 @@ class AchievementsFragment : Fragment() {
         super.onDestroyView()
     }
 
-    private fun load() {
+    /** [force] = true 跳过一天缓存强制走网络（下拉刷新用）。 */
+    private fun load(force: Boolean = false) {
         val token = store.token
         if (token == null) {
             Session.expired(requireActivity())
@@ -67,7 +61,7 @@ class AchievementsFragment : Fragment() {
         binding.swipe.isRefreshing = true
         binding.textError.visibility = View.GONE
 
-        viewLifecycleOwner.lifecycleScope.runIo({ VisitRepo.myVisits(token) }) { result ->
+        viewLifecycleOwner.lifecycleScope.runIo({ VisitRepo.myVisits(requireContext(), token, force) }) { result ->
             binding.swipe.isRefreshing = false
 
             val data = result.getOrNull()

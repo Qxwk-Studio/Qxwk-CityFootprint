@@ -28,8 +28,10 @@ class Store(context: Context) {
     val color: String get() = sp.getString(KEY_COLOR, "").orEmpty()
     val avatar: String? get() = sp.getString(KEY_AVATAR, null)?.takeIf { it.isNotEmpty() }
 
-    /** 登录成功后落库（token + 通行证顺手给的那几个字段，省得进主页再请求一次）。 */
+    /** 登录成功后落库（token + 通行证顺手给的那几个字段，省得进主页再请求一次）。
+     *  顺手作废报文缓存：换账号时不能把上一个人的足迹 / 统计留在这个文件里。 */
     fun saveSession(session: LoginSession) {
+        invalidatePayloads()
         sp.edit()
             .putString(KEY_TOKEN, session.token)
             .putString(KEY_NICKNAME, session.nickname)
@@ -48,11 +50,47 @@ class Store(context: Context) {
     }
 
     /**
+     * 报文缓存：整包原文 + 落库时间，有效期 [CACHE_TTL_MS]（一天）。
+     * 请求成功时由 data/VisitRepo 存进来（key 见那边的 CACHE_*），一天内的读取直接命中、不再打网络；
+     * 用户「下拉刷新」时带 force 跳过它。
+     *
+     * 存的是**原始 JSON**：万一报文结构变了（新版 App 读到旧缓存），解析那一步会失败，
+     * 调用方要把「解析不过的缓存」当成没有缓存、转去走网络 —— 不能拿旧结构硬渲染。
+     */
+    fun cachedPayload(key: String): String? {
+        val at = sp.getLong(atKey(key), 0L)
+        if (at == 0L || System.currentTimeMillis() - at > CACHE_TTL_MS) return null
+        return sp.getString(key, null)
+    }
+
+    fun savePayload(key: String, body: String) {
+        sp.edit().putString(key, body).putLong(atKey(key), System.currentTimeMillis()).apply()
+    }
+
+    /**
+     * 缓存整体作废。两种时机：写操作成功后（自己的足迹变了，成就与统计跟着变）、换账号时。
+     * 不按 key 精细区分 —— 就两份报文，一起丢最省心也不会漏。
+     *
+     * 按前缀扫而不是逐个列 key：**凡是 `cache_` 开头的偏好都归这里管**，
+     * 以后要缓存别的接口，只要 key 用这个前缀（落库时间 key 是「key + _at」同样带前缀），
+     * 不必记得回来改这一处；反过来，别把 `cache_` 前缀挪作它用，会被这里一起抹掉。
+     */
+    fun invalidatePayloads() {
+        val edit = sp.edit()
+        sp.all.keys.filter { it.startsWith(CACHE_PREFIX) }.forEach { edit.remove(it) }
+        edit.apply()
+    }
+
+    private fun atKey(key: String): String = "${key}_at"
+
+    /**
      * 退出登录 / token 失效时清干净。
      * 用逐个 remove 而不是 clear()：以后往这个文件里加「与账号无关」的偏好（比如地图类型）
      * 时，clear() 会连它们一起抹掉，那种 bug 只在退出登录后出现一次，很难往回查。
+     * （报文缓存是账号数据，必须一起丢 —— 见 invalidatePayloads。）
      */
     fun clearSession() {
+        invalidatePayloads()
         sp.edit()
             .remove(KEY_TOKEN)
             .remove(KEY_NICKNAME)
@@ -67,5 +105,11 @@ class Store(context: Context) {
         const val KEY_NICKNAME = "nickname"
         const val KEY_COLOR = "color"
         const val KEY_AVATAR = "avatar"
+
+        /** 报文缓存的有效期：一天（一天内不重复拉，除非用户手动刷新）。 */
+        const val CACHE_TTL_MS = 24 * 60 * 60 * 1000L
+
+        /** 报文缓存 key 的前缀，见 [invalidatePayloads]。 */
+        const val CACHE_PREFIX = "cache_"
     }
 }

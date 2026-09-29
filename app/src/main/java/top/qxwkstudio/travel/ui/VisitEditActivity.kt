@@ -260,6 +260,8 @@ class VisitEditActivity : AppCompatActivity() {
             setBusy(false)
             val e = result.exceptionOrNull()
             if (e == null) {
+                // 自己的足迹变了 → 作废报文缓存（足迹/成就/统计三份），否则列表回去会读到旧的一天缓存
+                store.invalidatePayloads()
                 // 让列表知道要刷新（见 VisitsFragment 的 editResult）
                 setResult(Activity.RESULT_OK)
                 finish()
@@ -301,6 +303,7 @@ class VisitEditActivity : AppCompatActivity() {
             setBusy(false)
             val e = result.exceptionOrNull()
             if (e == null) {
+                store.invalidatePayloads() // 同 save()：删掉了就作废缓存，别让列表读到旧报文
                 setResult(Activity.RESULT_OK)
                 finish()
                 return@runIo

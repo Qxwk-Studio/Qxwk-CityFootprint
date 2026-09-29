@@ -37,7 +37,7 @@ class StatsFragment : Fragment() {
     private val binding get() = _binding!!
     private lateinit var store: Store
 
-    /** 排行是否已展开到前 50。切 tab 回来会重新 load，但不重置用户的选择。 */
+    /** 排行是否已展开到前 50。本页只在首次创建时 load 一次，切 tab 回来不重拉，这个选择自然留得住。 */
     private var rankExpanded = false
 
     /** 最近一次的数据：展开/收起时本地重排，不必再发一次请求。 */
@@ -54,21 +54,14 @@ class StatsFragment : Fragment() {
         store = Store(requireContext())
         // 与主页/成就页同一套下拉刷新：指示器统一用主色（SwipeRefreshLayout 没有 XML 配色属性）
         binding.swipe.setColorSchemeResources(R.color.accent)
-        binding.swipe.setOnRefreshListener { load() }
+        binding.swipe.setOnRefreshListener { load(force = true) }
         binding.btnRankMore.setOnClickListener {
             rankExpanded = !rankExpanded
             lastStats?.let { renderRank(it, lastCities) }
         }
+        // 只在首次创建时拉一次；切回本 tab 不再自动重拉（那会每次切栏都打网络）。
+        // 数据本身有 Store 的一天缓存兜底，要立刻看新的就下拉刷新（force = true）。
         load()
-    }
-
-    /**
-     * 切回本 tab 时重新拉一次：数字会变（别人也在打卡）。
-     * 为什么不用 onResume：tab 是 add/hide/show 切换的，隐藏的 Fragment 仍是 RESUMED（见 MainActivity）。
-     */
-    override fun onHiddenChanged(hidden: Boolean) {
-        super.onHiddenChanged(hidden)
-        if (!hidden) load()
     }
 
     override fun onDestroyView() {
@@ -76,7 +69,8 @@ class StatsFragment : Fragment() {
         super.onDestroyView()
     }
 
-    private fun load() {
+    /** [force] = true 跳过一天缓存强制走网络（下拉刷新用）。 */
+    private fun load(force: Boolean = false) {
         if (store.token == null) {
             // 正常进不来（MainActivity 已判定登录态）；真发生就按统一流程回登录页
             Session.expired(requireActivity())
@@ -85,7 +79,7 @@ class StatsFragment : Fragment() {
         binding.swipe.isRefreshing = true
         binding.textError.visibility = View.GONE
 
-        viewLifecycleOwner.lifecycleScope.runIo({ VisitRepo.stats() }) { result ->
+        viewLifecycleOwner.lifecycleScope.runIo({ VisitRepo.stats(requireContext(), force) }) { result ->
             binding.swipe.isRefreshing = false
 
             val stats = result.getOrNull()

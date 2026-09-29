@@ -16,8 +16,10 @@ import top.qxwkstudio.travel.databinding.ActivityMainBinding
  * Fragment 用 **add + hide/show** 而不是 replace：
  * 地图页 replace 一次就要重建整个 MapView（重新拉瓦片、缩放位置全丢），
  * 统计页也会重新请求一次 —— 切 tab 这么频繁的动作不该有这种代价。
- * 代价是回调时机变了：隐藏的 Fragment **仍是 RESUMED**，切回来不会触发 onResume，
- * 所以各页需要感知「被切回来了」时用 onHiddenChanged（见 StatsFragment / ProfileFragment）。
+ * 代价是回调时机变了：隐藏的 Fragment **仍是 RESUMED**，切回来不会触发 onResume。
+ * 注意：数据页（主页/成就/统计）**不**在这里重新拉数据 —— 切栏就打网络太浪费，
+ * 它们只在首次创建时加载，要新的数据就下拉刷新（缓存见 data/Store）。目前只有
+ * ProfileFragment 用 onHiddenChanged 重读一次本机状态（不涉及网络）。
  */
 class MainActivity : AppCompatActivity() {
 

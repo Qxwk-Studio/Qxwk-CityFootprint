@@ -1,5 +1,6 @@
 package top.qxwkstudio.travel.data
 
+import android.content.Context
 import top.qxwkstudio.travel.Api
 import top.qxwkstudio.travel.logic.MyVisits
 import top.qxwkstudio.travel.logic.SiteStats
@@ -19,13 +20,22 @@ object VisitRepo {
     /**
      * GET /api/my-visits → 行程已按 created_at DESC, id DESC 排好序（后端排的，客户端不再重排），
      * 成就是后端按这批行就地判定后一起回来的（所以「我的成就」页也只用这一个请求）。
+     *
+     * **带一天的本机缓存**（见 [Store.cachedPayload]）：[force] = false 时先看缓存，命中就直接返回、
+     * 一个请求都不发；下拉刷新传 true 强制走网络并刷新缓存。缓存解析不过（旧版本报文）就当没有缓存。
+     * 写操作（增删改）之后必须把缓存作废，否则这里会把「刚改完却还是旧数据」的报文交出去 ——
+     * 作废点在调用方（ui/VisitEditActivity、ui/VisitsFragment），那边本来就持有 Store。
      */
-    fun myVisits(token: String): MyVisits {
+    fun myVisits(context: Context, token: String, force: Boolean = false): MyVisits {
+        val store = Store(context)
+        if (!force) {
+            store.cachedPayload(CACHE_MY_VISITS)?.let { cached -> parseMyVisits(cached)?.let { return it } }
+        }
         val result = Http.request("GET", Api.MY_VISITS, token = token)
         if (!result.ok) throw apiException(result, "获取足迹失败（HTTP ${result.code}）")
-        return runCatching {
-            json.decodeFromString(MyVisits.serializer(), result.body)
-        }.getOrDefault(MyVisits())
+        store.savePayload(CACHE_MY_VISITS, result.body)
+        // 解析失败仍然给个空对象：接口是通的，只是内容对不上，界面按「没有足迹」显示
+        return parseMyVisits(result.body) ?: MyVisits()
     }
 
     /** POST /api/visits → 201。 */
@@ -46,14 +56,29 @@ object VisitRepo {
         if (!result.ok) throw apiException(result, "删除失败（HTTP ${result.code}）")
     }
 
-    /** GET /api/stats（公开，不需要 token）。 */
-    fun stats(): SiteStats {
+    /**
+     * GET /api/stats（公开，不需要 token）→ 带一天的本机缓存，规则与 [myVisits] 一致
+     * （[force] = false 时优先命中缓存；下拉刷新传 true）。
+     */
+    fun stats(context: Context, force: Boolean = false): SiteStats {
+        val store = Store(context)
+        if (!force) {
+            store.cachedPayload(CACHE_STATS)?.let { cached -> parseStats(cached)?.let { return it } }
+        }
         val result = Http.request("GET", Api.STATS)
         if (!result.ok) throw apiException(result, "统计加载失败（HTTP ${result.code}）")
         // 解析失败给一句人话，别把序列化库那串又长又英文的异常甩给用户
-        return runCatching { json.decodeFromString(SiteStats.serializer(), result.body) }
-            .getOrElse { throw ApiException(result.code, "统计内容无法解析") }
+        val stats = parseStats(result.body) ?: throw ApiException(result.code, "统计内容无法解析")
+        store.savePayload(CACHE_STATS, result.body)
+        return stats
     }
+
+    /** 解析 /api/my-visits 报文；结构对不上回 null（缓存那边用它判断「这份缓存还能不能用」）。 */
+    private fun parseMyVisits(raw: String): MyVisits? =
+        runCatching { json.decodeFromString(MyVisits.serializer(), raw) }.getOrNull()
+
+    private fun parseStats(raw: String): SiteStats? =
+        runCatching { json.decodeFromString(SiteStats.serializer(), raw) }.getOrNull()
 
     /**
      * GET /api/geo/{adcode}（公开，后端已做 24 小时缓存）→ GeoJSON 原文。
@@ -74,4 +99,8 @@ object VisitRepo {
      *    （worker.js:167 的 SET 里带着 visit_date = ?），显式 null 让「把日期清空」在报文里看得见。
      */
     private fun bodyOf(draft: VisitDraft): String = json.encodeToString(VisitDraft.serializer(), draft)
+
+    /** 报文缓存的 key。前缀 `cache_` 是 Store.invalidatePayloads 的约定，别改动前缀。 */
+    private const val CACHE_MY_VISITS = "cache_my_visits"
+    private const val CACHE_STATS = "cache_stats"
 }

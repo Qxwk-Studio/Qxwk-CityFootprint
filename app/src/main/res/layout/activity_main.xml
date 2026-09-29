@@ -41,10 +41,10 @@
 
         <!-- 五个 tab 都在 menu/bottom_nav.xml 里定义（图标 + 文案）；
              选中态样式见 themes.xml 的 Widget.App.BottomNav（主色药丸 + 白字）。
-             高度仍是 wrap_content（M3 的 56dp 只是 minHeight），但三处内边距从默认收紧：
-               默认 itemPaddingTop 12dp / itemPaddingBottom 16dp / itemIconSize 24dp，
-               加起来 ~66dp 高、图标与文字之间还空一大截；
-               改成 6dp / 8dp / 22dp 后约 52dp，紧凑但不挤（图标与文案之间仍有呼吸）。
+             高度要压到最紧，所以 minHeight 必须在这里显式写死：不写就吃 M3 主题给
+             活动指示器（那颗药丸）留的默认最小值，比下面这几个值都大 ——
+             item 内边距收得再紧，也被那个下限顶回去，白调。
+             48dp 是 Material 的触摸目标下限，再矮点着就不准了，所以收到这里为止。
              两个 itemPadding 是 BottomNavigationView 自己的属性（app: 命名空间），
              不是 android:padding —— 后者会被 item 的测量逻辑忽略。 -->
         <com.google.android.material.bottomnavigation.BottomNavigationView
@@ -52,11 +52,12 @@
             style="@style/Widget.App.BottomNav"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:minHeight="48dp"
             android:paddingStart="4dp"
             android:paddingEnd="4dp"
-            app:itemIconSize="22dp"
-            app:itemPaddingTop="6dp"
-            app:itemPaddingBottom="8dp"
+            app:itemIconSize="20dp"
+            app:itemPaddingTop="4dp"
+            app:itemPaddingBottom="4dp"
             app:labelVisibilityMode="labeled"
             app:menu="@menu/bottom_nav" />
     </LinearLayout>
