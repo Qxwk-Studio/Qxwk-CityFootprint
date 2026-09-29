@@ -235,8 +235,17 @@ function renderFilter() {
 
 // 收起/展开图例面板，折叠状态用 localStorage('legendCollapsed') 记忆
 const LEGEND_KEY = 'legendCollapsed';
+// 标题行是 <button>（键盘可达），aria-expanded 得跟着 collapsed class 一起改，
+// 否则读屏软件会一直念着错的展开态
+function syncLegendA11y() {
+  const header = document.querySelector('.legend-header');
+  if (!header) return;
+  const collapsed = document.getElementById('legend').classList.contains('collapsed');
+  header.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+}
 function toggleLegend() {
   const collapsed = document.getElementById('legend').classList.toggle('collapsed');
+  syncLegendA11y();
   try { localStorage.setItem(LEGEND_KEY, collapsed ? '1' : '0'); } catch (e) {}
 }
 // 恢复上次折叠状态；无记录时保持默认折叠（见 HTML 里的 collapsed class）
@@ -244,6 +253,7 @@ function toggleLegend() {
   let v = null;
   try { v = localStorage.getItem(LEGEND_KEY); } catch (e) {}
   if (v === '0') document.getElementById('legend').classList.remove('collapsed');
+  syncLegendA11y();
 })();
 
 // 汉堡菜单开关（独立按钮展开/收起）
@@ -309,7 +319,7 @@ function buildPopupHtml(city, rows, selected) {
   if (!shown.length) return html + '<div class="popup-more">没有符合条件的行程</div>';
   html += shown.map(q => `
     <div class="popup-person">
-      <span class="name" style="color:${q.color}">${escapeHtml(q.nickname)}${q.is_private ? ' 🔒' : ''}</span>
+      <span class="name" style="color:${safeColor(q.color)}">${escapeHtml(q.nickname)}${q.is_private ? ' 🔒' : ''}</span>
       <span class="meta">${escapeHtml(fmtDate(q.visit_date))}</span>
       ${q.note ? `<span class="note">${escapeHtml(q.note)}</span>` : ''}
     </div>`).join('');
@@ -419,7 +429,8 @@ let myLocationMarker = null;
 function updateMyLocation(lat, lng) {
   if (myLocationMarker) map.removeLayer(myLocationMarker);
   const s = getSession();
-  const color = (s && s.color) || '#3b82f6';
+  // 颜色要拼进下面的 html 字符串，先过 safeColor（只认 #rrggbb）防属性注入，见 app.js
+  const color = safeColor(s && s.color);
   const icon = L.divIcon({
     className: 'my-loc-wrap',
     html: `<div class="my-loc-dot" style="background:${color};box-shadow:0 0 0 2px ${color}73, 0 2px 8px rgba(0,0,0,.3);"></div>`,
@@ -475,19 +486,22 @@ function openQuickModal() {
   document.getElementById('quickPrivate').checked = false;
   document.getElementById('quickMsg').textContent = '';
   document.getElementById('quickSubmit').disabled = false;
-  document.getElementById('quickModal').classList.add('show');
+  // showModal 才会进 top layer（拿到遮罩、焦点陷阱与 inert 背景）；锁滚动见上面的 body.no-scroll
+  document.getElementById('quickModal').showModal();
+  document.body.classList.add('no-scroll');
   document.getElementById('quickProvince').focus();
 }
 
 function closeQuickModal() {
-  document.getElementById('quickModal').classList.remove('show');
+  // 未打开时 close() 是空操作；滚动锁在下面的 close 事件里统一解
+  document.getElementById('quickModal').close();
 }
 
 async function submitQuickAdd() {
   const btn = document.getElementById('quickSubmit');
   const msg = document.getElementById('quickMsg');
   // 城市必须来自城市表：坐标由它带出来（后端只校验坐标是数字，认不认得出城市名是前端的事）。
-  // findCity 只回 {lat,lng}，城市名用下拉选中的原值；三级没选完时 getCity() 为空串
+  // findCity 回的是城市表里那一行，只取 lat/lng；城市名用下拉选中的原值（三级没选完时 getCity() 为空串）
   const name = quickCitySelects.getCity();
   const c = findCity(name);
   if (!c) {
@@ -532,12 +546,21 @@ function reloadMap() {
     .catch(err => showToast(err.message));
 }
 
-// 点击遮罩或按 Esc 关闭弹窗
-document.getElementById('quickModal').addEventListener('click', (e) => {
-  if (e.target === e.currentTarget) closeQuickModal();
+// 点遮罩关闭：::backdrop 命中的也是 dialog 自己（e.target === dialog），但在弹窗的内边距、
+// 字段之间的空隙上点击同样落在 dialog 上 —— 只看 e.target 会「点空白就关掉、输入白填」。
+// 所以再用坐标确认点确实落在弹窗矩形之外（网上的通行写法）
+const quickModalEl = document.getElementById('quickModal');
+quickModalEl.addEventListener('click', (e) => {
+  if (e.target !== quickModalEl) return;
+  const r = quickModalEl.getBoundingClientRect();
+  if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) {
+    closeQuickModal();
+  }
 });
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && document.getElementById('quickModal').classList.contains('show')) closeQuickModal();
+// Esc 关闭是 <dialog> 的原生行为（还顺带把焦点还给触发它的按钮），不走上面的按钮，
+// 所以恢复页面滚动这件事只能挂在 close 事件上（cancel → close 两条路径都会经过这里）
+quickModalEl.addEventListener('close', () => {
+  document.body.classList.remove('no-scroll');
 });
 
 // 页面交互入口（HTML 里全是 data-action，见 app.js 的 bindActions）
@@ -550,11 +573,16 @@ bindActions({
   'toggle-quick-date': toggleQuickDate,
   'update-quick-note-count': updateQuickNoteCount,
   'submit-quick-add': submitQuickAdd,
+  'retry-load': () => window.location.reload(),
 });
 
 // 拉数据
 api('/cities')
   .then(data => { window.__citiesData = data.cities; render(data); })
   .catch(err => {
-    document.getElementById('loading').innerHTML = `<div>❌ ${escapeHtml(err.message)}</div>`;
+    // 失败时不能只把文案塞进加载层：那是一块 inset:0 / z-index 1500 的全屏遮罩，连导航栏一起盖住，
+    // 用户看不到任何入口也没法重试，只能靠浏览器后退。就地补一颗「重试」（整页重来，数据会重新拉）
+    document.getElementById('loading').innerHTML =
+      `<div>❌ ${escapeHtml(err.message)}</div>` +
+      '<button type="button" class="btn btn-primary" data-action="retry-load" style="width:auto;">重试</button>';
   });

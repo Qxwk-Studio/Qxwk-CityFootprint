@@ -1,10 +1,6 @@
 // 全站统计页脚本，原先内联在 stats.html 里。抽出是为了配合 CSP（script-src 'self'，内联脚本会被拦）。
 // 依赖顺序：cities.js / app.js 先，本文件最后。
-// 城市→省份（从内置城市数据查询）
-function findProvince(city) {
-  const c = (window.CITIES || []).find(x => x.name === city);
-  return c ? c.province : '';
-}
+// 城市→省份的 findProvince 用的是 app.js 里那一份（足迹管理页共用同一口径，别在这里再抄一份）
 
 // 拉取全站统计（api() 自动携带登录凭证，管理员能看到含私密的完整统计）
 api('/stats')

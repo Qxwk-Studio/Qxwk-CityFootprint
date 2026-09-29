@@ -68,10 +68,25 @@ function fmtDate(d) {
   return d;
 }
 
-// 从城市名找坐标
+// 从城市表按名字取那一行（不在表里返回 null）。调用方自己挑字段：坐标用 lat/lng，省份走 findProvince
 function findCity(name) {
-  const c = (window.CITIES || []).find(c => c.name === name);
-  return c ? { lat: c.lat, lng: c.lng } : null;
+  return (window.CITIES || []).find(c => c.name === name) || null;
+}
+
+// 城市名 → 省份，查不到返回空串（调用方自行 filter 掉）。
+// 只有这一份 —— 原先 visits.js / stats.js 各写一份，一个回「未知」一个回空串：
+// 有人直接调接口写个城市表里没有的城市名时，「去过几个省」两页就会一个多一个少
+function findProvince(name) {
+  const c = findCity(name);
+  return c ? c.province : '';
+}
+
+// 专属颜色只认十六进制色值（3/4/6/8 位都放过，别处还拿它拼 `color + '40'` 当 alpha 用，
+// 本来就只可能是 hex）。它会被拼进 style="color:…" / divIcon 的 html 字符串里，而 escapeHtml
+// 只管 <>&、不转引号，用户可控的字符串直接进属性就是一处属性注入。
+// 颜色本应由通行证侧限死成 #rrggbb，这里再兜一道，不合规就退回默认蓝
+function safeColor(c) {
+  return /^#([0-9a-f]{3}|[0-9a-f]{4}|[0-9a-f]{6}|[0-9a-f]{8})$/i.test(c || '') ? c : '#3b82f6';
 }
 
 // HTML 转义：凡是要把「用户能填的内容」（城市名、备注）拼进 innerHTML 的地方都得过一遍。

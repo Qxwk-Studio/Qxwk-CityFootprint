@@ -75,11 +75,7 @@ function updateNoteCount() {
 }
 
 // 更新足迹统计：去过几座城市（去重）+ 足迹总数
-// 城市 → 省份
-function findProvince(city) {
-  const c = (window.CITIES || []).find(x => x.name === city);
-  return c ? c.province : '未知';
-}
+// （城市 → 省份的 findProvince 已统一到 app.js，与全站统计页共用一份）
 
 // 最常用出行方式：把每条足迹的 transport 数组摊平计票，取票数最高的一种。
 // 并列时取 TRANSPORTS 展示顺序靠前的（filter 已按原顺序，稳定排序保住同票的名次）；
@@ -99,7 +95,8 @@ function updateVisitStats() {
   const el = document.getElementById('visitStats');
   if (!el) return;
   const cityCount = new Set(myVisits.map(v => v.city)).size;
-  const provinceCount = new Set(myVisits.map(v => findProvince(v.city))).size;
+  // 查不到的城市（有人直接调接口写进来的）不计入省份数 —— 与全站统计页同一口径
+  const provinceCount = new Set(myVisits.map(v => findProvince(v.city)).filter(Boolean)).size;
   const topTransport = topTransportName();
   const dates = myVisits.map(v => v.visit_date).filter(Boolean).sort();
   const first = dates[0] || '—';
@@ -128,7 +125,7 @@ function updateVisitStats() {
     </div>`;
 }
 
-// 渲染成就卡片：先算总进度写到卡片顶部，再按 4 个分类铺开（每类可折叠）
+// 渲染成就卡片：先算总进度写到卡片顶部，再按 4 个分类铺开
 // CATEGORIES 直接来自 /api/my-visits 的 achievements —— 判定逻辑只留在后端
 // （backend/src/achievements.js），网页不再自带一份定义，两端也不会算出不同结果。
 function renderAchievements(CATEGORIES) {
@@ -185,7 +182,7 @@ async function loadVisits() {
       item.className = 'visit-item';
       item.innerHTML = `
         <span class="visit-dot">${myVisits.length - i}</span>
-        <div class="visit-main">
+        <div class="visit-main" tabindex="0" role="button">
           <div class="visit-city">${escapeHtml(v.city)}${v.is_private ? '<span class="visit-private-badge" title="不公开行程，仅自己可见">🔒 不公开</span>' : ''}<span class="visit-meta">· ${escapeHtml(fmtDate(v.visit_date))}</span></div>
           ${(v.transport && v.transport.length) ? `<div class="visit-transport">${transportLabels(v.transport).map(l => `<span class="tp-badge">${escapeHtml(l)}</span>`).join('')}</div>` : ''}
           ${v.note ? `<div class="visit-note">${escapeHtml(v.note)}</div>` : ''}
@@ -202,6 +199,11 @@ async function loadVisits() {
       item.onclick = (e) => {
         if (e.target.closest('.visit-actions')) return;
         showVisitDetail(v.id);
+      };
+      // 键盘等价物：可聚焦的是 .visit-main 而不是整行 —— role=button 放在行上会跟行内的
+      // 编辑/删除按钮形成嵌套交互元素。回车 / 空格与点整行同效
+      item.querySelector('.visit-main').onkeydown = (e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); showVisitDetail(v.id); }
       };
       list.appendChild(item);
     }

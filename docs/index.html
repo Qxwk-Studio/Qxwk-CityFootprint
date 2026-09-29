@@ -20,6 +20,10 @@
      其余基础样式（含导航栏）见 style.css，本页不再另调间距 */
   body { overflow-x: hidden; }
 
+  /* 弹窗打开时锁住背后页面：原生模态只让背景 inert，滚轮照样能滚到地图上，
+     所以照 account / visits 页的 .no-scroll 套路手动加/去（见 openQuickModal 与 dialog 的 close 事件） */
+  body.no-scroll { overflow: hidden; }
+
   /* 右下角：汉堡菜单按钮 */
   .fab-btn {
     position: fixed;
@@ -119,22 +123,27 @@
     overflow-y: auto;
     min-width: 170px;
   }
+  /* 图例标题行已改成 <button>（键盘才够得着，见 index.js 的 syncLegendA11y），
+     所以要把 UA 的按钮外观抹掉、撑满整行；标题用 span 而非 h4 —— button 里只能放 phrasing content */
   .legend-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    width: 100%;
+    background: none;
+    border: none;
+    font-family: inherit;
     cursor: pointer;
     user-select: none;
     margin-bottom: 6px;
     padding: 2px;
   }
-  .legend h4 {
+  .legend-title {
     font-size: 0.72rem;
     font-weight: 600;
     color: var(--text-tertiary);
     text-transform: uppercase;
     letter-spacing: 0.6px;
-    margin-bottom: 0;
   }
   .legend-toggle {
     color: var(--text-tertiary);
@@ -275,39 +284,26 @@
   .toast svg { color: var(--primary); flex-shrink: 0; }
   .toast.show { top: 80px; opacity: 1; }
 
-  /* ========= 添加行程弹窗 ========= */
-  .modal-overlay {
-    position: fixed;
-    inset: 0;
-    z-index: 2000;
-    background: rgba(0, 0, 0, 0.45);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 16px;
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.2s ease, visibility 0.2s;
-  }
-  .modal-overlay.show { opacity: 1; visibility: visible; }
+  /* ========= 添加行程弹窗 =========
+     用原生 <dialog>：遮罩、Esc 关闭、焦点陷阱、关闭后把焦点还给触发的按钮都由浏览器给。
+     原先是一个 div + .show class 手搓的模态 —— 背景没锁、Tab 能一路穿到后面的地图上，
+     也没有焦点还原。这里只管它的外观，居中靠 dialog 默认的 inset:0 + margin:auto */
   .modal {
-    width: 100%;
+    width: calc(100% - 32px);
     max-width: 380px;
-    /* 弹窗内容比视口高时必须能滚：遮罩只有 16px 内边距、又靠 flex 居中，
-       之前没有高度上限也不内部滚动，手机横屏 / 键盘弹出时底部那颗「添加行程」永远点不到。
-       上限扣掉遮罩的上下内边距（16px × 2），让弹窗自己出滚动条而不是撑破遮罩 */
+    /* 弹窗内容比视口高时必须能滚：上限扣掉上下留白（16px × 2），
+       让弹窗自己出滚动条而不是撑破视口 —— 手机横屏 / 键盘弹出时底部那颗「添加行程」要够得着 */
     max-height: calc(100vh - 32px);
     overflow-y: auto;
+    margin: auto;
     background: var(--surface);
     color: var(--text-primary);
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-lg);
     padding: 20px 20px 16px;
-    transform: translateY(10px) scale(0.98);
-    transition: transform 0.2s ease;
   }
-  .modal-overlay.show .modal { transform: translateY(0) scale(1); }
+  .modal::backdrop { background: rgba(0, 0, 0, 0.45); }
   .modal-header {
     display: flex;
     align-items: center;
@@ -465,10 +461,12 @@
 </header>
 
 <div class="legend collapsed" id="legend">
-  <div class="legend-header" data-action="toggle-legend" title="点击收起/展开">
-    <h4>谁的足迹</h4>
+  <!-- 点标题收起/展开：用 <button>，键盘才够得着（原先是个挂 data-action 的 div，只有鼠标能点），
+       aria-expanded 由 index.js 的 syncLegendA11y 跟着 collapsed class 一起改 -->
+  <button type="button" class="legend-header" data-action="toggle-legend" aria-expanded="false" aria-controls="legendList" title="点击收起/展开">
+    <span class="legend-title">谁的足迹</span>
     <svg class="legend-toggle" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-  </div>
+  </button>
   <div id="legendList"><div class="empty">正在加载…</div></div>
 </div>
 
@@ -506,62 +504,60 @@
      原先主页的「快捷添加」（只有定位 + 本月 + 备注）与足迹管理页的「创建行程」表单（城市联想 +
      年月 + 记不清了 + 备注 + 私密）是两套东西，现已合并到这里；visits.html 那边只剩编辑。
      定位（右侧准心按钮）只是帮忙把城市填成最近的一座，失败也不影响手输。 -->
-<div class="modal-overlay" id="quickModal" role="dialog" aria-modal="true" aria-label="添加行程">
-  <div class="modal">
-    <div class="modal-header">
-      <h3>添加行程</h3>
-      <button type="button" class="modal-close" data-action="close-quick-modal" aria-label="关闭">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+<dialog class="modal" id="quickModal" aria-label="添加行程">
+  <div class="modal-header">
+    <h3>添加行程</h3>
+    <button type="button" class="modal-close" data-action="close-quick-modal" aria-label="关闭">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+  <div class="modal-field">
+    <!-- 这一格是「国 · 省 · 市」三个下拉 + 定位按钮的组合，没有单个能当 for 目标，
+         所以用 role=group + aria-labelledby 整组关联（出行方式那组与足迹管理页的编辑弹窗同理） -->
+    <label id="quickCityLabel">城市（国 · 省 · 市）</label>
+    <div class="city-selects" id="quickCitySelects" role="group" aria-labelledby="quickCityLabel">
+      <select id="quickCountry" data-city="country" aria-label="国家"></select>
+      <select id="quickProvince" data-city="province" aria-label="省份"></select>
+      <select id="quickCity" data-city="city" aria-label="城市"></select>
+      <button type="button" class="modal-relocate" data-action="locate-city" aria-label="定位到最近的城市" title="定位到最近的城市">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/></svg>
       </button>
     </div>
-    <div class="modal-field">
-      <!-- 这一格是「国 · 省 · 市」三个下拉 + 定位按钮的组合，没有单个能当 for 目标，
-           所以用 role=group + aria-labelledby 整组关联（出行方式那组同理） -->
-      <label id="quickCityLabel">城市（国 · 省 · 市）</label>
-      <div class="city-selects" id="quickCitySelects" role="group" aria-labelledby="quickCityLabel">
-        <select id="quickCountry" data-city="country" aria-label="国家"></select>
-        <select id="quickProvince" data-city="province" aria-label="省份"></select>
-        <select id="quickCity" data-city="city" aria-label="城市"></select>
-        <button type="button" class="modal-relocate" data-action="locate-city" aria-label="定位到最近的城市" title="定位到最近的城市">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/></svg>
-        </button>
-      </div>
-    </div>
-    <div class="modal-field">
-      <label for="quickYear">时间</label>
-      <div class="modal-date">
-        <select class="modal-input" id="quickYear"></select>
-        <select class="modal-input" id="quickMonth"></select>
-      </div>
-      <label class="switch-row" style="margin-top:8px;">
-        <span>记不清了</span>
-        <span class="switch"><input type="checkbox" id="quickForgot" data-action="toggle-quick-date"><span class="switch-track"></span></span>
-      </label>
-    </div>
-    <div class="modal-field">
-      <label id="quickTransportLabel">出行方式（可多选）</label>
-      <div class="transport-chips" id="quickTransport" role="group" aria-labelledby="quickTransportLabel"></div>
-    </div>
-    <div class="modal-field">
-      <div class="field-head">
-        <label for="quickNote">备注（可选）</label>
-        <span class="note-count" id="quickNoteCount">0/100</span>
-      </div>
-      <input class="modal-input" id="quickNote" maxlength="100" placeholder="一句话留下回忆…" autocomplete="off" data-action="update-quick-note-count">
-    </div>
-    <div class="modal-field">
-      <label class="switch-row">
-        <span>不公开行程（仅自己可见）</span>
-        <span class="switch"><input type="checkbox" id="quickPrivate"><span class="switch-track"></span></span>
-      </label>
-    </div>
-    <div class="modal-actions">
-      <button type="button" class="modal-btn modal-btn-cancel" data-action="close-quick-modal">取消</button>
-      <button type="button" class="modal-btn modal-btn-primary" id="quickSubmit" data-action="submit-quick-add">添加行程</button>
-    </div>
-    <div class="msg" id="quickMsg"></div>
   </div>
-</div>
+  <div class="modal-field">
+    <label for="quickYear">时间</label>
+    <div class="modal-date">
+      <select class="modal-input" id="quickYear"></select>
+      <select class="modal-input" id="quickMonth"></select>
+    </div>
+    <label class="switch-row" style="margin-top:8px;">
+      <span>记不清了</span>
+      <span class="switch"><input type="checkbox" id="quickForgot" data-action="toggle-quick-date"><span class="switch-track"></span></span>
+    </label>
+  </div>
+  <div class="modal-field">
+    <label id="quickTransportLabel">出行方式（可多选）</label>
+    <div class="transport-chips" id="quickTransport" role="group" aria-labelledby="quickTransportLabel"></div>
+  </div>
+  <div class="modal-field">
+    <div class="field-head">
+      <label for="quickNote">备注（可选）</label>
+      <span class="note-count" id="quickNoteCount">0/100</span>
+    </div>
+    <input class="modal-input" id="quickNote" maxlength="100" placeholder="一句话留下回忆…" autocomplete="off" data-action="update-quick-note-count">
+  </div>
+  <div class="modal-field">
+    <label class="switch-row">
+      <span>不公开行程（仅自己可见）</span>
+      <span class="switch"><input type="checkbox" id="quickPrivate"><span class="switch-track"></span></span>
+    </label>
+  </div>
+  <div class="modal-actions">
+    <button type="button" class="modal-btn modal-btn-cancel" data-action="close-quick-modal">取消</button>
+    <button type="button" class="modal-btn modal-btn-primary" id="quickSubmit" data-action="submit-quick-add">添加行程</button>
+  </div>
+  <div class="msg" id="quickMsg"></div>
+</dialog>
 
 <!-- Toast 提示 -->
 <div class="toast" id="toast">

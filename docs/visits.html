@@ -50,6 +50,8 @@
     flex-shrink: 0;
   }
   .visit-main { flex: 1; min-width: 0; }
+  /* 主体区可聚焦（键盘进出详情弹窗，见 visits.js 的 onkeydown），焦圈与 chips / 开关同一套 */
+  .visit-main:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; border-radius: var(--radius-sm); }
   .visit-city { font-weight: 600; font-size: 0.98rem; }
   .visit-private-badge {
     display: inline-block;
@@ -203,7 +205,7 @@
   }
   .achievement.done .check { display: flex; }
 
-  /* 总进度：在成就网格之上，折叠整卡时依然可见，一眼看到点亮了几座里程碑 */
+  /* 总进度：在成就网格之上，一眼看到点亮了几座里程碑 */
   .achievement-summary {
     display: flex;
     align-items: center;
@@ -341,16 +343,16 @@
           </div>
         </div>
 
-        <!-- 行程记录：每条足迹自成一张卡，标题行不可折叠 -->
-        <div class="visit-list-card">
+        <!-- 行程记录：每条足迹自成一张卡，标题行不可折叠（这层 div 只为在 .personal-col 里占一格，不画框） -->
+        <div>
           <h3 class="section-title">📍 行程记录</h3>
           <div id="visitList"><div class="empty">正在加载…</div></div>
         </div>
       </div>
 
       <div class="personal-col">
-        <!-- 成就：每个成就自成一张卡，分类不再折叠 -->
-        <div class="achievement-card">
+        <!-- 成就：每个成就自成一张卡，分类不再折叠（这层 div 同样只为在 .personal-col 里占一格） -->
+        <div>
           <h3 class="section-title">🏆 成就</h3>
           <!-- 总进度：数字由 renderAchievements() 填 -->
           <div class="achievement-summary">
@@ -377,8 +379,9 @@
       </button>
     </div>
     <div class="field">
-      <label>城市（国 · 省 · 市）</label>
-      <div class="city-selects" id="visitCitySelects">
+      <!-- 与主页添加弹窗同一套：这组没有单个能当 for 目标的控件，整组用 role=group + aria-labelledby 关联 -->
+      <label id="visitCityLabel">城市（国 · 省 · 市）</label>
+      <div class="city-selects" id="visitCitySelects" role="group" aria-labelledby="visitCityLabel">
         <select id="visitCountry" data-city="country" aria-label="国家"></select>
         <select id="visitProvince" data-city="province" aria-label="省份"></select>
         <select id="visitCity" data-city="city" aria-label="城市"></select>
@@ -396,8 +399,8 @@
       </label>
     </div>
     <div class="field">
-      <label>出行方式（可多选）</label>
-      <div class="transport-chips" id="visitTransport"></div>
+      <label id="visitTransportLabel">出行方式（可多选）</label>
+      <div class="transport-chips" id="visitTransport" role="group" aria-labelledby="visitTransportLabel"></div>
     </div>
     <div class="field">
       <div class="field-head">
