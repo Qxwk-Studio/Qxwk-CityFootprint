@@ -167,6 +167,50 @@ data class SiteStats(
 data class CityRank(val city: String = "", val count: Int = 0, val people: Int = 0)
 
 /**
+ * GET /api/cities（地图数据）的一座城市：坐标 + 去过的人（昵称/颜色）。
+ * 日期/备注/私密这些明细**不在这里**（后端刻意不铺开），点开城市时再调 /api/city/{城市名} 按需拉，
+ * 与网页 docs/index.html 的 renderFilter / loadCityDetail 是同一口径。
+ */
+@Serializable
+data class MapCity(
+    val city: String = "",
+    /** 旧行可能没有（加列前写入的），后端会用城市字典兜底；都拿不到时地图退回圆点。 */
+    val adcode: Int? = null,
+    val lat: Double = 0.0,
+    val lng: Double = 0.0,
+    /** 按 created_at 升序（末位 = 最新，后端排的）—— 地图取**末位**的颜色给这座城市上色。 */
+    val people: List<MapPerson> = emptyList(),
+)
+
+@Serializable
+data class MapPerson(val nickname: String = "", val color: String = "")
+
+@Serializable
+data class CitiesResponse(val cities: List<MapCity> = emptyList(), val isAdmin: Boolean = false)
+
+/** GET /api/city/{城市名}：该城市的**全部**行程（后端按 created_at 倒序），截取最近 10 条由客户端做。 */
+@Serializable
+data class CityVisitsResponse(val city: String = "", val visits: List<CityVisit> = emptyList())
+
+/**
+ * 一条城市明细（地图底部卡片用）。字段对应 worker.js 的 /api/city/:city：
+ *   {nickname, color, visit_date, note, is_private, adcode, transport[]}
+ * is_private 与 [Visit] 一样按 0/1 收成 Boolean。
+ */
+@Serializable
+data class CityVisit(
+    val nickname: String = "",
+    val color: String = "",
+    @SerialName("visit_date") val visitDate: String? = null,
+    val note: String = "",
+    @SerialName("is_private")
+    @Serializable(with = IntBooleanSerializer::class)
+    val isPrivate: Boolean = false,
+    val adcode: Int? = null,
+    val transport: List<String> = emptyList(),
+)
+
+/**
  * 后端 D1 里**没有布尔类型**：`is_private` 存的就是 0/1。这个序列化器把 0/1 与 Boolean 互转，
  * 于是界面与判定逻辑只面对 Boolean。
  *

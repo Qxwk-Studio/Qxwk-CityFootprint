@@ -1,5 +1,7 @@
 package top.qxwkstudio.travel
 
+import java.net.URLEncoder
+
 /**
  * 域名与接口路径的**唯一出处**。改地址只改这里，别在调用处硬编码。
  *
@@ -39,6 +41,17 @@ object Api {
     /** 公开统计，不需要 Bearer。 */
     const val STATS = "$TRAVEL_BASE/stats"
 
+    /** 地图数据（城市 + 坐标 + 去过的人）；公开，但带 token 时自己的私密行程才可见。 */
+    const val CITIES = "$TRAVEL_BASE/cities"
+
     /** 公开的城市边界（阿里 DataV GeoJSON，后端做了 24 小时缓存）。 */
     fun geo(adcode: Int): String = "$TRAVEL_BASE/geo/$adcode"
+
+    /**
+     * 某座城市的行程明细（点开地图上的城市时为底部卡片按需拉取）。
+     * 城市名直接进路径，必须百分号编码 —— 中文原样塞进 URL 会抛 MalformedURLException；
+     * 编码后再把 `+` 还原成 `%20`：URLEncoder 把空格编成 `+`（那是表单语义），路径段里要的是 `%20`。
+     */
+    fun city(name: String): String =
+        "$TRAVEL_BASE/city/${URLEncoder.encode(name, "UTF-8").replace("+", "%20")}"
 }

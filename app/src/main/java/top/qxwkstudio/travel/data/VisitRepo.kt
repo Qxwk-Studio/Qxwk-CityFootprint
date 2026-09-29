@@ -2,6 +2,8 @@ package top.qxwkstudio.travel.data
 
 import android.content.Context
 import top.qxwkstudio.travel.Api
+import top.qxwkstudio.travel.logic.CitiesResponse
+import top.qxwkstudio.travel.logic.CityVisitsResponse
 import top.qxwkstudio.travel.logic.MyVisits
 import top.qxwkstudio.travel.logic.SiteStats
 import top.qxwkstudio.travel.logic.VisitDraft
@@ -90,6 +92,30 @@ object VisitRepo {
         if (!result.ok) throw apiException(result, "边界数据获取失败（HTTP ${result.code}）")
         return result.body
     }
+
+    /**
+     * GET /api/cities（公开；带 token 时自己的私密行程才可见）→ 地图数据（城市 + 坐标 + 去过的人）。
+     * **不做本机缓存**：与网页一致，地图每次进页面重新取（缓存的是边界，见 ui/MapFragment 的 geoCache）。
+     * 解析不过给空对象：接口是通的、只是内容对不上，界面按「没有足迹」显示。
+     */
+    fun cities(token: String?): CitiesResponse {
+        val result = Http.request("GET", Api.CITIES, token = token)
+        if (!result.ok) throw apiException(result, "地图数据获取失败（HTTP ${result.code}）")
+        return parseCities(result.body) ?: CitiesResponse()
+    }
+
+    /** GET /api/city/{城市名}（公开）→ 该城市的全部行程。解析不过给空对象（卡片显示「没有符合条件的行程」）。 */
+    fun cityVisits(city: String, token: String?): CityVisitsResponse {
+        val result = Http.request("GET", Api.city(city), token = token)
+        if (!result.ok) throw apiException(result, "城市明细获取失败（HTTP ${result.code}）")
+        return parseCityVisits(result.body) ?: CityVisitsResponse()
+    }
+
+    private fun parseCities(raw: String): CitiesResponse? =
+        runCatching { json.decodeFromString(CitiesResponse.serializer(), raw) }.getOrNull()
+
+    private fun parseCityVisits(raw: String): CityVisitsResponse? =
+        runCatching { json.decodeFromString(CityVisitsResponse.serializer(), raw) }.getOrNull()
 
     /**
      * 请求体 = 直接序列化 [VisitDraft]，它的 @SerialName 与后端 POST/PUT 的取字段方式一一对应

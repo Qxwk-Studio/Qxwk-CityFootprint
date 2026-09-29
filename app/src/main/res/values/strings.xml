@@ -88,10 +88,20 @@
     <string name="stats_admin_note">👑 管理员视图 · 正在统计全部行程（含私密）</string>
 
     <!-- 地图 -->
-    <string name="map_loading">正在加载边界…</string>
-    <string name="map_no_boundary">%1$s 暂无边界数据，只能显示标记</string>
-    <string name="map_boundary_failed">边界加载失败，已保留标记</string>
     <string name="map_empty">还没有足迹，先去「足迹」页添加</string>
+    <!-- 图例（按用户筛选，对齐网页 docs/index.html 的 .legend）：标题 + 全选 + 每个用户一行 -->
+    <string name="map_legend_title">图例</string>
+    <string name="map_legend_all">全选</string>
+    <!-- 折叠箭头：展开时是「可收起」（▾），收起时是「可展开」（▸） -->
+    <string name="map_legend_toggle_expanded">▾</string>
+    <string name="map_legend_toggle_collapsed">▸</string>
+    <!-- 点城市后从底部浮出的明细卡（对齐网页 Leaflet popup 的内容） -->
+    <string name="map_city_loading">加载中…</string>
+    <string name="map_city_failed">加载失败</string>
+    <string name="map_city_empty">没有符合条件的行程</string>
+    <string name="map_city_more">仅显示最近 10 条</string>
+    <string name="map_city_close">关闭</string>
+    <string name="map_city_close_glyph">✕</string>
 
     <!-- 我的 -->
     <string name="profile_logout">退出登录</string>
