@@ -91,7 +91,9 @@
   .ach-count-item:last-child { border-bottom: none; }
   .ach-count-icon { font-size: 1.1rem; flex-shrink: 0; }
   .ach-count-name { flex: 1; font-size: 1rem; font-weight: 600; min-width: 0; }
-  .ach-count-desc { font-size: 0.78rem; font-weight: 400; color: var(--text-tertiary); margin-left: 6px; }
+  /* 名称与说明分两行：说明左边缘与名称对齐（App 的 item_achievement_count 同款，
+     说明不再以 margin-left 挤在名称后面） */
+  .ach-count-desc { display: block; margin-top: 1px; font-size: 0.78rem; font-weight: 400; color: var(--text-tertiary); }
   .ach-count-num { font-size: 0.9rem; font-weight: 600; color: var(--text-tertiary); flex-shrink: 0; }
   .ach-count-num.done { color: var(--primary); }
   .rank-city { flex: 1; font-weight: 600; font-size: 1.05rem; min-width: 0; }
