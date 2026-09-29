@@ -20,9 +20,7 @@
      其余基础样式（含导航栏）见 style.css，本页不再另调间距 */
   body { overflow-x: hidden; }
 
-  /* 弹窗打开时锁住背后页面：原生模态只让背景 inert，滚轮照样能滚到地图上，
-     所以照 account / visits 页的 .no-scroll 套路手动加/去（见 openQuickModal 与 dialog 的 close 事件） */
-  body.no-scroll { overflow: hidden; }
+  /* 弹窗打开时锁页面滚动用的是 style.css 里的 body.no-scroll，这里由 JS 加/去（见 openQuickModal 与 close 事件） */
 
   /* 右下角：汉堡菜单按钮 */
   .fab-btn {
@@ -315,22 +313,7 @@
     margin-bottom: 14px;
   }
   .modal-header h3 { font-size: 1.05rem; font-weight: 700; }
-  .modal-close {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 30px;
-    height: 30px;
-    padding: 0;
-    border: none;
-    border-radius: var(--radius-full);
-    background: none;
-    color: var(--text-tertiary);
-    cursor: pointer;
-    font-family: inherit;
-    transition: background var(--transition), color var(--transition);
-  }
-  .modal-close:hover { background: var(--primary-subtle); color: var(--text-primary); }
+  /* 圆底关闭按钮的外观在 style.css（.modal-close / .dialog-close 共用一套） */
   .modal-field { margin-bottom: 14px; }
   .modal-info {
     display: flex;
@@ -351,9 +334,6 @@
   /* 年 / 月并排 */
   .modal-date { display: flex; gap: 8px; }
   .modal-date .modal-input { flex: 1; min-width: 0; }
-  /* 备注字数：label 与计数同一行，label 自己的下边距让给这一行 */
-  .field-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 6px; }
-  .field-head label { margin-bottom: 0; }
   .modal-relocate {
     display: inline-flex;
     align-items: center;
@@ -423,20 +403,23 @@
 <script src="theme.js"></script>
 <style>
 
-  /* ===== 黑夜模式：地图页元素覆盖 ===== */
-  :root[data-theme="dark"] #map { background:#0f172a; }
+  /* ===== 黑夜模式：地图页元素覆盖 =====
+     颜色一律走 token（这里要的就是 style.css 深色档那几个值），别再写死 hex —— 写死就成了快照，
+     改主题时不会跟着走。rgba(15,23,42,…) 那几个是半透明、换起来要 color-mix，没动 */
+
+  :root[data-theme="dark"] #map { background:var(--bg); }
   :root[data-theme="dark"] .legend { background:rgba(15,23,42,0.92); }
-  :root[data-theme="dark"] .legend .dot { box-shadow:0 0 0 2px #0f172a, 0 1px 3px rgba(0,0,0,0.5); }
+  :root[data-theme="dark"] .legend .dot { box-shadow:0 0 0 2px var(--bg), 0 1px 3px rgba(0,0,0,0.5); }
   /* 汉堡菜单项的悬停态：共享样式里写的是「半透明蓝底 + color: --primary」，而 --primary 在暗色下
      没有被覆盖（仍是深蓝 #2563eb）——深蓝字压在深色地图上几乎看不见。暗色下改成实心、浅一档的
      底 + 白字（亮色下「底变蓝、字变蓝」的意图保留，只是换成暗色下读得清的配色） */
-  :root[data-theme="dark"] .fab-item:hover { background:#334155; color:#fff; }
+  :root[data-theme="dark"] .fab-item:hover { background:var(--border); color:#fff; }
   /* Leaflet 控件深色 */
-  :root[data-theme="dark"] .leaflet-bar a { background:#1e293b; color:#e2e8f0; border-color:#334155; }
-  :root[data-theme="dark"] .leaflet-bar a:hover { background:#0f172a; }
-  :root[data-theme="dark"] .leaflet-control-attribution { background:rgba(15,23,42,0.8); color:#94a3b8; }
-  :root[data-theme="dark"] .leaflet-popup-content-wrapper { background:#1e293b; color:#e2e8f0; }
-  :root[data-theme="dark"] .leaflet-popup-tip { background:#1e293b; }
+  :root[data-theme="dark"] .leaflet-bar a { background:var(--surface); color:var(--text-primary); border-color:var(--border); }
+  :root[data-theme="dark"] .leaflet-bar a:hover { background:var(--bg); }
+  :root[data-theme="dark"] .leaflet-control-attribution { background:rgba(15,23,42,0.8); color:var(--text-secondary); }
+  :root[data-theme="dark"] .leaflet-popup-content-wrapper { background:var(--surface); color:var(--text-primary); }
+  :root[data-theme="dark"] .leaflet-popup-tip { background:var(--surface); }
   /* 深色模式：瓦片暗化滤镜（只作用于瓦片，不影响标记/控件） */
   :root[data-theme="dark"] .leaflet-tile {
     filter: brightness(0.55);
@@ -536,7 +519,7 @@
     <label for="quickYear">时间</label>
     <div class="modal-date">
       <select class="modal-input" id="quickYear"></select>
-      <select class="modal-input" id="quickMonth"></select>
+      <select class="modal-input" id="quickMonth" aria-label="月份"></select>
     </div>
     <label class="switch-row" style="margin-top:8px;">
       <span>记不清了</span>

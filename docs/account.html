@@ -8,7 +8,6 @@
 <link rel="icon" type="image/webp" href="/favicon.webp">
 <link rel="stylesheet" href="/style.css">
 <style>
-  body.no-scroll { overflow: hidden; }
   .user-uid { margin-top: 4px; font-size: 0.78rem; color: var(--text-tertiary);
     font-family: 'Consolas', 'Courier New', monospace; }
   .user-color-dot { width: 16px; height: 16px; border-radius: var(--radius-full); border: 2px solid #fff;
@@ -131,12 +130,12 @@
 <script src="theme.js"></script>
 <style>
   :root[data-theme="dark"] .auth-right { background: var(--surface); }
-  :root[data-theme="dark"] .auth-left { background: #0f172a; }
+  :root[data-theme="dark"] .auth-left { background: var(--bg); }
   :root[data-theme="dark"] .profile-card {
-    background: linear-gradient(135deg, color-mix(in srgb, var(--user-color, #2563eb) 18%, #0f172a), var(--surface) 80%);
-    border-color: color-mix(in srgb, var(--user-color, #2563eb) 28%, #334155);
+    background: linear-gradient(135deg, color-mix(in srgb, var(--user-color, #2563eb) 18%, var(--bg)), var(--surface) 80%);
+    border-color: color-mix(in srgb, var(--user-color, #2563eb) 28%, var(--border));
   }
-  :root[data-theme="dark"] .user-color-dot { border-color: #0f172a; }
+  :root[data-theme="dark"] .user-color-dot { border-color: var(--bg); }
   /* 黑夜模式：退出登录卡片 */
   :root[data-theme="dark"] .card-logout {
     background:

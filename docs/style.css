@@ -385,6 +385,34 @@ input::placeholder, textarea::placeholder { color: var(--text-tertiary); }
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
 
+/* ========= 通用：滚动锁 / 字段头 / 圆底关闭按钮 =========
+   这三样原先在 index / visits / account 三页各写一份、内容完全一样，按仓库约定收进这里；页内不要再复制。 */
+/* 弹窗打开时锁住背后页面：原生模态只让背景 inert，滚轮照样能滚到下面（加/去这个类由各页 JS 负责） */
+body.no-scroll { overflow: hidden; }
+/* 「标签 + 次要操作」同行（备注字数那一行）：label 的下边距让给这一行，免得行高被撑开 */
+.field-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 6px; }
+.field-head label { margin-bottom: 0; }
+/* 圆底图标关闭按钮：地图页弹窗叫 .modal-close、足迹页叫 .dialog-close，外观同一套。
+   两个名字都留着 —— 合并成一个要同时改两页的类名和脚本，不值当 */
+.modal-close,
+.dialog-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-full);
+  background: none;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  font-family: inherit;
+  transition: background var(--transition), color var(--transition);
+}
+.modal-close:hover,
+.dialog-close:hover { background: var(--primary-subtle); color: var(--text-primary); }
+
 /* ===== 黑夜模式：主题切换按钮 ===== */
 .theme-toggle { display:inline-flex; align-items:center; justify-content:center; width:32px; height:32px; padding:0; background:none; border:none; border-radius:var(--radius-full); color:var(--text-primary); cursor:pointer; transition:background var(--transition), color var(--transition); position:relative; z-index:5; touch-action:manipulation; }
 

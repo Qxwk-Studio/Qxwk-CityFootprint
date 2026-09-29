@@ -8,9 +8,7 @@
 <link rel="icon" type="image/webp" href="/favicon.webp">
 <link rel="stylesheet" href="/style.css">
 <style>
-  /* 编辑弹窗打开时锁住背后页面：原生模态只让背景 inert，滚轮照样能滚到页面，
-     所以照 account 页的 .no-scroll 套路手动加/去（见 startEdit 与 dialog 的 close 事件） */
-  body.no-scroll { overflow: hidden; }
+  /* 编辑弹窗打开时锁页面滚动用的是 style.css 里的 body.no-scroll，这里由 JS 加/去（见 startEdit 与 close 事件） */
 
   /* ========= Form =========
      控件外观（label / input / select / textarea / .field）见 style.css，与 account 登录表单同一套 */
@@ -112,22 +110,7 @@
   .edit-dialog::backdrop { background: rgba(0, 0, 0, 0.45); }
   .dialog-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
   .dialog-header h3 { margin-bottom: 0; }
-  .dialog-close {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 30px;
-    height: 30px;
-    padding: 0;
-    border: none;
-    border-radius: var(--radius-full);
-    background: none;
-    color: var(--text-tertiary);
-    cursor: pointer;
-    font-family: inherit;
-    transition: background var(--transition), color var(--transition);
-  }
-  .dialog-close:hover { background: var(--primary-subtle); color: var(--text-primary); }
+  /* 圆底关闭按钮的外观在 style.css（.modal-close / .dialog-close 共用一套） */
   .dialog-actions { display: flex; gap: 10px; }
   .dialog-actions .btn { flex: 1; }
 
@@ -138,8 +121,7 @@
   .detail-row + .detail-row { border-top: 1px solid var(--border); }
   .detail-label { flex-shrink: 0; width: 4.4em; font-size: 0.8rem; color: var(--text-tertiary); }
   .detail-value { flex: 1; min-width: 0; font-size: 0.85rem; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
-  .field-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 6px; }
-  .field-head label { margin-bottom: 0; }
+  /* .field-head / body.no-scroll 见 style.css */
 
   /* 足迹统计：改用与全站统计同一套小卡（.stat-card / .label / .value 见 style.css）。
      第一行是「时间跨度」整行长卡，其余每行两个 */
@@ -391,7 +373,7 @@
       <label for="visitYear">时间</label>
       <div class="date-selects">
         <select id="visitYear"></select>
-        <select id="visitMonth"></select>
+        <select id="visitMonth" aria-label="月份"></select>
       </div>
       <label class="switch-row" style="margin-top:8px;">
         <span>记不清了</span>
