@@ -81,17 +81,19 @@ async function handleApi(request, env) {
         if (resp.ok) {
           const clone = resp.clone();
           const headers = new Headers(clone.headers);
-          headers.set('Cache-Control', 'public, max-age=86400');
+          // 7 天：行政边界几年才动一次（撤市设区那类），没必要按天反复回源。
+          // 与 docs/index.js 的 GEO_MAX_AGE 同一口径，两边别各写各的。
+          headers.set('Cache-Control', 'public, max-age=604800');
           await caches.default.put(cacheKey, new Response(clone.body, {
             status: clone.status, statusText: clone.statusText, headers,
           }));
         }
       }
       if (!resp.ok) return error('边界获取失败', resp.status);
-      // 返回给浏览器的这一份也要带 24h：上面 put 进 caches.default 的是**缓存副本**，它头上的
+      // 返回给浏览器的这一份也要带同样的 7 天：上面 put 进 caches.default 的是**缓存副本**，它头上的
       // max-age 只管 Worker 内部那份；json() 现造的这个响应原先一个缓存头都没有，浏览器 HTTP
-      // 缓存完全不吃（只剩前端 IndexedDB 顶 24h）。补上后三层 TTL 一致。
-      return json(await resp.json(), 200, { 'Cache-Control': 'public, max-age=86400' });
+      // 缓存完全不吃（只剩前端 IndexedDB 顶 7 天）。补上后三层 TTL 一致。
+      return json(await resp.json(), 200, { 'Cache-Control': 'public, max-age=604800' });
     } catch (e) {
       return error('边界获取失败', 502);
     }

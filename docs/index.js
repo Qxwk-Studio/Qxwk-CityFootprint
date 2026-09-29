@@ -36,10 +36,12 @@ function geoFetch(url) {
   });
 }
 
-// ---------- 边界 IndexedDB 缓存（跨刷新生效，24h 过期，与服务端 Cache-Control 一致） ----------
+// ---------- 边界 IndexedDB 缓存（跨刷新生效，7 天过期，与服务端 Cache-Control 一致） ----------
 const GEO_DB_NAME = 'cityfootprint-geo';
 const GEO_STORE = 'boundaries';
-const GEO_MAX_AGE = 24 * 60 * 60 * 1000; // 24h
+// 行政边界几年才动一次（撤市设区那类），7 天很安全；与后端 /api/geo 的 Cache-Control 保持同一口径 ——
+// 两边 TTL 不一致时前端会先到期，白白多发一次请求（能命中后端缓存，但仍是一次往返）
+const GEO_MAX_AGE = 7 * 24 * 60 * 60 * 1000; // 7 天
 
 let geoDBPromise = null;
 // 打开数据库（复用同一连接；不支持/失败时返回 null → 退化为无缓存）
