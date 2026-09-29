@@ -363,8 +363,11 @@ class MapFragment : Fragment() {
                         runCatching { GeoJson.polygons(VisitRepo.geoJson(ctx, adcode)) }.getOrDefault(emptyList())
                     }
                 }
-                // 先落缓存：即使这批渲染已被新筛选作废，也把结果留下来给下一次用
-                geoCache[adcode] = rings
+                // 只把**有边界**的那份落缓存，且要在 seq 判断之前落 —— 即使这批渲染已被新筛选作废，
+                // 结果也留给下一次用。空结果（网络失败 / 解析失败）不落：一旦落进去，本次视图存活期内
+                // 这座城市就再也不会重试，磁盘缓存后台刷新成功也救不回来（只能杀进程 / 重建 View）。
+                // 空结果当期照画圆点，缓存留给下一次渲染重新尝试。
+                if (rings.isNotEmpty()) geoCache[adcode] = rings
                 if (seq != renderSeq) return@launch // 本次渲染已作废，别往图上画
                 drawCity(city, rings, color)
             }

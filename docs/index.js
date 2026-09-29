@@ -115,7 +115,7 @@ async function geoFetchGeo(adcode) {
 // 后台只刷缓存、不重画：形状不变，重画还得先撤掉这一座城市已画上的旧图层，不值当。
 function loadCityGeo(adcode) {
   if (!geoCache.has(adcode)) {
-    geoCache.set(adcode, (async () => {
+    const p = (async () => {
       try {
         const row = await geoDBRead(adcode);
         if (row) {
@@ -129,7 +129,13 @@ function loadCityGeo(adcode) {
         // 继续 reject，这座城市连回退圆点都画不出来，只能刷新页面。所以统一兜成 null（调用方按 null 走圆点）。
         return null;
       }
-    })());
+    })();
+    // 没拿到几何就**不 memo**：null 一旦留在 Map 里，这座城市在本次页面生命周期内永远只剩圆点，
+    // 网络恢复了也不会重试（改图例、reloadMap 都白搭）。删掉缓存项，下一次渲染重新走
+    // 「内存 → IndexedDB → 网络」。代价是上游确实没有边界（404）的城市每次渲染会重发一次请求，
+    // 但 CITY_CODES 只收进有边界的 adcode，实际不会反复 404。
+    p.then(g => { if (!g) geoCache.delete(adcode); });
+    geoCache.set(adcode, p);
   }
   return geoCache.get(adcode);
 }
