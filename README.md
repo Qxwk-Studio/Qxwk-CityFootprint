@@ -266,6 +266,7 @@ localhost 的任意端口（见 `backend/src/worker.js` 的 `ALLOWED_ORIGINS`）
 - 勾选"不公开行程"的足迹仅本人可见，接口层通过 `is_private` 字段过滤
 - 公开接口（地图 `/api/cities`、统计 `/api/stats`）默认不含私密；登录用户在地图上可见自己的私密行程，管理员可见全部
 - 地图边界数据已做浏览器 IndexedDB 缓存（7 天过期），重复打开不重复请求；过期的那批先画旧的、后台重下刷新（SWR）
+- 报文接口（`/api/cities`、`/api/city/:city`、`/api/stats`、`/api/my-visits`）在网页端另有一层**会话级缓存**（sessionStorage、1 天过期、key 按 userId 隔离）：命中先渲染缓存、网络回来再覆盖（SWR）；换账号 / 登录登出 / 任意写操作成功后整体作废。`/api/me` 刻意不缓存 —— 缓存它会让「token 已被撤销」晚一天才发现（见 `docs/app.js`）。安卓端的等价物是 `Store.cachedPayload`（同样 1 天，见 `app/README.md`）
 
 **5. 用户颜色来源**
 - 本站 `cf_users.color` 不再独立分配，每次用户访问时由通行证 `/api/me` 返回的 color 同步覆盖
