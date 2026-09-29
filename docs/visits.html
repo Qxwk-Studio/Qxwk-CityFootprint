@@ -22,6 +22,8 @@
   /* ========= 足迹列表 =========
      每条足迹独立成卡（外层大卡片已去掉），因此不再用分隔线，靠卡片间距区分 */
   #visitList { display: flex; flex-direction: column; gap: 10px; }
+  /* 点整条 = 查看（只读弹窗，见 showVisitDetail）：列表里备注只有一行、省略号收住，
+     全文在弹窗里看。pointer 只是把「这条能点」这件事说出来，与 app 端一致 */
   .visit-item {
     display: flex;
     align-items: center;
@@ -31,6 +33,7 @@
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
     box-shadow: var(--shadow-sm);
+    cursor: pointer;
   }
   .visit-dot {
     width: 24px;
@@ -125,6 +128,14 @@
   .dialog-close:hover { background: var(--primary-subtle); color: var(--text-primary); }
   .dialog-actions { display: flex; gap: 10px; }
   .dialog-actions .btn { flex: 1; }
+
+  /* 查看行程弹窗里的「标签 + 值」两列：标签定宽，值吃满剩余宽度并自行折行
+     （备注最长 100 字，pre-wrap 让长文本在该行里正常换行而不是撑破弹窗） */
+  .detail-list { margin-bottom: 16px; }
+  .detail-row { display: flex; gap: 10px; padding: 9px 0; }
+  .detail-row + .detail-row { border-top: 1px solid var(--border); }
+  .detail-label { flex-shrink: 0; width: 4.4em; font-size: 0.8rem; color: var(--text-tertiary); }
+  .detail-value { flex: 1; min-width: 0; font-size: 0.85rem; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
   .field-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 6px; }
   .field-head label { margin-bottom: 0; }
 
@@ -172,8 +183,10 @@
     background: var(--primary-light);
   }
   .achievement .icon { font-size: 1.1rem; flex-shrink: 0; }
-  .achievement .name { font-size: 0.85rem; font-weight: 600; flex-shrink: 0; }
-  .achievement .desc { font-size: 0.75rem; color: var(--text-tertiary); flex: 1 1 0; min-width: 0; max-width: 100%; line-height: 1.45; overflow-wrap: anywhere; word-break: break-word; }
+  /* 名称与说明分两行：说明与名称同在一个 .body 里，左边缘自然对齐（不再与名称挤在一行） */
+  .achievement .body { flex: 1 1 0; min-width: 0; }
+  .achievement .name { font-size: 0.85rem; font-weight: 600; }
+  .achievement .desc { margin-top: 2px; font-size: 0.75rem; color: var(--text-tertiary); line-height: 1.45; overflow-wrap: anywhere; word-break: break-word; }
   /* 达成才有 ✓，未达成留白不占视觉重心 */
   .achievement .check {
     flex-shrink: 0;
@@ -426,6 +439,40 @@
   </form>
 </dialog>
 
+<!-- 查看行程弹窗（只读）：点列表里任意一条打开。列表里的备注只占一行、多出来的省略号收住，
+     全文在这里看；要改走行内那颗「编辑」，删除也在编辑弹窗里 —— 与 app 端同一套交互。
+     外观直接复用上面 .edit-dialog 那套（原生 <dialog> 自带遮罩 / Esc 关闭 / 焦点陷阱）。 -->
+<dialog class="edit-dialog" id="visitDetailDialog" aria-label="查看行程">
+  <div class="dialog-header">
+    <h3>🔍 查看行程</h3>
+    <button type="button" class="dialog-close" onclick="closeVisitDetail()" aria-label="关闭">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+  <div class="detail-list">
+    <div class="detail-row">
+      <span class="detail-label">城市</span>
+      <span class="detail-value" id="detailCity"></span>
+    </div>
+    <div class="detail-row">
+      <span class="detail-label">时间</span>
+      <span class="detail-value" id="detailDate"></span>
+    </div>
+    <!-- 出行方式与备注都可能没有：整行隐藏，不留一个空标题（showVisitDetail 里控制） -->
+    <div class="detail-row" id="detailTransportRow">
+      <span class="detail-label">出行方式</span>
+      <span class="detail-value" id="detailTransport"></span>
+    </div>
+    <div class="detail-row" id="detailNoteRow">
+      <span class="detail-label">备注</span>
+      <span class="detail-value" id="detailNote"></span>
+    </div>
+  </div>
+  <div class="dialog-actions">
+    <button class="btn btn-primary" type="button" onclick="closeVisitDetail()">关闭</button>
+  </div>
+</dialog>
+
 <footer class="footer">
   <div class="footer-copy">2026 青翔未阔工作室 · City Footprint</div>
 </footer>
@@ -591,8 +638,10 @@ function renderAchievements(CATEGORIES) {
           ${cat.items.map(a => `
             <div class="achievement${a.done ? ' done' : ''}">
               <div class="icon">${a.icon}</div>
-              <div class="name">${a.name}</div>
-              <div class="desc">${a.desc}</div>
+              <div class="body">
+                <div class="name">${a.name}</div>
+                <div class="desc">${a.desc}</div>
+              </div>
               <span class="check">✓</span>
             </div>`).join('')}
         </div>
@@ -627,6 +676,12 @@ async function loadVisits() {
           <button class="btn btn-ghost btn-sm" onclick="startEdit(${v.id})">编辑</button>
           <button class="btn btn-danger btn-sm" onclick="delVisit(${v.id})">删除</button>
         </div>`;
+      // 点整条 = 查看（只读弹窗）。行内按钮各干各的事，点它们时别再顺手弹详情，
+      // 所以先看事件是否落在动作区里
+      item.onclick = (e) => {
+        if (e.target.closest('.visit-actions')) return;
+        showVisitDetail(v.id);
+      };
       list.appendChild(item);
     }
   } catch (err) {
@@ -709,6 +764,36 @@ function closeEditModal() {
 document.getElementById('editDialog').addEventListener('close', () => {
   editingId = null;
   document.body.classList.remove('no-scroll'); // 关弹窗（含 Esc）恢复页面滚动
+});
+
+// 查看（只读）弹窗：列表里备注只占一行、多出来的省略号收住，全文在这里看。
+// 与 app 端同一套交互：点条目看详情，要改走行内那颗「编辑」，删除也在编辑弹窗里。
+function showVisitDetail(id) {
+  const v = myVisits.find(x => x.id === id);
+  if (!v) return;
+  // 城市名照旧 escapeHtml，私密徽章是固定文案 —— 与列表里那条的写法保持一致
+  document.getElementById('detailCity').innerHTML =
+    escapeHtml(v.city) + (v.is_private ? '<span class="visit-private-badge" title="不公开行程，仅自己可见">🔒 不公开</span>' : '');
+  document.getElementById('detailDate').textContent = fmtDate(v.visit_date);
+
+  // 出行方式、备注没填就整行隐藏（含标签）：留一个空标题比少一行更难看
+  const transports = transportLabels(v.transport || []);
+  document.getElementById('detailTransportRow').style.display = transports.length ? '' : 'none';
+  document.getElementById('detailTransport').textContent = transports.join(' / ');
+  document.getElementById('detailNoteRow').style.display = v.note ? '' : 'none';
+  document.getElementById('detailNote').textContent = v.note || '';
+
+  document.body.classList.add('no-scroll'); // 与编辑弹窗同理：原生模态挡不住背后页面的滚轮
+  document.getElementById('visitDetailDialog').showModal();
+}
+
+function closeVisitDetail() {
+  document.getElementById('visitDetailDialog').close();
+}
+
+// Esc 关闭不经过上面的按钮，照编辑弹窗那套用 close 事件恢复页面滚动
+document.getElementById('visitDetailDialog').addEventListener('close', () => {
+  document.body.classList.remove('no-scroll');
 });
 
 async function delVisit(id) {
