@@ -2,6 +2,7 @@ package top.qxwkstudio.travel.data
 
 import android.content.Context
 import android.content.SharedPreferences
+import java.util.concurrent.atomic.AtomicInteger
 import top.qxwkstudio.travel.logic.LoginSession
 import top.qxwkstudio.travel.logic.Me
 
@@ -68,6 +69,16 @@ class Store(context: Context) {
     }
 
     /**
+     * 数据版本号，[invalidatePayloads] 每次自增。**只在内存里**，进程重启即归零 —— 够用就够：
+     * 页面（目前只有地图页）拿它跟「自己已经画出来的那份数据」的版本比，判断切回 tab 时要不要重拉。
+     * 刻意不落盘：重启后本来就要重新加载，落盘反而多出一份要维护、还可能过期的状态。
+     *
+     * 计数放 companion 而不是实例字段：`Store(context)` 是每个 Activity/Fragment 各 new 一个的
+     * （全仓十来处），实例字段会各算各的 —— 写操作的 Activity 涨的那个号，地图页那个实例根本看不见。
+     */
+    val dataVersion: Int get() = versionCounter.get()
+
+    /**
      * 缓存整体作废。两种时机：写操作成功后（自己的足迹变了，成就与统计跟着变）、换账号时。
      * 不按 key 精细区分 —— 就两份报文，一起丢最省心也不会漏。
      *
@@ -76,6 +87,8 @@ class Store(context: Context) {
      * 不必记得回来改这一处；反过来，别把 `cache_` 前缀挪作它用，会被这里一起抹掉。
      */
     fun invalidatePayloads() {
+        // 顺手记一笔版本：报文缓存丢了，但「已经画在界面上的旧数据」还在各页手里
+        versionCounter.incrementAndGet()
         val edit = sp.edit()
         sp.all.keys.filter { it.startsWith(CACHE_PREFIX) }.forEach { edit.remove(it) }
         edit.apply()
@@ -100,6 +113,9 @@ class Store(context: Context) {
     }
 
     private companion object {
+        /** 见 [dataVersion]。跨实例共享，所以是伴生对象里的静态字段。 */
+        val versionCounter = AtomicInteger(0)
+
         const val NAME = "city_footprint"
         const val KEY_TOKEN = "token"
         const val KEY_NICKNAME = "nickname"

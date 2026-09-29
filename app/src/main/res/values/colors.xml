@@ -24,6 +24,9 @@
     <color name="text_primary">#0F172A</color>        <!-- 与 fg 同值，兼容既有引用 -->
     <color name="text_secondary">#64748B</color>      <!-- text-secondary：次要说明 -->
     <color name="muted_fg">#64748B</color>            <!-- text-secondary：更弱的说明（同值） -->
+    <color name="text_tertiary">#94A3B8</color>       <!-- text-tertiary：最弱的一档（图例标题 / 图例空态）。 -->
+    <!-- ↑ 这一档原先缺，网页 .legend-title / .legend-toggle / .legend .empty 用的是它，
+         在 app 里一律拿 secondary 顶替，图例那行字比网页明显深一档；补上后按网页用法逐处换。 -->
     <color name="muted">#E2E8F0</color>               <!-- border：进度轨道 / 开关关闭态轨道 -->
     <color name="popover">#F8FAFC</color>             <!-- bg：输入框底 / 名次圆底 -->
 

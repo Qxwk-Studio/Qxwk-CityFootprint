@@ -93,8 +93,9 @@
 
     <!-- 地图 -->
     <string name="map_empty">还没有足迹，先去「足迹」页添加</string>
-    <!-- 图例（按用户筛选，对齐网页 docs/index.html 的 .legend）：标题 + 全选 + 每个用户一行 -->
-    <string name="map_legend_title">图例</string>
+    <!-- 图例（按用户筛选，对齐网页 docs/index.html 的 .legend）：标题 + 全选 + 每个用户一行。
+         标题用与网页 .legend-title 同一份文案（网页「谁的足迹」），两端别各叫一个名字 -->
+    <string name="map_legend_title">谁的足迹</string>
     <string name="map_legend_all">全选</string>
     <!-- 折叠箭头：展开时是「可收起」（▾），收起时是「可展开」（▸） -->
     <string name="map_legend_toggle_expanded">▾</string>

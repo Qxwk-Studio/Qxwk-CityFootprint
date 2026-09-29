@@ -33,7 +33,7 @@
         android:gravity="center"
         android:padding="24dp"
         android:text="@string/map_empty"
-        android:textColor="@color/muted_fg"
+        android:textColor="@color/text_tertiary"
         android:textSize="14sp"
         android:visibility="gone" />
 
@@ -48,10 +48,10 @@
         android:background="@drawable/bg_card"
         android:clickable="true"
         android:orientation="vertical"
-        android:paddingStart="12dp"
-        android:paddingTop="8dp"
-        android:paddingEnd="12dp"
-        android:paddingBottom="8dp"
+        android:paddingStart="10dp"
+        android:paddingTop="6dp"
+        android:paddingEnd="10dp"
+        android:paddingBottom="6dp"
         android:visibility="gone">
 
         <LinearLayout
@@ -59,15 +59,13 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:paddingTop="2dp"
-            android:paddingBottom="2dp">
+            android:orientation="horizontal">
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/map_legend_title"
-                android:textColor="@color/muted_fg"
+                android:textColor="@color/text_tertiary"
                 android:textSize="12sp"
                 android:textStyle="bold" />
 
@@ -76,17 +74,20 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
-                android:text="@string/map_legend_toggle_expanded"
-                android:textColor="@color/muted_fg"
+                android:text="@string/map_legend_toggle_collapsed"
+                android:textColor="@color/text_tertiary"
                 android:textSize="12sp" />
         </LinearLayout>
 
-        <!-- 用户多了就滚动：maxHeight 收住高度，免得图例把地图盖满 -->
+        <!-- 用户多了就滚动：maxHeight 收住高度，免得图例把地图盖满。
+             默认 GONE = 收起（与网页 docs/index.html 的默认一致）：进地图页先只看地图本身，
+             要筛人时点标题行展开。箭头初值也要跟着用 collapsed（▸），否则首帧指向反了 -->
         <ScrollView
             android:id="@+id/legendScroll"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:maxHeight="260dp">
+            android:maxHeight="260dp"
+            android:visibility="gone">
 
             <LinearLayout
                 android:id="@+id/legendList"
@@ -143,13 +144,13 @@
                 android:textSize="16sp" />
         </LinearLayout>
 
-        <!-- 加载中 / 加载失败 / 没有符合条件的行程 都复用这一行 -->
+        <!-- 加载中 / 加载失败 / 没有符合条件的行程 都复用这一行（网页这三句都走 .popup-more，用 tertiary） -->
         <TextView
             android:id="@+id/cityCardStatus"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
-            android:textColor="@color/muted_fg"
+            android:textColor="@color/text_tertiary"
             android:textSize="12sp"
             android:visibility="gone" />
 

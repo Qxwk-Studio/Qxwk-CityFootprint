@@ -87,8 +87,12 @@ class MapFragment : Fragment() {
     /** 「全选」复选框。用户行单独勾选时要同步它的状态，见 [syncSelectAll]。 */
     private var selectAllBox: CheckBox? = null
 
-    /** 只装一次；切 tab 回来不重装（重装会把用户缩放/平移过的视野也重置掉）。 */
+    /** 数据装过一次就不再重复装。切 tab 回来**不重建视图**（重建会连用户缩放/平移过的视野一起重置），
+     *  但数据可能被改过，那种情况要重拉 —— 见 [loadedVersion]。 */
     private var loaded = false
+
+    /** [load] 那次拿到的是哪一版数据（[Store.dataVersion]）。写操作会让版本号变，切回地图页据此决定重拉。 */
+    private var loadedVersion = -1
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentMapBinding.inflate(inflater, container, false)
@@ -116,6 +120,9 @@ class MapFragment : Fragment() {
         // 对应 256 CSS 像素）同一口径，标注字号才正常（代价：瓦片源本身只有 256px，边缘会略糊）。
         b.map.setTilesScaledToDpi(true)
         b.map.setMultiTouchControls(true)
+        // 关掉 osmdroid 自带那对 +/- 缩放按钮：**6.0 起默认开启**，叠在底部中间，与网页版（Leaflet 只有
+        // 左上角那颗）不一致，也会盖住底部城市明细卡。只关按钮，捏合缩放靠上面那行 setMultiTouchControls 照旧
+        b.map.setBuiltInZoomControls(false)
         b.map.setMaxZoomLevel(18.0)
         b.map.controller.setZoom(4.0)
         // 先给一个能看见全国的视野（中国大致中心），用户再自己缩放
@@ -129,7 +136,9 @@ class MapFragment : Fragment() {
 
     override fun onResume() {
         super.onResume()
-        _binding?.map?.onResume()
+        // 隐藏着就别恢复：tab 是 hide/show，隐藏页仍是 RESUMED，Activity 每次 resume（比如从编辑页返回）
+        // 都会连带把后台地图叫起来拉瓦片。切 tab 的显隐由下面的 onHiddenChanged 管
+        if (!isHidden) _binding?.map?.onResume()
     }
 
     override fun onPause() {
@@ -138,13 +147,23 @@ class MapFragment : Fragment() {
     }
 
     /**
-     * 切走时暂停地图、切回来恢复。
-     * 光靠 onPause/onResume 不够：tab 是 add/hide/show 切换的，隐藏的 Fragment 仍是 RESUMED，
+     * 切走时暂停地图、切回来恢复，并补一次数据。
+     *
+     * 暂停：光靠 onPause/onResume 不够，tab 是 add/hide/show 切换的，隐藏的 Fragment 仍是 RESUMED，
      * 不在这里停一下，地图会在后台白拉瓦片流量。
+     *
+     * 补数据：本页**没有下拉刷新**，[load] 又只在 onViewCreated 调一次，所以这里是唯一的自愈点 ——
+     * 在足迹页增删改之后切回地图，若不在这里重拉，图例与城市会一直停在旧数据上，只能杀进程。
+     * 重不重拉由 [load] 里的版本号判断，版本没变时它直接返回，不会每次切 tab 都打网络。
      */
     override fun onHiddenChanged(hidden: Boolean) {
         super.onHiddenChanged(hidden)
-        if (hidden) _binding?.map?.onPause() else _binding?.map?.onResume()
+        if (hidden) {
+            _binding?.map?.onPause()
+        } else {
+            _binding?.map?.onResume()
+            load()
+        }
     }
 
     override fun onDestroyView() {
@@ -157,7 +176,8 @@ class MapFragment : Fragment() {
     // ────────────────────────────── 数据加载 ──────────────────────────────
 
     private fun load() {
-        if (loaded) return
+        // 版本没变就直接返回。这样「写操作后切回地图」会自动刷新，又不会每次切 tab 都白拉一次
+        if (loaded && loadedVersion == store.dataVersion) return
         val token = store.token
         if (token == null) {
             Session.expired(requireActivity())
@@ -174,6 +194,11 @@ class MapFragment : Fragment() {
                 return@runIo
             }
             loaded = true
+            loadedVersion = store.dataVersion
+            // 这是「数据被改过」才走到的分支（版本没变上面就返回了）：明细缓存与已经弹出的城市卡
+            // 装的是改动前的旧行，卡里那几行不会自己更新，一并丢掉、收起来
+            cityDetailCache.clear()
+            hideCityCard()
             cities = data.cities
             binding.textEmpty.visibility = if (cities.isEmpty()) View.VISIBLE else View.GONE
             buildLegend()
@@ -183,7 +208,11 @@ class MapFragment : Fragment() {
 
     // ────────────────────────────── 图例 ──────────────────────────────
 
-    /** 图例默认展开：手机上没有 hover，图例本身就是筛选入口，藏起来反而找不到（网页默认收起是桌面取舍）。 */
+    /**
+     * 展开/收起图例的用户列表。默认**收起**（初值在 fragment_map.xml：legendScroll 为 gone、箭头为 ▸），
+     * 与网页 docs/index.html 一致——先进地图看整体，要筛人再点标题行。
+     * 判定看 legendScroll 当前可见性而非另存状态变量：唯一的改动入口就是这里，两边不会不同步。
+     */
     private fun toggleLegend() {
         val b = binding
         val collapsing = b.legendScroll.visibility == View.VISIBLE
@@ -240,22 +269,23 @@ class MapFragment : Fragment() {
         val row = LinearLayout(ctx).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            // 纵向内边距同网页 .legend .user（2px）：一行一个人是纯信息列表，行内留白别太厚
-            setPadding(0, dp(2), 0, dp(2))
+            // 纵向 1dp（网页 .legend .user 是 2px）：一行一个人是纯信息列表，行内留白别太厚
+            setPadding(0, dp(1), 0, dp(1))
             isClickable = true
         }
         row.addView(CheckBox(ctx).apply {
             isClickable = false
             isFocusable = false
             tag = name
-            // Material 主题给复选框的 minHeight 是 48dp 触摸目标，行高会被它顶到 48dp，
-            // 光收内边距看不出效果（人与人之间还是空一大截）。钉掉这个下限后行高回到图标本身的高度；
-            // 整行仍可点，点击热区不受影响
+            // Material3 给复选框的 minWidth / minHeight 都是 48dp 触摸目标：
+            // minHeight 会把行高顶到 48dp，minWidth 会在勾选框与圆点之间留出近 48dp 的空档。
+            // 两个下限都钉掉，尺寸回到图标本身；整行仍可点，点击热区不受影响
             minimumHeight = 0
+            minimumWidth = 0
         })
         if (color != null) {
             row.addView(View(ctx).apply {
-                layoutParams = LinearLayout.LayoutParams(dp(10), dp(10)).apply { marginStart = dp(4) }
+                layoutParams = LinearLayout.LayoutParams(dp(8), dp(8)).apply { marginStart = dp(4) }
                 background = GradientDrawable().apply {
                     shape = GradientDrawable.OVAL
                     setColor(color)
@@ -265,11 +295,11 @@ class MapFragment : Fragment() {
         row.addView(TextView(ctx).apply {
             text = name
             setTextColor(ContextCompat.getColor(ctx, R.color.text_secondary))
-            textSize = 13f
+            textSize = 12f
             maxLines = 1
             ellipsize = TextUtils.TruncateAt.END
             maxWidth = dp(160)
-            setPadding(dp(6), 0, 0, 0)
+            setPadding(dp(4), 0, 0, 0)
         })
         return row
     }
@@ -465,7 +495,8 @@ class MapFragment : Fragment() {
         })
         row.addView(TextView(ctx).apply {
             text = getString(R.string.visits_meta, VisitDate.display(visit.visitDate))
-            setTextColor(ContextCompat.getColor(ctx, R.color.muted_fg))
+            // 与网页 .popup-person .meta 同档（tertiary），别用 secondary —— 比网页深一档
+            setTextColor(ContextCompat.getColor(ctx, R.color.text_tertiary))
             textSize = 11f
             setPadding(dp(6), 0, 0, 0)
         })
@@ -488,7 +519,8 @@ class MapFragment : Fragment() {
 
     private fun cityMoreRow(): View = TextView(requireContext()).apply {
         text = getString(R.string.map_city_more)
-        setTextColor(ContextCompat.getColor(requireContext(), R.color.muted_fg))
+        // 同网页 .popup-more（tertiary）
+        setTextColor(ContextCompat.getColor(requireContext(), R.color.text_tertiary))
         textSize = 11f
         gravity = Gravity.CENTER
         setPadding(0, dp(6), 0, dp(2))
