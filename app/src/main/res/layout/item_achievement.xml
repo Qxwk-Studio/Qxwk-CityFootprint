@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- 一条成就 = 一张独立小卡（网页 docs/visits.html 的 .achievement）：
-     图标、名称、说明、勾**都在同一行**（网页是 flex 横排：name 不收缩、desc 占满剩余宽度并自行折行）。
+     图标与名称占第一行，说明换到第二行、左边与名称对齐 —— 说明就装在名称同一个「正文列」里，
+     两行的左边缘天然对齐（网页那边也是 name / desc 同在一个 .body 里）。勾在卡片右侧，
+     与整块正文垂直居中。
 
      未达成 / 达成不靠两套布局区分，都由代码改这张卡本身（看 AchievementsFragment）：
        - 未达成：整卡 alpha 0.55（网页 .achievement 的 opacity）；
@@ -33,26 +35,34 @@
             android:layout_height="wrap_content"
             android:textSize="18sp" />
 
-        <TextView
-            android:id="@+id/textName"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="10dp"
-            android:ellipsize="end"
-            android:maxLines="1"
-            android:textColor="@color/fg"
-            android:textSize="14sp"
-            android:textStyle="bold" />
-
-        <!-- 说明占满剩余宽度、按需折行（网页 .desc 的 flex:1 + min-width:0 + overflow-wrap:anywhere） -->
-        <TextView
-            android:id="@+id/textDesc"
+        <!-- 正文列：名称一行、说明另起一行。
+             0dp + weight=1 等价网页的 flex:1 1 0 + min-width:0：把剩余宽度吃满，
+             说明再长也只在本列里折行，不会把右侧的勾挤出屏幕 -->
+        <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="10dp"
             android:layout_weight="1"
-            android:textColor="@color/muted_fg"
-            android:textSize="12sp" />
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/textName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textColor="@color/fg"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/textDesc"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:textColor="@color/muted_fg"
+                android:textSize="12sp" />
+        </LinearLayout>
 
         <!-- 已达成才出现的勾：主色圆底 + 白勾（网页 .achievement .check）。
              未达成时 GONE，不占视觉重心。 -->
