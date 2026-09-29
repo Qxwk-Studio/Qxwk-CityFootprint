@@ -126,7 +126,8 @@
 - **颜色与头像都由 Account 输出**：`cf_users.color` 和用户头像 URL 都是通行证"单一事实源"，本站每次用户访问时同步覆盖。这样用户在通行证改颜色 / 改邮箱（头像 hash 变化）后，访问本站自动生效，避免两端数据漂移。
 - **私密行程接口层过滤**：`is_private` 过滤在 Worker 侧做，而不是前端，防止有人抓接口构造出别人的私密足迹。规则只写一处 —— `lib.js` 的 `visibility(viewer)`（管理员不过滤；其余放行「非私密」或「自己的」），`/api/cities`、`/api/city/:city`、`/api/stats` 共用它。凡是新增「面向他人数据」的接口，都必须套这一段，别各自手抄。
 - **成就系统**：判定逻辑只有一份，在 `backend/src/achievements.js` —— "足迹丰碑 / 巡游四方 / 城市打卡 / 极限挑战"四大类共 42 条，每条带**稳定的 `code`**（早期拿中文 name 当计数键，改文案就会静默错位）。网页与 app **都不再自带定义**，只消费接口：`GET /api/my-visits` 下发 `done`（我的成就），`GET /api/stats` 下发 `count`（达成人数），两者都把 `icon/name/desc` 一起给，所以客户端零定义也能渲染。新增成就只改这一个文件，并同步 `backend/test/achievements.test.js`。
-- **地图边界与瓦片缓存**：DataV GeoAtlas 边界由 Worker `/api/geo/:adcode` 代理，三层都按 7 天缓存 —— Worker 内部 `caches.default` 的副本带 `Cache-Control: public, max-age=604800`，返回给浏览器的响应也带同一个头（浏览器 HTTP 缓存才吃得到），前端再用 IndexedDB 存 7 天，打开地图时只拉取缺省的边界。行政边界几年才动一次（撤市设区那类），7 天很安全；三层写同一口径是为了避免前端先到期、白白多发一次往返。瓦片用高德免 Key 内网直出、Leaflet 资源自托管到 `docs/vendor/`，避免外链失效与 CORS 折腾。
+- **地图边界与瓦片缓存**：DataV GeoAtlas 边界由 Worker `/api/geo/:adcode` 代理，三层都按 7 天缓存 —— Worker 内部 `caches.default` 的副本带 `Cache-Control: public, max-age=604800`，返回给浏览器的响应也带同一个头（浏览器 HTTP 缓存才吃得到），前端再用 IndexedDB 存 7 天：命中且未过期直接画，命中但已过期也先画上（边界几年才动一次），同时后台重下刷新缓存，只有完全没缓存时才等网络。行政边界几年才动一次（撤市设区那类），7 天很安全；三层写同一口径是为了避免前端先到期、白白多发一次往返。瓦片用高德免 Key 内网直出、Leaflet 资源自托管到 `docs/vendor/`，避免外链失效与 CORS 折腾。
+- **读接口报文缓存（会话级 1 天 + SWR）**：`docs/app.js` 的 `api()` 是所有读接口的唯一入口，GET 成功写 `sessionStorage`，写接口成功与登录 / 登出 / 401 时整体作废（`cacheInvalidate()`，与 App 端 `Store.invalidatePayloads()` 同一思路：不按 key 精细区分，几份报文一起丢）。页面侧用 `apiWatch()` 取数：命中缓存先画一版、网络回来再画一版，所以要求各页渲染幂等；需要「必须最新」的场合（增删改后重新拉地图 / 列表）仍直接调 `api()` —— 那时缓存已作废，本来也不会命中。用 `sessionStorage` 而非 `localStorage`，是因为报文可能含私密足迹，按标签页隔离、关标签即清；代价是 **F5 不会清**，失效只有换账号 / 写操作 / 24 小时过期三条路。缓存 key 按 `userId` 隔离（未登录用 `anon`），否则换账号会先画出上一个人的私密数据；`/me` 刻意不缓存 —— 缓存它会让「token 已被撤销」晚一天才被发现。边界 GeoJSON 是公共数据、与账号无关，不在这套缓存里（见上一条）。
 - **城市字典与 adcode 由后端派生**：`cf_visits.adcode` 在**写入时**由后端按城市名从字典取出（`backend/src/city-codes.js`），字典与前端 `docs/city-codes.js` **同源** —— `scripts/gen-city-codes.js` 一次生成两份，避免两端各存一份后慢慢漂移。字典未命中（用户自造的城市名）留 `NULL` 而**不拒绝请求**；读取时用 `v.adcode || 字典[city]` 兜底，加列前的老行也有值。这样 web 与 app 都不必再自带「城市名 → adcode」映射，直接拿接口给的 `adcode` 取边界。
 - **出行方式（`transport`）**：一条行程可多选（飞机 / 火车 / 高铁 / 自驾 / 大巴 / 轮船 / 骑行 / 徒步 / 其他），库里存英文 code 的 **JSON 数组**（`CHECK json_valid` 兜底）；code 白名单与固定排序都在 `worker.js` 的 `TRANSPORTS`，前端枚举在 `docs/app.js` 的 `window.TRANSPORTS`（两处必须同步）。入库前会过滤未知 code、去重并按固定顺序排，前端可以放心直接提交勾选结果。
 - **页面链接不带 `.html`**：GitHub Pages 对 `/xxx` 会自动回落到 `xxx.html`（`travel.qxwkstudio.top/account`、`/stats` 已线上验证），所以站内导航统一写裸路径（`/account`、`/visits`…），浏览器地址栏就不露后缀。`docs/app.js` 的 401 兜底与 `docs/robots.txt` 的路径都已按裸路径对齐 —— 改导航时别把后缀加回来。
@@ -264,7 +265,7 @@ localhost 的任意端口（见 `backend/src/worker.js` 的 `ALLOWED_ORIGINS`）
 **4. 不公开行程（`is_private`）**
 - 勾选"不公开行程"的足迹仅本人可见，接口层通过 `is_private` 字段过滤
 - 公开接口（地图 `/api/cities`、统计 `/api/stats`）默认不含私密；登录用户在地图上可见自己的私密行程，管理员可见全部
-- 地图边界数据已做浏览器 IndexedDB 缓存（7 天过期），重复打开不重复请求
+- 地图边界数据已做浏览器 IndexedDB 缓存（7 天过期），重复打开不重复请求；过期的那批先画旧的、后台重下刷新（SWR）
 
 **5. 用户颜色来源**
 - 本站 `cf_users.color` 不再独立分配，每次用户访问时由通行证 `/api/me` 返回的 color 同步覆盖

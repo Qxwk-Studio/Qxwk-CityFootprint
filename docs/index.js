@@ -63,7 +63,8 @@ function getGeoDB() {
   return geoDBPromise;
 }
 
-// 读缓存：命中且未过期返回 geojson，否则 null
+// 读缓存：没有返回 null；有则返回 { data, stale } —— stale 为 true 表示已过期，
+// 但几何仍可用，调用方拿它先画（见 loadCityGeo 的 SWR）
 async function geoDBRead(adcode) {
   const db = await getGeoDB();
   if (!db) return null;
@@ -73,7 +74,8 @@ async function geoDBRead(adcode) {
       const get = tx.objectStore(GEO_STORE).get(adcode);
       get.onsuccess = () => {
         const row = get.result;
-        resolve(row && Date.now() - row.ts < GEO_MAX_AGE ? row.data : null);
+        if (!row) return resolve(null);
+        resolve({ data: row.data, stale: Date.now() - row.ts >= GEO_MAX_AGE });
       };
       get.onerror = () => resolve(null);
     } catch { resolve(null); }
@@ -90,27 +92,36 @@ async function geoDBWrite(adcode, data) {
   } catch { /* 忽略 */ }
 }
 
-// 加载城市边界（经 Worker 代理请求 DataV，规避浏览器跨域/来源限制）
-// 命中顺序：内存缓存 → IndexedDB → 网络（并发受控）；失败返回 null（回退圆点）
+// 网络取边界（经 geoFetch 并发控制；API_BASE 来自 app.js —— 后端与页面不同源，必须绝对地址）：
+// 校验是合法 GeoJSON 才写入 IndexedDB 并返回，否则返回 null（回退圆点）
+async function geoFetchGeo(adcode) {
+  const r = await geoFetch(`${API_BASE}/geo/${adcode}`);
+  if (!r.ok) return null; // 404/错误 → 回退圆点
+  let g = null;
+  try {
+    g = await r.json();
+    // 校验是合法 GeoJSON，避免把错误对象传给 Leaflet
+    if (!(g && g.type === 'FeatureCollection' && Array.isArray(g.features))) g = null;
+  } catch { g = null; }
+  if (g) geoDBWrite(adcode, g); // 写入 IndexedDB，下次打开直接命中
+  return g;
+}
+
+// 加载城市边界。命中顺序：内存缓存 → IndexedDB → 网络（并发受控）；失败返回 null（回退圆点）。
+// IndexedDB 里那份过期时走 SWR：先把旧几何交出去，同时在后台重下刷新缓存 ——
+// 边界几年才动一次，先画旧的完全不亏；少了这一步，用户会先看到一个圆点，
+// 等网络回来才变成边界，而旧几何明明就在手边。
+// 后台只刷缓存、不重画：形状不变，重画还得先撤掉这一座城市已画上的旧图层，不值当。
 function loadCityGeo(adcode) {
   if (!geoCache.has(adcode)) {
-    const p = (async () => {
-      // 1) IndexedDB 缓存
-      const cached = await geoDBRead(adcode);
-      if (cached) return cached;
-      // 2) 网络请求（经 geoFetch 并发控制）；API_BASE 来自 app.js（后端与页面不同源，必须绝对地址）
-      const r = await geoFetch(`${API_BASE}/geo/${adcode}`);
-      if (!r.ok) return null; // 404/错误 → 回退圆点
-      let g = null;
-      try {
-        g = await r.json();
-        // 校验是合法 GeoJSON，避免把错误对象传给 Leaflet
-        if (!(g && g.type === 'FeatureCollection' && Array.isArray(g.features))) g = null;
-      } catch { g = null; }
-      if (g) geoDBWrite(adcode, g); // 写入 IndexedDB，下次打开直接命中
-      return g;
-    })();
-    geoCache.set(adcode, p);
+    geoCache.set(adcode, (async () => {
+      const row = await geoDBRead(adcode);
+      if (row) {
+        if (row.stale) geoFetchGeo(adcode).catch(() => {}); // 后台重下，不阻塞本次渲染
+        return row.data;
+      }
+      return geoFetchGeo(adcode); // 完全没有缓存：只能等网络
+    })());
   }
   return geoCache.get(adcode);
 }
