@@ -21,27 +21,38 @@
         android:textSize="12sp"
         android:textStyle="bold" />
 
-    <TextView
-        android:id="@+id/textCity"
+    <!-- 城市与省份是**一组**：等价网页 .rank-city（省份本来就嵌在那个 flex:1 的 span 里）。
+         容器吃掉剩余宽度，城市名与省份紧挨着靠左，右侧两列统计才会被推到行尾。
+         反过来、把省份平级放在容器外面，城市名这个 weight=1 会把剩余宽度全占掉，
+         省份就被顶到行中间去（就是「北京 …… · 北京 去过 20 人」那个错位）。 -->
+    <LinearLayout
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="12dp"
         android:layout_weight="1"
-        android:ellipsize="end"
-        android:maxLines="1"
-        android:textColor="@color/fg"
-        android:textSize="15sp"
-        android:textStyle="bold" />
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
 
-    <TextView
-        android:id="@+id/textProvince"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="4dp"
-        android:ellipsize="end"
-        android:maxLines="1"
-        android:textColor="@color/muted_fg"
-        android:textSize="11sp" />
+        <TextView
+            android:id="@+id/textCity"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textColor="@color/fg"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/textProvince"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="4dp"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textColor="@color/muted_fg"
+            android:textSize="11sp" />
+    </LinearLayout>
 
     <TextView
         android:id="@+id/textPeople"
