@@ -434,41 +434,43 @@ class MapFragment : Fragment() {
         if (filtered.size > 10) b.cityCardList.addView(cityMoreRow())
     }
 
-    /** 一条行程：首行「昵称（+私密锁）· 到访时间」，有备注就在下面占一行。 */
+    /**
+     * 一条行程：昵称（+私密锁）· 到访时间 · 备注**都在同一行**，且只占一行。
+     * 与网页弹窗的 .popup-person（flex 一行、备注 ellipsis）同一形态：
+     * 昵称与日期按内容取宽，备注吃掉剩下的宽度、超长省略。
+     */
     private fun cityRow(visit: CityVisit): View {
         val ctx = requireContext()
         val row = LinearLayout(ctx).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(0, dp(4), 0, dp(4))
-        }
-        val head = LinearLayout(ctx).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
+            setPadding(0, dp(4), 0, dp(4))
         }
-        head.addView(TextView(ctx).apply {
+        row.addView(TextView(ctx).apply {
             // 私密锁跟在昵称后面、用同一颜色（与网页 `style="color:…">昵称 🔒` 一致）
             text = if (visit.isPrivate) "${visit.nickname} 🔒" else visit.nickname
             setTextColor(safeColor(visit.color))
             textSize = 13f
             setTypeface(typeface, Typeface.BOLD)
         })
-        head.addView(TextView(ctx).apply {
+        row.addView(TextView(ctx).apply {
             text = getString(R.string.visits_meta, VisitDate.display(visit.visitDate))
             setTextColor(ContextCompat.getColor(ctx, R.color.muted_fg))
             textSize = 11f
             setPadding(dp(6), 0, 0, 0)
         })
-        row.addView(head)
         if (visit.note.isNotBlank()) {
-            // 备注最长 100 字，这里**只占一行、超长省略**：整段铺开会把每行行程撑高、卡片要滚很久。
-            // 与网页 Leaflet 弹窗的 .popup-person .note、以及足迹页列表的备注同一口径；
-            // 要看全文点开足迹页那条行程（那里的详情弹窗不设 maxLines）
+            // 备注最长 100 字，同一行放不下就省略（weight=1：昵称/日期按内容占位，剩下的都归它）。
+            // 与网页 .popup-person .note 的 overflow:hidden + ellipsis 同一口径；
+            // 要看全文点开足迹页那条行程（详情弹窗不设 maxLines）
             row.addView(TextView(ctx).apply {
                 text = visit.note
                 setTextColor(ContextCompat.getColor(ctx, R.color.text_secondary))
                 textSize = 12f
+                setPadding(dp(6), 0, 0, 0)
                 maxLines = 1
                 ellipsize = TextUtils.TruncateAt.END
+                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
             })
         }
         return row

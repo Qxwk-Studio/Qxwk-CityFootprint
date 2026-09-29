@@ -168,18 +168,6 @@ npx wrangler d1 migrations apply qxwk-data --remote
 
 迁移会创建本站所需的全部表：`cf_users`（`is_admin` 管理员标志、`color` 颜色随通行证同步、`passport_id` 通行证 userId，本站独占）、`cf_visits`（足迹，含 `is_private` / `adcode` / `transport` 与一批 CHECK 约束）与 `users`（**与 Qxwk-Blog 共享**，博客的 `bg_*` 表外键指着它，本站已不再读写），并建出两个 `passport_id` 唯一索引。
 
-#### 历史：用户表为什么独立，以及 0002 的合并
-
-`users` 原先与 [Qxwk-Blog](https://github.com/Qxwk-Studio/Qxwk-Blog) **共享**（那边把 `users.avatar` 当作者头像读），两站的行混在一张表里，本站的统计与查询都得绕开博客那些无关行。于是改用独占的 `cf_users`，并把 `cf_visits.user_id` 的外键改指过去 —— 这一步由当时的 `0002_cf_users.sql` 完成，**`users` 表原样保留**（博客还在用）。
-
-那个迁移的几个关键点：只搬「有足迹的 + `is_admin = 1` 的管理员」；改外键必须重建 `cf_visits`（SQLite 改不了已有表的外键），重建时靠 `PRAGMA defer_foreign_keys = on` 兜住悬空那一刻；CHECK 约束 `ALTER TABLE` 也加不了，所以一并借重建这趟加上，因此 `adcode` / `transport` 两列与那批 CHECK 都落在 `0002` 里。
-
-搬迁在 2026-09 已跑完（`cf_users` 30 行、342 条足迹、0 条孤立足迹），于是把 `0002` **合并进 `0001_init.sql`** 并删掉中间文件 —— `cf_visits` 现在直接建成最终形态，全新库一个文件一步到位。合并时有意去掉了 `0002` 里那段 `INSERT ... SELECT ... FROM users`：那是把历史行从共享表搬进来的一次性动作，全新库没有历史行可搬。
-
-> 合并残留：线上 `d1_migrations` 还留着一条没有对应文件的 `0002_cf_users.sql` 记录。实测 `wrangler d1 migrations list` 只回 `No migrations to apply!`，不影响后续迁移；想干净可以删掉那一行（可选）。
->
-> **副作用**（仍然成立）：博客 feed 原先靠本站登录时同步 `users.avatar` 拿头像，现在本站不再写共享表，那部分头像要博客自己接通行证。
-
 ### 3️⃣ 在通行证注册本站
 
 建议在通行证的 `apps` 表登记本站（仅用于登录时把 `client` 认成本站站点名；通行证 `/api/login`、`/api/me` 的 CORS 已全面放行，未登记站点也能正常登录与跨域验证 token，只是来源会被记为「未登记来源」）。在通行证项目执行：
@@ -206,8 +194,6 @@ database_id = "你的-D1-数据库ID"
 ```
 
 这个文件里**只有 D1 绑定** —— 页面已搬去 GitHub Pages（`docs/` 目录），所以没有 `[assets]` 静态资源段，Worker 只服务 `/api/*`。
-
-> **⚠️ 前端搬走后，`env.ASSETS` 的回落必须一起删**：`worker.js` 末尾原先用 `env.ASSETS.fetch(request)` 兜底静态资源；既然这里不再声明 `[assets]`，`env.ASSETS` 就会是 `undefined`，忘了删那句的话任何未命中路由的请求都会抛错（Cloudflare Error 1101，本该 404 的路径变成 500）。现在那段已改为直接回 JSON 404。
 
 提交并推送，然后在 `backend/` 目录执行部署：
 
