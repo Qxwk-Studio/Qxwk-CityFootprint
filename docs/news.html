@@ -27,7 +27,7 @@
     font-size: 0.7rem;
     font-weight: 600;
     padding: 3px 10px;
-    border-radius: 40px;
+    border-radius: var(--radius-pill);
     margin-top: 2px;
   }
   .notice-text { font-size: 0.9rem; color: var(--text-primary); }
@@ -42,7 +42,8 @@
     bottom: 4px;
     width: 2px;
     background: var(--border);
-    border-radius: 2px;
+    /* 2px 宽的竖线走胶囊档：横向会被浏览器夹到 1px，等于两个圆端头（原来写死 2px 同样被夹到 1px） */
+    border-radius: var(--radius-pill);
   }
   .timeline-item { position: relative; padding-bottom: 22px; }
   .timeline-item:last-child { padding-bottom: 0; }
@@ -53,7 +54,7 @@
     top: 5px;
     width: 10px;
     height: 10px;
-    border-radius: 50%;
+    border-radius: var(--radius-full);
     background: var(--surface);
     border: 2.5px solid var(--primary);
     box-shadow: 0 0 0 3px var(--primary-light);
@@ -71,7 +72,7 @@
     color: var(--text-secondary);
     background: var(--bg);
     border: 1px solid var(--border);
-    border-radius: 6px;
+    border-radius: var(--radius-sm);
     padding: 1px 8px;
     margin-bottom: 6px;
   }

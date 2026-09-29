@@ -23,9 +23,15 @@
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
   --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
   --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.12);
-  --radius-sm: 8px;
-  --radius-md: 14px;
-  --radius-lg: 20px;
+  /* 圆角只认这几档，各页/各组件一律用 token，不要再写裸数值（裸值正是以前各页跑偏的原因）。
+     胶囊（按钮、返回链接、chips、开关轨道、进度条轨道）用 --radius-pill；
+     正圆（头像、圆点、spinner、开关滑块）用 --radius-full —— 它要求元素本身是正方形。
+     第三方样式 docs/vendor/leaflet.css 里的圆角不在此列，不要去动。 */
+  --radius-sm: 8px;     /* 输入框、小控件、小徽章 */
+  --radius-md: 14px;    /* 卡片、弹窗、统计小卡 */
+  --radius-lg: 20px;    /* 大容器、头像 */
+  --radius-pill: 999px;
+  --radius-full: 50%;
   --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
   --container: 1100px;
@@ -86,7 +92,7 @@ body {
 .brand-logo {
   width: 34px;
   height: 34px;
-  border-radius: 50%;
+  border-radius: var(--radius-full);
   flex-shrink: 0;
   object-fit: cover;
   box-shadow: 0 2px 10px rgba(37, 99, 235, 0.25);
@@ -107,7 +113,7 @@ body {
   background: rgba(37, 99, 235, 0.15);
   color: var(--text-primary);
   text-decoration: none;
-  border-radius: 40px;
+  border-radius: var(--radius-pill);
   font-size: 0.88rem;
   font-weight: 500;
   backdrop-filter: blur(4px);
@@ -134,7 +140,7 @@ body {
 .page-header h1 { font-size: clamp(1.4rem, 3vw, 1.8rem); font-weight: 700; color: var(--text-primary); }
 
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-  border: none; border-radius: 40px; padding: 11px 18px; font-size: 0.9rem; font-weight: 600;
+  border: none; border-radius: var(--radius-pill); padding: 11px 18px; font-size: 0.9rem; font-weight: 600;
   cursor: pointer; transition: all var(--transition); font-family: inherit; text-decoration: none; }
 
 .btn-primary {
@@ -153,7 +159,7 @@ body {
 
 .btn-ghost:hover { background: var(--border); color: var(--text-primary); }
 
-.btn-sm { padding: 6px 12px; font-size: 0.8rem; border-radius: 6px; }
+.btn-sm { padding: 6px 12px; font-size: 0.8rem; border-radius: var(--radius-sm); }
 
 /* ========= 表单控件 =========
    visits 的行程表单、account 的登录表单、index 添加弹窗的 .modal-input 共用这一套
@@ -254,7 +260,7 @@ input::placeholder, textarea::placeholder { color: var(--text-tertiary); }
 .loading-spinner {
   width: 36px;
   height: 36px;
-  border-radius: 50%;
+  border-radius: var(--radius-full);
   border: 3px solid var(--border);
   border-top-color: var(--primary);
   animation: spin 0.9s linear infinite;
@@ -273,7 +279,7 @@ input::placeholder, textarea::placeholder { color: var(--text-tertiary); }
   display: inline-block;
   padding: 6px 12px;
   border: 1px solid var(--border);
-  border-radius: 40px;
+  border-radius: var(--radius-pill);
   background: var(--surface);
   color: var(--text-secondary);
   font-size: 0.8rem;
@@ -317,7 +323,7 @@ input::placeholder, textarea::placeholder { color: var(--text-tertiary); }
 .switch-track {
   position: absolute;
   inset: 0;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: rgba(120, 120, 128, 0.32);
   transition: background var(--transition);
 }
@@ -329,7 +335,7 @@ input::placeholder, textarea::placeholder { color: var(--text-tertiary); }
   left: 2px;
   width: 20px;
   height: 20px;
-  border-radius: 50%;
+  border-radius: var(--radius-full);
   background: #fff;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
   transition: transform var(--transition);
@@ -361,7 +367,7 @@ input::placeholder, textarea::placeholder { color: var(--text-tertiary); }
 }
 
 /* ===== 黑夜模式：主题切换按钮 ===== */
-.theme-toggle { display:inline-flex; align-items:center; justify-content:center; width:32px; height:32px; padding:0; background:none; border:none; border-radius:50%; color:var(--text-primary); cursor:pointer; transition:background var(--transition), color var(--transition); position:relative; z-index:5; touch-action:manipulation; }
+.theme-toggle { display:inline-flex; align-items:center; justify-content:center; width:32px; height:32px; padding:0; background:none; border:none; border-radius:var(--radius-full); color:var(--text-primary); cursor:pointer; transition:background var(--transition), color var(--transition); position:relative; z-index:5; touch-action:manipulation; }
 
 .theme-toggle:hover { background:var(--primary-subtle); color:var(--primary); }
 

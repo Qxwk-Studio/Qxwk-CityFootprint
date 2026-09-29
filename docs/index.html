@@ -24,7 +24,7 @@
     z-index: 1000;
     width: 52px;
     height: 52px;
-    border-radius: 50%;
+    border-radius: var(--radius-full);
     background: linear-gradient(135deg, var(--primary), var(--secondary));
     color: #fff;
     border: none;
@@ -53,7 +53,7 @@
     padding: 10px 18px;
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: 40px;
+    border-radius: var(--radius-pill);
     color: var(--text-primary);
     text-decoration: none;
     font-size: 0.88rem;
@@ -80,7 +80,7 @@
     background: linear-gradient(135deg, var(--primary), var(--secondary));
     color: #fff;
     text-decoration: none;
-    border-radius: 40px;
+    border-radius: var(--radius-pill);
     font-size: 0.88rem;
     font-weight: 600;
     transition: all var(--transition);
@@ -155,12 +155,12 @@
     padding: 5px 4px;
     cursor: pointer;
     user-select: none;
-    border-radius: 6px;
+    border-radius: var(--radius-sm);
     transition: color var(--transition);
   }
   .legend .user:hover { color: var(--text-primary); }
   .legend .dot {
-    width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0;
+    width: 12px; height: 12px; border-radius: var(--radius-full); flex-shrink: 0;
     box-shadow: 0 0 0 2px #fff, 0 1px 3px rgba(0, 0, 0, 0.2);
   }
   .legend .user-check {
@@ -187,7 +187,7 @@
     background: linear-gradient(135deg, #f59e0b, #d97706);
     color: #fff;
     padding: 6px 16px;
-    border-radius: 20px;
+    border-radius: var(--radius-lg);
     font-size: 0.78rem;
     font-weight: 600;
     box-shadow: var(--shadow-md);
@@ -210,7 +210,7 @@
     transition: opacity .4s ease;
   }
   .spinner {
-    width: 28px; height: 28px; border-radius: 50%;
+    width: 28px; height: 28px; border-radius: var(--radius-full);
     border: 3px solid var(--border);
     border-top-color: var(--primary);
     animation: spin .8s linear infinite;
@@ -319,7 +319,7 @@
     height: 30px;
     padding: 0;
     border: none;
-    border-radius: 50%;
+    border-radius: var(--radius-full);
     background: none;
     color: var(--text-tertiary);
     cursor: pointer;
@@ -392,7 +392,7 @@
     width: 20px;
     height: 20px;
     box-sizing: border-box;
-    border-radius: 50%;
+    border-radius: var(--radius-full);
     background: #3b82f6;
     border: 3px solid #fff;
     box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.45), 0 2px 8px rgba(0, 0, 0, 0.3);
@@ -714,7 +714,7 @@ function render(data) {
     empty.onAdd = () => {
       const div = L.DomUtil.create('div');
       div.className = 'leaflet-control';
-      div.style.cssText = 'background:var(--surface);padding:16px 20px;border-radius:12px;box-shadow:var(--shadow-md);font-size:14px;color:var(--text-secondary);border:1px solid var(--border);';
+      div.style.cssText = 'background:var(--surface);padding:16px 20px;border-radius:var(--radius-md);box-shadow:var(--shadow-md);font-size:14px;color:var(--text-secondary);border:1px solid var(--border);';
       div.textContent = '还没有足迹，去添加第一座城市吧 ✈️';
       return div;
     };
