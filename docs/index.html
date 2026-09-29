@@ -233,7 +233,9 @@
     margin: 14px 18px;
   }
   .popup-title { font-size: 1rem; font-weight: 700; margin-bottom: 8px; color: var(--text-primary); }
-  /* 每行一个人：名字 + 日期 + 备注同一行，备注占剩余宽度并自动换行 */
+  /* 每行一个人：名字 + 日期 + 备注同一行，备注占剩余宽度、**只占一行**，超长省略。
+     备注最长 100 字，若让它在这里折行，一行行程会撑成很窄很高的一列（弹窗也跟着长高），
+     所以这里跟足迹管理页的 .visit-note 同一口径：一行 + 省略号，要看全文去「足迹管理」点开这条 */
   .popup-person {
     display: flex;
     align-items: baseline;
@@ -245,10 +247,11 @@
   .popup-person .meta { color: var(--text-tertiary); font-size: 0.78rem; flex-shrink: 0; }
   .popup-person .note {
     flex: 1;
-    min-width: 0;
+    min-width: 0;               /* flex 子项默认 min-width:auto，不置 0 的话省略号不生效 */
     color: var(--text-secondary);
-    word-break: break-word;
-    overflow-wrap: break-word;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .popup-more {
     margin-top: 6px;
@@ -423,6 +426,10 @@
   :root[data-theme="dark"] #map { background:#0f172a; }
   :root[data-theme="dark"] .legend { background:rgba(15,23,42,0.92); }
   :root[data-theme="dark"] .legend .dot { box-shadow:0 0 0 2px #0f172a, 0 1px 3px rgba(0,0,0,0.5); }
+  /* 汉堡菜单项的悬停态：共享样式里写的是「半透明蓝底 + color: --primary」，而 --primary 在暗色下
+     没有被覆盖（仍是深蓝 #2563eb）——深蓝字压在深色地图上几乎看不见。暗色下改成实心、浅一档的
+     底 + 白字（亮色下「底变蓝、字变蓝」的意图保留，只是换成暗色下读得清的配色） */
+  :root[data-theme="dark"] .fab-item:hover { background:#334155; color:#fff; }
   /* Leaflet 控件深色 */
   :root[data-theme="dark"] .leaflet-bar a { background:#1e293b; color:#e2e8f0; border-color:#334155; }
   :root[data-theme="dark"] .leaflet-bar a:hover { background:#0f172a; }

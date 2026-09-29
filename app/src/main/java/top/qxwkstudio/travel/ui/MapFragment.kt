@@ -434,7 +434,7 @@ class MapFragment : Fragment() {
         if (filtered.size > 10) b.cityCardList.addView(cityMoreRow())
     }
 
-    /** 一条行程：首行「昵称（+私密锁）· 到访时间」，有备注就再占一行。 */
+    /** 一条行程：首行「昵称（+私密锁）· 到访时间」，有备注就在下面占一行。 */
     private fun cityRow(visit: CityVisit): View {
         val ctx = requireContext()
         val row = LinearLayout(ctx).apply {
@@ -460,10 +460,15 @@ class MapFragment : Fragment() {
         })
         row.addView(head)
         if (visit.note.isNotBlank()) {
+            // 备注最长 100 字，这里**只占一行、超长省略**：整段铺开会把每行行程撑高、卡片要滚很久。
+            // 与网页 Leaflet 弹窗的 .popup-person .note、以及足迹页列表的备注同一口径；
+            // 要看全文点开足迹页那条行程（那里的详情弹窗不设 maxLines）
             row.addView(TextView(ctx).apply {
                 text = visit.note
                 setTextColor(ContextCompat.getColor(ctx, R.color.text_secondary))
                 textSize = 12f
+                maxLines = 1
+                ellipsize = TextUtils.TruncateAt.END
             })
         }
         return row
