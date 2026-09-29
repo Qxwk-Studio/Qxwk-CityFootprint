@@ -110,6 +110,11 @@ class MapFragment : Fragment() {
 
         val b = binding
         b.map.setTileSource(AMAP_TILES)
+        // 瓦片按屏幕 DPI 缩放。osmdroid 默认是 false —— 每块 256px 的瓦片只画 256 个**物理**像素，
+        // 于是在高密度屏上瓦片被画成应有尺寸的 1/density：一行里挤进好几块、标注字号被一并缩小，
+        // 看着就像「还没怎么放大就进了下一级」。开启后瓦片按 density 绘制，与网页 Leaflet（一块瓦片
+        // 对应 256 CSS 像素）同一口径，标注字号才正常（代价：瓦片源本身只有 256px，边缘会略糊）。
+        b.map.setTilesScaledToDpi(true)
         b.map.setMultiTouchControls(true)
         b.map.setMaxZoomLevel(18.0)
         b.map.controller.setZoom(4.0)
