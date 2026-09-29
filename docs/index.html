@@ -445,7 +445,9 @@
 
 <header class="navbar">
   <div class="navbar-inner">
-    <a href="/" class="navbar-brand">
+    <!-- 地图页就是主页本身，logo 点了没有可去之处：做成不带 href 的 <a>（无 href 的 a 不响应点击跳转），
+         也就替代了原先 onclick="return false" 那种内联处理器（CSP 会拦） -->
+    <a class="navbar-brand">
       <img class="brand-logo" src="/favicon.webp" alt="City Footprint">
       <span class="brand-text"><b>City Footprint</b><span>我们走过的城市</span></span>
     </a>
