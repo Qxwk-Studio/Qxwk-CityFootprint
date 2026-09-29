@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 点行程条目弹出的「查看」弹窗（只读）：列表里备注只占一行、用省略号收住，完整内容在这里看。
+     内容由 VisitsFragment.showDetail 填进来；出行方式与备注为空时整行隐藏，不留一个空标题。
+
+     这一段是 AlertDialog.setView 的自定义视图，四周留白得自己给：AlertDialog 只对 setView 的
+     旧重载（带 spacing 参数的那些）补间距，现在这个重载不会替我们加内边距。
+     竖向留白给得比横向小 —— 弹窗底部还有一颗「关闭」按钮自带的间隔。 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingStart="24dp"
+    android:paddingTop="20dp"
+    android:paddingEnd="24dp"
+    android:paddingBottom="4dp">
+
+    <!-- 城市 + 私密标记：与列表条目同一形态（私密时才出现那枚 accent 药丸） -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/textCity"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textColor="@color/fg"
+            android:textSize="17sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/textPrivate"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="6dp"
+            android:background="@drawable/bg_badge_accent"
+            android:paddingStart="8dp"
+            android:paddingTop="2dp"
+            android:paddingEnd="8dp"
+            android:paddingBottom="2dp"
+            android:text="@string/visits_private"
+            android:textColor="@color/private_badge"
+            android:textSize="11sp"
+            android:visibility="gone" />
+    </LinearLayout>
+
+    <!-- 以下三段都是「小标签 + 值」两行。标签用 muted、值用正文色，
+         与列表条目里的层级一致（标题深、说明浅）。 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="14dp"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/visits_detail_date"
+            android:textColor="@color/muted_fg"
+            android:textSize="12sp" />
+
+        <TextView
+            android:id="@+id/textDate"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:textColor="@color/fg"
+            android:textSize="14sp" />
+    </LinearLayout>
+
+    <!-- 出行方式可能一个都没填（老数据本来就没这个概念），空就整行隐藏 -->
+    <LinearLayout
+        android:id="@+id/rowTransport"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="14dp"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/visits_detail_transport"
+            android:textColor="@color/muted_fg"
+            android:textSize="12sp" />
+
+        <!-- 多个方式是「甲 / 乙」一段文字，不再摆一排徽章：弹窗里只为读，不为点 -->
+        <TextView
+            android:id="@+id/textTransport"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:textColor="@color/fg"
+            android:textSize="14sp" />
+    </LinearLayout>
+
+    <!-- 备注最长 100 字，这里不设 maxLines：该折几行折几行，这正是点进来要看的东西 -->
+    <LinearLayout
+        android:id="@+id/rowNote"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="14dp"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/visits_detail_note"
+            android:textColor="@color/muted_fg"
+            android:textSize="12sp" />
+
+        <TextView
+            android:id="@+id/textNote"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:textColor="@color/fg"
+            android:textSize="14sp" />
+    </LinearLayout>
+</LinearLayout>

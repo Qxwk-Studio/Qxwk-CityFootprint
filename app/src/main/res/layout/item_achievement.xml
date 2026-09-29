@@ -7,8 +7,8 @@
        - 达成：alpha 1 + 底色换 accent_light + 描边换 achievement_done_stroke，
          并让右侧那个勾出现（勾的样式是 bg_check_circle 的实心主色圆 + 白 ✓，网页同款）。
 
-     圆角用全 app 的默认卡片样式（8dp）而不是网页 .achievement 的 radius-md(14px)：
-     已经同步过的行程卡 item_visit.xml 也是这么处理的，两处保持一致比逐像素对齐网页更重要。
+     圆角就是全 app 的默认卡片样式（Widget.App.CardView = 14dp），与网页 .achievement 的
+     radius-md 同档 —— 行程卡 item_visit.xml 也走同一档，全 app 的卡片不再各写各的。
 
      卡片下边距 8dp 与 item_achievement_group 的组下边距 16dp 相加，正好等于网页的组间 24px。 -->
 <com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"

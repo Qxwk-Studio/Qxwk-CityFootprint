@@ -7,8 +7,10 @@
        条目的下边距 8dp + 本层下边距 16dp 也正好 24dp，于是「一组最后一条的下边距」自然接上下一组。
        分类头条到第一条：网页 .category-header 的 margin-bottom 8px = groupItems 的 marginTop 8dp。
 
-     分类头条自己是一块带描边的浅色标题条（网页 .category-header 的 bg surface + 1px border + radius-sm 8px
-     + padding 8px 10px）→ 直接用全 app 的默认卡片样式（Widget.App.CardView 就是 8dp 圆角 + 1dp 描边）。 -->
+     分类头条自己是一块带描边的浅色标题条（网页 .category-header 的 bg surface + 1px border
+     + padding 8px 10px）→ 用全 app 的默认卡片样式（Widget.App.CardView 的 1dp 描边），
+     只是圆角单独收到 8dp：网页这一处是 radius-sm，比卡片那档（radius-md）小一号，
+     所以这里不能直接吃默认的 14dp。 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
@@ -18,7 +20,8 @@
 
     <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        app:cardCornerRadius="8dp">
 
         <LinearLayout
             android:layout_width="match_parent"

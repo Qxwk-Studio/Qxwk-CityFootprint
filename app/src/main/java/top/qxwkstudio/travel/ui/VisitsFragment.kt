@@ -15,13 +15,18 @@ import top.qxwkstudio.travel.R
 import top.qxwkstudio.travel.data.CityStore
 import top.qxwkstudio.travel.data.Store
 import top.qxwkstudio.travel.data.VisitRepo
+import top.qxwkstudio.travel.databinding.DialogVisitDetailBinding
 import top.qxwkstudio.travel.databinding.FragmentVisitsBinding
 import top.qxwkstudio.travel.logic.Visit
+import top.qxwkstudio.travel.logic.VisitDate
 import top.qxwkstudio.travel.logic.topTransportLabel
+import top.qxwkstudio.travel.logic.transportLabels
 
 /**
- * 「主页」：网页端「足迹管理页」的内容 —— 顶部足迹统计概览 + 行程列表（下拉刷新 + 新增/编辑/删除）。
- * 接口：GET /api/my-visits（后端按 created_at DESC 排好序），增删改分别 POST / PUT / DELETE。
+ * 「主页」：网页端「足迹管理页」的内容 —— 顶部足迹统计概览 + 行程列表（下拉刷新）。
+ * 接口：GET /api/my-visits（后端按 created_at DESC 排好序）。
+ * 本页只「读」和给编辑入口：点条目看只读详情弹窗，铅笔进 VisitEditActivity，
+ * 增删改三个请求都在那一页里发（POST / PUT / DELETE）。
  */
 class VisitsFragment : Fragment() {
 
@@ -50,15 +55,16 @@ class VisitsFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         store = Store(requireContext())
 
-        adapter = VisitAdapter(onEdit = { visit -> editResult.launch(VisitEditActivity.intent(requireContext(), visit)) },
-            onLongPress = { visit -> confirmDelete(visit) })
+        adapter = VisitAdapter(
+            onView = { visit -> showDetail(visit) },
+            onEdit = { visit -> editResult.launch(VisitEditActivity.intent(requireContext(), visit)) })
         // 页头也是列表的一项（第 0 项），这样整页共用一个滚动容器（见 fragment_visits.xml / VisitsHeaderAdapter）
         headerAdapter = VisitsHeaderAdapter { editResult.launch(VisitEditActivity.intent(requireContext(), null)) }
 
         binding.list.layoutManager = LinearLayoutManager(requireContext())
         binding.list.adapter = ConcatAdapter(headerAdapter, adapter)
         binding.swipe.setColorSchemeResources(R.color.accent)
-        binding.swipe.setOnRefreshListener { load() }
+        binding.swipe.setOnRefreshListener { load(force = true) }
         // 列表外垫了层 FrameLayout（放空态提示），SwipeRefreshLayout 默认会去问它「滚过没有」，
         // 它永远答没有 —— 于是滑到中间也能下拉。这里把判断交回真正的列表
         binding.swipe.setOnChildScrollUpCallback { _, _ -> binding.list.canScrollVertically(-1) }
@@ -71,7 +77,8 @@ class VisitsFragment : Fragment() {
         super.onDestroyView()
     }
 
-    private fun load() {
+    /** [force] = true 跳过一天缓存强制走网络（下拉刷新用）。 */
+    private fun load(force: Boolean = false) {
         val token = store.token
         if (token == null) {
             // 正常进不来（MainActivity 已判定登录态）；真发生就按统一流程回登录页，而不是空列表
@@ -83,7 +90,7 @@ class VisitsFragment : Fragment() {
 
         // 挂在 viewLifecycleOwner 上：页面销毁时协程自动取消，
         // 所以回调里不用再判 binding 是否还在（见 ui/Coroutines 的说明）
-        viewLifecycleOwner.lifecycleScope.runIo({ VisitRepo.myVisits(token) }) { result ->
+        viewLifecycleOwner.lifecycleScope.runIo({ VisitRepo.myVisits(requireContext(), token, force) }) { result ->
             // 下拉刷新转圈必须停：失败时不停，用户会以为还在加载
             binding.swipe.isRefreshing = false
 
@@ -130,28 +137,30 @@ class VisitsFragment : Fragment() {
         )
     }
 
-    /** 删除要二次确认：点错了没有回收站。文案里带上城市名，让人看清删的是哪一条。 */
-    private fun confirmDelete(visit: Visit) {
-        AlertDialog.Builder(requireContext())
-            .setTitle(R.string.visits_delete_confirm_title)
-            .setMessage(getString(R.string.visits_delete_confirm_message, visit.city))
-            .setPositiveButton(R.string.common_delete) { _, _ -> delete(visit) }
-            .setNegativeButton(R.string.common_cancel, null)
-            .show()
-    }
+    /**
+     * 「查看」弹窗：列表里备注只占一行、多的用省略号收住，完整内容在这里看。
+     * 刻意做成**只读**：要改走右侧那颗铅笔进编辑页（删除也在编辑页里），
+     * 免得一个弹窗既当详情又当表单，改起来还得判断「填了没」。
+     */
+    private fun showDetail(visit: Visit) {
+        val d = DialogVisitDetailBinding.inflate(layoutInflater)
+        d.textCity.text = visit.city
+        d.textPrivate.visibility = if (visit.isPrivate) View.VISIBLE else View.GONE
+        d.textDate.text = VisitDate.display(visit.visitDate)
 
-    private fun delete(visit: Visit) {
-        val token = store.token ?: return
-        binding.swipe.isRefreshing = true
-        viewLifecycleOwner.lifecycleScope.runIo({ VisitRepo.delete(token, visit.id) }) { result ->
-            val e = result.exceptionOrNull()
-            if (e != null) {
-                binding.swipe.isRefreshing = false
-                activity?.handleApiFailure(e)
-                return@runIo
-            }
-            // 删成功后重新拉一次，而不是本地移除：以后端为准（也顺带同步别人改过的数据）
-            load()
-        }
+        // 空的行整行隐藏（含它的小标签）：出行方式没填、备注没写都是常态，
+        // 留一个空标题比少一行更难看
+        val transports = transportLabels(visit.transport)
+        d.rowTransport.visibility = if (transports.isEmpty()) View.GONE else View.VISIBLE
+        // 多个方式拼成「甲 / 乙」，与列表里那排徽章的表达一致（弹窗里不再摆可点的 chip）
+        d.textTransport.text = transports.joinToString(" / ")
+
+        d.rowNote.visibility = if (visit.note.isBlank()) View.GONE else View.VISIBLE
+        d.textNote.text = visit.note
+
+        AlertDialog.Builder(requireContext())
+            .setView(d.root)
+            .setPositiveButton(R.string.visits_detail_close, null)
+            .show()
     }
 }

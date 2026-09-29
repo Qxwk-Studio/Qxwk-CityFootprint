@@ -13,18 +13,18 @@ import top.qxwkstudio.travel.logic.transportLabels
 
 /**
  * 足迹列表（对齐网页端 docs/visits.html 左栏的「行程记录」）：每条足迹一张独立小卡，
- * 卡内是「序号圆点 + 城市·时间 + 出行方式徽章 + 备注」。
+ * 卡内是「序号圆点 + 城市·时间 + 出行方式徽章 + 备注（一行省略）」。
  *
- * 点击进编辑、**长按删除**：删除是不可逆动作，不给一个随手能点到的按钮，
- * 但长按之后还有一次二次确认（见 VisitsFragment）。网页端是显式的分享/编辑/删除三颗按钮，
- * 这里刻意保留原生手势 —— 一排按钮在窄屏上会把城市名挤没。
+ * 交互对齐网页端：点卡片 = 查看（页内只读弹窗，完整备注在那里看）、右侧铅笔 = 进编辑页、
+ * 分享只占位（网页那颗也没接行为）。删除**收进编辑页**，列表里不放了 ——
+ * 网页列表行有三颗按钮，app 窄屏上一排三颗会把城市名挤没，见 item_visit.xml 的注释。
  *
  * 用 notifyDataSetChanged 而不是 DiffUtil：每次刷新拿到的是**完整列表**（后端已排好序），
  * 条目也就是几十条，DiffUtil 的比较器写出来换不到可感知的收益。真到了列表很长的那天再说。
  */
 class VisitAdapter(
+    private val onView: (Visit) -> Unit,
     private val onEdit: (Visit) -> Unit,
-    private val onLongPress: (Visit) -> Unit,
 ) : RecyclerView.Adapter<VisitAdapter.Holder>() {
 
     private val items = mutableListOf<Visit>()
@@ -60,11 +60,10 @@ class VisitAdapter(
 
             bindTransport(v.transport)
 
-            b.root.setOnClickListener { onEdit(v) }
-            b.root.setOnLongClickListener {
-                onLongPress(v)
-                true // 消费掉事件，避免同时触发点击
-            }
+            b.root.setOnClickListener { onView(v) }
+            b.btnEdit.setOnClickListener { onEdit(v) }
+            // btnShare 刻意不挂监听：网页那颗分享也只是占位（见 item_visit.xml 的注释），
+            // 两端保持一致，别一边能点一边点不动
         }
 
         /**

@@ -1,8 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- 一条足迹 = 一张独立小卡（对齐网页 docs/visits.html 的 .visit-item）：
-     网页已把每条行程拆成独立卡片（外层大卡与行分隔线都去掉了），这里同步。
-     卡内自左向右：序号圆点 →（城市 + 私密标记 + 「· 时间」同一行）→ 出行方式徽章 → 备注。
-     点击进编辑、长按删除，不给显式按钮（见 VisitAdapter 的说明）。 -->
+     卡内自左向右：序号圆点 →（城市 + 私密标记 + 「· 时间」同一行）→ 出行方式徽章 → 备注；
+     右侧是两颗只有图标的按钮（分享 / 编辑），点击行为在 VisitAdapter 里挂。
+
+     交互（与网页列表一致）：点卡片 = 查看（页内只读弹窗，完整备注在这里看），
+     右侧铅笔 = 进编辑页，**删除在编辑页里**（网页列表行还有一颗删除按钮，app 收进编辑页了，
+     免得一排三颗按钮在窄屏上把城市名挤没）。原先的「长按删除」已去掉。 -->
 <com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
@@ -96,6 +99,8 @@
                 app:singleLine="false"
                 app:singleSelection="false" />
 
+            <!-- 备注只占一行，多出来的用省略号收住；完整内容点这条卡片进「查看」弹窗看
+                 （最长 100 字，一行肯定放不下） -->
             <TextView
                 android:id="@+id/textNote"
                 android:layout_width="match_parent"
@@ -106,6 +111,55 @@
                 android:textColor="@color/muted_fg"
                 android:textSize="12sp"
                 android:visibility="gone" />
+        </LinearLayout>
+
+        <!-- 右侧动作区（网页 .visit-actions）：两颗图标按钮，不带文字。
+             用 Outlined 样式 → 8dp 圆角 + 1dp 描边，对应网页的 .btn-ghost.btn-sm。
+             分享目前**不接行为**：网页那颗也只是占位（注释写着「等哪天真接上分享再接」），
+             两端保持一致，别一边能点一边不能点。 -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnShare"
+                style="@style/Widget.App.Button.Outlined"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:contentDescription="@string/visits_share"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:minHeight="32dp"
+                android:minWidth="0dp"
+                android:paddingStart="0dp"
+                android:paddingEnd="0dp"
+                app:icon="@drawable/ic_share"
+                app:iconGravity="textStart"
+                app:iconPadding="0dp"
+                app:iconSize="16dp"
+                app:iconTint="@color/text_secondary" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnEdit"
+                style="@style/Widget.App.Button.Outlined"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_marginStart="6dp"
+                android:contentDescription="@string/visits_edit"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:minHeight="32dp"
+                android:minWidth="0dp"
+                android:paddingStart="0dp"
+                android:paddingEnd="0dp"
+                app:icon="@drawable/ic_edit"
+                app:iconGravity="textStart"
+                app:iconPadding="0dp"
+                app:iconSize="16dp"
+                app:iconTint="@color/text_secondary" />
         </LinearLayout>
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

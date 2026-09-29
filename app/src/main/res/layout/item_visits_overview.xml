@@ -104,7 +104,12 @@
         </com.google.android.material.card.MaterialCardView>
     </LinearLayout>
 
-    <!-- 第三行：省份 / 最常用出行 -->
+    <!-- 第三行：省份 / 最常用出行。
+         两张卡必须一样高：「最常用出行」的值是文字、字号比数字小一档（见下面 textSize 18sp），
+         而横向 LinearLayout 默认是各量各的高度，于是这一张会比旁边矮一截。
+         卡上写 layout_height="match_parent" 让它撑满行高（行高由较高的那张决定）——
+         网页那边是 grid 的隐式 stretch，效果同一个。
+         第二行两张卡都是 24sp 数字，本来等高，就不必再写。 -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -113,7 +118,7 @@
 
         <com.google.android.material.card.MaterialCardView
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
             android:layout_weight="1">
 
             <LinearLayout
@@ -137,7 +142,7 @@
 
         <com.google.android.material.card.MaterialCardView
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
             android:layout_marginStart="10dp"
             android:layout_weight="1">
 
@@ -195,6 +200,7 @@
             android:paddingEnd="12dp"
             android:text="@string/visits_add"
             android:textSize="13sp"
+            app:cornerRadius="8dp"
             app:icon="@drawable/ic_add"
             app:iconGravity="textStart"
             app:iconPadding="6dp"

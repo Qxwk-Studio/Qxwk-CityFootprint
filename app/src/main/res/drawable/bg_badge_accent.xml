@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 浅蓝药丸底：私密标记 / 分组计数等小徽章（设计稿 rounded-md bg-accent，字色 accent-foreground） -->
+<!-- 浅蓝小圆角底：私密标记 / 分组计数等小徽章（字色 accent-foreground）。
+     圆角 8dp = 网页 .visit-private-badge 的 radius-sm；这类小徽章在网页里不是胶囊，
+     出行方式那种 .tp-badge 才是（那个走 Chip 自己的 chipCornerRadius）。 -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="rectangle">
-    <corners android:radius="4dp" />
+    <corners android:radius="8dp" />
     <solid android:color="@color/accent_light" />
 </shape>

@@ -32,6 +32,15 @@
     <string name="visits_meta">· %1$s</string>
     <string name="visits_delete_confirm_title">删除这条足迹？</string>
     <string name="visits_delete_confirm_message">删除后无法恢复（%1$s）。</string>
+    <!-- 行程条目右侧那两颗只有图标的按钮：文案只给无障碍朗读用（图标本身没有文字） -->
+    <string name="visits_share">分享</string>
+    <string name="visits_edit">编辑</string>
+
+    <!-- 「查看」弹窗（点行程条目打开，只读；列表里备注只有一行省略，完整的在这里看） -->
+    <string name="visits_detail_date">到访时间</string>
+    <string name="visits_detail_transport">出行方式</string>
+    <string name="visits_detail_note">备注</string>
+    <string name="visits_detail_close">关闭</string>
 
     <!-- 主页顶部的「足迹统计」小卡（对齐网页端 docs/visits.html 的 .visit-stats：
          首行「时间跨度」整行长卡，其余四张每行两个） -->

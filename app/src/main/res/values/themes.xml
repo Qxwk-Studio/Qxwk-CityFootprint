@@ -40,29 +40,46 @@
         <item name="materialButtonStyle">@style/Widget.App.Button</item>
     </style>
 
-    <!-- ===== 卡片：圆角 8dp + 1dp 描边 + 无阴影（设计稿 rounded-lg border bg-card） ===== -->
+    <!-- ===== 卡片：圆角 14dp + 1dp 描边 + 无阴影 =====
+         14dp 对应网页的 radius-md（docs/style.css）：网页的 .card、.stat-card、.edit-dialog
+         都是这一档，全 app 的卡片也就统一走它。
+
+         下面凡提到网页的 CSS 变量（radius-md / radius-sm / radius-pill / radius-full），
+         都**省掉了变量名前那两个连字符**：网页那边写作「两个连字符 + radius-md」，
+         而 XML 注释里不允许出现连续两个连字符（aapt / 任何 XML 解析器都会直接报错），
+         所以本仓库的注释一律按去掉前缀的写法，别再手快补回去。 -->
     <style name="Widget.App.CardView" parent="Widget.Material3.CardView.Outlined">
-        <item name="cardCornerRadius">8dp</item>
+        <item name="cardCornerRadius">14dp</item>
         <item name="cardElevation">0dp</item>
         <item name="cardBackgroundColor">@color/card</item>
         <item name="strokeColor">@color/border</item>
         <item name="strokeWidth">1dp</item>
     </style>
 
-    <!-- ===== 按钮：圆角 8dp（Material3 默认是胶囊形，与设计稿的 rounded-lg 不一致） ===== -->
+    <!-- ===== 按钮：主按钮是胶囊，小按钮是 8dp，两档照网页来 =====
+         主按钮（登录 / 保存足迹）对网页的 .btn / .btn-primary，圆角是 radius-pill。
+         999dp 不必按每个按钮的高度各算一次：MaterialButton 会把圆角夹到 min(宽,高)/2，
+         所以多高都是真正的胶囊。
+         小一号的按钮（「添加足迹」这类，对应网页 .btn-sm / .modal-btn 的 radius-sm）
+         在各自布局里用 app:cornerRadius="8dp" 覆盖 —— 一处 style 服务两个尺寸，
+         比再拆一个样式少一层间接。 -->
     <style name="Widget.App.Button" parent="Widget.Material3.Button">
-        <item name="cornerRadius">8dp</item>
+        <item name="cornerRadius">999dp</item>
     </style>
 
+    <!-- 次要按钮（排行榜展开/收起、足迹行里的分享与编辑）：圆角 8dp 这一档
+         —— 网页对应位置走的是 .btn-sm / .btn-ghost.btn-sm 的 radius-sm，不是胶囊 -->
     <style name="Widget.App.Button.Outlined" parent="Widget.Material3.Button.OutlinedButton">
         <item name="cornerRadius">8dp</item>
         <item name="strokeColor">@color/border</item>
         <item name="android:textColor">@color/fg</item>
     </style>
 
-    <!-- 危险动作按钮（退出登录）：描边 + 红字 -->
+    <!-- 危险动作按钮（退出登录 / 编辑页的删除）：描边 + 红字 + 胶囊
+         —— 网页的 .btn-logout 用 radius-pill，编辑弹窗里「取消 / 保存修改」那一对也都是胶囊；
+         网页列表行内的 .btn-danger.btn-sm(8px) 在 app 里不存在（删除已收进编辑页）。 -->
     <style name="Widget.App.Button.Danger" parent="Widget.Material3.Button.OutlinedButton">
-        <item name="cornerRadius">8dp</item>
+        <item name="cornerRadius">999dp</item>
         <item name="strokeColor">@color/border</item>
         <item name="android:textColor">@color/destructive</item>
     </style>
