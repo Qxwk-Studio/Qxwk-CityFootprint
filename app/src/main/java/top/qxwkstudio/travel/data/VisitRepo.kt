@@ -86,16 +86,26 @@ object VisitRepo {
      * GET /api/geo/{adcode}（公开，后端已做 7 天缓存）→ GeoJSON 原文。
      * 刻意**不在这里解析**：边界数据结构深、且只有地图页用得到，
      * 解析交给 ui/GeoJson（那边还要处理解析失败就只留标记的降级）。
+     *
+     * 带 7 天磁盘缓存（见 [GeoCache]，与网页 docs/index.js 的 IndexedDB 同形态）：
+     * 命中且没过期直接返回、一个请求都不发；命中了但已过期**先返回旧内容**、后台重下只换文件
+     * （不阻塞、不重画）；完全没缓存才走网络并顺手落盘。失败语义不变（抛 [ApiException]）。
+     * 缓存**不跟登录态走** —— 边界是公共数据（见 GeoCache 的类注释）。
      */
-    fun geoJson(adcode: Int): String {
+    fun geoJson(context: Context, adcode: Int): String {
+        GeoCache.read(context, adcode)?.let { cached ->
+            if (cached.stale) GeoCache.refresh(context, adcode)
+            return cached.raw
+        }
         val result = Http.request("GET", Api.geo(adcode))
         if (!result.ok) throw apiException(result, "边界数据获取失败（HTTP ${result.code}）")
+        GeoCache.write(context, adcode, result.body)
         return result.body
     }
 
     /**
      * GET /api/cities（公开；带 token 时自己的私密行程才可见）→ 地图数据（城市 + 坐标 + 去过的人）。
-     * **不做本机缓存**：与网页一致，地图每次进页面重新取（缓存的是边界，见 ui/MapFragment 的 geoCache）。
+     * **不做本机缓存**：与网页一致，地图每次进页面重新取（缓存的是边界，见 data/GeoCache 与 MapFragment 的内存 geoCache）。
      * 解析不过给空对象：接口是通的、只是内容对不上，界面按「没有足迹」显示。
      */
     fun cities(token: String?): CitiesResponse {

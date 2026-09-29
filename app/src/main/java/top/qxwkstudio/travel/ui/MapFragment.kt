@@ -73,7 +73,8 @@ class MapFragment : Fragment() {
     /** 图例里的用户与颜色（昵称 → 颜色），顺序即后端给的顺序。 */
     private val userInfo = LinkedHashMap<String, String>()
 
-    /** 边界解析结果（adcode → 点环）。同一座城市反复筛选时不重复请求。 */
+    /** 边界解析结果（adcode → 点环）。同一座城市反复筛选时不重复请求——
+     *  这一层只管本次视图存活期间；跨进程那层是 data/GeoCache 的磁盘缓存。 */
     private val geoCache = mutableMapOf<Int, List<List<GeoPoint>>>()
 
     /** 城市明细（点开卡片时按需拉一次，之后走这份内存缓存）。 */
@@ -336,6 +337,8 @@ class MapFragment : Fragment() {
         val allChecked = selected.size == userInfo.size
         val sem = Semaphore(GEO_CONCURRENCY)
         val scope = viewLifecycleOwner.lifecycleScope
+        // 先在主线程把 Context 取好：边界缓存（data/GeoCache）要在 IO 线程里用它读写
+        val ctx = requireContext()
 
         for (city in cities) {
             val people = if (allChecked) city.people else city.people.filter { selected.contains(it.nickname) }
@@ -357,7 +360,7 @@ class MapFragment : Fragment() {
                 // 并发上限：几十座城市同时开边界请求会把手机与后端一起压垮（网页同理，见 GEO_CONCURRENCY）
                 val rings = sem.withPermit {
                     withContext(Dispatchers.IO) {
-                        runCatching { GeoJson.polygons(VisitRepo.geoJson(adcode)) }.getOrDefault(emptyList())
+                        runCatching { GeoJson.polygons(VisitRepo.geoJson(ctx, adcode)) }.getOrDefault(emptyList())
                     }
                 }
                 // 先落缓存：即使这批渲染已被新筛选作废，也把结果留下来给下一次用

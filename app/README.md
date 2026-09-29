@@ -87,6 +87,10 @@ cd app
 另有一个常量 `TILE_EXPIRY_TIME_MILLISECONDS`（30 天），走的是 HTTP 头那条路径的兜底，别与它说混。
 边界与瓦片都极少变动，过期只是标记 stale 触发重下，并不会删掉已缓存的文件。
 
+边界 GeoJSON 另有本机落盘缓存（`data/GeoCache.kt`，`filesDir/geo/{adcode}.json`，按文件 mtime 判 7 天），
+与网页 IndexedDB 那份同形态：命中直接返回；过期**先返回旧内容**、后台**串行**重下换文件（SWR，不重画）。
+它**不跟登录态走** —— 边界是公共数据，别把它塞进 `Store` 的 `cache_` 前缀（那套会随退出登录 / 写操作整体作废）。
+
 ## 城市表（assets/cities.json 是生成物）
 
 `app/src/main/assets/cities.json` **不要手改**：它由 `app/tools/gen-cities.mjs` 从
