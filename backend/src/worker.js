@@ -1,7 +1,7 @@
 // Qxwk-CityFootprint · Worker
 // 只提供 /api/* 接口：页面已搬去 GitHub Pages（仓库 docs/，域名 travel.qxwkstudio.top），
 // 这个 Worker 挂在 api.travel.qxwkstudio.top 上，前后端不同源，故末尾统一挂 CORS 头
-import { json, error, getUserId, resolveViewer, visibility } from './lib.js';
+import { json, error, getUserId, resolveViewer, visibility, NeedEmailVerifyError } from './lib.js';
 import { getAchievements, achievementCounts } from './achievements.js';
 import { CITY_CODES } from './city-codes.js';
 
@@ -339,6 +339,8 @@ export default {
         const result = await handleApi(request, env);
         return withCors(result || json({ error: '接口不存在' }, 404), request);
       } catch (e) {
+        // 首次到本站却没验证邮箱（见 lib.js 的 resolveViewer ③）：这是正常的业务拒绝，别当 500
+        if (e instanceof NeedEmailVerifyError) return withCors(error(e.message, 403), request);
         return withCors(json({ error: '服务器错误: ' + (e && e.message ? e.message : String(e)) }, 500), request);
       }
     }

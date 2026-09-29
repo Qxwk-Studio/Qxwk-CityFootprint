@@ -18,7 +18,13 @@ export function error(message, status = 400) {
   return json({ error: message }, status);
 }
 
-// 用 Bearer token 去通行证 /api/me 验证，返回 {userId, nickname, color, avatar} 或 null
+// 「第一次到本站必须先验证邮箱」闸门（触发点在 resolveViewer ③）。
+// 用抛错而不是返回值：resolveViewer 的调用方（getUserId / getViewer / /api/me）都只认
+// 「有用户 / 无用户」两种结果，加第三种返回值得挨个改，消息还容易被中间层换成「未登录」；
+// 抛出去由 worker.js 顶层统一翻成 403，每个路由都拿到同一句提示。
+export class NeedEmailVerifyError extends Error {}
+
+// 用 Bearer token 去通行证 /api/me 验证，返回 {userId, nickname, color, avatar, emailVerified} 或 null
 async function getPassportUser(request) {
   const auth = request.headers.get('Authorization') || '';
   const token = auth.startsWith('Bearer ') ? auth.slice(7).trim() : '';
@@ -30,7 +36,8 @@ async function getPassportUser(request) {
     if (!r.ok) return null;
     const u = await r.json();
     if (!u || !u.userId) return null;
-    return { userId: u.userId, nickname: u.nickname, color: u.color, avatar: u.avatar };
+    // emailVerified 一并带出来：本站首次登录的邮箱闸门要用（通行证 /api/me 就返回这个字段）
+    return { userId: u.userId, nickname: u.nickname, color: u.color, avatar: u.avatar, emailVerified: !!u.email_verified };
   } catch {
     return null;
   }
@@ -67,6 +74,14 @@ async function resolveViewer(DB, request) {
   //    也会消耗 AUTOINCREMENT 序列，登录页并发多个接口就会让 sqlite_sequence 虚增（行数却不变）。
   //    INSERT OR IGNORE：兜住并发首插竞争；冲突被忽略时不会消耗自增序列。
   if (!u) {
+    // 首次登录本站（①② 都没命中，cf_users 里没有这一行）要求邮箱已验证。
+    // 「之前登录过」以 **cf_users 里有没有行** 为准：② 认领回的老行也算，所以这条闸门
+    // 只挡本站从没见过的新账号，现有用户不会被关在门外（他们在 ①② 就被认出来了）。
+    // 邮箱验证只在通行证做（account.qxwkstudio.top），本站只是读 /api/me 带回的标记。
+    // 提示语要写清去哪儿验证：用户在 App / 网页里只看到这一句，没有别的入口可点。
+    if (!p.emailVerified) {
+      throw new NeedEmailVerifyError('首次登录需要先验证邮箱：请到通行证（account.qxwkstudio.top）绑定邮箱并完成验证后再试');
+    }
     // 建行前先腾昵称位：本站可能还挂着一行用着这个昵称、但它的主人已经改名（昵称在通行证里被本账号接手），
     // 那行要等它主人下次访问本站才由 ④ 改名。此处先把它改成 user_<它自己的通行证 id>——按 id 构造必然唯一、
     // 不会二次冲突；不改的话下面的 INSERT 会被 UNIQUE 挡掉，本账号就彻底登不进来了。
