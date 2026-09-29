@@ -32,6 +32,41 @@
   }
   .notice-text { font-size: 0.9rem; color: var(--text-primary); }
 
+  /* ========= 更新日志选项卡 =========
+     网页端与安卓 App 的版本线各走各的，混在一条时间线里看不出哪个版本属于哪端，所以拆成两个选项卡。
+     整条是「凹槽」（--bg 底 + 描边），选中项是「白底 + 主色字」—— 与 .tp-chip / .back-link 同一套换底语言 */
+  .log-tabs {
+    display: inline-flex;
+    gap: 4px;
+    padding: 4px;
+    margin-bottom: 22px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-pill);
+  }
+  .log-tab {
+    border: none;
+    background: none;
+    border-radius: var(--radius-pill);
+    padding: 6px 18px;
+    font-family: inherit;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: background var(--transition), color var(--transition);
+  }
+  .log-tab:hover { color: var(--text-primary); }
+  .log-tab[aria-selected="true"] {
+    background: var(--surface);
+    color: var(--primary);
+    box-shadow: var(--shadow-sm);
+  }
+  /* 暗色下 --primary 没有被覆盖（仍是深蓝 #2563eb），压在深底上读不清；选中项换亮一档的同色相蓝 */
+  :root[data-theme="dark"] .log-tab[aria-selected="true"] { color: #60a5fa; }
+  /* 面板本身可聚焦（WAI-ARIA 的 tabs 约定：键盘切过来后焦点落在面板上），焦圈与全站同一套 */
+  .log-panel:focus-visible { outline: 2px solid var(--primary); outline-offset: 4px; border-radius: var(--radius-sm); }
+
   /* ========= 更新日志时间线 ========= */
   .timeline { position: relative; padding-left: 24px; }
   .timeline::before {
@@ -158,17 +193,45 @@
       </div>
     </div>
 
-    <!-- 更新日志 -->
+    <!-- 更新日志：网页端与安卓 App 各一个选项卡（切换逻辑见 news.js，不写内联事件） -->
     <div class="card">
       <h3>📝 更新日志</h3>
+      <div class="log-tabs" role="tablist" aria-label="更新日志平台">
+        <button type="button" class="log-tab" id="logTabWeb" role="tab" aria-selected="true" aria-controls="logPanelWeb" data-action="log-tab" data-target="logPanelWeb">网页端</button>
+        <button type="button" class="log-tab" id="logTabApp" role="tab" aria-selected="false" aria-controls="logPanelApp" data-action="log-tab" data-target="logPanelApp" tabindex="-1">安卓 App</button>
+      </div>
+
+      <div class="log-panel" id="logPanelWeb" role="tabpanel" aria-labelledby="logTabWeb" tabindex="0">
       <div class="timeline">
+
+        <div class="timeline-item">
+          <div class="timeline-date">2026-09-29</div>
+          <span class="timeline-tag">v1.2.0</span>
+          <div class="timeline-content">
+            <ul>
+              <li><b>备注收成一行</b>：弹窗与列表里改成「昵称 · 时间 · 备注」同排，超长省略（要看全文点开那条行程）</li>
+              <li><b>脚本与样式规范化</b>：各页内联脚本抽成外部 js、内联事件改 data-action 委托（配合 CSP），主题脚本抽 theme.js 五页共用；圆角统一走语义 token</li>
+              <li><b>修复</b>：统计页城市名 XSS、地图空态图例不恢复、添加弹窗小屏不可滚、「全境巡礼」文案口径改为「293 个地级市」</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-date">2026-09-28</div>
+          <span class="timeline-tag">v1.1.0</span>
+          <div class="timeline-content">
+            <ul>
+              <li><b>修手机端两列没堆叠</b>：个人中心与足迹管理在窄屏下改为上下单列</li>
+              <li>城市明细接口改为返回该城市<b>全部</b>行程（弹窗仍只铺最近 10 条）</li>
+            </ul>
+          </div>
+        </div>
 
         <div class="timeline-item">
           <div class="timeline-date">2026-09-27</div>
           <span class="timeline-tag">v1.0.0</span>
           <div class="timeline-content">
             <ul>
-              <li><b>新增安卓客户端</b>：原生 App（Kotlin + XML View，非网页套壳、不含 WebView），底部 5 个标签页——主页（足迹管理）、我的成就、地图、全站统计、我的；登录沿用通行证账号，地图用原生 osmdroid + 阿里 DataV 行政边界，CI 自动打包签名 APK</li>
               <li><b>前后端分家</b>：网页迁至 GitHub Pages（travel.qxwkstudio.top），接口迁至 api.travel.qxwkstudio.top，静态页面不再由 Cloudflare 托管</li>
               <li><b>品牌统一</b>：网页图标与安卓启动图标改用同一张源图，应用名统一为「City Footprint」（原「城市足迹」）</li>
               <li>网页图标改用无损 webp，体积从 25KB 压到 9.4KB</li>
@@ -310,7 +373,6 @@
             <ul>
               <li>注册改为一次性邀请码机制</li>
               <li>忘记密码：管理员清空密码后可在登录页重置</li>
-              <li>管理页重构：日期下拉选择、UID 显示、足迹统计</li>
               <li>备注限制 100 字并带字数提醒</li>
               <li>会话清理：登录时自动清除旧会话</li>
             </ul>
@@ -330,6 +392,70 @@
         </div>
 
       </div>
+      </div><!-- /logPanelWeb -->
+
+      <div class="log-panel" id="logPanelApp" role="tabpanel" aria-labelledby="logTabApp" tabindex="0" hidden>
+      <div class="timeline">
+
+        <div class="timeline-item">
+          <div class="timeline-date">2026-09-29</div>
+          <span class="timeline-tag">v0.5.0</span>
+          <div class="timeline-content">
+            <ul>
+              <li><b>地图明细卡对齐网页</b>：点城市后的每条行程——昵称 · 时间 · 备注同一行，超长省略</li>
+              <li><b>行程条目改「查看 / 分享 / 编辑」</b>：备注单行省略、概览卡等高、圆角对齐网页</li>
+              <li>色板对齐网页；统计页空态与错误态文案对齐；底栏图标与文字垂直对齐</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-date">2026-09-29</div>
+          <span class="timeline-tag">v0.4.0</span>
+          <div class="timeline-content">
+            <ul>
+              <li><b>地图页对齐网页</b>：换高德免 Key 瓦片；城市按「最新一位勾选者」的颜色半透明填色，拿不到行政边界就退回圆点；左上角图例多选筛选；点城市看最近 10 条行程</li>
+              <li>成就说明与名称换行对齐（与网页同一版面）</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-date">2026-09-29</div>
+          <span class="timeline-tag">v0.3.0</span>
+          <div class="timeline-content">
+            <ul>
+              <li><b>成就页对齐网页右栏版面</b>，成就判定改走后端接口（定义仍唯一一份在后端）</li>
+              <li>底栏文案贴到图标下面并压低整体高度；切换标签页不再自动重拉数据</li>
+              <li>接口数据加一天缓存，减少重复请求</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-date">2026-09-28</div>
+          <span class="timeline-tag">v0.2.0</span>
+          <div class="timeline-content">
+            <ul>
+              <li>抽出公共顶栏；主页改整页滚动；数据页统一「下拉刷新」</li>
+              <li>修构建：样式名带点号时补空 parent（AAPT 解析报错）、城市选择页补 R 的 import</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-date">2026-09-27</div>
+          <span class="timeline-tag">v0.1.0</span>
+          <div class="timeline-content">
+            <ul>
+              <li>首个版本：原生 Kotlin + XML View（无 Compose、无 WebView），底部 5 个标签页——主页（足迹管理）、我的成就、地图、全站统计、我的</li>
+              <li>登录复用通行证账号；地图用原生 osmdroid + 阿里 DataV 行政边界</li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+      </div><!-- /logPanelApp -->
     </div>
 
   </div>
@@ -339,5 +465,6 @@
   <div class="footer-copy">2026 青翔未阔工作室 · City Footprint</div>
 </footer>
 
+<script src="news.js"></script>
 </body>
 </html>
