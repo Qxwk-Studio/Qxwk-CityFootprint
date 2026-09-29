@@ -81,6 +81,12 @@ cd app
 不引通用 GeoJSON 库。整条边界链路都是可降级的：城市在源数据里没有 `adcode`（县级市）、
 或 GeoJSON 解析失败，都只提示一句、**标记照旧保留**。
 
+瓦片缓存**用 osmdroid 的默认值**，不要再加 `setExpirationOverrideDuration`：文件缓存的默认有效期
+是 `DEFAULT_MAXIMUM_CACHED_FILE_AGE`（一周）—— `MapTileFilesystemProvider` 的构造器把
+`Configuration.getExpirationExtendedDuration()`（默认 0）加上它，正好就是「瓦片缓存 7 天」。
+另有一个常量 `TILE_EXPIRY_TIME_MILLISECONDS`（30 天），走的是 HTTP 头那条路径的兜底，别与它说混。
+边界与瓦片都极少变动，过期只是标记 stale 触发重下，并不会删掉已缓存的文件。
+
 ## 城市表（assets/cities.json 是生成物）
 
 `app/src/main/assets/cities.json` **不要手改**：它由 `app/tools/gen-cities.mjs` 从

@@ -83,7 +83,7 @@ object VisitRepo {
         runCatching { json.decodeFromString(SiteStats.serializer(), raw) }.getOrNull()
 
     /**
-     * GET /api/geo/{adcode}（公开，后端已做 24 小时缓存）→ GeoJSON 原文。
+     * GET /api/geo/{adcode}（公开，后端已做 7 天缓存）→ GeoJSON 原文。
      * 刻意**不在这里解析**：边界数据结构深、且只有地图页用得到，
      * 解析交给 ui/GeoJson（那边还要处理解析失败就只留标记的降级）。
      */

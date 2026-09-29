@@ -44,7 +44,7 @@ object Api {
     /** 地图数据（城市 + 坐标 + 去过的人）；公开，但带 token 时自己的私密行程才可见。 */
     const val CITIES = "$TRAVEL_BASE/cities"
 
-    /** 公开的城市边界（阿里 DataV GeoJSON，后端做了 24 小时缓存）。 */
+    /** 公开的城市边界（阿里 DataV GeoJSON，后端做了 7 天缓存）。 */
     fun geo(adcode: Int): String = "$TRAVEL_BASE/geo/$adcode"
 
     /**
