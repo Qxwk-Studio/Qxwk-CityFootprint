@@ -44,7 +44,10 @@ export function getAchievements(cityNames) {
         { code: 'globe_trotter', icon: '🌍', name: '环游达人', desc: '到访过 50 座及以上城市', done: cityCount >= 50 },
         { code: 'city_collector', icon: '🏆', name: '城市收藏家', desc: '到访过 100 座及以上城市', done: cityCount >= 100 },
         { code: 'city_king', icon: '👑', name: '城市之王', desc: '到访过 200 座及以上城市', done: cityCount >= 200 },
-        { code: 'grand_tour', icon: '🌟', name: '全境巡礼', desc: '到访过全国全部 293 个地级行政区', done: cityCount >= 293 },
+        // 293 是「地级市」的全国数量（民政部/国家统计局口径，多年稳定在 293）。
+        // 别写成「地级行政区」—— 那是 333（293 地级市 + 7 地区 + 30 自治州 + 3 盟）。
+        // 阈值也按这个口径：数据集里的直辖市/台港澳/部分县级市不计入
+        { code: 'grand_tour', icon: '🌟', name: '全境巡礼', desc: '到访过全国全部 293 个地级市', done: cityCount >= 293 },
       ],
     },
     {
