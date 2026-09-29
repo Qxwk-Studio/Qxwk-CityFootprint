@@ -17,6 +17,7 @@ const userInfo = new Map(); // nickname -> { color }
 const offset = 0.15;         // 同城多点错开距离
 const geoCache = new Map();  // adcode -> Promise<geojson|null>，边界缓存
 let renderSeq = 0;           // 渲染批次号，避免异步竞态
+let citiesSeq = 0;           // /api/cities 请求批次号：首屏 SWR 与添加后的 reloadMap 可能并发，晚回的旧响应不许盖新数据
 
 // 边界请求并发控制：最多同时发起 GEO_CONCURRENCY 个，避免几十个城市同时请求
 const GEO_CONCURRENCY = 6;
@@ -115,12 +116,19 @@ async function geoFetchGeo(adcode) {
 function loadCityGeo(adcode) {
   if (!geoCache.has(adcode)) {
     geoCache.set(adcode, (async () => {
-      const row = await geoDBRead(adcode);
-      if (row) {
-        if (row.stale) geoFetchGeo(adcode).catch(() => {}); // 后台重下，不阻塞本次渲染
-        return row.data;
+      try {
+        const row = await geoDBRead(adcode);
+        if (row) {
+          if (row.stale) geoFetchGeo(adcode).catch(() => {}); // 后台重下，不阻塞本次渲染
+          return row.data;
+        }
+        return await geoFetchGeo(adcode); // 完全没有缓存：只能等网络
+      } catch {
+        // 网络直接挂了（离线、DNS 失败）时 fetch 本身会 reject，而 geoFetchGeo 只兜了非 2xx 与坏 JSON。
+        // 这里的 promise 会被 memo 进 geoCache，一旦 reject 就**永远是** rejected：之后每次渲染都拿它、
+        // 继续 reject，这座城市连回退圆点都画不出来，只能刷新页面。所以统一兜成 null（调用方按 null 走圆点）。
+        return null;
       }
-      return geoFetchGeo(adcode); // 完全没有缓存：只能等网络
     })());
   }
   return geoCache.get(adcode);
@@ -157,7 +165,9 @@ function render(data) {
   if (emptyCtl) { emptyCtl.remove(); emptyCtl = null; }
   document.getElementById('legend').style.display = '';
 
-  // 收集用户信息
+  // 收集用户信息。先清空：userInfo 是模块级的，只 set 不 clear 的话，某个人的足迹删光之后
+  // 他那一行还会留在图例里（直到刷新页面）
+  userInfo.clear();
   for (const c of data.cities) {
     for (const p of c.people) {
       userInfo.set(p.nickname, p.color);
@@ -550,11 +560,13 @@ async function submitQuickAdd() {
 
 // 添加成功后刷新地图（重新拉取 /api/cities 并渲染）
 function reloadMap() {
+  const feedSeq = ++citiesSeq; // 顶掉首屏那一发还没回来的响应，见 citiesSeq 的注释
   cityDetailCache.clear(); // 新增了行程，已缓存的弹窗明细作废
   // 这里刻意用 api() 而不是 apiWatch()：刚 POST 成功，app.js 已把报文缓存整体作废，
   // 这一发必然走网络、拿到含新城市的数据；换 apiWatch 只是多一次必然落空的缓存查询
   api('/cities')
     .then(data => {
+      if (feedSeq !== citiesSeq) return; // 又被更新的一发放到后面去了，这版不要了
       window.__citiesData = data.cities;
       render(data);
     })
@@ -593,11 +605,22 @@ bindActions({
 
 // 拉数据。用 apiWatch（SWR）：会话级报文缓存命中就先画一版 —— 地图与「谁的足迹」图例
 // 立刻出来，不用等 /api/cities 回来；网络那份回来后照原样再画一次覆盖上去。
-apiWatch('/cities', data => { window.__citiesData = data.cities; render(data); })
+const feedSeq = ++citiesSeq;
+apiWatch('/cities', data => {
+  // 已经被后发的 reloadMap 顶掉（用户在这一发还没回来时就先添了行程）：丢弃，别拿旧数据盖新数据。
+  // 缓存命中的那一版是在发起时同步画的，那时本 seq 还是当前的，不受影响
+  if (feedSeq !== citiesSeq) return;
+  window.__citiesData = data.cities;
+  render(data);
+})
   .catch(err => {
     // 失败时不能只把文案塞进加载层：那是一块 inset:0 / z-index 1500 的全屏遮罩，连导航栏一起盖住，
     // 用户看不到任何入口也没法重试，只能靠浏览器后退。就地补一颗「重试」（整页重来，数据会重新拉）
-    document.getElementById('loading').innerHTML =
+    const loadingEl = document.getElementById('loading');
+    // 但加载层可能已经不在了：缓存命中时 render() 开头就把它 remove 掉（网络那份失败才走到这里），
+    // 这时对 null 取 innerHTML 会直接抛错，用户连提示都看不到。退回轻提示
+    if (!loadingEl) { showToast(err.message); return; }
+    loadingEl.innerHTML =
       `<div>❌ ${escapeHtml(err.message)}</div>` +
       '<button type="button" class="btn btn-primary" data-action="retry-load" style="width:auto;">重试</button>';
   });
