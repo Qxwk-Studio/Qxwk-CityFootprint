@@ -206,13 +206,25 @@
 
         <div class="timeline-item">
           <div class="timeline-date">2026-09-29</div>
+          <span class="timeline-tag">v1.3.0</span>
+          <div class="timeline-content">
+            <ul>
+              <li><b>接口缓存改 SWR</b>：报文接口加会话级缓存（1 天）并改成「先旧后新」；地图行政边界同改 SWR，过期的几何先画、后台重下；后端 /api/geo 缓存从 24 小时提到 7 天，浏览器 HTTP 缓存也吃满 7 天</li>
+              <li><b>加载失败不再黏住</b>：地图边界与城市明细失败时就地删缓存项，下次渲染可重试；边界失败有兜底、图例按用户重算、/cities 并发丢弃旧响应；统计页空站也照常渲染成就面板</li>
+              <li><b>样式收口</b>：各页共享样式上提到 style.css，深色块改走语义 token，月份按钮补 aria-label</li>
+              <li><b>「全境巡礼」文案对齐判定</b>：口径由「293 个地级市」改为「293 座及以上城市」——判定实际数的是去重城市名总数，293 是借地级市数量当门槛</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-date">2026-09-29</div>
           <span class="timeline-tag">v1.2.0</span>
           <div class="timeline-content">
             <ul>
               <li><b>备注收成一行</b>：弹窗与列表里改成「昵称 · 时间 · 备注」同排，超长省略（要看全文点开那条行程）</li>
-              <li><b>缓存分三层，接口改 SWR</b>：报文接口加会话级缓存（1 天）并改成「先旧后新」；地图行政边界同改 SWR，过期几何先画、后台重下；后端 /api/geo 缓存从 24 小时提到 7 天，浏览器 HTTP 缓存也吃满 7 天</li>
-              <li><b>脚本与样式规范化</b>：各页内联脚本抽成外部 js、内联事件改 data-action 委托（配合 CSP），主题脚本抽 theme.js 五页共用；圆角统一走语义 token；共享样式上提 style.css，深色块改走 token，月份按钮补 aria-label</li>
-              <li><b>修复</b>：统计页城市名 XSS、地图空态图例不恢复、添加弹窗小屏不可滚、边界与城市明细加载失败不再永久缓存（下次渲染可重试）、地图边界失败兜底、/cities 并发丢弃旧响应、统计页空站照常渲染成就面板、「全境巡礼」文案口径改为「293 座及以上城市」</li>
+              <li><b>脚本与样式规范化</b>：各页内联脚本抽成外部 js、内联事件改 data-action 委托（配合 CSP），主题脚本抽 theme.js 五页共用；圆角统一走语义 token</li>
+              <li><b>修复</b>：统计页城市名 XSS、地图空态图例不恢复、添加弹窗小屏不可滚、「全境巡礼」文案口径改为「293 个地级市」</li>
             </ul>
           </div>
         </div>
@@ -400,14 +412,24 @@
 
         <div class="timeline-item">
           <div class="timeline-date">2026-09-29</div>
+          <span class="timeline-tag">v0.6.0</span>
+          <div class="timeline-content">
+            <ul>
+              <li><b>边界数据加 7 天磁盘缓存</b>：过期先画旧的、后台重下；加载失败不再永久缓存，下次渲染可重试</li>
+              <li><b>地图页继续对齐网页</b>：图例左对齐并收紧行距、瓦片按屏幕 DPI 缩放（修标注字过小）、切回地图 tab 按数据版本重拉</li>
+              <li>统计排行里城市与省份改为靠左成组</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-date">2026-09-29</div>
           <span class="timeline-tag">v0.5.0</span>
           <div class="timeline-content">
             <ul>
               <li><b>地图明细卡对齐网页</b>：点城市后的每条行程——昵称 · 时间 · 备注同一行，超长省略</li>
               <li><b>行程条目改「查看 / 分享 / 编辑」</b>：备注单行省略、概览卡等高、圆角对齐网页</li>
-              <li><b>地图页继续对齐网页</b>：图例左对齐并收紧行距、瓦片按屏幕 DPI 缩放（修标注字过小）、切回地图 tab 按数据版本重拉</li>
-              <li><b>边界数据加 7 天磁盘缓存</b>：过期先画旧的、后台重下；加载失败不再永久缓存，下次渲染可重试</li>
-              <li>统计排行里城市与省份改为靠左成组；色板对齐网页；统计页空态与错误态文案对齐；底栏图标与文字垂直对齐</li>
+              <li>色板对齐网页；统计页空态与错误态文案对齐；底栏图标与文字垂直对齐</li>
             </ul>
           </div>
         </div>
