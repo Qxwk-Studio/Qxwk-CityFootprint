@@ -247,9 +247,12 @@ api('/stats')
         const item = document.createElement('div');
         item.className = 'rank-item';
         const province = findProvince(c.city);
+        // 城市名是用户可填的内容（后端只校验非空且 ≤30 字符），拼进 innerHTML 前必须转义，
+        // 否则随便一个账号用接口写条带脚本的「城市名」，就能在这个公开页面上执行脚本。
+        // 省份取自本地城市表（可信），一并转义只是顺手对齐。
         item.innerHTML = `
         <span class="rank-no${i < 3 ? ' top' : ''}">${i + 1}</span>
-        <span class="rank-city">${c.city}${province ? '<span class="rank-province">· ' + province + '</span>' : ''}</span>
+        <span class="rank-city">${escapeHtml(c.city)}${province ? '<span class="rank-province">· ' + escapeHtml(province) + '</span>' : ''}</span>
         <span class="rank-meta">去过 ${c.people} 人</span>
         <span class="rank-count">${c.count} 次</span>`;
         list.appendChild(item);
@@ -292,7 +295,13 @@ api('/stats')
     });
   })
   .catch(() => {
+    // 失败时四张统计卡与两个列表都要收尾：原先只把城市排名换成错误文案，
+    // 其余三处会永远停在「加载中…」/「正在加载统计…」，看着像卡住
+    ['totalVisits', 'totalCities', 'totalProvinces', 'totalUsers'].forEach(id => {
+      document.getElementById(id).textContent = '—';
+    });
     document.getElementById('cityRankList').innerHTML = '<div class="empty">统计加载失败，请稍后重试</div>';
+    document.getElementById('achievementCountList').innerHTML = '<div class="empty">统计加载失败，请稍后重试</div>';
   });
 </script>
 </body>

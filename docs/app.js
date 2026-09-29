@@ -70,6 +70,15 @@ function findCity(name) {
   return c ? { lat: c.lat, lng: c.lng } : null;
 }
 
+// HTML 转义：凡是要把「用户能填的内容」（城市名、备注）拼进 innerHTML 的地方都得过一遍。
+// 只有这一份 —— 各页原先各抄一份，抄漏的那页就是一处 XSS（全站统计页的城市名就漏了：
+// 后端只校验 city 非空且 ≤30 字符，谁都能直接调接口写个带脚本的城市名进去）。
+function escapeHtml(t) {
+  const d = document.createElement('div');
+  d.textContent = t || '';
+  return d.innerHTML;
+}
+
 // ========= 城市三级下拉（国 → 省 → 市） =========
 // 主页「添加行程」弹窗与足迹管理「编辑行程」弹窗共用这一份联动逻辑。
 // 国家这一级当前只有「中国」—— cities.js 是纯国内地级市表，没有 country 字段；

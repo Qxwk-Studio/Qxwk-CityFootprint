@@ -294,6 +294,11 @@
   .modal {
     width: 100%;
     max-width: 380px;
+    /* 弹窗内容比视口高时必须能滚：遮罩只有 16px 内边距、又靠 flex 居中，
+       之前没有高度上限也不内部滚动，手机横屏 / 键盘弹出时底部那颗「添加行程」永远点不到。
+       上限扣掉遮罩的上下内边距（16px × 2），让弹窗自己出滚动条而不是撑破遮罩 */
+    max-height: calc(100vh - 32px);
+    overflow-y: auto;
     background: var(--surface);
     color: var(--text-primary);
     border: 1px solid var(--border);
@@ -598,6 +603,9 @@ L.tileLayer('https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scal
 }).addTo(map);
 
 let markers = [];
+// 空态提示控件：只建一次，且有数据后要移除 —— 否则「空态下加了第一条足迹」之后，
+// 这块「还没有足迹」会一直挂在图上
+let emptyCtl = null;
 const userInfo = new Map(); // nickname -> { color }
 const offset = 0.15;         // 同城多点错开距离
 const geoCache = new Map();  // adcode -> Promise<geojson|null>，边界缓存
@@ -708,19 +716,26 @@ function render(data) {
   if (adminNote) adminNote.style.display = data.isAdmin ? '' : 'none';
 
   if (!data.cities.length) {
-    // 空态：隐藏图例面板，仅保留左上角的空态提示，避免两者重叠
+    // 空态：隐藏图例面板，仅保留左上角的空态提示，避免两者重叠。
+    // 控件只建一次（render 会被反复调用，每次都新建就叠起来了）
     document.getElementById('legend').style.display = 'none';
-    const empty = L.control({ position: 'topleft' });
-    empty.onAdd = () => {
-      const div = L.DomUtil.create('div');
-      div.className = 'leaflet-control';
-      div.style.cssText = 'background:var(--surface);padding:16px 20px;border-radius:var(--radius-md);box-shadow:var(--shadow-md);font-size:14px;color:var(--text-secondary);border:1px solid var(--border);';
-      div.textContent = '还没有足迹，去添加第一座城市吧 ✈️';
-      return div;
-    };
-    empty.addTo(map);
+    if (!emptyCtl) {
+      emptyCtl = L.control({ position: 'topleft' });
+      emptyCtl.onAdd = () => {
+        const div = L.DomUtil.create('div');
+        div.className = 'leaflet-control';
+        div.style.cssText = 'background:var(--surface);padding:16px 20px;border-radius:var(--radius-md);box-shadow:var(--shadow-md);font-size:14px;color:var(--text-secondary);border:1px solid var(--border);';
+        div.textContent = '还没有足迹，去添加第一座城市吧 ✈️';
+        return div;
+      };
+      emptyCtl.addTo(map);
+    }
     return;
   }
+  // 有数据了：撤掉空态提示、把图例恢复显示。这一支在「空态下加了第一条足迹」时会走到，
+  // 少了这两句，图例就会一直停在 display:none（直到刷新页面）
+  if (emptyCtl) { emptyCtl.remove(); emptyCtl = null; }
+  document.getElementById('legend').style.display = '';
 
   // 收集用户信息
   for (const c of data.cities) {
@@ -915,12 +930,6 @@ function addFallbackDot(c, color) {
   bindCityPopup(circle, c.city);
   circle.addTo(map);
   markers.push(circle);
-}
-
-function escapeHtml(t) {
-  const d = document.createElement('div');
-  d.textContent = t || '';
-  return d.innerHTML;
 }
 
 // ---------- Toast 提示（与其他项目统一：顶部滑入 + 信息图标） ----------

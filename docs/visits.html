@@ -803,12 +803,6 @@ async function delVisit(id) {
     loadVisits();
   } catch (err) { alert(err.message); }
 }
-
-function escapeHtml(t) {
-  const d = document.createElement('div');
-  d.textContent = t || '';
-  return d.innerHTML;
-}
 </script>
 </body>
 </html>
