@@ -41,31 +41,35 @@
 
         <!-- 五个 tab 都在 menu/bottom_nav.xml 里定义（图标 + 文案）；
              选中态样式见 themes.xml 的 Widget.App.BottomNav（主色药丸 + 白字）。
-             高度要压到最紧，所以 minHeight 必须在这里显式写死：不写就吃 M3 主题给
-             活动指示器（那颗药丸）留的默认最小值，比下面这几个值都大 ——
+             高度不需要压到最紧，但 minHeight 仍必须在这里显式写死：不写就吃 M3 主题给
+             活动指示器（那颗药丸）留的默认最小值（56dp），比下面这几个值都大 ——
              item 内边距收得再紧，也被那个下限顶回去，白调。
-             48dp 是 Material 的触摸目标下限，再矮点着就不准了，所以收到这里为止。
+             52dp 比 Material 的触摸目标下限（48dp）多 4dp，是给「图标 + 文案」留的呼吸。
+             item 多出来的高度不会跑到图标与文案之间 —— 文案已被 MainActivity.pinBottomNavLabels
+             贴到图标底下，富余高度只会落在文案下方。
              两个 itemPadding 是 BottomNavigationView 自己的属性（app: 命名空间），
              不是 android:padding —— 后者会被 item 的测量逻辑忽略。
+             itemPaddingTop 取 6dp：比原来的 4dp 多出的 2dp 落在图标上方，而 item 长高的 4dp
+             里另一半落到文案下方，整块内容才在 item 里居中（图标位置由 itemPaddingTop 决定）。
 
-             activeIndicatorLabelPadding 是「图标与文案之间那条缝」的正主，必须显式压到 0：
-             material 1.11 的 item 是个 FrameLayout，图标容器贴顶（topMargin = itemPaddingTop）、
-             文案组贴底（paddingBottom = itemPaddingBottom），而 item 的测量高度 **额外** 加了
-             一段 activeIndicatorLabelPadding（M3 默认 4dp，见 NavigationBarItemView
-             getSuggestedMinimumHeight）。那段高度落在图标与文案之间，表现就是
-             「图标顶在上边、文字沉在下边、中间空一截」。压成 0 后这段高度不再存在，
-             图标与文案就贴着排在上半部分，留白全部落到 item 底部 —— 即控件整体上对齐。
-             注意 itemPaddingBottom 不是这条缝的解：它同时撑高 item，改它只会把留白搬家。 -->
+             activeIndicatorLabelPadding 压成 0，只是为了别让它按 M3 默认的 4dp 抬高 item 的
+             最小高度（见 NavigationBarItemView.getSuggestedMinimumHeight）。它 **不是**
+             「图标与文案之间那条缝」的解 —— 那条缝的正主是 item 比内容高：material 1.11 的
+             item 是个 FrameLayout，图标容器贴顶（topMargin = itemPaddingTop）、文案组贴底
+             （paddingBottom = itemPaddingBottom），而 item 高度被上面的 minHeight 顶住，
+             多出来的那截高度就落在两者之间。属性层面动不了它（itemPaddingBottom 同时参与
+             最小高度计算，改它只是把留白搬家），实际修法见
+             MainActivity.pinBottomNavLabels() —— 运行时把文案组平移到图标底边。 -->
         <com.google.android.material.bottomnavigation.BottomNavigationView
             android:id="@+id/bottomNav"
             style="@style/Widget.App.BottomNav"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:minHeight="48dp"
+            android:minHeight="52dp"
             android:paddingStart="4dp"
             android:paddingEnd="4dp"
             app:itemIconSize="20dp"
-            app:itemPaddingTop="4dp"
+            app:itemPaddingTop="6dp"
             app:itemPaddingBottom="4dp"
             app:activeIndicatorLabelPadding="0dp"
             app:labelVisibilityMode="labeled"
