@@ -46,7 +46,16 @@
              item 内边距收得再紧，也被那个下限顶回去，白调。
              48dp 是 Material 的触摸目标下限，再矮点着就不准了，所以收到这里为止。
              两个 itemPadding 是 BottomNavigationView 自己的属性（app: 命名空间），
-             不是 android:padding —— 后者会被 item 的测量逻辑忽略。 -->
+             不是 android:padding —— 后者会被 item 的测量逻辑忽略。
+
+             activeIndicatorLabelPadding 是「图标与文案之间那条缝」的正主，必须显式压到 0：
+             material 1.11 的 item 是个 FrameLayout，图标容器贴顶（topMargin = itemPaddingTop）、
+             文案组贴底（paddingBottom = itemPaddingBottom），而 item 的测量高度 **额外** 加了
+             一段 activeIndicatorLabelPadding（M3 默认 4dp，见 NavigationBarItemView
+             getSuggestedMinimumHeight）。那段高度落在图标与文案之间，表现就是
+             「图标顶在上边、文字沉在下边、中间空一截」。压成 0 后这段高度不再存在，
+             图标与文案就贴着排在上半部分，留白全部落到 item 底部 —— 即控件整体上对齐。
+             注意 itemPaddingBottom 不是这条缝的解：它同时撑高 item，改它只会把留白搬家。 -->
         <com.google.android.material.bottomnavigation.BottomNavigationView
             android:id="@+id/bottomNav"
             style="@style/Widget.App.BottomNav"
@@ -58,6 +67,7 @@
             app:itemIconSize="20dp"
             app:itemPaddingTop="4dp"
             app:itemPaddingBottom="4dp"
+            app:activeIndicatorLabelPadding="0dp"
             app:labelVisibilityMode="labeled"
             app:menu="@menu/bottom_nav" />
     </LinearLayout>

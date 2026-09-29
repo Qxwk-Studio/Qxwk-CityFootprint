@@ -85,6 +85,10 @@
     <string name="stats_total_users">👥 总用户</string>
     <string name="stats_rank_title">🏆 去过的城市次数排名</string>
     <string name="stats_achievements_title">🏆 成就</string>
+    <!-- 空态与错误态照抄网页 stats.html 的两句话（不是通用 common_error）；
+         排行空态是「全站还没人记过足迹」，跟「我这页没有数据」不是一回事 -->
+    <string name="stats_rank_empty">还没有任何足迹，去添加第一座城市吧 ✈️</string>
+    <string name="stats_load_failed">统计加载失败，请稍后重试</string>
     <string name="stats_admin_note">👑 管理员视图 · 正在统计全部行程（含私密）</string>
 
     <!-- 地图 -->

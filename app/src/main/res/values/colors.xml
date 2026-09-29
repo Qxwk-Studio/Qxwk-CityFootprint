@@ -1,40 +1,45 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- 色板来自设计稿 city-footprint-app/pages 的 Google 浅色品牌（只读参考）。
-         设计稿深色那一套是**另一支品牌**（主色 #FC2C50 红），与浅色的 Google 蓝不是一套，
-         所以本 app **只做浅色**（见 themes.xml 的说明），不落地深色 token。
+    <!-- 色板**以网页端为准**：下面每个值都对应 docs/style.css 里 :root 的一个 token
+         （网页是 Tailwind slate/blue 那套）。原先用的是设计稿 city-footprint-app/pages
+         的 Google 蓝，两端点开同一份数据却颜色不同，看着像两个产品，所以整套换掉。
 
-         命名沿用设计稿的语义 token：primary / secondary / muted / accent / border / sidebar 等，
-         网页端叫 primary、sidebar 的那些在这里就是 accent、sidebar，一一对应。 -->
+         命名沿用设计稿的语义 token（primary / muted / accent / border / sidebar 等），
+         注释里那个名字就是它在网页端的 token 名；网页 CSS 变量名前面带两个连字符，
+         XML 注释不允许出现连续两个连字符，所以这里一律省掉，别再手快补回去。
+
+         本 app 只做浅色：网页端没有深色主题，也就没有深色 token 可对（见 themes.xml）。 -->
 
     <!-- ===== 品牌主色（按钮 / 选中态 / 进度 / 边界线） ===== -->
-    <color name="accent">#4285F4</color>              <!-- primary -->
-    <color name="accent_light">#DBEAFE</color>        <!-- secondary / accent：浅蓝底 -->
-    <color name="accent_soft_fg">#003E8F</color>      <!-- accent-foreground：蓝底上的深蓝字 -->
-    <color name="secondary_soft_fg">#333942</color>   <!-- secondary-foreground -->
-    <color name="on_accent">#FFFFFF</color>           <!-- primary-foreground -->
+    <color name="accent">#2563EB</color>              <!-- primary -->
+    <color name="accent_light">#EFF6FF</color>        <!-- primary-light：浅蓝底 -->
+    <color name="accent_soft_fg">#1D4ED8</color>      <!-- primary-hover：浅蓝底上的深蓝字 -->
+    <color name="secondary_soft_fg">#0F172A</color>   <!-- text-primary（备用） -->
+    <color name="on_accent">#FFFFFF</color>           <!-- surface：蓝底上的白字 -->
 
     <!-- ===== 面 / 文字 ===== -->
-    <color name="bg">#FFFFFF</color>                  <!-- background：页面底 -->
-    <color name="card">#FFFFFF</color>                <!-- card -->
-    <color name="fg">#0E1115</color>                  <!-- foreground：标题 / 正文 -->
-    <color name="text_primary">#0E1115</color>        <!-- 与 fg 同值，兼容既有引用 -->
-    <color name="text_secondary">#7F8D9F</color>      <!-- muted-foreground：次要说明 -->
-    <color name="muted_fg">#7F8D9F</color>
-    <color name="muted">#EFF1F4</color>               <!-- muted：进度轨道 / 开关底 -->
-    <color name="popover">#F9F9FA</color>             <!-- popover：输入框底 -->
+    <color name="bg">#F8FAFC</color>                  <!-- bg：页面底 -->
+    <color name="card">#FFFFFF</color>                <!-- surface：卡片 -->
+    <color name="fg">#0F172A</color>                  <!-- text-primary：标题 / 正文 -->
+    <color name="text_primary">#0F172A</color>        <!-- 与 fg 同值，兼容既有引用 -->
+    <color name="text_secondary">#64748B</color>      <!-- text-secondary：次要说明 -->
+    <color name="muted_fg">#64748B</color>            <!-- text-secondary：更弱的说明（同值） -->
+    <color name="muted">#E2E8F0</color>               <!-- border：进度轨道 / 开关关闭态轨道 -->
+    <color name="popover">#F8FAFC</color>             <!-- bg：输入框底 / 名次圆底 -->
 
     <!-- ===== 线 ===== -->
-    <color name="border">#EBEBEB</color>              <!-- border：卡片描边 / 分隔线 -->
-    <color name="input_border">#E2E3E4</color>        <!-- input：输入框描边 -->
+    <color name="border">#E2E8F0</color>              <!-- border：卡片描边 / 分隔线 -->
+    <color name="input_border">#E2E8F0</color>        <!-- border：输入框描边 -->
 
-    <!-- ===== 外壳（顶栏 / 底栏，设计稿的 sidebar） ===== -->
-    <color name="sidebar">#F0F6FF</color>
-    <color name="sidebar_fg">#0E1115</color>
-    <color name="sidebar_border">#E7EAEF</color>
+    <!-- ===== 外壳（顶栏 / 底栏）=====
+         网页 navbar 是 rgba(255,255,255,.8) 浮在 bg 上，肉眼就是白，所以这里直接用白；
+         底下的内容区才是 bg 的浅灰 —— 与网页「白顶栏 + 灰页面 + 白卡片」同一个层次感。 -->
+    <color name="sidebar">#FFFFFF</color>
+    <color name="sidebar_fg">#0F172A</color>          <!-- text-primary -->
+    <color name="sidebar_border">#E2E8F0</color>      <!-- border -->
 
-    <!-- ===== 危险动作（退出登录） ===== -->
-    <color name="destructive">#EF4444</color>
+    <!-- ===== 危险动作（退出登录 / 错误提示） ===== -->
+    <color name="destructive">#DC2626</color>         <!-- 网页 .msg.error 的 #dc2626 -->
 
     <!-- ===== 管理员视图横幅：网页 stats.html 的 .admin-view-note 那套琥珀色 ===== -->
     <color name="admin_note_bg">#FFFBEB</color>
@@ -42,16 +47,18 @@
     <color name="admin_note_fg">#92400E</color>
 
     <!-- 系统栏兜底：与顶栏同色（只做浅色，深色不再覆盖 —— 见 values-night 已移除） -->
-    <color name="window_bg_light">#F0F6FF</color>
-    <color name="window_bg_dark">#F0F6FF</color>
+    <color name="window_bg_light">#FFFFFF</color>
+    <color name="window_bg_dark">#FFFFFF</color>
 
-    <!-- 私密标记：设计稿是 accent 药丸底 + accent-foreground 字，不再是灰紫文字 -->
-    <color name="private_badge">#003E8F</color>
+    <!-- 私密标记：浅蓝药丸底上的深蓝字（与 accent_soft_fg 同值） -->
+    <color name="private_badge">#1D4ED8</color>
     <!-- 已达成成就那张卡的描边：网页 .achievement.done 是 rgba(primary, .4)，
-         即主色叠四成透明度（#66 = 102 ≈ 40%）。卡片底色用 accent_light（见 AchievementsFragment）。 -->
-    <color name="achievement_done_stroke">#664285F4</color>
+         即主色叠四成透明度（#66 = 102 ≈ 40%）。主色换 #2563EB 后这里要同步换，
+         否则会留着一条旧 Google 蓝的边。卡片底色用 accent_light（见 AchievementsFragment）。 -->
+    <color name="achievement_done_stroke">#662563EB</color>
 
-    <!-- 图表色（设计稿 chart-1..5）：地图图例等备用 -->
+    <!-- 图表色（设计稿 chart-1..5）：**目前无人引用**，地图图例的颜色是后端按用户下发的。
+         保持原样不跟着换成主色系 —— 这是一组「多系列并列」的彩虹色，不是品牌色的深浅档。 -->
     <color name="chart_1">#4285F4</color>
     <color name="chart_2">#EA4335</color>
     <color name="chart_3">#FBBC05</color>

@@ -89,8 +89,9 @@ class StatsFragment : Fragment() {
                     Session.expired(requireActivity())
                     return@runIo
                 }
-                // 统计页的错误就地显示（这一页本来就有位置），不弹 Toast
-                binding.textError.text = e.message ?: getString(R.string.common_error)
+                // 统计页的错误就地显示（这一页本来就有位置），不弹 Toast。
+                // 兜底文案照网页 stats.html 那句「统计加载失败，请稍后重试」，不用通用 common_error
+                binding.textError.text = e.message ?: getString(R.string.stats_load_failed)
                 binding.textError.visibility = View.VISIBLE
                 return@runIo
             }
@@ -134,6 +135,11 @@ class StatsFragment : Fragment() {
             item.textCount.text = getString(R.string.stats_rank_count, row.count)
             binding.rankContainer.addView(item.root)
         }
+
+        // 全站还没有任何足迹：照网页把列表位置换成一句话空态，展开/收起按钮也就没意义了
+        val rankEmpty = rows.isEmpty()
+        binding.textRankEmpty.visibility = if (rankEmpty) View.VISIBLE else View.GONE
+        binding.btnRankMore.visibility = if (rankEmpty) View.GONE else View.VISIBLE
 
         // 展开 / 收起：三种文案与网页 .rank-toggle 一致（不够 10 名时按钮置灰）
         val total = stats.cityRank.size
