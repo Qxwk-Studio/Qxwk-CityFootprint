@@ -235,13 +235,18 @@ class MapFragment : Fragment() {
         val row = LinearLayout(ctx).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(0, dp(4), 0, dp(4))
+            // 纵向内边距同网页 .legend .user（2px）：一行一个人是纯信息列表，行内留白别太厚
+            setPadding(0, dp(2), 0, dp(2))
             isClickable = true
         }
         row.addView(CheckBox(ctx).apply {
             isClickable = false
             isFocusable = false
             tag = name
+            // Material 主题给复选框的 minHeight 是 48dp 触摸目标，行高会被它顶到 48dp，
+            // 光收内边距看不出效果（人与人之间还是空一大截）。钉掉这个下限后行高回到图标本身的高度；
+            // 整行仍可点，点击热区不受影响
+            minimumHeight = 0
         })
         if (color != null) {
             row.addView(View(ctx).apply {
