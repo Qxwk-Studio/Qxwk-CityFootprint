@@ -57,6 +57,19 @@
             android:exported="false"
             android:parentActivityName=".ui.MainActivity"
             android:windowSoftInputMode="adjustResize" />
+
+        <!-- 公告页：读网页根下 version.json 的 notices，两处入口（「我的 → 公告」与主页顶部横幅） -->
+        <activity
+            android:name=".ui.NoticeActivity"
+            android:exported="false"
+            android:parentActivityName=".ui.MainActivity" />
+
+        <!-- App 内看网页（协议正文，以后的限时活动也走这里）。
+             只读页面留在本 app，改文案不用发版；「前往下载」「通行证中心」仍走系统浏览器（见 WebViewActivity） -->
+        <activity
+            android:name=".ui.WebViewActivity"
+            android:exported="false"
+            android:parentActivityName=".ui.MainActivity" />
     </application>
 
 </manifest>

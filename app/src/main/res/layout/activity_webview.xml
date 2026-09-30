@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- App 内看网页的外壳：共用顶栏（view_top_bar.xml）+ 一条 3dp 进度条 + WebView，不给底栏。
+     形态与公告页（activity_notice.xml）一致，内容区 id=content 交给 applyEdgeToEdge 吃导航栏那截高度
+     （见 ui/EdgeToEdge.kt）。
+
+     为什么要有这一页：协议正文、以后的限时活动这类页面只维护在网页那一份
+     （改文案不必发版，见 Api.AGREEMENT 的说明），但也不该把用户整个甩到浏览器 ——
+     顶栏的返回按钮、网页内跳转的历史都由本页接住（逻辑见 ui/WebViewActivity）。
+
+     进度条压在顶栏下沿而不是居中转圈：网页是整屏内容，居中转圈会把正文顶下去，
+     加载完再跳一下；细条不影响布局，加载慢时又不至于是一片空白。 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg"
+    android:orientation="vertical">
+
+    <!-- 标题文字由 WebViewActivity 填（共用顶栏不自带文案），返回按钮也由它置 VISIBLE -->
+    <include
+        android:id="@+id/topBar"
+        layout="@layout/view_top_bar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <ProgressBar
+        android:id="@+id/progress"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="3dp"
+        android:indeterminate="true"
+        android:indeterminateTint="@color/accent" />
+
+    <FrameLayout
+        android:id="@+id/content"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <!-- 底色给 @color/bg：首帧还没有网页内容时露的是这一层，
+             白屏闪一下比浅灰闪一下更刺眼（网页自身也是浅色底） -->
+        <WebView
+            android:id="@+id/webView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@color/bg" />
+    </FrameLayout>
+</LinearLayout>

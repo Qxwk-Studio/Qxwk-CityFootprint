@@ -15,13 +15,32 @@
     <!-- 登录页 -->
     <string name="login_title">Qxwk 通行证登录</string>
     <string name="login_bar_title">通行证登录</string>
-    <string name="login_subtitle">足迹数据与聊天账号共用一套通行证</string>
+    <!-- 副标题照抄网页 account.html 的 .auth-subtitle：只说「用通行证登录」这一件事，
+         不提本 app 之外还有哪些站点（原来那句「与聊天账号共用一套通行证」就是反面教材） -->
+    <string name="login_subtitle">用 Qxwk 通行证账号登录，一处登录处处通行</string>
     <string name="login_account">昵称或邮箱</string>
     <string name="login_password">密码</string>
     <string name="login_submit">登录</string>
+    <!-- 登录卡下方那行引导：文案照抄网页 account.html 的 .passport-tip（去掉「打开通行证」那个链接词）。
+         注册与找回密码都在通行证登录页里，所以这一行把两件事一起兜住（整行可点，见 LoginActivity） -->
+    <string name="login_register_tip">没有账号，或忘记密码？到通行证注册 / 找回</string>
     <string name="login_err_account">请输入昵称或邮箱</string>
     <string name="login_err_password">请输入密码</string>
     <string name="login_need_password">该账号还没设置过密码，请先到通行证（account.qxwkstudio.top）设置密码后再登录</string>
+    <!-- 同意用户协议的勾选行。两句是「整句 + 它在整句里的片段」的关系：
+         代码拿下面那句在整句里定位，把片段做成可点链接（见 LoginActivity.bindAgreeRow），
+         所以改上面那句时，下面这句必须跟着一起改，否则链接会退化成纯文字 -->
+    <string name="login_agree_terms">我已阅读并同意《用户协议》</string>
+    <string name="login_agree_link">《用户协议》</string>
+    <!-- 没勾协议就点登录的提示（与 401 那条同一处显示：卡片里按钮下方的 textLoginError） -->
+    <string name="login_agree_required">请先阅读并同意《用户协议》</string>
+    <!-- 协议页在 App 内打开时的顶栏标题（见 ui/WebViewActivity） -->
+    <string name="agreement_title">用户协议</string>
+    <!-- App 内看网页的通用页（ui/WebViewActivity）：现在只给协议正文用，以后的活动页也走这里。
+         标题由调用方给 —— 网页自己的 <title> 带着站点名与后缀（「… · City Footprint - 青翔未阔工作室」），
+         塞进 48dp 的顶栏只会被省略号截掉，所以只在调用方没给时用下面这条兜底 -->
+    <string name="webview_title_fallback">网页</string>
+    <string name="webview_load_failed">网页加载失败，请检查网络后重试</string>
 
     <!-- 我的足迹 -->
     <string name="visits_title">📍 行程记录</string>
@@ -44,7 +63,10 @@
     <string name="visits_detail_close">关闭</string>
 
     <!-- 主页顶部的「足迹统计」小卡（对齐网页端 docs/visits.html 的 .visit-stats：
-         首行「时间跨度」整行长卡，其余四张每行两个） -->
+         首行「时间跨度」整行长卡，其余四张每行两个）。
+         上面那条横幅（visits_notice_banner）是主页独有的：网页端没有对应的东西，它只为
+         「有未读公告」这件事服务，点进公告页后就不再出现（见 ui/VisitsFragment）。 -->
+    <string name="visits_notice_banner">📢 有新公告，点这里查看</string>
     <string name="visits_overview_title">📊 足迹统计</string>
     <string name="visits_overview_range">⏳ 时间跨度</string>
     <string name="visits_overview_cities">✈️ 去过城市</string>
@@ -143,8 +165,9 @@
     <!-- 通行证中心那一行（网页 account.html 那张卡）。标题与提示照抄网页，两端别各编一套文案 -->
     <string name="profile_passport_title">🎫 通行证中心</string>
     <string name="profile_passport_hint">在通行证中心修改昵称 / 颜色 / 密码、生成邀请码</string>
-    <!-- 跳外部浏览器失败（设备上没有任何能开 https 的应用）时的提示 -->
-    <string name="profile_passport_failed">没有可打开网页的应用</string>
+    <!-- 跳外部浏览器失败（设备上没有任何能开 https 的应用）时的提示。
+         名字刻意不带 profile：通行证中心、登录页的「没有账号」引导与「检查更新 → 前往下载」三处共用这一句 -->
+    <string name="common_open_url_failed">没有可打开网页的应用</string>
 
     <!-- 分组名。「我的」页改成手机设置那种分组列表后，组名就是网页 account.html 那几张卡片标题的去 emoji 版
          —— 组名用素文字，emoji 只留在行标题上当图标用（行标题仍沿用网页那几条原字符串） -->
@@ -173,10 +196,36 @@
     <string name="profile_about_datav">DataV GeoAtlas — 行政区边界数据</string>
     <string name="profile_about_developer">开发者</string>
     <string name="profile_about_developer_text">青翔未阔工作室 · QxwkStudio@outlook.com</string>
-    <string name="profile_about_version">版本</string>
+    <string name="profile_about_version">当前版本</string>
     <!-- 版本号（行尾那个值）。网页把 'v' 显式拼在 APP_VERSION 前面（account.js），这里照同一形态，
          与 CI 注入的 versionName（如 1.3.0）拼出来是 "v1.3.0" -->
     <string name="profile_about_version_value">v%1$s</string>
+    <!-- 检查更新那一行（App 特有，网页端明确不做更新检查，只留静态版本号文字）。
+         点了拉 docs/version.json 比 version_code，三种结果各自的文案见下面三组 -->
+    <string name="profile_about_check_update">检查更新</string>
+    <!-- 公告那一行（App 特有，网页端没有这个入口：那边看公告是 news.html 那个页面）。
+         点了进 ui/NoticeActivity，读的是同一个 version.json 的 notices -->
+    <string name="profile_about_notice">📢 公告</string>
+    <string name="profile_update_new_title">发现新版本</string>
+    <!-- 弹窗正文由三段拼起来（见 ProfileFragment.updateMessage）：版本 → 更新说明 → 问一句。
+         拆成三条而不是一句话：中间那段更新说明在清单里没写时要**整段**省掉（连小标题一起） -->
+    <string name="profile_update_new_message">最新版本 v%1$s</string>
+    <!-- 更新说明的小标题，与每一条前面的点（清单里 notes 是一行一条，逐条套这个格式） -->
+    <string name="profile_update_notes_title">更新说明</string>
+    <string name="profile_update_note_item">· %1$s</string>
+    <string name="profile_update_confirm">是否前往下载？</string>
+    <string name="profile_update_go">前往下载</string>
+    <string name="profile_update_latest">已是最新版本</string>
+    <string name="profile_update_failed">检查更新失败，请稍后重试</string>
+    <!-- 清单里 download_url 空着（改 version.json 时漏填）时用：别拿空地址去 openConnection -->
+    <string name="profile_update_no_url">下载地址暂不可用</string>
+
+    <!-- 公告页（ui/NoticeActivity）与主页那条未读横幅。
+         数据是 version.json 顶层的 notices，不是后端接口；网页端 news.html 的公告区是手写的，两边互不影响 -->
+    <string name="notice_title">公告</string>
+    <string name="notice_empty">暂时没有公告</string>
+    <!-- 公告页拉不到清单时用（主页那条横幅反过来——失败就静默，不打扰用户） -->
+    <string name="notice_load_failed">公告加载失败，请稍后重试</string>
 
     <!-- 统计页排行行的文案与展开/收起（对齐网页 .rank-item / .rank-toggle） -->
     <string name="stats_rank_people">去过 %1$d 人</string>

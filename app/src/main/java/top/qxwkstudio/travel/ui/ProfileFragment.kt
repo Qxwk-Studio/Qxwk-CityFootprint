@@ -21,7 +21,9 @@ import top.qxwkstudio.travel.R
 import top.qxwkstudio.travel.data.Auth
 import top.qxwkstudio.travel.data.GeoCache
 import top.qxwkstudio.travel.data.Store
+import top.qxwkstudio.travel.data.Update
 import top.qxwkstudio.travel.databinding.FragmentProfileBinding
+import top.qxwkstudio.travel.logic.ReleaseInfo
 import java.io.BufferedInputStream
 import java.net.HttpURLConnection
 import java.net.URL
@@ -52,10 +54,12 @@ class ProfileFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         store = Store(requireContext())
-        // 三处都是「整行可点」的设置行，没有按钮（见 fragment_profile.xml 的分组结构）
+        // 五处都是「整行可点」的设置行，没有按钮（见 fragment_profile.xml 的分组结构）
         binding.rowLogout.setOnClickListener { confirmLogout() }
-        binding.rowPassport.setOnClickListener { openPassport() }
+        binding.rowPassport.setOnClickListener { openUrl(Api.PASSPORT_CENTER) }
         binding.rowClearCache.setOnClickListener { clearCache() }
+        binding.rowCheckUpdate.setOnClickListener { checkUpdate() }
+        binding.rowNotice.setOnClickListener { startActivity(NoticeActivity.intent(requireContext())) }
         refresh()
     }
 
@@ -132,15 +136,72 @@ class ProfileFragment : Fragment() {
     }
 
     /**
-     * 通行证中心只在网页上（改昵称 / 颜色 / 密码、生成邀请码），App 里跳系统浏览器打开。
+     * 跳系统浏览器打开一个 https 地址：通行证中心与「检查更新 → 前往下载」两处共用。
      * 设备上一个能开 https 的应用都没有时 startActivity 会抛 ActivityNotFoundException ——
      * 别让一次点击把 App 崩掉，给一句提示就够。
      */
-    private fun openPassport() {
-        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(Api.PASSPORT_CENTER))
+    private fun openUrl(url: String) {
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
         runCatching { startActivity(intent) }.onFailure {
-            Toast.makeText(requireContext(), R.string.profile_passport_failed, Toast.LENGTH_LONG).show()
+            Toast.makeText(requireContext(), R.string.common_open_url_failed, Toast.LENGTH_LONG).show()
         }
+    }
+
+    /**
+     * 检查更新：拉网页根下的版本清单（[Api.VERSION_MANIFEST]，就是 docs/version.json），
+     * 把清单里的 version_code 与当前 [BuildConfig.VERSION_CODE] 比大小（为什么比 code 而不是版本名，见 logic/Models.kt 的 ReleaseInfo）。
+     *
+     * 三条出路：拉不到 → Toast 一句；不新 → Toast 一句；有新版本 → 弹窗问一句，点「前往下载」交给系统浏览器。
+     * **App 内不做下载与安装** —— 那要一路处理存储权限、FileProvider 与「未知来源」安装授权，
+     * 而现在连 APK 的公开下载地址都还没定（version.json 里是占位符），跳浏览器是最不容易做错的一步。
+     */
+    private fun checkUpdate() {
+        viewLifecycleOwner.lifecycleScope.runIo({ Update.fetch() }) { result ->
+            val info = result.getOrNull()?.android
+            if (info == null) {
+                Toast.makeText(requireContext(), R.string.profile_update_failed, Toast.LENGTH_SHORT).show()
+                return@runIo
+            }
+            if (info.versionCode <= BuildConfig.VERSION_CODE) {
+                Toast.makeText(requireContext(), R.string.profile_update_latest, Toast.LENGTH_SHORT).show()
+                return@runIo
+            }
+            AlertDialog.Builder(requireContext())
+                .setTitle(R.string.profile_update_new_title)
+                .setMessage(updateMessage(info))
+                .setPositiveButton(R.string.profile_update_go) { _, _ -> openDownload(info.downloadUrl) }
+                .setNegativeButton(R.string.common_cancel, null)
+                .show()
+        }
+    }
+
+    /**
+     * 弹窗正文：三段拼起来 —— 版本、更新说明、问一句，段与段之间空一行。
+     *
+     * 更新说明来自清单的 `notes`（一行一条，逐条套上「· 」前缀），**没写就整段省掉**，
+     * 连小标题一起 —— 否则弹窗里会挂着一个空荡荡的「更新说明：」。
+     * 说明很长时不用管换行与截断：AlertDialog 的正文区自己会滚。
+     */
+    private fun updateMessage(info: ReleaseInfo): String {
+        val blocks = mutableListOf(getString(R.string.profile_update_new_message, info.versionName))
+        if (info.notes.isNotEmpty()) {
+            val items = info.notes.joinToString("\n") { getString(R.string.profile_update_note_item, it) }
+            blocks += getString(R.string.profile_update_notes_title) + "\n" + items
+        }
+        blocks += getString(R.string.profile_update_confirm)
+        return blocks.joinToString("\n\n")
+    }
+
+    /**
+     * 「前往下载」：清单里的 download_url 是手改的，可能空着 ——
+     * 空地址别塞给 [Uri.parse]（会得到一个空的 URI，浏览器打开一片空白），直接提示一句。
+     */
+    private fun openDownload(url: String) {
+        if (url.isBlank()) {
+            Toast.makeText(requireContext(), R.string.profile_update_no_url, Toast.LENGTH_LONG).show()
+            return
+        }
+        openUrl(url)
     }
 
     /**

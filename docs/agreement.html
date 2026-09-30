@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>用户协议 · City Footprint</title>
+<meta name="description" content="City Footprint 用户协议：账号、记录的信息、数据存放与第三方、开源说明。">
+<link rel="icon" type="image/webp" href="/favicon.webp">
+<link rel="stylesheet" href="/style.css">
+<style>
+  /* 这一页刻意**不带站点外壳**：没有导航栏、没有页脚、没有卡片 —— 它是一份文档，
+     不是站内的一屏内容。三处入口都以「单独一页」的形式打开它
+     （网页端登录页的新标签页、App 里 ui/WebViewActivity 的顶栏页），
+     自带导航反而会让人以为还在站内、顺手点「返回地图」跳到别处；
+     页脚那句版权对它也没意义（点进来的那一刻就知道自己在哪）。
+     所以：单列文本、限宽到舒服的行长、标题用手写编号，不加任何容器底色与阴影。 */
+  .doc { max-width: 46rem; margin: 0 auto; padding: 48px 20px 72px; }
+
+  .doc h1 { font-size: 1.6rem; font-weight: 700; line-height: 1.35; letter-spacing: 0.3px; }
+  .doc-meta { margin-top: 10px; font-size: 0.8rem; color: var(--text-tertiary); }
+
+  /* 正文：行距给足（这份东西是要人读的），段与段之间靠 margin 分开，不用空段落撑 */
+  .doc h2 { margin: 34px 0 12px; font-size: 1rem; font-weight: 600; color: var(--text-primary); }
+  .doc p { margin-bottom: 12px; font-size: 0.9rem; color: var(--text-secondary); line-height: 1.95; }
+  .doc ul { margin: 0 0 12px; padding-left: 20px; }
+  .doc li { margin-bottom: 4px; font-size: 0.9rem; color: var(--text-secondary); line-height: 1.95; }
+  .doc b { color: var(--text-primary); font-weight: 600; }
+  .doc a { color: var(--primary); text-decoration: none; }
+  .doc a:hover { text-decoration: underline; }
+
+  /* 首屏那条横线：正文与标题之间有个「开始读了」的分隔，也替代卡片给的那点边界感 */
+  .doc hr { margin: 26px 0 0; border: 0; border-top: 1px solid var(--border); }
+</style>
+<meta name="color-scheme" content="light dark">
+<!-- 主题切换：见 theme.js。必须留在 <head>、body 渲染之前，否则会闪色。
+     这一页没有切换按钮（不放顶栏），它只负责把用户选过的深浅色读出来用上。 -->
+<script src="theme.js"></script>
+</head>
+<body>
+<article class="doc">
+  <h1>用户协议</h1>
+  <p class="doc-meta">生效日期：2026-09-30 · 适用 City Footprint 网页端与安卓 App</p>
+  <hr>
+
+  <h2>一、这份协议管什么</h2>
+  <p>City Footprint（我们走过的城市）是青翔未阔工作室做的个人足迹记录工具：你把去过的城市记下来，我们把它画成地图和统计。
+     <b>你在网页端或用安卓 App 登录、记录足迹，就表示你已阅读并同意这份协议。</b></p>
+  <p>登录用的是「Qxwk 通行证」（account.qxwkstudio.top）。通行证那边的账号规则、隐私说明以通行证自身的页面为准，本协议只管足迹这件事本身。</p>
+
+  <h2>二、账号与登录</h2>
+  <ul>
+    <li>不单独注册：登录即用你的通行证账号（昵称或邮箱 + 密码），一个通行证账号对应一份足迹数据。</li>
+    <li>密码只提交给通行证，<b>不会经过足迹后端</b>；本站拿到的只是通行证签发的一串登录凭证（token）。</li>
+    <li>注册、改昵称、改密码、生成邀请码都在通行证中心完成，本站不做这些事。</li>
+    <li>请自行保管好账号。用你的账号做出的记录，都算你的操作。</li>
+  </ul>
+
+  <h2>三、我们记录哪些信息</h2>
+  <p>只有<b>你主动填写</b>或<b>你主动授权</b>的东西：</p>
+  <ul>
+    <li>账号信息：昵称、专属颜色、头像（由通行证提供）。邮箱由通行证侧维护，本站不在页面上展示。</li>
+    <li>足迹内容：城市、到访时间（可选）、备注（可选）、出行方式（可选）、是否设为「不公开」。</li>
+    <li>定位：只有你在编辑页点「定位」时才读取一次粗略位置，用来判断你离哪座城市最近，好把城市名填进表单。<b>坐标不会上传，也不会保存。</b></li>
+  </ul>
+  <p>我们不收集通讯录、短信、相册，也不做后台定位。</p>
+
+  <h2>四、这些信息存在哪、给谁看</h2>
+  <ul>
+    <li>足迹数据存在本项目的后端（Cloudflare Workers + D1 数据库），页面托管在 GitHub Pages。</li>
+    <li>地图与统计页展示的是<b>城市、去过的人（昵称）与专属颜色</b>，以及公开行程的日期、备注、出行方式。</li>
+    <li>标了「🔒 不公开」的行程，只有你自己登录后看得到，不会出现在地图、统计和他人的查询里。</li>
+    <li>页面本身不投放广告、不做用户画像，也不会把你的足迹数据卖给或交给第三方用于营销。</li>
+  </ul>
+
+  <h2>五、存在你自己设备上的东西</h2>
+  <ul>
+    <li>登录凭证（token）与主题、图例折叠这类偏好，保存在浏览器本地或手机 App 的私有存储里。</li>
+    <li>接口报文与地图边界会缓存在本机，减少重复请求；缓存有有效期，过期会重新取。</li>
+    <li>「退出登录」会清掉登录凭证；「清除缓存」只清缓存的接口数据与地图边界，<b>不影响登录和你的足迹</b>。</li>
+  </ul>
+
+  <h2>六、请这样使用</h2>
+  <ul>
+    <li>不记录违法内容，不冒用他人身份，不上传他人隐私。</li>
+    <li>不用脚本高频刷接口、不试图绕过权限去读写别人的数据。</li>
+    <li>发现有漏洞或有人乱来，欢迎按下面的联系方式告诉我们。</li>
+  </ul>
+  <p>出现上述情况，我们可能会限制相应账号的使用。</p>
+
+  <h2>七、免责说明</h2>
+  <ul>
+    <li>本站是个人项目，<b>按「现状」提供</b>：我们会尽力让它稳定，但不承诺永不中断、永不丢数据，请别把这里当作唯一的数据存档。</li>
+    <li>城市边界与底图来自第三方数据源，可能有个别偏差，仅供记录与观赏，不作为行政或法律依据。</li>
+    <li>因不可抗力、第三方服务故障（如托管、数据库、底图服务中断）造成的不可用，我们不承担赔偿责任。</li>
+  </ul>
+
+  <h2>八、开源与第三方</h2>
+  <ul>
+    <li><a href="https://leafletjs.com/" target="_blank" rel="noopener">Leaflet</a> — 网页地图渲染（BSD-2-Clause）；安卓端地图用 osmdroid（Apache-2.0）。</li>
+    <li><a href="https://www.amap.com/" target="_blank" rel="noopener">高德地图</a> — 底图瓦片；<a href="https://datav.aliyun.com/portal/school/atlas/area_selector" target="_blank" rel="noopener">DataV GeoAtlas</a> — 行政区边界数据。</li>
+    <li>这些第三方在提供瓦片、边界数据时会收到必要的请求信息（如 IP），按其自身规则处理。</li>
+  </ul>
+
+  <h2>九、协议变更</h2>
+  <p>功能调整时这份协议会跟着改，改完更新上面的生效日期，不再单独通知。继续使用即视为接受新版本；不接受请停止使用并退出登录。</p>
+
+  <h2>十、联系我们</h2>
+  <p>青翔未阔工作室 · <a href="mailto:QxwkStudio@outlook.com">QxwkStudio@outlook.com</a></p>
+</article>
+</body>
+</html>

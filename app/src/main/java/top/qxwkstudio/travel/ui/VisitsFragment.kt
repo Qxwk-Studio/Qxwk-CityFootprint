@@ -14,19 +14,22 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import top.qxwkstudio.travel.R
 import top.qxwkstudio.travel.data.CityStore
 import top.qxwkstudio.travel.data.Store
+import top.qxwkstudio.travel.data.Update
 import top.qxwkstudio.travel.data.VisitRepo
 import top.qxwkstudio.travel.databinding.DialogVisitDetailBinding
 import top.qxwkstudio.travel.databinding.FragmentVisitsBinding
+import top.qxwkstudio.travel.logic.Notice
 import top.qxwkstudio.travel.logic.Visit
 import top.qxwkstudio.travel.logic.VisitDate
 import top.qxwkstudio.travel.logic.topTransportLabel
 import top.qxwkstudio.travel.logic.transportLabels
 
 /**
- * 「主页」：网页端「足迹管理页」的内容 —— 顶部足迹统计概览 + 行程列表（下拉刷新）。
+ * 「主页」：网页端「足迹管理页」的内容 —— 顶部有未读公告时先出一条横幅，然后是足迹统计概览 + 行程列表（下拉刷新）。
  * 接口：GET /api/my-visits（后端按 created_at DESC 排好序）。
  * 本页只「读」和给编辑入口：点条目看只读详情弹窗，铅笔进 VisitEditActivity，
  * 增删改三个请求都在那一页里发（POST / PUT / DELETE）。
+ * 顶部那条公告横幅的数据不走上面这个接口，而是网页根下的静态清单（见 [loadNotices]）。
  */
 class VisitsFragment : Fragment() {
 
@@ -35,6 +38,14 @@ class VisitsFragment : Fragment() {
     private lateinit var store: Store
     private lateinit var adapter: VisitAdapter
     private lateinit var headerAdapter: VisitsHeaderAdapter
+
+    /**
+     * 拉回来的公告（见 [loadNotices]），只为页头那条「有新公告」的横幅服务：
+     * 有 id 比 Store.noticeReadId 大的就是未读。
+     * 留着它而不是只留一个「有没有未读」的布尔，是因为从公告页回来时要**重新判一次**
+     * （那边刚把已读 id 提上去，别再打一次网络 —— 见 [onResume]）。
+     */
+    private var notices: List<Notice> = emptyList()
 
     /**
      * 新增/编辑页回来就重新拉一次列表。
@@ -59,7 +70,9 @@ class VisitsFragment : Fragment() {
             onView = { visit -> showDetail(visit) },
             onEdit = { visit -> editResult.launch(VisitEditActivity.intent(requireContext(), visit)) })
         // 页头也是列表的一项（第 0 项），这样整页共用一个滚动容器（见 fragment_visits.xml / VisitsHeaderAdapter）
-        headerAdapter = VisitsHeaderAdapter { editResult.launch(VisitEditActivity.intent(requireContext(), null)) }
+        headerAdapter = VisitsHeaderAdapter(
+            onAdd = { editResult.launch(VisitEditActivity.intent(requireContext(), null)) },
+            onNotice = { startActivity(NoticeActivity.intent(requireContext())) })
 
         binding.list.layoutManager = LinearLayoutManager(requireContext())
         binding.list.adapter = ConcatAdapter(headerAdapter, adapter)
@@ -70,11 +83,45 @@ class VisitsFragment : Fragment() {
         binding.swipe.setOnChildScrollUpCallback { _, _ -> binding.list.canScrollVertically(-1) }
 
         load()
+        loadNotices()
     }
 
     override fun onDestroyView() {
         _binding = null
         super.onDestroyView()
+    }
+
+    /**
+     * 这一页在别的 tab 显示时仍是 RESUMED（四个 tab 是 add/hide/show，见 MainActivity），
+     * 所以 onResume 只在「从公告页回来 / 整个 Activity 回到前台」时才轮到它 ——
+     * 正好是重新判一次横幅显隐的时机：用户刚在公告页把已读 id 提上去了，
+     * 那条横幅要立刻收掉，否则看起来像「点了没生效」。
+     *
+     * 这里**只重判、不打网络**：公告清单还在 [notices] 里，读没读过看的是本机的已读 id。
+     */
+    override fun onResume() {
+        super.onResume()
+        refreshNoticeBanner()
+    }
+
+    /**
+     * 拉公告（与「检查更新」同一个静态清单，见 data/Update），决定页头那条横幅显不显示。
+     * **失败就静默**：公告不是这一页的主体，为主页拉不到公告弹一句错只会打扰人，
+     * 横幅不出现即可（公告页那边相反，拉不到要明确说一声，见 NoticeActivity.load）。
+     *
+     * 只在页面创建时拉一次：切 tab 不会重拉（视图还在），下拉刷新也**不**刷新它 ——
+     * 那是「刷新我的足迹」，与公告无关。
+     */
+    private fun loadNotices() {
+        viewLifecycleOwner.lifecycleScope.runIo({ Update.fetch() }) { result ->
+            notices = result.getOrNull()?.notices.orEmpty()
+            refreshNoticeBanner()
+        }
+    }
+
+    /** 清单里只要有一条 id 比「已读的最大 id」大，就是有未读（判定口径见 logic/Models 的 [Notice]）。 */
+    private fun refreshNoticeBanner() {
+        headerAdapter.submitNotice(notices.any { it.id > store.noticeReadId })
     }
 
     /** [force] = true 跳过一天缓存强制走网络（下拉刷新用）。 */

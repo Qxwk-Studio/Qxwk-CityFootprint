@@ -25,11 +25,34 @@ object Api {
     const val ACCOUNT_BASE = "$ACCOUNT_ORIGIN/api"
     const val TRAVEL_BASE = "https://api.travel.qxwkstudio.top/api"
 
+    /** 网页站点根（GitHub Pages，就是仓库里 docs/ 那一层）。**静态文件**从这里取，不走 api. 那个域名。 */
+    const val WEB_ORIGIN = "https://travel.qxwkstudio.top"
+
+    /**
+     * 「检查更新」的版本清单（`docs/version.json`）。
+     * 放网页静态文件而不是后端接口：整份内容都是手改的常量，改版本号只需 push 一次，
+     * 不必为一个文件重新部署 Cloudflare Worker（字段含义见 logic/Models.kt 的 [ReleaseInfo]）。
+     */
+    const val VERSION_MANIFEST = "$WEB_ORIGIN/version.json"
+
+    /**
+     * 用户协议（网页端 docs/agreement.html）。登录页勾选行里那个链接点了跳这里。
+     * 正文只维护网页那一份，**App 里不抄第二份** —— 抄了就得记得两处一起改，迟早对不上。
+     */
+    const val AGREEMENT = "$WEB_ORIGIN/agreement.html"
+
     /**
      * 「通行证中心」的网页入口（改昵称 / 颜色 / 密码、生成邀请码）。
      * 这些功能只在通行证那边有，App 内不做，只能跳系统浏览器打开（对应网页 account.html 那张卡）。
      */
     const val PASSPORT_CENTER = "$ACCOUNT_ORIGIN/account.html"
+
+    /**
+     * 通行证的登录页。登录页那行「没有账号，或忘记密码？」指的就是这里：
+     * **注册与找回密码都是这一页里的 tab**（Qxwk-Account 的 public/login.html，只有 login.html 这一个文件），
+     * 通行证那边没有独立的注册页，所以不要另编一个 /register 地址。
+     */
+    const val PASSPORT_LOGIN = "$ACCOUNT_ORIGIN/login.html"
 
     /**
      * 登录时上报的「来源应用名」。安卓没有 Origin 头，通行证只能靠这个字段记来源；

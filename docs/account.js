@@ -13,6 +13,7 @@ document.getElementById('loginForm').addEventListener('submit', async function (
   const btn = document.getElementById('loginSubmitBtn');
   const accountEl = document.getElementById('loginAccount');
   const pwEl = document.getElementById('loginPassword');
+  const agreeEl = document.getElementById('agreeTerms');
 
   function fail(msg) {
     errEl.textContent = msg;
@@ -20,6 +21,9 @@ document.getElementById('loginForm').addEventListener('submit', async function (
   }
   errEl.style.display = 'none';
   if (!account || !password) return fail('请填写昵称/邮箱和密码');
+  // 没勾协议就不发请求（与 App 登录页同一口径）：这是本站自己的前置条件，
+  // 通行证那边并不知道有这份协议，所以只能拦在这里
+  if (!agreeEl.checked) return fail('请先阅读并同意《用户协议》');
 
   // 提交期间禁用控件，避免连点发出多次登录（通行证侧有失败限流，重复请求没意义）
   btn.disabled = true;

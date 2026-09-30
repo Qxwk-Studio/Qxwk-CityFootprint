@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 公告页里的一条公告。一条 = 一张卡片：首行「标题 + 日期」，下面是正文。
+     日期与标题同一行而不是另起一行：一条公告一眼要看到的就是「什么时候、什么事」，
+     日期放行尾（13sp 最弱色，与「我的」页行尾的值同一档，见 SettingsRowValue）。
+
+     正文默认单行数不限（不设 maxLines）：公告就是要完整读的，截断了反而得点开第二次。 -->
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="10dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="14dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/textNoticeTitle"
+                style="@style/CardTitle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:ellipsize="end"
+                android:maxLines="2" />
+
+            <!-- 日期：清单里没写就整条 GONE（见 NoticeActivity），不留一截空位 -->
+            <TextView
+                android:id="@+id/textNoticeDate"
+                style="@style/SettingsRowValue"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/textNoticeBody"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:lineSpacingExtra="3dp"
+            android:textColor="@color/fg"
+            android:textSize="14sp" />
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

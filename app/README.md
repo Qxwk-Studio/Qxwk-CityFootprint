@@ -49,9 +49,48 @@ cd app
 
 - `ACCOUNT_BASE = https://account.qxwkstudio.top/api` —— 「Qxwk 通行证」，管登录 / 登出 / 身份。密码只发到这里，**不经过足迹后端**。
 - `TRAVEL_BASE = https://api.travel.qxwkstudio.top/api` —— 本项目后端（Cloudflare Worker），管足迹数据（`/my-visits`、`/visits`、`/stats`）与地图边界（`/geo/{adcode}`）。
+- `WEB_ORIGIN = https://travel.qxwkstudio.top` —— 网页站点根（GitHub Pages，就是仓库里 `docs/` 那一层）。**静态文件**从这儿取，不走 `api.` 那个域名。
 
 三个域名（通行证 `account.qxwkstudio.top` / 网页 `travel.qxwkstudio.top` / 接口 `api.travel.qxwkstudio.top`）
 都是 HTTPS，所以清单里只有 `INTERNET` 权限、没有 `network_security_config` 的明文例外。
+
+### `docs/version.json`：检查更新与公告
+
+「我的」页的「检查更新」与「公告」两行，读的都是**网页根下的同一个静态文件** `docs/version.json`，
+不是后端接口 —— 整份内容都是手改的常量，改一次 push 一次就生效，不值得为它重新部署 Worker。
+
+```json
+{
+  "android": { "version_name": "0.0.1", "version_code": 1, "download_url": "https://…", "notes": ["一行一条更新说明"] },
+  "notices": [{ "id": 1, "title": "标题", "date": "2026-09-30", "body": "一段正文" }]
+}
+```
+
+**`android`（检查更新）**
+
+- 比的是 `version_code`（整数）**不是** `version_name`：版本名是给人看的，「1.2.10 与 1.2.9 谁大」用字符串比一定答错。
+  App 拿它跟自己的 `BuildConfig.VERSION_CODE`（CI 发版时用 `version_code` 注入）比，**严格大于**才算有新版本；
+  相等或更小一律答「已是最新版本」。
+- `notes` 是更新说明，**一行一条**（JSON 数组），弹窗里逐条列在版本号下面；不需要就写 `[]`，
+  或者整个键不写 —— 那时弹窗里连「更新说明」这个小标题都不会出现。写成数组而不是一整段，
+  是为了手工改这个文件的人不必在 JSON 里写 `\n` 转义。
+- `download_url` **目前是占位符**（`https://example.com/...`），有可公开下载的 APK 之前必须换掉这一点 —— 在那之前，
+  点「前往下载」只会打开一个没有意义的页面。App 内**不做**下载与安装（那要处理存储权限、FileProvider 与「未知来源」授权），
+  点下去是跳系统浏览器。
+- 网页端**不做**更新检查（只显示静态版本号文字），这份文件现在只有安卓在读。
+- 发版时**这个文件要跟着一起 push**，否则 App 永远看不到新版本。
+
+**`notices`（公告，没有就写 `[]`）**
+
+- 一条 = `{ id, title, date, body }`。`date` 只做展示；`body` 是**一整段**正文（不做多段 / 富文本，要分段就拆成两条）。
+- `id` 是**自增整数**，**只能往上加，不要改已有的值**：App 用「已读的最大 id」记进度
+  （`Store.noticeReadId`，本机 SharedPreferences，key `notice_read_id`），
+  清单里出现比它大的 id 就认为有未读 —— 改小一个 id 会让读过的公告重新变成未读。
+- App 里两处入口，都进同一个页面（`ui/NoticeActivity`）：
+  「我的 → 关于软件 → 📢 公告」，以及**主页顶部的「📢 有新公告」横幅**（只在有未读时出现）。
+  **进公告页就算已读**（不做「划到底才算读」），回到主页横幅自动收掉。
+- 公告页按 id 从大到小排（最新的在最上面）；主页横幅只在页面创建时拉一次，切 tab 不会重拉。
+- 网页端 `docs/news.html` 的公告区是**手写的**，不跟着这份清单走 —— 同一件事两边都要说时，得两边各改一次。
 
 **阶段 2 已完成**（页面搬去 GitHub Pages `travel.qxwkstudio.top`、接口挪到 `api.travel.qxwkstudio.top`）：
 全程只改了这一行 `TRAVEL_BASE`，其余代码都按相对路径拼。前后端分家后网页要过 CORS，
@@ -162,7 +201,8 @@ app/
 ├── tools/gen-cities.mjs        # 城市表生成脚本
 └── src/
     ├── main/
-    │   ├── AndroidManifest.xml # 只有 INTERNET + ACCESS_COARSE_LOCATION；四个 Activity
+    │   ├── AndroidManifest.xml # 只有 INTERNET + ACCESS_COARSE_LOCATION；六个 Activity
+    │   │                        # （登录 / 主壳 / 编辑足迹 / 城市选择 / 公告 / WebView）
     │   ├── assets/cities.json  # 生成物（见上）
     │   ├── res/                # values / drawable / mipmap / menu / layout
     │   └── java/top/qxwkstudio/travel/

@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- 主页 = 网页端「足迹管理页」左栏的内容（板块对齐 docs/visits.html 的 .personal-layout 第一列）：
-     「📊 足迹统计」五张小卡（首行「时间跨度」整行长卡，其余每行两个）+「📍 行程记录」列表。
+     「📢 有新公告」横幅（仅未读时出现）+「📊 足迹统计」五张小卡（首行「时间跨度」整行长卡，其余每行两个）
+     +「📍 行程记录」列表。
 
      **整页一起滚**：页头（统计 + 行程记录标题行）做成列表的第 0 项（见 item_visits_overview.xml），
      由 ui/VisitsHeaderAdapter 与 VisitAdapter 一起交给 ConcatAdapter。

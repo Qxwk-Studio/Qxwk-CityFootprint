@@ -20,8 +20,13 @@
   // 按钮轮询绑定（不依赖 DOMContentLoaded，避免被外部脚本阻塞导致按钮长时间无效）
   (function tryBind() {
     var btn = document.getElementById('themeToggle');
-    if (btn) btn.addEventListener('click', toggle);
-    else setTimeout(tryBind, 50);
+    if (btn) { btn.addEventListener('click', toggle); return; }
+    // 页面里本来就没有这个按钮（agreement.html 是纯文档页，不带顶栏）就到此为止：
+    // 原来那版会一直每 50ms 查一次，在 App 的 WebView 里这页会一直开着，
+    // 白转一辈子。按钮在各页都是写死在 HTML 里的，不会在 load 之后再冒出来，
+    // 所以拿 readyState 当收尾信号是安全的
+    if (document.readyState === 'complete') return;
+    setTimeout(tryBind, 50);
   })();
   if (mq.addEventListener) mq.addEventListener('change', function (e) { if (!stored()) apply(e.matches ? 'dark' : 'light'); });
   else if (mq.addListener) mq.addListener(function (e) { if (!stored()) apply(e.matches ? 'dark' : 'light'); });

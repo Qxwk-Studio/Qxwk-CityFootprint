@@ -66,6 +66,25 @@ class Store(context: Context) {
     }
 
     /**
+     * 已读公告的最大 id（0 = 一条都没读过）。主页顶部那条公告横幅拿它跟清单里的公告比，
+     * 比它大的就是未读（见 ui/VisitsFragment.refreshNoticeBanner）。
+     *
+     * 存**最大 id 一个数**而不是「已读 id 的集合」：公告只增不改，记住最新读的那条就等于记住了更早的全部。
+     * 它是**设备级偏好、与账号无关**（谁登录看到的都是同一份公告），所以 [clearSession] 不把它一并清掉 ——
+     * 那正是 clearSession 不写 clear() 的原因之一。
+     */
+    val noticeReadId: Int get() = sp.getInt(KEY_NOTICE_READ_ID, 0)
+
+    /**
+     * 记下已读公告的最大 id。**只涨不落**：调用方偶尔给来一个更小的值（并发、界面重放）时忽略掉，
+     * 免得把已读进度往回拨、读过的公告又冒出横幅。
+     */
+    fun saveNoticeReadId(id: Int) {
+        if (id <= noticeReadId) return
+        sp.edit().putInt(KEY_NOTICE_READ_ID, id).apply()
+    }
+
+    /**
      * 报文缓存：整包原文 + 落库时间，有效期 [CACHE_TTL_MS]（一天）。
      * 请求成功时由 data/VisitRepo 存进来（key 见那边的 CACHE_*），一天内的读取直接命中、不再打网络；
      * 用户「下拉刷新」时带 force 跳过它。
@@ -140,6 +159,9 @@ class Store(context: Context) {
         const val KEY_AVATAR = "avatar"
         const val KEY_UID = "uid"
         const val KEY_IS_ADMIN = "is_admin"
+
+        /** 已读公告的最大 id，见 [noticeReadId]。**不在 [clearSession] 的清除名单里**（设备级偏好）。 */
+        const val KEY_NOTICE_READ_ID = "notice_read_id"
 
         /** 报文缓存的有效期：一天（一天内不重复拉，除非用户手动刷新）。 */
         const val CACHE_TTL_MS = 24 * 60 * 60 * 1000L

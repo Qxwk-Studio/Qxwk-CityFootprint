@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 公告页的外壳：与城市选择页同一形态 —— 共用顶栏（view_top_bar.xml）+ 一个内容区，不给底栏。
+     内容区 id=content 是给 edge-to-edge 用的：导航栏那截高度加到它的 paddingBottom 上，
+     最后一条公告不会被手势条盖住（见 ui/EdgeToEdge.kt）。
+
+     列表用 ScrollView + LinearLayout，不用 RecyclerView：公告是手写在 version.json 里的一小串
+     （通常三五条），渲染时一次性摊开最省事，也就不必为了它多一个 adapter 与 DiffUtil。 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg"
+    android:orientation="vertical">
+
+    <!-- 标题文字与返回按钮都由 NoticeActivity 填（共用顶栏不自带文案） -->
+    <include
+        android:id="@+id/topBar"
+        layout="@layout/view_top_bar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <FrameLayout
+        android:id="@+id/content"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <!-- 公告条目由 NoticeActivity 逐条 inflate item_notice.xml 塞进来 -->
+            <LinearLayout
+                android:id="@+id/noticeList"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp" />
+        </ScrollView>
+
+        <!-- 清单里 notices 为空数组时的空态（与主页、城市选择页一样居中浮在内容上） -->
+        <TextView
+            android:id="@+id/textNoticeEmpty"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:text="@string/notice_empty"
+            android:textColor="@color/muted_fg"
+            android:textSize="14sp"
+            android:visibility="gone" />
+    </FrameLayout>
+</LinearLayout>

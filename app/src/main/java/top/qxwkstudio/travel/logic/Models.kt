@@ -211,6 +211,59 @@ data class CityVisit(
 )
 
 /**
+ * 网页根下的静态清单（`docs/version.json`），一处读它两件事：
+ * 「我的 → 检查更新」比 [android] 的 version_code，主页横幅与「我的 → 公告」看 [notices]。
+ *
+ * 放网页静态站而不是后端接口：整份内容都是**手改的常量**，改一次 push 一次就生效，
+ * 不值得为一个文件重新部署 Worker。
+ *
+ * 外层留一层 `android`：这份文件将来也可能记网页 / iOS 的版本；现在只有安卓会读，
+ * 多出来的键靠 data/Json.kt 的 ignoreUnknownKeys 兜住。
+ */
+@Serializable
+data class VersionManifest(
+    val android: ReleaseInfo = ReleaseInfo(),
+    val notices: List<Notice> = emptyList(),
+)
+
+/**
+ * 一条公告（清单顶层的 `notices` 数组，没有公告时就是空数组）。
+ *
+ * [id] 是**自增整数**，App 拿它记「读到哪一条了」（见 data/Store.noticeReadId）——
+ * 所以维护这个文件时只能往上加，**别改已有的 id**，改小会让读过的公告又变成未读。
+ * 判定用 id 而不是日期：日期是给人看的，手滑写错一个月的格式也不该影响「有没有新公告」。
+ *
+ * [body] 是一整段正文（与网页 news.html 的 `.notice-text` 一样是一段），
+ * 不做多段 / 富文本：稿子要分段就拆成两条公告。
+ */
+@Serializable
+data class Notice(
+    val id: Int = 0,
+    val title: String = "",
+    val date: String = "",
+    val body: String = "",
+)
+
+/**
+ * 清单里的安卓那一节：`{version_name, version_code, download_url, notes}`。
+ *
+ * **比对用 [versionCode] 而不是 [versionName]**：版本名是给人看的，
+ * 「1.2.10 与 1.2.9 谁大」拿字符串比一定答错，而 CI 发版时填的 versionCode 是单调递增的整数。
+ * 各字段都有默认值（配 data/Json.kt 的 coerceInputValues）：缺字段不抛异常，
+ * [versionCode] 缺省为 0 就等同「没有新版本」—— 宁可漏一次提示，也别因为清单写漏一个键就把所有人推向浏览器。
+ *
+ * [notes] 是更新说明，**一行一条**（JSON 数组，弹窗里逐条列出来）。用数组而不是一整段字符串，
+ * 是因为这个文件由人手工改：一整段就得在 JSON 里写 `\n` 转义，改起来容易漏、也难看。
+ */
+@Serializable
+data class ReleaseInfo(
+    @SerialName("version_name") val versionName: String = "",
+    @SerialName("version_code") val versionCode: Int = 0,
+    @SerialName("download_url") val downloadUrl: String = "",
+    val notes: List<String> = emptyList(),
+)
+
+/**
  * 后端 D1 里**没有布尔类型**：`is_private` 存的就是 0/1。这个序列化器把 0/1 与 Boolean 互转，
  * 于是界面与判定逻辑只面对 Boolean。
  *

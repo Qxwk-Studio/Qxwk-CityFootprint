@@ -126,6 +126,30 @@
      .msg 默认只有上边距（上边距会和上面 .field 的 16px 合并，不额外撑开） */
   #loginError { margin-bottom: 12px; }
 
+  /* ========= 同意用户协议的勾选行 =========
+     用原生 checkbox（地图图例那套也是原生），accent-color 一档就能吃上主色，
+     不必像 .tp-chip / .switch 那样把 input 藏起来再画一个 —— 这里只有一行文字，不需要自定义外观 */
+  .agree-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin: 4px 0 12px;
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    user-select: none;
+  }
+  .agree-row input[type="checkbox"] {
+    width: 15px;
+    height: 15px;
+    margin: 2px 0 0;  /* 与首行文字的视觉中线对齐，不跟文字拉开 */
+    flex-shrink: 0;
+    accent-color: var(--primary);
+    cursor: pointer;
+  }
+  .agree-row a { color: var(--primary); text-decoration: none; }
+  .agree-row a:hover { text-decoration: underline; }
+
   @media (max-width: 768px) {
     #authView { grid-template-columns: 1fr; grid-template-rows: 30vh 1fr; }
     .auth-left { height: 30vh; }
@@ -207,6 +231,14 @@
           <input type="password" id="loginPassword" name="password" autocomplete="current-password" required>
         </div>
         <p class="msg error" id="loginError" style="display:none"></p>
+        <!-- 勾选行放在报错文案上面：报错紧贴按钮，用户点完登录一眼就能看到。
+             label 只包「我已阅读并同意」这半句、不把链接也包进去 —— 链接落在 label 里的话，
+             浏览器会把「打开协议」和「切换勾选」一起做（点击链接顺手把勾勾上，很怪）。
+             站内链接一律不带 .html（GitHub Pages 会把 /agreement 回落到 agreement.html），与 /setup 同一套写法 -->
+        <div class="agree-row">
+          <input type="checkbox" id="agreeTerms">
+          <span><label for="agreeTerms">我已阅读并同意</label> <a href="/agreement" target="_blank" rel="noopener">《用户协议》</a></span>
+        </div>
         <button class="btn btn-primary" id="loginSubmitBtn" type="submit">登录</button>
       </form>
       <p class="passport-tip">没有账号，或忘记密码？到通行证注册 / 找回 · <a href="https://account.qxwkstudio.top/login.html" target="_blank" rel="noopener">打开通行证</a></p>

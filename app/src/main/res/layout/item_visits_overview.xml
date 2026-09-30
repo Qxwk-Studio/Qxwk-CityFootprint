@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 主页页头（「📊 足迹统计」五张小卡 + 「📍 行程记录」标题与新增按钮），
+<!-- 主页页头（未读公告横幅 + 「📊 足迹统计」五张小卡 + 「📍 行程记录」标题与新增按钮），
      由 ui/VisitsHeaderAdapter 铺成列表的第 0 项 —— 主页要整页一起滚，
      页头就必须交给同一个 RecyclerView 管，而不是钉在列表上方各滚各的。
 
@@ -11,6 +11,56 @@
     android:layout_height="wrap_content"
     android:layout_marginBottom="8dp"
     android:orientation="vertical">
+
+    <!-- ===== 未读公告横幅（对齐网页左栏顶上那条提示的位置） =====
+         只在「清单里有 id 比已读 id 更大的公告」时出现（代码控制，见 VisitsFragment.refreshNoticeBanner），
+         默认 GONE，所以没有新公告时这一页的排布与从前完全一样。
+         点它进公告页（ui/NoticeActivity），进去即算已读，回来这条横幅就收掉。
+
+         底色用主色浅底 accent_light、文字用 accent_soft_fg：与「管理员视图」那条琥珀横幅
+         （bg_admin_note）是同一套「浅底横幅」的形态，但换一套色系 ——
+         那一套琥珀是管理员专属的视觉语言，公告是所有人都看的，别混用。 -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/noticeBanner"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:clickable="true"
+        android:focusable="true"
+        android:visibility="gone"
+        app:cardBackgroundColor="@color/accent_light"
+        app:rippleColor="@color/accent"
+        app:strokeColor="@color/accent_light"
+        app:strokeWidth="1dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="14dp"
+            android:paddingTop="10dp"
+            android:paddingEnd="12dp"
+            android:paddingBottom="10dp">
+
+            <TextView
+                android:id="@+id/textNoticeBanner"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/visits_notice_banner"
+                android:textColor="@color/accent_soft_fg"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+
+            <ImageView
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_arrow_right"
+                android:tint="@color/accent_soft_fg" />
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
 
     <!-- ===== 足迹统计：标题 + 五张小卡（对齐网页 .section-title + .visit-stats） ===== -->
     <TextView

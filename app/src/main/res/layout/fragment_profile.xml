@@ -2,7 +2,7 @@
 <!-- 「我的」：手机设置页那种**分组列表**（不再是网页 account.html 的一叠描边卡片）。
      自上而下：居中身份区（头像 / 昵称 / 管理员徽章 / UID）→
      「账号」组（专属地图颜色、通行证中心）→「设置」组（清除缓存）→
-     「关于软件」组（开源内容 / 开发者 / 当前版本 / 检查更新）→ 单独一条居中的红色「退出登录」。
+     「关于软件」组（开源内容 / 开发者 / 当前版本 / 检查更新 / 公告）→ 单独一条居中的红色「退出登录」。
 
      分组形态的约定（样式都在 themes.xml 的 SettingsGroup* 那一节）：
      组名是组**上方**一行 12sp 灰字，分组本身是无描边白底圆角块，
@@ -291,6 +291,68 @@
                 <TextView
                     android:id="@+id/textAboutVersion"
                     style="@style/SettingsRowValue" />
+            </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginStart="16dp"
+                android:background="@color/border" />
+
+            <!-- 检查更新：整行可点 → 拉 docs/version.json 比 version_code
+                 （App 特有的一行，网页端明确不做更新检查，只留静态版本号文字） -->
+            <LinearLayout
+                android:id="@+id/rowCheckUpdate"
+                style="@style/SettingsRow"
+                android:background="?attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true">
+
+                <LinearLayout style="@style/SettingsRowCopy">
+
+                    <TextView
+                        style="@style/SettingsRowTitle"
+                        android:text="@string/profile_about_check_update" />
+                </LinearLayout>
+
+                <ImageView
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_arrow_right"
+                    android:tint="@color/text_tertiary" />
+            </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginStart="16dp"
+                android:background="@color/border" />
+
+            <!-- 公告：整行可点 → 进公告页（ui/NoticeActivity，读 version.json 的 notices）。
+                 这一行**不显示未读数**：本页 refresh() 在每次切回 tab 时都跑（onHiddenChanged），
+                 为了一枚小红点在这里打网络，与「切 tab 不打网络」的约定冲突；
+                 有没有新公告由主页顶部那条横幅负责提示 -->
+            <LinearLayout
+                android:id="@+id/rowNotice"
+                style="@style/SettingsRow"
+                android:background="?attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true">
+
+                <LinearLayout style="@style/SettingsRowCopy">
+
+                    <TextView
+                        style="@style/SettingsRowTitle"
+                        android:text="@string/profile_about_notice" />
+                </LinearLayout>
+
+                <ImageView
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_arrow_right"
+                    android:tint="@color/text_tertiary" />
             </LinearLayout>
         </LinearLayout>
 

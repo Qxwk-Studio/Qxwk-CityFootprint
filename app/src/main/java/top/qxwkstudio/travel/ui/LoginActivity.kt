@@ -1,10 +1,19 @@
 package top.qxwkstudio.travel.ui
 
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
+import android.text.SpannableString
+import android.text.Spanned
+import android.text.TextPaint
+import android.text.method.LinkMovementMethod
+import android.text.style.ClickableSpan
 import android.view.View
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
+import top.qxwkstudio.travel.Api
 import top.qxwkstudio.travel.R
 import top.qxwkstudio.travel.data.Auth
 import top.qxwkstudio.travel.data.LoginResult
@@ -46,6 +55,58 @@ class LoginActivity : AppCompatActivity() {
         // 顶栏是四页共用的（view_top_bar.xml），不自带文案，标题在本页填
         b.topBar.title.setText(R.string.login_bar_title)
         b.btnLogin.setOnClickListener { submit() }
+        // 注册与找回密码只在通行证那边有，跳系统浏览器（注册是通行证登录页里的 tab，见 Api.PASSPORT_LOGIN）
+        b.textRegisterTip.setOnClickListener { openUrl(Api.PASSPORT_LOGIN) }
+        bindAgreeRow()
+    }
+
+    /**
+     * 同意协议那行：只把「《用户协议》」这一截做成可点链接（跳系统浏览器看网页上的协议正文），
+     * 勾选框其余部分照旧能点、能勾。
+     *
+     * 用 span 而不是把整行都变成链接：整行可点的话，想勾选的人一点就跳走了。
+     * 两句文案（整句 / 片段）对不上时静静退回纯文字 —— 那是文案改漏了，不该在登录页崩一下。
+     */
+    private fun bindAgreeRow() {
+        val text = getString(R.string.login_agree_terms)
+        val link = getString(R.string.login_agree_link)
+        val start = text.indexOf(link)
+        if (start < 0) return
+        val spannable = SpannableString(text)
+        spannable.setSpan(
+            object : ClickableSpan() {
+                override fun onClick(widget: View) {
+                    // 协议正文在 App 内看（顶栏带返回，不把用户整个甩到浏览器）；
+                    // 正文仍只有网页那一份，改文案不用发版 —— 见 Api.AGREEMENT 与 ui/WebViewActivity
+                    startActivity(
+                        WebViewActivity.intent(this@LoginActivity, Api.AGREEMENT, getString(R.string.agreement_title))
+                    )
+                }
+
+                // 链接色取主色、不加下划线（与「没有账号」那行的观感一致，别一处带线一处不带）
+                override fun updateDrawState(ds: TextPaint) {
+                    ds.color = ContextCompat.getColor(this@LoginActivity, R.color.accent)
+                    ds.isUnderlineText = false
+                }
+            },
+            start,
+            start + link.length,
+            Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
+        )
+        binding.checkAgree.text = spannable
+        // CheckBox 也是 TextView：setMovementMethod 之后，落在链接上的触摸由 span 消费，
+        // 落在别处的照旧切换勾选 —— 这也是不整行套点击的原因
+        binding.checkAgree.movementMethod = LinkMovementMethod.getInstance()
+    }
+
+    /** 跳外部浏览器。兜住「设备上一个能开 https 的应用都没有」这一档（Intent 找不到接收者会抛）。
+     *  与 ProfileFragment / WebViewActivity 里那两处是同一形状 —— 三处都只有几行，
+     *  为一个「起个 Intent 打开 URL」单开工具类不划算。 */
+    private fun openUrl(url: String) {
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+        runCatching { startActivity(intent) }.onFailure {
+            Toast.makeText(this, R.string.common_open_url_failed, Toast.LENGTH_LONG).show()
+        }
     }
 
     private fun submit() {
@@ -65,6 +126,12 @@ class LoginActivity : AppCompatActivity() {
         }
         if (password.isEmpty()) {
             b.passwordLayout.error = getString(R.string.login_err_password)
+            return
+        }
+        // 协议是本站自己的前置条件（通行证那边不知道有这份协议），只能拦在这一层：不勾就不发请求。
+        // 提示走 textLoginError，与 401 那些通行证原文同一处显示
+        if (!b.checkAgree.isChecked) {
+            showError(getString(R.string.login_agree_required))
             return
         }
 

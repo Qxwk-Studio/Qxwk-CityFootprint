@@ -101,6 +101,20 @@
                             android:maxLines="1" />
                     </com.google.android.material.textfield.TextInputLayout>
 
+                    <!-- 同意协议的勾选行：放在登录按钮**上方**（与网页 account.html 同一位置）。
+                         勾选框只管勾选；「《用户协议》」那截在代码里做成可点链接（见 LoginActivity.bindAgreeRow），
+                         所以这里不写 autoLink / 也不给整行套点击 -->
+                    <com.google.android.material.checkbox.MaterialCheckBox
+                        android:id="@+id/checkAgree"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:minHeight="0dp"
+                        android:minWidth="0dp"
+                        android:text="@string/login_agree_terms"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="13sp" />
+
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnLogin"
                         style="@style/Widget.App.Button"
@@ -137,6 +151,25 @@
                         android:visibility="gone" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
+
+            <!-- 引导去通行证：注册与找回密码都在通行证登录页里，App 内不做这两件事。
+                 刻意放**卡片外**：卡片里是登录表单（按钮下面还有进度条与报错文案），
+                 塞进去会让「登录失败」的提示排在引导行下面，看着像引导的注释。
+                 整行可点（水波纹 + 主色文字），跳系统浏览器的逻辑在 LoginActivity。 -->
+            <TextView
+                android:id="@+id/textRegisterTip"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:background="?attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center"
+                android:paddingTop="8dp"
+                android:paddingBottom="8dp"
+                android:text="@string/login_register_tip"
+                android:textColor="@color/accent"
+                android:textSize="13sp" />
         </LinearLayout>
     </ScrollView>
 
