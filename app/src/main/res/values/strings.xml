@@ -78,7 +78,8 @@
     <string name="edit_title_new">添加足迹</string>
     <string name="edit_title_old">编辑足迹</string>
     <string name="edit_city">城市</string>
-    <string name="edit_city_hint">点击选择城市</string>
+    <!-- 原先还有一条「点击选择城市」的占位文案，已删：城市栏的提示语只留 TextInputLayout 上那一条
+         —— 两层 hint 会叠成两行字，见 activity_visit_edit.xml 的说明 -->
     <!-- 城市栏右侧那颗准心按钮（网页 docs/index.html 的同款按钮，它的 title 就是这句） -->
     <string name="edit_locate">定位到最近的城市</string>
     <string name="edit_date">到访时间（可留空）</string>
@@ -158,12 +159,13 @@
     <string name="profile_account_note">登录由「Qxwk 通行证」(account.qxwkstudio.top) 提供，密码不经过足迹后端</string>
     <!-- UID：本地用户 id，对应网页 account.js 的 `'UID：' + s.userId`（那边用等宽字体，这里同） -->
     <string name="profile_uid">UID：%1$d</string>
-    <!-- 管理员徽章：网页 account.html 的 #adminBadge（👑 管理员），显隐看 /api/me 的 is_admin -->
+    <!-- 管理员徽章：网页 account.html 的 #adminBadge（网页那句带 👑），显隐看 /api/me 的 is_admin。
+         这一条的 👑 **按用户要求保留**（个人页其它几行的 emoji 已去掉，唯独徽章不去） -->
     <string name="profile_admin_badge">👑 管理员</string>
     <!-- 头像的无障碍描述（头像本身是通行证给的图，回退时是昵称首字） -->
     <string name="profile_avatar">头像</string>
     <!-- 通行证中心那一行（网页 account.html 那张卡）。标题与提示照抄网页，两端别各编一套文案 -->
-    <string name="profile_passport_title">🎫 通行证中心</string>
+    <string name="profile_passport_title">通行证中心</string>
     <string name="profile_passport_hint">在通行证中心修改昵称 / 颜色 / 密码、生成邀请码</string>
     <!-- 跳外部浏览器失败（设备上没有任何能开 https 的应用）时的提示。
          名字刻意不带 profile：通行证中心、登录页的「没有账号」引导与「检查更新 → 前往下载」三处共用这一句 -->
@@ -179,17 +181,18 @@
          （色点本身在代码里按通行证主题色画，见 ProfileFragment.colorDot） -->
     <string name="profile_color_label">专属地图颜色</string>
 
-    <!-- 外观（浅色 / 深色 / 跟随系统）那一行。行标题与三选弹窗的标题是同一句（行标题那个 emoji 在弹窗里
-         当图标用，与「我的」页其它行一致），下面三条既是行尾的当前值、也是弹窗里的选项。
+    <!-- 外观（浅色 / 深色 / 跟随系统）那一行。行标题与三选弹窗的标题是同一句，
+         下面三条既是行尾的当前值、也是弹窗里的选项。
+         （行标题原先带 emoji，与「我的」页其它几行一起按需求去掉了 —— 现在是纯文字。）
          网页端那颗太阳/月亮按钮只有「浅色↔深色」两态（theme.js 只认 localStorage 里的 dark/light，
          没选过时跟随系统），App 这边按用户要求做成三态，「跟随系统」这一档也就是把它缺的那一态显式摆出来 -->
-    <string name="profile_appearance_title">🎨 外观</string>
+    <string name="profile_appearance_title">外观</string>
     <string name="profile_appearance_follow_system">跟随系统</string>
     <string name="profile_appearance_light">浅色</string>
     <string name="profile_appearance_dark">深色</string>
 
     <!-- 清除缓存那一行（网页 account.html 那张卡）。文案照抄网页 -->
-    <string name="profile_clear_cache_title">🧹 清除缓存</string>
+    <string name="profile_clear_cache_title">清除缓存</string>
     <string name="profile_clear_cache_hint">清除本机缓存的接口数据与地图边界，不影响登录与足迹</string>
     <!-- 清完的提示。网页是在卡片里内联一行 #cacheMsg（带绿色 .ok 样式）显示这句；
          App 全站提示一律用 Toast，也就不必为这一处再往色板里加一档「成功色」 -->
@@ -214,7 +217,7 @@
     <string name="profile_about_check_update">检查更新</string>
     <!-- 公告那一行（App 特有，网页端没有这个入口：那边看公告是 news.html 那个页面）。
          点了进 ui/NoticeActivity，读的是同一个 version.json 的 notices -->
-    <string name="profile_about_notice">📢 公告</string>
+    <string name="profile_about_notice">公告</string>
     <string name="profile_update_new_title">发现新版本</string>
     <!-- 弹窗正文由三段拼起来（见 ProfileFragment.updateMessage）：版本 → 更新说明 → 问一句。
          拆成三条而不是一句话：中间那段更新说明在清单里没写时要**整段**省掉（连小标题一起） -->
@@ -236,12 +239,12 @@
     <!-- 公告页拉不到清单时用（主页那条横幅反过来——失败就静默，不打扰用户） -->
     <string name="notice_load_failed">公告加载失败，请稍后重试</string>
 
-    <!-- 抽屉（主页左上角那颗三横菜单拉开的侧栏，见 ui/MainActivity）。
+    <!-- 主页右上角三横菜单弹出的栏目浮层（见 ui/MainActivity）。
          里面的栏目来自 version.json 顶层的 menu：一条 = 一行 = 一个网页，
          加栏目只改那个文件、不用发新版；所以这里只有壳的几句固定文案，栏目名不在 strings 里 -->
-    <string name="menu_title">菜单</string>
     <string name="menu_empty">暂无内容</string>
-    <!-- 拉不到清单时用。不配重试按钮：抽屉不是内容主体，拉不到不该挡着用户用 App -->
+    <!-- 拉不到清单时用（点按钮才弹这句 Toast，不在冷启动时打扰用户）。
+         不配重试按钮：栏目浮层不是内容主体，拉不到不该挡着用户用 App -->
     <string name="menu_load_failed">栏目加载失败，请稍后重试</string>
 
     <!-- 统计页排行行的文案与展开/收起（对齐网页 .rank-item / .rank-toggle） -->

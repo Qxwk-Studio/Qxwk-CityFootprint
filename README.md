@@ -299,11 +299,11 @@ localhost 的任意端口（见 `backend/src/worker.js` 的 `ALLOWED_ORIGINS`）
 - 消费方式：`docs/app.js` 中定义的 `setAvatarFromUrl(el, avatarUrl, nickname, color)`（原 `avatar.js` 已删除并合并入 app.js）——加载失败自动回退到「昵称首字 + 专属颜色」的文字头像
 - 通行证返回 `token` 后，本站调 `/api/me` 即带回 `avatar` 字段并写入本地用户缓存 `qxwf_user`；更换头像服务（如切到 QQ 官方头像或自托管 Gravatar）**只需改 Account 后端 `getAvatarUrl()` 一处**，本站零改动
 
-**7. 限时活动页面（App 主页抽屉里的栏目）**
+**7. 限时活动页面（App 主页菜单里的栏目）**
 
 活动页就是 `docs/` 下的一个普通页面（自己起名，例如 `activity-2026-fall.html`），
 把它的 `{ title, url }` 加进 `docs/version.json` 顶层的 `menu`、push 一次即可 —— **不用发新版 App**：
-主页左上角三横菜单里会多出一行，点开在 App 内的 WebView 里打开（同域名的页面留在 WebView，外链交系统浏览器）。
+主页右上角三横菜单里会多出一行，点开在 App 内的 WebView 里打开（同域名的页面留在 WebView，外链交系统浏览器）。
 
 页面在 App 里打开时**默认是未登录态**（App 的 token 在 SharedPreferences、网页的 token 在 localStorage，
 两套身份互不相通）。需要用户身份就调 App 留的 JS 方法：

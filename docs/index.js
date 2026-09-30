@@ -9,6 +9,10 @@ const map = L.map('map', { zoomControl: false, preferCanvas: true }).setView([35
 L.tileLayer('https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}', {
   subdomains: ['1', '2', '3', '4'],
   maxZoom: 18,
+  // Leaflet 这个选项的默认值是 Browser.mobile（移动端为 true）：触屏上拖动地图时**不请求**新瓦片，
+  // 非要等松手、地图停稳了才开始加载，看起来就像「拖完才慢慢刷出来」。显式关掉，让瓦片跟着拖动加载。
+  // 拖动过程中的刷新频率仍由 updateInterval（默认 200ms）节流，不会每帧都发请求。
+  updateWhenIdle: false,
   attribution: '&copy; <a href="https://www.amap.com/" target="_blank" rel="noopener">高德地图</a>',
 }).addTo(map);
 

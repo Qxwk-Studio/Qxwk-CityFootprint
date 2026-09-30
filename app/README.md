@@ -97,9 +97,9 @@ cd app
 全程只改了这一行 `TRAVEL_BASE`，其余代码都按相对路径拼。前后端分家后网页要过 CORS，
 但**安卓走原生 HTTP、不带 `Origin` 头，不受浏览器那套 CORS 规矩约束** —— 白名单里没有安卓、也不用加。
 
-### `docs/version.json` 的 `menu`：主页抽屉里的栏目 + 网页取身份
+### `docs/version.json` 的 `menu`：主页菜单里的栏目 + 网页取身份
 
-主页左上角那颗三横菜单拉开的抽屉，条目同样来自网页根下的 `docs/version.json`（顶层 `menu` 数组）：
+主页右上角那颗三横菜单弹出的栏目浮层（`PopupMenu`），条目同样来自网页根下的 `docs/version.json`（顶层 `menu` 数组）：
 
 ```json
 {
@@ -110,11 +110,12 @@ cd app
 }
 ```
 
-- **一条 = 抽屉里一行 = 一个网页**。`title` 是行上显示的文字（emoji 直接写进标题），`url` 指向页面；
+- **一条 = 菜单里一行 = 一个网页**。`title` 是行上显示的文字（emoji 直接写进标题），`url` 指向页面；
   点一下就在 App 内的 WebView（`ui/WebViewActivity`）里打开 —— 同域名的页面留在 WebView 里，
   链去别处的交系统浏览器。
 - 两个字段**都必填**，缺一个整条不显示（清单是手写的，漏了就该看不见，不做兜底猜测）。
-  一条都没有时抽屉显示「暂无内容」，拉不到清单时显示「栏目加载失败」（不配重试按钮）。
+  点按钮时：一条都没有弹「暂无内容」，拉不到清单弹「栏目加载失败」（都是 Toast，不配重试按钮 ——
+  菜单不是内容主体，拉不到不该挡着用户用 App）。
 - **加一个限时活动不用发新版**：在网页仓库里把页面建好，把 `{title, url}` 加进 `menu`、push 一次即可。
 - 条目**只在主页创建时拉一次**（切 tab、下拉刷新都不会重拉 —— 下拉刷新重拉的是 `notices`）。
   清单改完，用户杀进程重进主页就能看到。
@@ -122,9 +123,9 @@ cd app
 **网页怎么拿 App 的身份**
 
 App 的 token 在 SharedPreferences、网页的 token 在 localStorage，**两套身份互不相通**，
-所以从抽屉打开的自家页面默认是**未登录态**。为此 `WebViewActivity` 会在满足两个条件时挂一个 JS 桥：
+所以从菜单打开的自家页面默认是**未登录态**。为此 `WebViewActivity` 会在满足两个条件时挂一个 JS 桥：
 
-1. 调用方传了 `withIdentity = true`（抽屉点条目就是这么调的，协议页那种纯文档页不传）；
+1. 调用方传了 `withIdentity = true`（菜单里点条目就是这么调的，协议页那种纯文档页不传）；
 2. 页面地址的域名等于 `Api.WEB_ORIGIN`（自家网页站）—— 栏目地址来自 `version.json`，
    那是**数据不是代码**，万一被改成外站，token 不该跟着流出去。
 
@@ -221,9 +222,10 @@ node app/tools/gen-cities.mjs
   菜单在 `res/menu/bottom_nav.xml`，路由（tag / 标题 / 首个 Fragment）在 `ui/MainActivity.kt`。
 - Fragment 用 **add + hide/show**（不是 replace），所以隐藏页仍是 RESUMED，
   各页感知「被切回来」用 `onHiddenChanged` 而不是 `onResume`。
-- 除了这五个 tab，主页左上角还有一颗**三横菜单**，拉出侧滑抽屉（`DrawerLayout`，外壳在 `activity_main.xml`）；
-  抽屉里的栏目是一行一个网页，数据来自 `docs/version.json` 的 `menu`，见上面
-  「`docs/version.json` 的 `menu`：主页抽屉里的栏目 + 网页取身份」。
+- 除了这五个 tab，主页右上角还有一颗**三横菜单**，点开是贴着按钮弹出的栏目浮层
+  （`androidx.appcompat.widget.PopupMenu`，布局外壳在 `activity_main.xml`，逻辑在 `MainActivity.setupMenu`）；
+  里面的栏目是一行一个网页，数据来自 `docs/version.json` 的 `menu`，见上面
+  「`docs/version.json` 的 `menu`：主页菜单里的栏目 + 网页取身份」。
 
 ### 过渡动画（`res/anim/`）
 

@@ -83,11 +83,8 @@ dependencies {
     implementation("com.google.android.material:material:1.11.0")
     implementation("androidx.recyclerview:recyclerview:1.3.2")
     implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
-    // 主页左上角那颗三横菜单拉开的侧滑抽屉（DrawerLayout，见 activity_main.xml）。
-    // 它是 androidx.drawerlayout 这个独立库，**不随 material/appcompat 导出**，
-    // 所以显式声明一次，别靠「某个传递依赖恰好带进来」—— 那种依赖哪天被去掉，
-    // 编译期就会突然报找不到 DrawerLayout。
-    implementation("androidx.drawerlayout:drawerlayout:1.2.0")
+    // 主页右上角那颗三横菜单现在是 PopupMenu（appcompat 自带），不再用侧滑抽屉，
+    // 所以原先显式声明的 androidx.drawerlayout 已经移除 —— 别再顺手加回来。
 
     // 协程 + lifecycle：把「后台跑一段活、回主线程交结果」绑到页面生命周期上。
     // lifecycle-runtime-ktx 提供 lifecycleScope / viewLifecycleOwner.lifecycleScope，

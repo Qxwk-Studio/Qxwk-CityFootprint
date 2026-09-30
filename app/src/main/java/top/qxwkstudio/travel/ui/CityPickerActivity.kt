@@ -241,7 +241,20 @@ private class StickyProvinceDecoration(
     private val adapter: CityRowAdapter,
 ) : RecyclerView.ItemDecoration() {
 
-    private val sticky: TextView = ItemCityGroupBinding.inflate(LayoutInflater.from(context)).root
+    // 吸顶条是 inflate 出来、**从不 addView** 的（只手动 measure / layout / draw），所以它的
+    // mLayoutParams 一直是 null。TextView.setText 在「这个 View 已经量过一次」之后会走
+    // checkForRelayout()，那里第一句就读 mLayoutParams.width —— null 直接 NPE。
+    // 真机表现：进页面第一屏没事（此刻 mLayout 还是 null），一旦往下滚、吸顶条换成下一个省份，
+    // 崩在 draw 里 → 屏幕黑一下、App 退回上一页（栈见 commit message）。
+    // 所以必须显式给一个：尺寸本身是摆设（真正的位置由下面那句 layout(0, 0, parent.width, height) 决定），
+    // 它只是为了让那两个字段非空。
+    private val sticky: TextView =
+        ItemCityGroupBinding.inflate(LayoutInflater.from(context)).root.apply {
+            layoutParams = ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+            )
+        }
 
     override fun onDrawOver(c: Canvas, parent: RecyclerView, state: RecyclerView.State) {
         val first = parent.getChildAt(0) ?: return

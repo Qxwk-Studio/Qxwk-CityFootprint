@@ -2,7 +2,11 @@
 <!-- 「我的」：手机设置页那种**分组列表**（不再是网页 account.html 的一叠描边卡片）。
      自上而下：居中身份区（头像 / 昵称 / 管理员徽章 / UID）→
      「账号」组（专属地图颜色、通行证中心）→「设置」组（外观、清除缓存）→
-     「关于软件」组（开源内容 / 开发者 / 当前版本 / 检查更新 / 公告）→ 单独一条居中的红色「退出登录」。
+     「关于软件」组（公告 / 检查更新 / 当前版本 / 开发者 / 开源内容）→ 单独一条居中的红色「退出登录」。
+     关于软件组内是**频次由高到低**排的：公告与检查更新是常点的，版本/开发者/开源内容是偶尔瞄一眼的。
+
+     UID 下面原先还有一行「登录由 Qxwk 通行证提供…」的账户说明，已按需求删除
+     （那句话在登录页仍有用，字符串 profile_account_note 保留，别连它一起删）。
 
      分组形态的约定（样式都在 themes.xml 的 SettingsGroup* 那一节）：
      组名是组**上方**一行 12sp 灰字，分组本身是无描边白底圆角块，
@@ -108,16 +112,6 @@
                 android:fontFamily="monospace"
                 android:textColor="@color/text_tertiary"
                 android:textSize="12sp" />
-
-            <TextView
-                android:id="@+id/textAccountNote"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:gravity="center"
-                android:text="@string/profile_account_note"
-                android:textColor="@color/muted_fg"
-                android:textSize="11sp" />
         </LinearLayout>
 
         <!-- ===== 账号 ===== -->
@@ -260,7 +254,10 @@
         </LinearLayout>
 
         <!-- ===== 关于软件 =====
-             三行只读：标题在左，内容做副标题（开源那三行本身就是三条独立字符串，逐行一个 TextView 排下来），
+             顺序按用户要求改成「公告 → 检查更新 → 当前版本 → 开发者 → 开源内容」：
+             前两行是常点的（分别进公告页、拉 version.json 比版本），后三行是偶尔瞄一眼的只读信息，
+             所以可点的在上、纯展示的在下。
+             只读那些行的形态：标题在左，内容做副标题（开源那三条本身就是三条独立字符串，逐行一个 TextView 排下来），
              版本是行尾的值。条目仍是纯文本、不做超链接（理由见下面 @+id/textAboutVersion 那段注释） -->
         <TextView
             style="@style/SettingsGroupTitle"
@@ -270,67 +267,30 @@
             style="@style/SettingsGroup"
             android:clipToOutline="true">
 
-            <LinearLayout style="@style/SettingsRow">
+            <!-- 公告：整行可点 → 进公告页（ui/NoticeActivity，读 version.json 的 notices）。
+                 这一行**不显示未读数**：本页 refresh() 在每次切回 tab 时都跑（onHiddenChanged），
+                 为了一枚小红点在这里打网络，与「切 tab 不打网络」的约定冲突；
+                 有没有新公告由主页顶部那条横幅负责提示 -->
+            <LinearLayout
+                android:id="@+id/rowNotice"
+                style="@style/SettingsRow"
+                android:background="?attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true">
 
                 <LinearLayout style="@style/SettingsRowCopy">
 
                     <TextView
                         style="@style/SettingsRowTitle"
-                        android:text="@string/profile_about_open_source" />
-
-                    <TextView
-                        style="@style/SettingsRowSub"
-                        android:text="@string/profile_about_osmdroid" />
-
-                    <TextView
-                        style="@style/SettingsRowSub"
-                        android:text="@string/profile_about_amap" />
-
-                    <TextView
-                        style="@style/SettingsRowSub"
-                        android:text="@string/profile_about_datav" />
-                </LinearLayout>
-            </LinearLayout>
-
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:layout_marginStart="16dp"
-                android:background="@color/border" />
-
-            <LinearLayout style="@style/SettingsRow">
-
-                <LinearLayout style="@style/SettingsRowCopy">
-
-                    <TextView
-                        style="@style/SettingsRowTitle"
-                        android:text="@string/profile_about_developer" />
-
-                    <TextView
-                        style="@style/SettingsRowSub"
-                        android:text="@string/profile_about_developer_text" />
-                </LinearLayout>
-            </LinearLayout>
-
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:layout_marginStart="16dp"
-                android:background="@color/border" />
-
-            <LinearLayout style="@style/SettingsRow">
-
-                <LinearLayout style="@style/SettingsRowCopy">
-
-                    <TextView
-                        style="@style/SettingsRowTitle"
-                        android:text="@string/profile_about_version" />
+                        android:text="@string/profile_about_notice" />
                 </LinearLayout>
 
-                <!-- 版本号在 refresh() 里填（要 BuildConfig.VERSION_NAME），布局不写死 -->
-                <TextView
-                    android:id="@+id/textAboutVersion"
-                    style="@style/SettingsRowValue" />
+                <ImageView
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_arrow_right"
+                    android:tint="@color/text_tertiary" />
             </LinearLayout>
 
             <View
@@ -369,30 +329,67 @@
                 android:layout_marginStart="16dp"
                 android:background="@color/border" />
 
-            <!-- 公告：整行可点 → 进公告页（ui/NoticeActivity，读 version.json 的 notices）。
-                 这一行**不显示未读数**：本页 refresh() 在每次切回 tab 时都跑（onHiddenChanged），
-                 为了一枚小红点在这里打网络，与「切 tab 不打网络」的约定冲突；
-                 有没有新公告由主页顶部那条横幅负责提示 -->
-            <LinearLayout
-                android:id="@+id/rowNotice"
-                style="@style/SettingsRow"
-                android:background="?attr/selectableItemBackground"
-                android:clickable="true"
-                android:focusable="true">
+            <LinearLayout style="@style/SettingsRow">
 
                 <LinearLayout style="@style/SettingsRowCopy">
 
                     <TextView
                         style="@style/SettingsRowTitle"
-                        android:text="@string/profile_about_notice" />
+                        android:text="@string/profile_about_version" />
                 </LinearLayout>
 
-                <ImageView
-                    android:layout_width="18dp"
-                    android:layout_height="18dp"
-                    android:contentDescription="@null"
-                    android:src="@drawable/ic_arrow_right"
-                    android:tint="@color/text_tertiary" />
+                <!-- 版本号在 refresh() 里填（要 BuildConfig.VERSION_NAME），布局不写死 -->
+                <TextView
+                    android:id="@+id/textAboutVersion"
+                    style="@style/SettingsRowValue" />
+            </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginStart="16dp"
+                android:background="@color/border" />
+
+            <LinearLayout style="@style/SettingsRow">
+
+                <LinearLayout style="@style/SettingsRowCopy">
+
+                    <TextView
+                        style="@style/SettingsRowTitle"
+                        android:text="@string/profile_about_developer" />
+
+                    <TextView
+                        style="@style/SettingsRowSub"
+                        android:text="@string/profile_about_developer_text" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginStart="16dp"
+                android:background="@color/border" />
+
+            <LinearLayout style="@style/SettingsRow">
+
+                <LinearLayout style="@style/SettingsRowCopy">
+
+                    <TextView
+                        style="@style/SettingsRowTitle"
+                        android:text="@string/profile_about_open_source" />
+
+                    <TextView
+                        style="@style/SettingsRowSub"
+                        android:text="@string/profile_about_osmdroid" />
+
+                    <TextView
+                        style="@style/SettingsRowSub"
+                        android:text="@string/profile_about_amap" />
+
+                    <TextView
+                        style="@style/SettingsRowSub"
+                        android:text="@string/profile_about_datav" />
+                </LinearLayout>
             </LinearLayout>
         </LinearLayout>
 

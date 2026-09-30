@@ -44,7 +44,11 @@
                     <!-- 城市是「点开选择」而不是手输：坐标与 adcode 必须来自城市表，
                          手输城市名会让地图上找不到点（lat/lng 填什么都是编的）。
                          右侧那颗准心是「定位到最近的城市」（网页 docs/index.html 添加弹窗里同款按钮）：
-                         用 TextInputLayout 的 endIcon 而不是另起一个按钮，省得为一个图标再拆一层布局 -->
+                         用 TextInputLayout 的 endIcon 而不是另起一个按钮，省得为一个图标再拆一层布局。
+
+                         提示语**只写在 TextInputLayout 上**（「城市」）：两层都写 hint 时，
+                         outlined 输入框会把 label 与 EditText 的 hint 同时画在框里，叠成两行字。
+                         选中城市后 inputCity 有文字，label 会自动浮到边框上，不必再补占位文字。 -->
                     <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/cityLayout"
                         style="@style/Widget.App.TextInputLayout"
@@ -63,7 +67,6 @@
                             android:clickable="true"
                             android:cursorVisible="false"
                             android:focusable="false"
-                            android:hint="@string/edit_city_hint"
                             android:inputType="none"
                             android:maxLines="1" />
                     </com.google.android.material.textfield.TextInputLayout>
@@ -76,7 +79,12 @@
                          Spinner 的弹层是系统对话框样式，与全 app 的 M3 弹层不是一套。
                          年份是「年」下拉的首项、月份是「月」下拉的首项，两张菜单都认空选 ——
                          后端只认 YYYY 与 YYYY-MM 两种形态（worker.js），所以「没选年份」= 没有日期，
-                         「选了年份没选月份」= 只有年份。 -->
+                         「选了年份没选月份」= 只有年份。
+
+                         两个 AutoCompleteTextView 都显式写了 paddingStart/End=16dp：outlined 输入框
+                         的水平内边距在 material 里是**子 View 自己的样式**给的（TextInputEditText 那份样式带，
+                         裸 AutoCompleteTextView 不带），不补就会像城市栏那样文字贴着框边。
+                         数值与 TextInputEditText 在 outlined 下的起点一致（16dp）。 -->
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -104,7 +112,9 @@
                                 android:id="@+id/inputYear"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:inputType="none" />
+                                android:inputType="none"
+                                android:paddingStart="16dp"
+                                android:paddingEnd="16dp" />
                         </com.google.android.material.textfield.TextInputLayout>
 
                         <com.google.android.material.textfield.TextInputLayout
@@ -121,7 +131,9 @@
                                 android:id="@+id/inputMonth"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:inputType="none" />
+                                android:inputType="none"
+                                android:paddingStart="16dp"
+                                android:paddingEnd="16dp" />
                         </com.google.android.material.textfield.TextInputLayout>
                     </LinearLayout>
 

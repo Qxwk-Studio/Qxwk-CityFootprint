@@ -28,30 +28,20 @@ import androidx.core.view.updatePadding
  *
  * 返回 CONSUMED：inset 在本层就消费掉，别让子 View（列表、地图）再吃一遍，否则内容会多缩进一次。
  *
- * 第 4 个易错点 —— **有抽屉的页面（主页）要连着抽屉面板一起交进来**：
- * 主页最外层是 DrawerLayout，inset 从它往下的分发顺序是「先第一个子 View、再第二个」，
- * 而上面说的「谁先吃到谁就挡住后面的」在这里同样成立。所以这一层监听必须挂到 DrawerLayout 本身
- * （[drawer] 的 parent），一次把三块分完；挂到主内容那层的话，抽屉面板永远拿不到状态栏那截高度，
- * 症状是抽屉标题被状态栏压住，且**只在真机上看得到**。
- *
  * @param topBar 顶部那条栏（吃 top/left/right）
  * @param bottom 底部那条栏；没有底栏的页面传**内容容器**（如 ScrollView / 列表外壳），
  *               这样滚动内容的末尾不会被手势条盖住（吃 bottom/left/right）
- * @param drawer 抽屉面板（有抽屉的页面才传）。传了它，监听就挂到它外面那层（DrawerLayout）上，
- *               四条 inset 都补给它自己（它是贴边铺满的一条竖带）
  */
-fun Activity.applyEdgeToEdge(topBar: View, bottom: View? = null, drawer: View? = null) {
+fun Activity.applyEdgeToEdge(topBar: View, bottom: View? = null) {
     WindowCompat.setDecorFitsSystemWindows(window, false)
 
     // 原始 padding 各取一次（见文件头第 2 点）
     val topPad = intArrayOf(topBar.paddingLeft, topBar.paddingTop, topBar.paddingRight, topBar.paddingBottom)
     val bottomPad = bottom?.let { intArrayOf(it.paddingLeft, it.paddingTop, it.paddingRight, it.paddingBottom) }
-    val drawerPad = drawer?.let { intArrayOf(it.paddingLeft, it.paddingTop, it.paddingRight, it.paddingBottom) }
 
-    // 监听挂的宿主：没有抽屉时是顶栏的父容器（两条栏的共同父容器）；
-    // 有抽屉时是抽屉面板的父容器 = DrawerLayout（抽屉面板是它的直接子 View），理由见文件头第 4 点。
+    // 监听挂的宿主：两条栏的共同父容器（四个页面里就是最外那层 LinearLayout）。
     // 调用发生在 setContentView 之前，此时布局层级已经建好，parent 一定有值。
-    val host = drawer?.parent as? View ?: topBar.parent as View
+    val host = topBar.parent as View
     ViewCompat.setOnApplyWindowInsetsListener(host) { _, insets ->
         val i = insets.barInsets()
         topBar.updatePadding(
@@ -64,14 +54,6 @@ fun Activity.applyEdgeToEdge(topBar: View, bottom: View? = null, drawer: View? =
                 left = bottomPad[0] + i.left,
                 right = bottomPad[2] + i.right,
                 bottom = bottomPad[3] + i.bottom,
-            )
-        }
-        if (drawer != null && drawerPad != null) {
-            drawer.updatePadding(
-                left = drawerPad[0] + i.left,
-                top = drawerPad[1] + i.top,
-                right = drawerPad[2] + i.right,
-                bottom = drawerPad[3] + i.bottom,
             )
         }
         WindowInsetsCompat.CONSUMED

@@ -1,13 +1,14 @@
 package top.qxwkstudio.travel.ui
 
 import android.os.Bundle
+import android.view.Menu
 import android.view.View
 import android.view.ViewGroup
 import android.view.animation.PathInterpolator
 import android.widget.TextView
-import androidx.activity.OnBackPressedCallback
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.GravityCompat
+import androidx.appcompat.widget.PopupMenu
 import androidx.core.view.doOnLayout
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
@@ -17,7 +18,6 @@ import top.qxwkstudio.travel.data.MeResult
 import top.qxwkstudio.travel.data.Store
 import top.qxwkstudio.travel.data.Update
 import top.qxwkstudio.travel.databinding.ActivityMainBinding
-import top.qxwkstudio.travel.databinding.ItemMenuBinding
 import top.qxwkstudio.travel.logic.MenuItem
 
 /**
@@ -31,8 +31,8 @@ import top.qxwkstudio.travel.logic.MenuItem
  * 它们只在首次创建时加载，要新的数据就下拉刷新（缓存见 data/Store）。目前只有
  * ProfileFragment 用 onHiddenChanged 重读一次本机状态（不涉及网络）。
  *
- * 左上角那颗三横菜单拉开的抽屉也归这一页管（栏目 = 一行一个网页，清单在网页端的 version.json，
- * 见 setupDrawer / loadMenu）。抽屉是壳的一部分、不属于任何一个 tab，所以放 Activity 而不是 Fragment。
+ * 右上角那颗三横菜单弹出的「栏目」浮层也归这一页管（栏目 = 一行一个网页，清单在网页端的
+ * version.json，见 setupMenu / loadMenu）。它是壳的一部分、不属于任何一个 tab，所以放 Activity 而不是 Fragment。
  */
 class MainActivity : AppCompatActivity() {
 
@@ -43,6 +43,15 @@ class MainActivity : AppCompatActivity() {
 
     // 底栏选中态那颗共享药丸（见 setupNavPill）：在 onCreate 里建好，与 Activity 同生共死
     private lateinit var navPill: View
+
+    // 上一次给这颗药丸算出的落点（底栏坐标系里的 x）：布局回调靠它认「这次布局跟药丸有没有关系」，
+    // 见 placeNavPill。初值 NaN 保证第一次调用一定不相等、会真的落位。
+    private var pillTargetX = Float.NaN
+
+    // 弹出式菜单里的栏目（见 loadMenu）。拉不到 / 一个栏目都没有时是空表，
+    // 这时点按钮只弹一句 Toast —— 提示语取 menuErrorRes（「拉不到」与「清单里没栏目」不是一回事）
+    private var menuItems: List<MenuItem> = emptyList()
+    private var menuErrorRes = R.string.menu_empty
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -59,9 +68,7 @@ class MainActivity : AppCompatActivity() {
         val b = binding
         // 必须在 setContentView 之前（见 ui/EdgeToEdge.kt）。
         // topBar 是带 id 的 <include>，ViewBinding 里是 ViewTopBarBinding 而不是 View，取 .root 才是那条栏本身。
-        // 第三个参数是抽屉面板：这一页最外层是 DrawerLayout，三块（顶栏/底栏/抽屉）都由那一个监听分
-        // —— 少传它的话抽屉标题会被状态栏压住，理由见 EdgeToEdge 文件头第 4 点。
-        applyEdgeToEdge(b.topBar.root, b.bottomBar, b.drawerPanel)
+        applyEdgeToEdge(b.topBar.root, b.bottomBar)
         setContentView(b.root)
 
         // M3 底栏默认把文案沉在 item 底边，与图标之间留一截空；拉到布局完成后再修（说明见 pinBottomNavLabels）
@@ -86,88 +93,66 @@ class MainActivity : AppCompatActivity() {
             b.topBar.title.text = getString(titleOf(b.bottomNav.selectedItemId))
         }
 
-        setupDrawer()
+        setupMenu()
         verifySession()
     }
 
     /**
-     * 左上角那颗三横菜单 + 它拉开的抽屉。
+     * 右上角那颗三横菜单 + 它弹出的栏目浮层。
      *
-     * 抽屉里是「栏目」：一行 = 一个网页，条目来自网页根下的 version.json（见 [loadMenu]）——
+     * 浮层里是「栏目」：一行 = 一个网页，条目来自网页根下的 version.json（见 [loadMenu]）——
      * 以后加限时活动只改那个 JSON、push 一次就生效，**不用发新版本**。
      */
-    private fun setupDrawer() {
+    private fun setupMenu() {
         binding.topBar.btnMenu.visibility = View.VISIBLE
-        binding.topBar.btnMenu.setOnClickListener { binding.drawer.openDrawer(GravityCompat.START) }
-
-        // 返回键：抽屉开着时先关抽屉，而不是直接退出 App（默认行为是**退出**，
-        // 用户按一下发现 App 没了，只会以为返回键失灵）。抽屉本来就是浮层，先收浮层是通例。
-        // 没开抽屉就摘掉自己、交回默认处理，别把这颗返回键吃掉。
-        onBackPressedDispatcher.addCallback(
-            this,
-            object : OnBackPressedCallback(true) {
-                override fun handleOnBackPressed() {
-                    if (binding.drawer.isDrawerOpen(GravityCompat.START)) {
-                        binding.drawer.closeDrawer(GravityCompat.START)
-                    } else {
-                        isEnabled = false
-                        onBackPressedDispatcher.onBackPressed()
-                    }
-                }
-            },
-        )
-
+        binding.topBar.btnMenu.setOnClickListener { showMenu() }
         loadMenu()
     }
 
     /**
-     * 拉清单里的栏目铺进抽屉。与公告同一口径：**只在页面创建时拉一次**，失败就给一句提示，
-     * 不做重试按钮 —— 抽屉不是内容主体，拉不到不该挡着用户用 App（要更新就下拉刷新或重进主页）。
+     * 弹出式菜单：贴着右上角那颗按钮弹出一张浮层，一行一个栏目。
+     *
+     * 用 appcompat 的 PopupMenu 而不是自己搭 PopupWindow：锚点、贴近屏幕边缘时的避让、
+     * 点外面关闭、返回键收掉，这几件事它都现成（早先是 DrawerLayout 的左侧抽屉，现按需求改浮层）。
+     * 它自带返回键处理，所以 Activity 这边不用再注册 OnBackPressedCallback。
+     */
+    private fun showMenu() {
+        val items = menuItems
+        if (items.isEmpty()) {
+            Toast.makeText(this, getString(menuErrorRes), Toast.LENGTH_SHORT).show()
+            return
+        }
+        val popup = PopupMenu(this, binding.topBar.btnMenu)
+        // 菜单项 id 直接用下标：点击时按下标取回那一项，省得另维护一张 id → url 的表
+        items.forEachIndexed { index, item -> popup.menu.add(Menu.NONE, index, index, item.title) }
+        popup.setOnMenuItemClickListener { clicked ->
+            val item = items.getOrNull(clicked.itemId)
+            if (item != null) {
+                // withIdentity = true：自家页面的 WebView 里递一份当前身份过去
+                // （网页默认是未登录态 —— token 在 App 的 SharedPreferences 里，不在 WebView 的 localStorage 里）
+                startActivity(WebViewActivity.intent(this, item.url, item.title, withIdentity = true))
+            }
+            true
+        }
+        popup.show()
+    }
+
+    /**
+     * 拉清单里的栏目。与公告同一口径：**只在页面创建时拉一次**，失败就记下提示语，
+     * 点按钮时才弹一句 —— 栏目浮层不是内容主体，拉不到不该挡着用户用 App
+     * （要更新就下拉刷新或重进主页），更不该在冷启动时先弹一个用户没请求过的错误。
      */
     private fun loadMenu() {
         lifecycleScope.runIo({ Update.fetch() }) { result ->
             val manifest = result.getOrNull()
             if (manifest == null) {
-                showMenuState(getString(R.string.menu_load_failed))
-            } else {
-                renderMenu(manifest.menu)
+                menuErrorRes = R.string.menu_load_failed
+                return@runIo
             }
+            // 一行一个栏目。title 与 url **都必填**，缺一个整条跳过（理由见 logic/Models.kt 的 MenuItem）——
+            // 所以「清单里写了两条、菜单里只出现一条」是有意为之，不是渲染漏了
+            menuItems = manifest.menu.filter { it.title.isNotBlank() && it.url.isNotBlank() }
         }
-    }
-
-    /**
-     * 一行一个栏目。title 与 url **都必填**，缺一个整条跳过（理由见 logic/Models.kt 的 [MenuItem]）——
-     * 所以「清单里写了两条、抽屉里只出现一条」是有意为之，不是渲染漏了。
-     */
-    private fun renderMenu(items: List<MenuItem>) {
-        val usable = items.filter { it.title.isNotBlank() && it.url.isNotBlank() }
-        if (usable.isEmpty()) {
-            showMenuState(getString(R.string.menu_empty))
-            return
-        }
-
-        binding.menuScroll.visibility = View.VISIBLE
-        binding.menuState.visibility = View.GONE
-        binding.menuList.removeAllViews()
-        for (item in usable) {
-            val row = ItemMenuBinding.inflate(layoutInflater, binding.menuList, false)
-            row.textTitle.text = item.title
-            row.root.setOnClickListener {
-                // 先关抽屉再开页：不关的话从网页页返回时抽屉还敞着，看起来像刚才点错了
-                binding.drawer.closeDrawer(GravityCompat.START)
-                // withIdentity = true：自家页面的 WebView 里递一份当前身份过去
-                // （网页默认是未登录态 —— token 在 App 的 SharedPreferences 里，不在 WebView 的 localStorage 里）
-                startActivity(WebViewActivity.intent(this, item.url, item.title, withIdentity = true))
-            }
-            binding.menuList.addView(row.root)
-        }
-    }
-
-    /** 抽屉的空态：拉不到 / 一个栏目都没有时**只显示这一行灰字**（与列表互斥，见布局注释）。 */
-    private fun showMenuState(text: String) {
-        binding.menuState.text = text
-        binding.menuState.visibility = View.VISIBLE
-        binding.menuScroll.visibility = View.GONE
     }
 
     /**
@@ -253,16 +238,26 @@ class MainActivity : AppCompatActivity() {
         // 药丸是底栏的直接子 View，x 要补上 menu view 的左偏移，否则整颗药丸会偏向一侧
         val targetX = (item.parent as View).left + item.x
         if (animate) {
+            pillTargetX = targetX
             // M3 的 emphasized 曲线（cubic-bezier 0.2, 0 / 0, 1，即 material 的
             // m3_sys_motion_easing_emphasized）：起步冲得快、后半段长收尾，比 decelerate 多一段加速。
             // 提醒一句：M3 规范里这条曲线是配 300ms 以上转场的，这里只有 200ms、位移也就一两个 tab 宽，
             // 若观感偏「急」，先把时长加到 250ms 看看，别急着换曲线
             navPill.animate().x(targetX).setDuration(200L)
                 .setInterpolator(PathInterpolator(0.2f, 0f, 0f, 1f)).start()
-        } else {
-            navPill.animate().cancel()
-            navPill.x = targetX
+            return
         }
+        // 落点和上次算出来的一样，说明这次布局跟药丸没关系 —— 直接返回，别碰它。
+        // 这个分支是给「窗口尺寸变了要重新对齐」用的（addOnLayoutChangeListener + doOnLayout），
+        // 但那次回调**切 tab 时也会来一趟**：material 的 item 一进选中态就去改自己内部的文案组
+        // （margin / 可见性 / activeIndicator），item 一 requestLayout，底栏就跟着重排，
+        // 回调随即被触发。若不在这里拦一道，下面那句 cancel() 会掐掉刚起步的位移动画、
+        // 把药丸当场钉到终点 —— 表现就是「瞬间跳、完全没有滑动」。
+        // 判据只能是「上次的落点」而不是「药丸当前的 x」：动画跑起来之后 x 一直在中途变。
+        if (targetX == pillTargetX) return
+        pillTargetX = targetX
+        navPill.animate().cancel()
+        navPill.x = targetX
     }
 
     // 递归找文案组：直接装着 TextView 的那层容器（判定依据见 pinBottomNavLabels）
