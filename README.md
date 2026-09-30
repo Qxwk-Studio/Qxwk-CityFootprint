@@ -190,7 +190,7 @@ npx wrangler d1 migrations apply qxwk-data --remote
 
 建议在通行证的 `apps` 表登记本站（仅用于登录时把 `client` 认成本站站点名；通行证 `/api/login`、`/api/me` 的 CORS 已全面放行，未登记站点也能正常登录与跨域验证 token，只是来源会被记为「未登记来源」）。在通行证项目执行：
 
-> ⚠️ `apps` 表已不再用 `name` / `origin` 两列，改成 **`display_name`（展示名）** + **`match_type` / `match_key`（检测名称）**。网页来源填 `match_type='origin'`，`match_key` 必须是**规范 origin**（`scheme://host[:port]`，无路径、无末尾斜杠，要与浏览器请求里的 `Origin` 完全一致）。
+> ⚠️ 网页来源填 `match_type='origin'`，`match_key` 必须是**规范 origin**（`scheme://host[:port]`，无路径、无末尾斜杠，要与浏览器请求里的 `Origin` 完全一致）。
 
 ```bash
 cd c:\Code\Qxwk-Account

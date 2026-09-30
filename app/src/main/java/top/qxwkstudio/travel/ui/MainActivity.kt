@@ -3,7 +3,7 @@ package top.qxwkstudio.travel.ui
 import android.os.Bundle
 import android.view.View
 import android.view.ViewGroup
-import android.view.animation.DecelerateInterpolator
+import android.view.animation.PathInterpolator
 import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
@@ -253,9 +253,12 @@ class MainActivity : AppCompatActivity() {
         // 药丸是底栏的直接子 View，x 要补上 menu view 的左偏移，否则整颗药丸会偏向一侧
         val targetX = (item.parent as View).left + item.x
         if (animate) {
-            // 200ms + decelerate，与 res/anim 那几份入场动画同一口径，别单独调快/调慢
+            // M3 的 emphasized 曲线（cubic-bezier 0.2, 0 / 0, 1，即 material 的
+            // m3_sys_motion_easing_emphasized）：起步冲得快、后半段长收尾，比 decelerate 多一段加速。
+            // 提醒一句：M3 规范里这条曲线是配 300ms 以上转场的，这里只有 200ms、位移也就一两个 tab 宽，
+            // 若观感偏「急」，先把时长加到 250ms 看看，别急着换曲线
             navPill.animate().x(targetX).setDuration(200L)
-                .setInterpolator(DecelerateInterpolator()).start()
+                .setInterpolator(PathInterpolator(0.2f, 0f, 0f, 1f)).start()
         } else {
             navPill.animate().cancel()
             navPill.x = targetX

@@ -155,11 +155,7 @@ const me = raw ? JSON.parse(raw) : null;   // 在普通浏览器里打开时没�
 用 **osmdroid 6.1.20**（`org.osmdroid:osmdroid-android`，Maven Central）。理由：
 
 - 纯原生 Android View 的 OSM 地图，**不需要 API key**、不用在控制台绑包名与签名，个人项目少一处密钥管理；
-- 与「界面与地图都要原生、不许 WebView 套壳」的要求一致；
 - 6.1.20 是它在 Maven Central 上的最后一个正式版（上游仓库 2024-11 已归档，包还在、API 稳定）。
-
-被否掉的方案：**Google Maps SDK**（要申请 API key 并绑包名 + 签名指纹，多一处密钥）、
-**WebView 套网页版地图**（用户明确不要 WebView）。
 
 边界数据用阿里 DataV GeoJSON，**手工解析**（`ui/GeoJson.kt`，只认 Polygon / MultiPolygon 的坐标），
 不引通用 GeoJSON 库。整条边界链路都是可降级的：城市在源数据里没有 `adcode`（县级市）、
