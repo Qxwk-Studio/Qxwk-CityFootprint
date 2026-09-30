@@ -11,7 +11,7 @@ import top.qxwkstudio.travel.net.Http
  * 放在 data/ 而不是 [GeoCache] 那种带磁盘缓存的对象里：
  * 前者是**一按按钮才发生一次**的请求，后者是进页面拉一次、失败就静默 ——
  * 都不值得缓存。「公告」更不能缓：缓存它会让刚发的公告要等过期才看得见
- * （主页横幅只在页面创建时拉一次，切 tab 不会重拉，见 ui/VisitsFragment）。
+ * （主页横幅只在页面创建与下拉刷新时拉，切 tab 不会重拉，见 ui/VisitsFragment）。
  */
 internal object Update {
 

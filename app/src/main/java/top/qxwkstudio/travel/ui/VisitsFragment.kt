@@ -77,7 +77,12 @@ class VisitsFragment : Fragment() {
         binding.list.layoutManager = LinearLayoutManager(requireContext())
         binding.list.adapter = ConcatAdapter(headerAdapter, adapter)
         binding.swipe.setColorSchemeResources(R.color.accent)
-        binding.swipe.setOnRefreshListener { load(force = true) }
+        binding.swipe.setOnRefreshListener {
+            load(force = true)
+            // 顺带重拉公告：横幅的判定数据只在页面创建时取过一次，用户主动下拉就是要「整页刷新」——
+            // 不跟着刷新的话，新发的公告要等下次进主页才提示，已经撤回的公告也一直挂在横幅上（见 loadNotices）
+            loadNotices()
+        }
         // 列表外垫了层 FrameLayout（放空态提示），SwipeRefreshLayout 默认会去问它「滚过没有」，
         // 它永远答没有 —— 于是滑到中间也能下拉。这里把判断交回真正的列表
         binding.swipe.setOnChildScrollUpCallback { _, _ -> binding.list.canScrollVertically(-1) }
@@ -109,8 +114,11 @@ class VisitsFragment : Fragment() {
      * **失败就静默**：公告不是这一页的主体，为主页拉不到公告弹一句错只会打扰人，
      * 横幅不出现即可（公告页那边相反，拉不到要明确说一声，见 NoticeActivity.load）。
      *
-     * 只在页面创建时拉一次：切 tab 不会重拉（视图还在），下拉刷新也**不**刷新它 ——
-     * 那是「刷新我的足迹」，与公告无关。
+     * 只在两处调用：**页面创建**（onViewCreated）与**用户下拉刷新**。
+     * 切 tab 不重拉 —— 视图还在，没理由为一条横幅每次切回来都打一次网络；
+     * 但下拉刷新是用户主动要「整页重来」，所以要跟着取一次，
+     * 否则横幅会停在打开这一页那一刻的快照上：这期间新发的公告不冒出来、撤回的公告也不收
+     * （维护者发的公告随时在变，而这一页可能挂在前台很久）。
      */
     private fun loadNotices() {
         viewLifecycleOwner.lifecycleScope.runIo({ Update.fetch() }) { result ->
