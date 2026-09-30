@@ -83,6 +83,10 @@ class MapFragment : Fragment() {
     /** 城市明细（点开卡片时按需拉一次，之后走这份内存缓存）。 */
     private val cityDetailCache = mutableMapOf<String, List<CityVisit>>()
 
+    /** 圆点图标（[dotIcon]）按颜色缓存。颜色由后端给、种类有限，而 [dotIcon] 会为每座无边界城市、
+     *  以及每次筛选重绘各生成一张 —— 不缓存就是成批分配小 Bitmap（见 [renderCities]）。 */
+    private val dotIcons = mutableMapOf<Int, Drawable>()
+
     private var cities: List<MapCity> = emptyList()
 
     /** 渲染批次号：筛选一改就自增，异步边界回来时对不上号就丢弃（免得旧筛选的结果盖上来）。 */
@@ -406,19 +410,31 @@ class MapFragment : Fragment() {
                 if (rings.isNotEmpty()) geoCache[adcode] = rings
                 if (seq != renderSeq) return@launch // 本次渲染已作废，别往图上画
                 drawCity(city, rings, color)
+                // 异步这批各自画完当场重绘一次（drawCity 自己不再重绘，理由见那边的说明）
+                binding.map.invalidate()
             }
         }
+        // 同步画完的那批（无 adcode / 命中内存缓存的城市）在这里统一重绘一次，
+        // 而不是每座城各重绘一次 —— 一次筛选几十座城，逐条 invalidate 就是几十次重绘请求
         binding.map.invalidate()
     }
 
-    /** 画一座城市：有点环就铺半透明多边形，否则退回圆点。 */
+    /**
+     * 画一座城市：有点环就铺半透明多边形，否则退回圆点。
+     *
+     * **这里不 invalidate()** —— 本函数会被逐个城市调用（[renderCities] 的循环，以及边界异步回来那批），
+     * 每座城各重绘一次等于一次筛选几十次重绘请求。重绘统一由调用方在**整批画完之后**触发：
+     * 同步那批在 [renderCities] 末尾，异步那批在各自的协程里画完当场一次。
+     */
     private fun drawCity(city: MapCity, rings: List<List<GeoPoint>>, color: Int) {
         if (rings.isEmpty()) {
             drawDot(city, color)
             return
         }
-        for (ring in rings) {
-            val polygon = Polygon().apply {
+        // 一个 MultiPolygon 可能有好几个环：先攒齐再一次性交给 overlay 列表，
+        // 免得逐环各触发一次增删回调（同样是「一次通知一批」而不是「一条通知一次」）
+        val polygons = rings.map { ring ->
+            Polygon().apply {
                 setPoints(ring)
                 // 用 Paint 而不是 setFillColor/setStrokeColor 那几个：它们在 6.x 里已标记 @Deprecated，
                 // 只是转发到 Paint（osmdroid 6.0.2 起 Fill/Outline 各是一支 Paint）。
@@ -432,14 +448,13 @@ class MapFragment : Fragment() {
                     true // 消费掉，不再走 osmdroid 默认那套
                 }
             }
-            cityOverlays.add(polygon)
-            binding.map.overlays.add(polygon)
         }
+        cityOverlays.addAll(polygons)
+        binding.map.overlays.addAll(polygons)
         bringMyLocationToFront()
-        binding.map.invalidate()
     }
 
-    /** 边界拿不到（无 adcode / 解析失败）时的回退：一颗按用户着色的圆点。 */
+    /** 边界拿不到（无 adcode / 解析失败）时的回退：一颗按用户着色的圆点。同上，不在这里重绘。 */
     private fun drawDot(city: MapCity, color: Int) {
         val marker = Marker(binding.map).apply {
             position = GeoPoint(city.lat, city.lng)
@@ -454,11 +469,14 @@ class MapFragment : Fragment() {
         cityOverlays.add(marker)
         binding.map.overlays.add(marker)
         bringMyLocationToFront()
-        binding.map.invalidate()
     }
 
-    /** 图例上那颗圆点：白底 + 彩色实心圆，深一道浅一道的瓦片上都能看清（对齐网页 .dot 的白描边）。 */
-    private fun dotIcon(color: Int): Drawable {
+    /** 图例上那颗圆点：白底 + 彩色实心圆，深一道浅一道的瓦片上都能看清（对齐网页 .dot 的白描边）。
+     *  按颜色缓存（见 [dotIcons]）：同一颜色只画一次 Bitmap。 */
+    private fun dotIcon(color: Int): Drawable =
+        dotIcons.getOrPut(color) { createDotIcon(color) }
+
+    private fun createDotIcon(color: Int): Drawable {
         val size = dp(DOT_SIZE_DP)
         val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
