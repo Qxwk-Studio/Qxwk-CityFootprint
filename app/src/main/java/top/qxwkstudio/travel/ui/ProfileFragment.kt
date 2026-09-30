@@ -17,7 +17,9 @@ import androidx.fragment.app.Fragment
 import kotlinx.coroutines.launch
 import top.qxwkstudio.travel.Api
 import top.qxwkstudio.travel.BuildConfig
+import top.qxwkstudio.travel.CityFootprintApp
 import top.qxwkstudio.travel.R
+import top.qxwkstudio.travel.data.Appearance
 import top.qxwkstudio.travel.data.Auth
 import top.qxwkstudio.travel.data.GeoCache
 import top.qxwkstudio.travel.data.Store
@@ -30,7 +32,11 @@ import java.net.URL
 
 /**
  * 「我的」：本机登录身份的展示（头像 / 昵称 / UID / 管理员徽章 / 专属地图颜色）、通行证入口、
- * 清除本机缓存与退出登录（对齐网页 docs/account.html 的个人中心）。
+ * 外观切换、清除本机缓存与退出登录（对齐网页 docs/account.html 的个人中心）。
+ *
+ * 外观（浅色 / 深色 / 跟随系统）是 **App 特有的一行**：网页那颗太阳/月亮按钮在导航栏上，
+ * App 没有那条导航栏，就收进这一页的设置组（两档扩成三档，见 [chooseAppearance]）。
+ *
  * 资料（昵称/主题色/头像/uid/is_admin）来自本机 SharedPreferences，由 MainActivity 启动时的 /api/me
  * 顺手刷新，所以这一页**只差头像那一次图片下载**（那是图片本身，不是接口），
  * 其余切回来重读一次本机状态即可（见 onHiddenChanged）。
@@ -54,9 +60,10 @@ class ProfileFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         store = Store(requireContext())
-        // 五处都是「整行可点」的设置行，没有按钮（见 fragment_profile.xml 的分组结构）
+        // 六处都是「整行可点」的设置行，没有按钮（见 fragment_profile.xml 的分组结构）
         binding.rowLogout.setOnClickListener { confirmLogout() }
         binding.rowPassport.setOnClickListener { openUrl(Api.PASSPORT_CENTER) }
+        binding.rowAppearance.setOnClickListener { chooseAppearance() }
         binding.rowClearCache.setOnClickListener { clearCache() }
         binding.rowCheckUpdate.setOnClickListener { checkUpdate() }
         binding.rowNotice.setOnClickListener { startActivity(NoticeActivity.intent(requireContext())) }
@@ -83,7 +90,42 @@ class ProfileFragment : Fragment() {
         binding.textAdminBadge.visibility = if (store.isAdmin) View.VISIBLE else View.GONE
         binding.colorDot.background = colorDot(store.color)
         binding.textAboutVersion.text = getString(R.string.profile_about_version_value, BuildConfig.VERSION_NAME)
+        binding.textAppearanceValue.text = getString(appearanceLabel(store.appearance))
         showAvatar(nickname)
+    }
+
+    /**
+     * 外观偏好 → 那一行的行尾值、也是弹窗里的选项文案。三档见 [Appearance]。
+     * 认不出的值（换版本 / 手改偏好留下的怪值）由 [Store.appearance] 兜成 SYSTEM，这里自然也就落在「跟随系统」。
+     */
+    private fun appearanceLabel(appearance: Appearance): Int = when (appearance) {
+        Appearance.SYSTEM -> R.string.profile_appearance_follow_system
+        Appearance.LIGHT -> R.string.profile_appearance_light
+        Appearance.DARK -> R.string.profile_appearance_dark
+    }
+
+    /**
+     * 「外观」三选：跟随系统 / 浅色 / 深色。用单选列表而不是 Switch —— 三档摆不下一个开关
+     * （网页那颗太阳/月亮按钮只有两档），而单选的当前项天然就是「现在是什么」，与行尾那个值对得上。
+     *
+     * 选完**先收弹窗再切**：切外观会重建所有正在显示的 Activity（理由见 CityFootprintApp.applyAppearance），
+     * 弹窗挂在一个正在销毁的窗口上会报 WindowLeaked。重建后本页自己会重新 refresh 出行尾的新值，
+     * 这里不必手动改界面。
+     */
+    private fun chooseAppearance() {
+        val options = Appearance.entries
+        AlertDialog.Builder(requireContext())
+            .setTitle(R.string.profile_appearance_title)
+            .setSingleChoiceItems(
+                options.map { getString(appearanceLabel(it)) }.toTypedArray(),
+                options.indexOf(store.appearance),
+            ) { dialog, which ->
+                val picked = options[which]
+                store.saveAppearance(picked)
+                dialog.dismiss()
+                CityFootprintApp.applyAppearance(picked)
+            }
+            .show()
     }
 
     /**

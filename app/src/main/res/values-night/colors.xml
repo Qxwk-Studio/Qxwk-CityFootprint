@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 深色（夜间）色板。**取值照抄网页端的深色主题** —— docs/style.css 里 :root[data-theme="dark"]
+         那一个块，理由同 values/colors.xml 开头（两端点开同一份数据必须同一套色）。
+
+         只覆盖「网页深色块里真的重新定义过」的 token，外加几个 app 侧特有的成对色（逐条注明）。
+         **这里没有的 token = 深色下沿用浅色那份**，那是有意的，不是漏了；最容易看错的是 accent
+         （网页深色并没有重定义主色，见下）。
+
+         什么时候会取这里的值：用户在「我的 → 设置 → 外观」里选了「深色」，或选了「跟随系统」而系统
+         正好是深色 —— 两条路都通过 AppCompatDelegate.setDefaultNightMode 落到 uiMode 上
+         （见 CityFootprintApp），系统再按 night 限定符取本文件，与系统自身开不开深色无关。 -->
+
+    <!-- ===== 主色系：**主色本身刻意不翻** =====
+         网页深色块里 primary 仍是 #2563eb（没重新定义），所以本文件里没有 accent，蓝底上的
+         on_accent 也照旧是白 —— 两边一致。
+         跟着翻的是「主色当底色时配套的浅一档」：primary-light 在深色里变成 rgba(59,130,246,.16)，
+         即半透明蓝（叠在什么底上就是什么底偏蓝），比浅色那份的 #EFF6FF 贴得住深色卡片。
+         而 primary-hover 那一档网页**没有**深色定义，深色里主色系的文字它用的是 #60a5fa
+         （news.html 的 .log-tab 选中态）—— accent_soft_fg 与 private_badge 照这一档给，
+         否则 #1d4ed8 压在深色卡片上几乎看不见。 -->
+    <color name="accent_light">#293B82F6</color>      <!-- primary-light：rgba(59,130,246,.16) -->
+    <color name="accent_soft_fg">#60A5FA</color>      <!-- 深色下主色系文字那一档（网页 .log-tab） -->
+    <color name="secondary_soft_fg">#E2E8F0</color>   <!-- text-primary（备用） -->
+
+    <!-- ===== 面 / 文字：逐条对网页深色块 ===== -->
+    <color name="bg">#0F172A</color>                  <!-- bg -->
+    <color name="card">#1E293B</color>                <!-- surface（比页面底亮一档，卡片才浮得起来） -->
+    <color name="fg">#E2E8F0</color>                  <!-- text-primary -->
+    <color name="text_primary">#E2E8F0</color>        <!-- 与 fg 同值，兼容既有引用 -->
+    <color name="text_secondary">#94A3B8</color>      <!-- text-secondary -->
+    <color name="muted_fg">#94A3B8</color>            <!-- text-secondary（同值） -->
+    <color name="text_tertiary">#64748B</color>       <!-- text-tertiary -->
+    <!-- muted 与 popover 在浅色里分别等于 border 与 bg，深色下继续跟着那两个走：
+         muted 是「开关关闭态轨道 / 进度轨道」，取 border 那档深灰；
+         popover 是输入框底，要比卡片（#1E293B）再深一档才有「凹进去」的层次 -->
+    <color name="muted">#334155</color>               <!-- border -->
+    <color name="popover">#0F172A</color>             <!-- bg -->
+
+    <!-- ===== 线 ===== -->
+    <color name="border">#334155</color>              <!-- border -->
+    <color name="input_border">#334155</color>        <!-- border -->
+
+    <!-- ===== 外壳（顶栏 / 底栏 / 抽屉）=====
+         浅色下顶栏是白、页面是浅灰，差着一档；深色里网页 navbar 是 rgba(15,23,42,.8) 浮在
+         bg(#0f172a) 上 —— 同一个色，就是「顶栏与页面同色」，照抄（那段说明在 values/colors.xml）。 -->
+    <color name="sidebar">#0F172A</color>             <!-- navbar-bg -->
+    <color name="sidebar_fg">#E2E8F0</color>          <!-- text-primary -->
+    <color name="sidebar_border">#334155</color>      <!-- border -->
+
+    <!-- 危险动作（退出登录 / 编辑页删除 / 表单错误）：浅色那份 #dc2626 压在深色底上偏闷，
+         取网页深色里 .btn-danger 的字色 #f87171（visits.html 深色块） -->
+    <color name="destructive">#F87171</color>
+
+    <!-- 私密标记：浅色是「浅蓝药丸底 + 深蓝字」，深色反过来配成「半透明蓝底 + 浅蓝字」，
+         与 accent_soft_fg 同值（浅色里那两个也是同值） -->
+    <color name="private_badge">#60A5FA</color>
+
+    <!-- 系统栏兜底：与顶栏同色（themes.xml 拿它当 statusBarColor / navigationBarColor）。
+         浅色那份里还有个无引用的 window_bg_dark，不跟着翻 -->
+    <color name="window_bg_light">#0F172A</color>
+
+    <!-- 以下 token 深色下**不翻**（沿用浅色值，故本文件里没有它们）：
+         accent / on_accent —— 网页深色没重定义主色，白字压蓝底两端一个样；
+         admin_note_bg / _border / _fg —— 网页那枚琥珀胶囊在深色下也是一块浅底（没写深色版），
+             压在深色页面上正好，改了反而不像同一套视觉语言；
+         achievement_done_stroke —— 网页 .achievement.done 的 rgba(primary, .4)，主色不翻它也不翻；
+         chart_1..5 —— 图例颜色由后端按用户下发，这五个 token 本就无人引用。 -->
+</resources>

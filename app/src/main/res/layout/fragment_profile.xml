@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- 「我的」：手机设置页那种**分组列表**（不再是网页 account.html 的一叠描边卡片）。
      自上而下：居中身份区（头像 / 昵称 / 管理员徽章 / UID）→
-     「账号」组（专属地图颜色、通行证中心）→「设置」组（清除缓存）→
+     「账号」组（专属地图颜色、通行证中心）→「设置」组（外观、清除缓存）→
      「关于软件」组（开源内容 / 开发者 / 当前版本 / 检查更新 / 公告）→ 单独一条居中的红色「退出登录」。
 
      分组形态的约定（样式都在 themes.xml 的 SettingsGroup* 那一节）：
@@ -183,6 +183,7 @@
         <!-- ===== 设置 =====
              组名换成灰字、内容换成行之后，这一组就是上一版那张「⚙️ 设置」卡的落点。
              位置排在「账号」后面（用户指定的顺序：账号 → 设置 → 关于） -->
+
         <TextView
             style="@style/SettingsGroupTitle"
             android:text="@string/profile_group_settings" />
@@ -190,6 +191,45 @@
         <LinearLayout
             style="@style/SettingsGroup"
             android:clipToOutline="true">
+
+            <!-- 外观（浅色 / 深色 / 跟随系统）：整行可点 → 弹三选（见 ProfileFragment.chooseAppearance），
+                 选完立刻生效并重建当前页。
+                 行尾是「当前值 + 箭头」两颗：值让用户不点也知道现在是什么（网页那颗太阳/月亮按钮的图标
+                 只表示「点一下会变成另一个」，看不出当前态），箭头表示这行还能点。
+                 弹窗里选完的落点是本机偏好，与账号无关（退出登录不清，见 data/Store 的 appearance） -->
+            <LinearLayout
+                android:id="@+id/rowAppearance"
+                style="@style/SettingsRow"
+                android:background="?attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true">
+
+                <LinearLayout style="@style/SettingsRowCopy">
+
+                    <TextView
+                        style="@style/SettingsRowTitle"
+                        android:text="@string/profile_appearance_title" />
+                </LinearLayout>
+
+                <!-- 当前值在 refresh() 里填（跟随系统 / 浅色 / 深色），布局不写死 -->
+                <TextView
+                    android:id="@+id/textAppearanceValue"
+                    style="@style/SettingsRowValue"
+                    android:layout_marginEnd="6dp" />
+
+                <ImageView
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_arrow_right"
+                    android:tint="@color/text_tertiary" />
+            </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginStart="16dp"
+                android:background="@color/border" />
 
             <!-- 清除缓存：整行可点，点了直接清（没有二级页，也没有按钮） -->
             <LinearLayout

@@ -7,6 +7,21 @@ import top.qxwkstudio.travel.logic.LoginSession
 import top.qxwkstudio.travel.logic.Me
 
 /**
+ * 外观（浅色 / 深色 / 跟随系统）—— 「我的 → 设置 → 外观」里选的那一项，见 [Store.appearance]。
+ *
+ * [value] 是落进 SharedPreferences 的字符串：**存字符串而不是 ordinal**，这样以后调整枚举顺序
+ * （或在中间插一档）不会把用户已经选好的外观读成另一档。
+ *
+ * 与 `logic` 包里的枚举（如 Transport）不同，它不进接口报文、纯本机偏好，所以没有 code 映射。
+ */
+enum class Appearance(val value: String) {
+    /** 跟随系统深浅色（默认）。 */
+    SYSTEM("system"),
+    LIGHT("light"),
+    DARK("dark"),
+}
+
+/**
  * 本机状态：登录 token 与一点展示用资料。
  *
  * **token 是明文存在 MODE_PRIVATE 的 SharedPreferences 里的** —— 这是已知取舍：
@@ -85,6 +100,26 @@ class Store(context: Context) {
     }
 
     /**
+     * 外观偏好（浅色 / 深色 / 跟随系统），默认 [Appearance.SYSTEM]。
+     *
+     * 也是**设备级偏好、与账号无关**（换个人登录不该把外观也换掉），所以 [clearSession] 不清它；
+     * 键名不带 `cache_` 前缀，[invalidatePayloads] 也不会碰（见那边的说明）。
+     *
+     * 读出来的值**认不出就当默认**（枚举里查不到 → SYSTEM）：这个值只有本 app 自己写，
+     * 但换版本、手改、清数据几种情况都可能留下怪值，不能让它把界面卡成一片空白。
+     *
+     * 真正把它应用到界面的是 CityFootprintApp（启动时）与 ProfileFragment（用户改完立刻生效），
+     * 本类只负责存取。
+     */
+    val appearance: Appearance
+        get() = Appearance.entries.firstOrNull { it.value == sp.getString(KEY_APPEARANCE, null) }
+            ?: Appearance.SYSTEM
+
+    fun saveAppearance(appearance: Appearance) {
+        sp.edit().putString(KEY_APPEARANCE, appearance.value).apply()
+    }
+
+    /**
      * 报文缓存：整包原文 + 落库时间，有效期 [CACHE_TTL_MS]（一天）。
      * 请求成功时由 data/VisitRepo 存进来（key 见那边的 CACHE_*），一天内的读取直接命中、不再打网络；
      * 用户「下拉刷新」时带 force 跳过它。
@@ -132,8 +167,9 @@ class Store(context: Context) {
 
     /**
      * 退出登录 / token 失效时清干净。
-     * 用逐个 remove 而不是 clear()：以后往这个文件里加「与账号无关」的偏好（比如地图类型）
-     * 时，clear() 会连它们一起抹掉，那种 bug 只在退出登录后出现一次，很难往回查。
+     * 用逐个 remove 而不是 clear()：本文件里已经有几条「与账号无关」的偏好（[noticeReadId]、
+     * [appearance]），clear() 会连它们一起抹掉 —— 那种 bug 只在退出登录后出现一次，很难往回查。
+     * 以后再加同类偏好，记得**只往这里加要清的键**，别图省事换成 clear()。
      * （报文缓存是账号数据，必须一起丢 —— 见 invalidatePayloads。）
      */
     fun clearSession() {
@@ -162,6 +198,9 @@ class Store(context: Context) {
 
         /** 已读公告的最大 id，见 [noticeReadId]。**不在 [clearSession] 的清除名单里**（设备级偏好）。 */
         const val KEY_NOTICE_READ_ID = "notice_read_id"
+
+        /** 外观偏好，见 [appearance]。同样**不在 [clearSession] 的清除名单里**（设备级偏好）。 */
+        const val KEY_APPEARANCE = "appearance"
 
         /** 报文缓存的有效期：一天（一天内不重复拉，除非用户手动刷新）。 */
         const val CACHE_TTL_MS = 24 * 60 * 60 * 1000L

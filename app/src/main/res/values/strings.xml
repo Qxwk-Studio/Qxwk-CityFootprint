@@ -179,6 +179,15 @@
          （色点本身在代码里按通行证主题色画，见 ProfileFragment.colorDot） -->
     <string name="profile_color_label">专属地图颜色</string>
 
+    <!-- 外观（浅色 / 深色 / 跟随系统）那一行。行标题与三选弹窗的标题是同一句（行标题那个 emoji 在弹窗里
+         当图标用，与「我的」页其它行一致），下面三条既是行尾的当前值、也是弹窗里的选项。
+         网页端那颗太阳/月亮按钮只有「浅色↔深色」两态（theme.js 只认 localStorage 里的 dark/light，
+         没选过时跟随系统），App 这边按用户要求做成三态，「跟随系统」这一档也就是把它缺的那一态显式摆出来 -->
+    <string name="profile_appearance_title">🎨 外观</string>
+    <string name="profile_appearance_follow_system">跟随系统</string>
+    <string name="profile_appearance_light">浅色</string>
+    <string name="profile_appearance_dark">深色</string>
+
     <!-- 清除缓存那一行（网页 account.html 那张卡）。文案照抄网页 -->
     <string name="profile_clear_cache_title">🧹 清除缓存</string>
     <string name="profile_clear_cache_hint">清除本机缓存的接口数据与地图边界，不影响登录与足迹</string>

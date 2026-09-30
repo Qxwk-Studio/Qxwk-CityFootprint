@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 深色下**唯一**要翻的布尔值：系统栏图标改成浅色（深底上的图标得是浅的）。
+         浅色那份在 values/themes.xml 里（true）。
+
+         这个文件里没有 Theme.CityFootprint，是有意的：主题样式只留 values/themes.xml 一处定义，
+         它引用的都是 @color/... 与这个 @bool/...，按 night 限定符各自取到深色那份 ——
+         样式要是也抄两份，哪天加一条 item 就会漏掉其中一份。颜色类的深色取值全在
+         values-night/colors.xml。 -->
+    <bool name="window_light_system_bars">false</bool>
+</resources>

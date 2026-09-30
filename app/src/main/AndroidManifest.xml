@@ -13,7 +13,10 @@
          刻意不在清单里、也不请求。 -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
+    <!-- android:name 指向 CityFootprintApp：它唯一的活是**在任何 Activity 之前**把用户选的
+         外观（浅色 / 深色 / 跟随系统）交给 AppCompat —— 删掉这一行，外观设置就不再生效（见那个类） -->
     <application
+        android:name=".CityFootprintApp"
         android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"

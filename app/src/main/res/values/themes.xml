@@ -1,11 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- 主题名固定为 Theme.CityFootprint（清单里四个 Activity 都指向它）。
-         父主题用 Material3 的 **Light**.NoActionBar：
-         设计稿（city-footprint-app/pages）只提供浅色那套品牌色，深色那一套是另一支品牌
-         （主色 #FC2C50 红），所以这里**钉死浅色**，不跟随系统深色（values-night 已移除）。
+    <!-- 系统栏图标的明暗，给下面 Theme.CityFootprint 里那两条 item 用：
+         浅色（白底）→ 深色图标；深色那份在 values-night/themes.xml 里（false）。
+         布尔属性没法直接引用颜色资源，所以只能借一个 bool 资源过夜 —— 别把它挪进 colors.xml，
+         那样主题这块就得在两个类型不同的文件之间来回找。 -->
+    <bool name="window_light_system_bars">true</bool>
+
+    <!-- 主题名固定为 Theme.CityFootprint（清单里五个 Activity 都指向它）。
+         父主题用 Material3 的 **DayNight**.NoActionBar：外观跟着用户在「我的 → 设置 → 外观」里选的
+         那一项走（跟随系统 / 浅色 / 深色），由 CityFootprintApp 在进程启动时用
+         AppCompatDelegate.setDefaultNightMode 落到 uiMode 上；深色那一套取 values-night/ 下的同名资源
+         （颜色见 values-night/colors.xml，那是照抄网页端深色主题来的一套，不是设计稿那支红的主色）。
          NoActionBar：本 app 全部页面自带顶栏，不要系统那条 ActionBar。 -->
-    <style name="Theme.CityFootprint" parent="Theme.Material3.Light.NoActionBar">
+    <style name="Theme.CityFootprint" parent="Theme.Material3.DayNight.NoActionBar">
         <!-- 把设计稿的语义色接进 Material，让按钮 / 开关 / 输入框 / 进度自动跟着走 -->
         <item name="colorPrimary">@color/accent</item>
         <item name="colorOnPrimary">@color/on_accent</item>
@@ -27,12 +34,16 @@
         <item name="colorError">@color/destructive</item>
         <item name="android:colorBackground">@color/bg</item>
 
-        <!-- 系统栏与顶栏同色（顶栏底色是设计稿的 sidebar），图标用深色 -->
+        <!-- 系统栏与顶栏同色（顶栏底色是设计稿的 sidebar），图标明暗跟着深浅走：
+             浅色下背景白、图标要深（true），深色下背景深、图标要浅（false）——
+             两处都由 @bool/window_light_system_bars 给，深色那份见 values-night/themes.xml。
+             statusBarColor / navigationBarColor 走 window_bg_light，颜色自己会按 night 翻。 -->
         <item name="android:statusBarColor">@color/window_bg_light</item>
         <item name="android:navigationBarColor">@color/window_bg_light</item>
-        <item name="android:windowLightStatusBar">true</item>
-        <item name="android:windowLightNavigationBar" tools:targetApi="27">true</item>
-        <!-- 浅色只做一套：即便系统开了深色（强制深色 / 开发者选项），也不许系统反色 -->
+        <item name="android:windowLightStatusBar">@bool/window_light_system_bars</item>
+        <item name="android:windowLightNavigationBar" tools:targetApi="27">@bool/window_light_system_bars</item>
+        <!-- 不许系统再反色。深色那套是由 values-night 整套翻好的（颜色对得上网页），
+             forceDark 再叠一层只会把已经翻过的深色页算法反色一遍，颜色发灰、也对不上网页 -->
         <item name="android:forceDarkAllowed" tools:targetApi="29">false</item>
 
         <!-- 默认卡片 / 按钮样式：一处定义，全 app 一致（设计稿圆角 8px、1px 描边、无阴影） -->

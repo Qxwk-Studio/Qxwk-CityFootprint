@@ -8,7 +8,9 @@
          注释里那个名字就是它在网页端的 token 名；网页 CSS 变量名前面带两个连字符，
          XML 注释不允许出现连续两个连字符，所以这里一律省掉，别再手快补回去。
 
-         本 app 只做浅色：网页端没有深色主题，也就没有深色 token 可对（见 themes.xml）。 -->
+         这里只是一套**浅色**取值。深色那一套在 values-night/colors.xml（照抄网页端
+         :root[data-theme="dark"] 那个块），由用户在「我的 → 设置 → 外观」里切换；
+         本文件里出现的 token 若在那边没有同名条目，就是深色下沿用这里的值 —— 有意为之。 -->
 
     <!-- ===== 品牌主色（按钮 / 选中态 / 进度 / 边界线） ===== -->
     <color name="accent">#2563EB</color>              <!-- primary -->
@@ -49,7 +51,8 @@
     <color name="admin_note_border">#FCD34D</color>
     <color name="admin_note_fg">#92400E</color>
 
-    <!-- 系统栏兜底：与顶栏同色（只做浅色，深色不再覆盖 —— 见 values-night 已移除） -->
+    <!-- 系统栏兜底：与顶栏同色（themes.xml 拿它当 statusBarColor / navigationBarColor，
+         深色下的取值见 values-night/colors.xml）。window_bg_dark 目前没有引用。 -->
     <color name="window_bg_light">#FFFFFF</color>
     <color name="window_bg_dark">#FFFFFF</color>
 
