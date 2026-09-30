@@ -17,3 +17,34 @@ compatibility_flags = ["nodejs_compat"]
 binding = "DB"
 database_name = "qxwk-data"
 database_id = "60221417-13f8-486c-9f95-43e5fefe95d5"
+
+# 接口限速的**分钟级**窗口（Cloudflare Workers Rate Limiting 绑定）。
+# 选它而不是自己计数：它由边缘侧维护计数、不落任何库，正好绕开「Workers 无状态、可能多 isolate
+# 并发，进程内存里记的数不可靠」这个坑，也不占 D1 额度。代价是**按 colo 近似**（不是全局精确值），
+# 防滥用够用，别拿它当计费口径。
+#
+# 三处容易踩的坑：
+#   1. period 只支持 10 或 60（秒），别的值会被拒；limit 是「单个 period 内的次数」。
+#   2. namespace_id 是**账号级唯一**的整数（这里用字符串写是刻意的）。同一个 id 在两个 Worker 里
+#      就是同一个计数桶 —— 所以别用 1001 这种顺手数字去和别的站点撞，改了这里等于换桶。
+#   3. wrangler < 4.36.0 会**静默丢弃**这一整段（不报错、部署完却没有绑定），
+#      改完务必看 `npx wrangler deploy --dry-run` 的输出里有没有 RL_WRITE / RL_READ 这两个名字。
+#
+# 用代码里的 `env.RL_WRITE.limit({ key })` 判定，见 backend/src/ratelimit.js。
+[[ratelimits]]
+name = "RL_WRITE"
+namespace_id = "9101"
+
+  [ratelimits.simple]
+  limit = 10
+  period = 60
+
+# 读接口这一档给得宽得多：一次地图/统计页加载本来就会发好几发，加上 /api/geo 按城市数逐个拉，
+# 卡在写接口那档（10）会立刻误伤正常用户。天级上限读侧不给，理由见 migrations/0002_rate_limit.sql。
+[[ratelimits]]
+name = "RL_READ"
+namespace_id = "9102"
+
+  [ratelimits.simple]
+  limit = 120
+  period = 60

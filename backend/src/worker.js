@@ -2,6 +2,7 @@
 // 只提供 /api/* 接口：页面已搬去 GitHub Pages（仓库 docs/，域名 travel.qxwkstudio.top），
 // 这个 Worker 挂在 api.travel.qxwkstudio.top 上，前后端不同源，故末尾统一挂 CORS 头
 import { json, error, getUserId, resolveViewer, visibility, NeedEmailVerifyError } from './lib.js';
+import { allowMinute, checkWriteLimit, MSG_READ } from './ratelimit.js';
 import { getAchievements, achievementCounts } from './achievements.js';
 import { CITY_CODES } from './city-codes.js';
 
@@ -222,6 +223,9 @@ async function handleApi(request, env) {
   if (method === 'POST' && path === '/api/visits') {
     const userId = await getUserId(DB, request);
     if (!userId) return error('未登录', 401);
+    // 限速判定放在鉴权**之后**：未登录本来就该回 401，不该被算进（也不该消耗）限速配额
+    const limited = await checkWriteLimit(env, DB, userId);
+    if (limited) return limited;
 
     const body = await request.json().catch(() => ({}));
     const city = String(body.city || '').trim();
@@ -251,6 +255,9 @@ async function handleApi(request, env) {
   if (visitMatch && (method === 'PUT' || method === 'DELETE')) {
     const userId = await getUserId(DB, request);
     if (!userId) return error('未登录', 401);
+    // 改 / 删与新建共用同一天级 + 分钟级配额：三者都会动到足迹数据，分开计数反而给了绕过的口子
+    const limited = await checkWriteLimit(env, DB, userId);
+    if (limited) return limited;
 
     const id = Number(visitMatch[1]);
     const visit = await DB.prepare('SELECT * FROM cf_visits WHERE id = ?').bind(id).first();
@@ -338,6 +345,19 @@ export default {
         return headers ? new Response(null, { status: 204, headers }) : new Response(null, { status: 403 });
       }
       try {
+        // 读接口限速（分钟级、按 IP）：写接口在 handleApi 里按登录用户另判，分工见 ratelimit.js。
+        //
+        // /api/geo/:adcode 豁免：Worker 侧已有 7 天 edge 缓存、浏览器侧 IndexedDB 也缓存 7 天，
+        // 而地图首屏是按城市数逐个拉边界的，一口气几十发是**正常**行为 —— 限它没有收益、只会误伤。
+        //
+        // 取不到 CF-Connecting-IP（本地 dev 等）就放行：否则这些请求会全挤进同一个「空 IP」桶里，
+        // 一个人跑满就把其他人都挡了，比不限还糟。
+        if (request.method === 'GET' && !url.pathname.startsWith('/api/geo/')) {
+          const ip = request.headers.get('CF-Connecting-IP');
+          if (ip && !(await allowMinute(env, 'RL_READ', 'ip:' + ip))) {
+            return withCors(error(MSG_READ, 429), request);
+          }
+        }
         const result = await handleApi(request, env);
         return withCors(result || json({ error: '接口不存在' }, 404), request);
       } catch (e) {

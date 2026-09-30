@@ -86,14 +86,16 @@
 │   ├── src/
 │   │   ├── worker.js       # Worker 入口（/api/* 接口 + CORS；静态资源回退已删）
 │   │   ├── lib.js          # 通行证 token 验证 + 本地用户映射 + 私密可见性片段 visibility()
+│   │   ├── ratelimit.js    # 接口限速：分钟档走 CF Rate Limiting 绑定、天档写 D1（阈值与文案的单一出处）
 │   │   ├── achievements.js # 成就定义与判定（**全站唯一一份**，网页/app 都只消费接口结果）
 │   │   └── city-codes.js   # 城市 adcode 字典（写入行程时按城市名派生 adcode 用；与 docs/city-codes.js 同源）
 │   ├── test/
 │   │   └── achievements.test.js  # 成就判定与达成人数的单测（cd backend && npm test）
 │   ├── migrations/
-│   │   └── 0001_init.sql     # 建表：users（与 Qxwk-Blog 共享）/ cf_users（本站独占）/ cf_visits（足迹，含 adcode / transport 与 CHECK 约束）
+│   │   ├── 0001_init.sql     # 建表：users（与 Qxwk-Blog 共享）/ cf_users（本站独占）/ cf_visits（足迹，含 adcode / transport 与 CHECK 约束）
+│   │   └── 0002_rate_limit.sql  # 限速的天级计数表 cf_rate_daily（分钟档不落库，见 ratelimit.js）
 │   ├── package.json        # 只声明 ESM（"type":"module"）+ npm test，无任何依赖
-│   └── wrangler.toml       # Worker 配置（只有 D1 绑定；静态资源段已删 —— 页面在 GitHub Pages）
+│   └── wrangler.toml       # Worker 配置（D1 绑定 + 两个限速绑定 RL_WRITE / RL_READ；静态资源段已删 —— 页面在 GitHub Pages）
 ├── app/                    # 安卓 app，见 app/README.md（Kotlin + XML View/viewBinding，原生 osmdroid 地图，不用 WebView）
 ├── scripts/                # 城市数据维护脚本（Node，本地手动跑，不参与部署）
 │   ├── complete-cities.js  # 从 DataV 补齐 docs/cities.js 缺失的地级行政区
@@ -120,10 +122,19 @@
 
 > 注册 / 改密 / 邀请码 等账号能力已全部移交通行证 account.qxwkstudio.top；本站的登录表单只是前端直调通行证 `/api/login`，本站后端不自建账号体系。
 
+> **限速**：写接口（`POST/PUT/DELETE /api/visits`）1 分钟 10 次、每天 200 次，按登录用户计；其余读接口 1 分钟 120 次，按 IP 计；`/api/geo/:adcode` 不限。超限一律回 **429** + 中文提示（两端原样透出，见下面「接口限速」一节）。
+
 ## 🛠 设计说明
 
 - **认证完全移交通行证**：本站不持有密码、不签发会话、不生成 token，登录也只由前端跨域直调通行证 `/api/login`（密码不经本站服务器）。所有身份来源都由 `account.qxwkstudio.top` 负责。前端收到 401 清掉本地 token 并回到登录视图；后端业务接口的 Bearer Token 必须经通行证 `/api/me` 二次验证（**无任何缓存**，每个请求都会跨站验证一次）。
 - **前后端跨域，接口自带 CORS**：页面在 `travel.qxwkstudio.top`（GitHub Pages）、接口在 `api.travel.qxwkstudio.top`（Worker），不同源。前端请求带 `Authorization` / `Content-Type`，浏览器会先发 `OPTIONS` 预检，所以 Worker 必须处理预检并回 `Access-Control-Allow-*`；**4xx/5xx 也要带头**，否则浏览器只报 "CORS error"，前端那套 401 清 token / 回登录视图的逻辑永远触发不了。白名单（`backend/src/worker.js` 的 `ALLOWED_ORIGINS`）只放行前端域与 localhost —— 身份靠 Bearer token、不用 cookie，本就没有「靠 CORS 挡人」的安全边界，但也没必要让任意站点读响应。
+- **接口限速**：两套机制各管一段，判定都在 `backend/src/ratelimit.js`（阈值、文案、key 拼法的单一出处）。
+  - **分钟档**用 Cloudflare 的 **Rate Limiting 绑定**（`RL_WRITE` / `RL_READ`，配置在 `backend/wrangler.toml`）。选它是因为它由边缘侧计数、不落任何库：既绕开了「Workers 无状态、可能多 isolate 并发，进程内计数不可靠」，也不占 D1 额度。限制是**只能给 10s / 60s 窗口**，且按 colo **近似**（不是全局精确值）—— 防滥用够用，别拿它当计费口径。
+  - **天档**（写接口每天 200 次）必须持久化，落在 D1 的 `cf_rate_daily`（`migrations/0002_rate_limit.sql`），一天一行、upsert 原地累加。计数用**单条** `INSERT ... ON CONFLICT DO UPDATE ... RETURNING count` 先加再读回，才是原子的；换成「先 SELECT 再 UPDATE」并发时会双双读到最后一个名额而一起放行。**读接口刻意没有天档**：读请求量大，逐条写这张表会白白吃掉 D1 的每日写入额度（免费 10 万行/天），换来的只是「防一个已登录的人多翻几页」。
+  - **维度**：写接口按**登录用户**（本来就要求登录，userId 稳定、不受 NAT 影响），读接口按 **IP**（`CF-Connecting-IP`，Cloudflare 注入、客户端伪造不了）—— 因为 `/api/cities`、`/api/stats` 这些匿名就能访问，没有 userId 可用。每个请求只落一种 key，不是双重计数。**管理员不豁免**。
+  - **顺序**：限速判定在鉴权**之后**（未登录该回 401，不该消耗配额）、在解析 body 与落库**之前**；写接口先判分钟档、过了才动 D1，否则被分钟档挡下的请求照样能让刷子每次多写一行 D1。
+  - **fail open**：绑定没配（旧版 wrangler 会静默丢弃配置段）或调用抛错一律放行 —— 限速坏了不该把正常用户挡在门外；`/api/geo/:adcode` 也整条豁免（首屏按城市数逐个拉边界是正常行为，Worker 与浏览器各缓存 7 天已经不回源）。
+  - **超限响应**：`429` + 中文文案，由 `withCors` 贴头（否则浏览器只报 CORS 错、看不到文案）。两端**不需要改代码**就能显示：网页 `docs/app.js` 抛 `new Error(data.error)`、安卓 `data/ApiException.kt` 优先取报文里的 `error`，前端各自把 `err.message` 显示在表单提示位。
 - **本地身份按 `passport_id` 映射**：`resolveViewer()` 用通行证 `/api/me` 返回的 `userId` 认人（`cf_users.passport_id`，唯一索引 `idx_cf_users_passport`）。通行证里改昵称不会改 userId，所以改昵称不会在本站多出一条行；升级前的老行按「同昵称且 `passport_id IS NULL`」自动回填认领，保住原有足迹与管理员标志。
 - **颜色与头像都由 Account 输出**：`cf_users.color` 和用户头像 URL 都是通行证"单一事实源"，本站每次用户访问时同步覆盖。这样用户在通行证改颜色 / 改邮箱（头像 hash 变化）后，访问本站自动生效，避免两端数据漂移。
 - **私密行程接口层过滤**：`is_private` 过滤在 Worker 侧做，而不是前端，防止有人抓接口构造出别人的私密足迹。规则只写一处 —— `lib.js` 的 `visibility(viewer)`（管理员不过滤；其余放行「非私密」或「自己的」），`/api/cities`、`/api/city/:city`、`/api/stats` 共用它。凡是新增「面向他人数据」的接口，都必须套这一段，别各自手抄。
@@ -169,6 +180,8 @@ npx wrangler d1 migrations apply qxwk-data --remote
 
 > PowerShell 下请把 `npx` 写成 `npx.cmd`（执行策略会拦掉 `npx`；下同，所有 wrangler 命令都适用）。
 
+这条命令会把 `migrations/` 下所有还没应用的迁移一次跑完，**新增迁移后重跑一次即可**（例如接口限速的 `0002_rate_limit.sql` 会建出计数表 `cf_rate_daily`）。
+
 迁移会创建本站所需的全部表：`cf_users`（`is_admin` 管理员标志、`color` 颜色随通行证同步、`passport_id` 通行证 userId，本站独占）、`cf_visits`（足迹，含 `is_private` / `adcode` / `transport` 与一批 CHECK 约束）与 `users`（**与 Qxwk-Blog 共享**，博客的 `bg_*` 表外键指着它，本站已不再读写），并建出两个 `passport_id` 唯一索引。
 
 ### 3️⃣ 在通行证注册本站
@@ -196,7 +209,7 @@ npx wrangler d1 execute qxwk-account --local --command "INSERT OR IGNORE INTO ap
 database_id = "你的-D1-数据库ID"
 ```
 
-这个文件里**只有 D1 绑定** —— 页面已搬去 GitHub Pages（`docs/` 目录），所以没有 `[assets]` 静态资源段，Worker 只服务 `/api/*`。
+这个文件里**没有 `[assets]` 静态资源段** —— 页面已搬去 GitHub Pages（`docs/` 目录），所以 Worker 只服务 `/api/*`。绑定有两类：D1（`DB`）与接口限速（`RL_WRITE` / `RL_READ`，见下面「接口限速」）。
 
 提交并推送，然后在 `backend/` 目录执行部署：
 
@@ -205,7 +218,9 @@ cd backend
 npx wrangler deploy
 ```
 
-部署结果应为 **Worker + D1 绑定**（D1 绑定都写在 `backend/wrangler.toml` 里，无需再去网页配置）。
+部署结果应为 **Worker + D1 绑定 + 两个限速绑定**（都写在 `backend/wrangler.toml` 里，无需再去网页配置）。
+
+> 限速绑定有个坑：**wrangler < 4.36.0 会把 `[[ratelimits]]` 整段静默丢弃**（不报错、部署完却没有绑定，限速形同不存在）。改过这一段后，先用 `npx wrangler deploy --dry-run` 看一眼输出里有没有 `RL_WRITE` / `RL_READ`，再正式部署。代码侧对「绑定不在」是 fail open（放行），所以漏配不会报错、只会静默不限速。
 
 > 前端不在 Cloudflare 上：GitHub 仓库 → **Settings → Pages → Source** 选 `Deploy from a branch`，分支 `main` / 目录 `/docs`，保存后 `docs/` 里的页面就发布到 `travel.qxwkstudio.top`。
 
@@ -249,6 +264,8 @@ localhost 的任意端口（见 `backend/src/worker.js` 的 `ALLOWED_ORIGINS`）
 
 **通行证登录本地联调**：把 `backend/src/lib.js` 与 `docs/app.js` 顶部 `PASSPORT_URL` 改成 `http://localhost:8787`，另起一个终端跑通行证 `cd c:\Code\Qxwk-Account && npx wrangler dev`（端口 8787），并在通行证本地 DB 插入本站 origin（见 3️⃣）。
 
+**限速在本地同样生效**（`wrangler dev` 会模拟 `[[ratelimits]]` 绑定）。管理员不豁免，所以自己压测写接口时会被 10 次/分钟那档挡住 —— 临时把 `wrangler.toml` 里 `RL_WRITE` 的 `limit` 调大即可，别去改代码。
+
 ## 🔧 自定义指南
 
 **1. 补充城市数据**
@@ -279,6 +296,39 @@ localhost 的任意端口（见 `backend/src/worker.js` 的 `ALLOWED_ORIGINS`）
 - 所有头像 URL 由通行证 Account 后端集中计算（基于 `sha256(lowercase(trim(email)))` → `https://weavatar.com/avatar/{hash}?s=400&d=404`），本站**不再持有任何哈希实现**
 - 消费方式：`docs/app.js` 中定义的 `setAvatarFromUrl(el, avatarUrl, nickname, color)`（原 `avatar.js` 已删除并合并入 app.js）——加载失败自动回退到「昵称首字 + 专属颜色」的文字头像
 - 通行证返回 `token` 后，本站调 `/api/me` 即带回 `avatar` 字段并写入本地用户缓存 `qxwf_user`；更换头像服务（如切到 QQ 官方头像或自托管 Gravatar）**只需改 Account 后端 `getAvatarUrl()` 一处**，本站零改动
+
+**7. 限时活动页面（App 主页抽屉里的栏目）**
+
+活动页就是 `docs/` 下的一个普通页面（自己起名，例如 `activity-2026-fall.html`），
+把它的 `{ title, url }` 加进 `docs/version.json` 顶层的 `menu`、push 一次即可 —— **不用发新版 App**：
+主页左上角三横菜单里会多出一行，点开在 App 内的 WebView 里打开（同域名的页面留在 WebView，外链交系统浏览器）。
+
+页面在 App 里打开时**默认是未登录态**（App 的 token 在 SharedPreferences、网页的 token 在 localStorage，
+两套身份互不相通）。需要用户身份就调 App 留的 JS 方法：
+
+```js
+// window.CityFootprint 只在「App 内 + 自家域名」时存在；在普通浏览器里打开没有这个对象，必须兜底
+const raw = window.CityFootprint && window.CityFootprint.getIdentity();
+const me = raw ? JSON.parse(raw) : null;
+// me = { token, userId, nickname, color, avatar, is_admin }
+// 拿不到身份时 me 为 null（不在 App 里、或活动页被放到了别的域名）；
+// 有桥但没登录时字段照给、值为 "" / 0 / false
+if (me && me.token) {
+  // 已登录：me.token 就是本站的会话 token，可以直接拿去调后端接口；
+  // 也可以只用 me.nickname / me.color 渲染个称呼
+}
+```
+
+- `getIdentity()` 返回的是**字符串**（JSON），别忘了 `JSON.parse`
+- 桥名 `CityFootprint`、方法名 `getIdentity`、报文字段名都是**跨语言契约**，改一个就要两端一起改：
+  App 侧实现在 `app/src/main/java/top/qxwkstudio/travel/ui/WebViewActivity.kt` 的 `IdentityBridge`，
+  release 包靠 `app/proguard-rules.pro` 里那条 keep 规则才不会被改名
+  （漏了它，debug 正常、release 里网页会报 `getIdentity is not a function`）
+- 桥只在**自家域名**（`Api.WEB_ORIGIN`，即 `travel.qxwkstudio.top`）的页面上注入，
+  活动页放到别的域名拿不到身份
+- 现在只有这一条**只读**的取身份接口，没有「网页回写 App」的通道
+- 若想沿用 `docs/app.js` 现成的请求封装，页面可以把拿到的身份写进 localStorage 的那两个 key
+  （见 `docs/app.js` 顶部的 `LS_TOKEN` / `LS_USER`）—— 这是页面自己的选择，App 不会替你写
 
 ---
 
