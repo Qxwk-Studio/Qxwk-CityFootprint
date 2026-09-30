@@ -104,6 +104,9 @@ class AchievementsFragment : Fragment() {
             group.items.forEach { achievement -> header.groupItems.addView(itemView(achievement, header.groupItems)) }
             binding.achievementsContainer.addView(header.root)
         }
+        // 铺完再调度一次逐条淡入（动画见 res/anim/anim_layout_items）：layoutAnimation
+        // 只在容器「下一次布局」时播，而首帧布局时数据还没回来，那一次容器是空的。下拉刷新会重播
+        binding.achievementsContainer.scheduleLayoutAnimation()
     }
 
     /** 铺一条成就卡：达成与否只体现在这张卡自己身上（整卡压暗 / 换底色描边 / 露出勾）。 */

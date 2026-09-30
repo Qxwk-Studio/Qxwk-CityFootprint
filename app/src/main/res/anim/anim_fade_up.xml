@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 整块内容的「淡入 + 轻微上移」：tab 切换进来的那一页、地图上的城市明细卡与图例、
+     登录页的表单卡片与报错文案，都用这一份。
+
+     位移取 2%p（相对父容器）：这几个场合的父容器都是「一屏大小」的普通容器，
+     2% 落在 12~16dp 左右，够看出来是「浮上来」的，又不至于像整页在滑。
+     同 anim_item_in：YDelta 不能写 dp。
+
+     出去的动画是 @anim/anim_fade_out（更短、只淡出、不位移）—— 退场不该有登场那样的存在感。 -->
+<set xmlns:android="http://schemas.android.com/apk/res/android"
+    android:duration="200"
+    android:interpolator="@android:anim/decelerate_interpolator">
+
+    <alpha
+        android:fromAlpha="0.0"
+        android:toAlpha="1.0" />
+
+    <translate
+        android:fromYDelta="2%p"
+        android:toYDelta="0" />
+</set>

@@ -87,11 +87,14 @@
                     app:trackThickness="8dp" />
             </LinearLayout>
 
-            <!-- 分类与条目由代码 inflate（item_achievement_group.xml / item_achievement.xml）后 add 进来 -->
+            <!-- 分类与条目由代码 inflate（item_achievement_group.xml / item_achievement.xml）后 add 进来。
+                 逐个淡入的动画挂在 layoutAnimation 上（见 res/anim/anim_layout_items），
+                 铺完内容后 AchievementsFragment 还会自己 scheduleLayoutAnimation() 一次 -->
             <LinearLayout
                 android:id="@+id/achievementsContainer"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layoutAnimation="@anim/anim_layout_items"
                 android:orientation="vertical" />
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>

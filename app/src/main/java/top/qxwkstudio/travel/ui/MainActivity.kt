@@ -227,6 +227,9 @@ class MainActivity : AppCompatActivity() {
     private fun show(tag: String) {
         val fm = supportFragmentManager
         val tx = fm.beginTransaction()
+        // 切栏过渡：进来的淡入 + 轻微上移，旧的淡出（动画在 res/anim/anim_fade_*，与浮层出现同一份）。
+        // 必须**每次事务都设**：动画是事务自己的属性，不是 Fragment 的，设一次不会留给下一次切换。
+        tx.setCustomAnimations(R.anim.anim_fade_up, R.anim.anim_fade_out)
         // 先全 hide：show 一个之前没有 hide 的，会出现两层叠着（点击穿透到下层，很难查）
         fm.fragments.forEach { tx.hide(it) }
 

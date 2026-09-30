@@ -157,6 +157,10 @@ class VisitsFragment : Fragment() {
             }
             val visits = data.visits
             adapter.submit(visits)
+            // 铺完内容重新调度一次「逐条淡入」（动画见 res/anim/anim_layout_items）：
+            // layoutAnimation 只在容器下一次布局时播，而首帧布局时数据还没回来，那一次是空列表 ——
+            // 不补这一下，动画就白挂了。下拉刷新同样走这里，于是刷新也会重播一遍
+            binding.list.scheduleLayoutAnimation()
             binding.textEmpty.visibility = if (visits.isEmpty()) View.VISIBLE else View.GONE
             renderOverview(visits)
         }

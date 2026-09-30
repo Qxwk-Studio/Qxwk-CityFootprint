@@ -205,6 +205,20 @@
       <div class="timeline">
 
         <div class="timeline-item">
+          <div class="timeline-date">2026-09-30</div>
+          <span class="timeline-tag">v1.3.1</span>
+          <div class="timeline-content">
+            <ul>
+              <li><b>地图改 Canvas 渲染</b>：城市图层复用、同一份数据不重复重绘，首屏加 preconnect 与 defer —— 大图上拖动更顺</li>
+              <li><b>个人中心改设置分组</b>：补通行证中心入口、清除缓存与「关于软件」卡（含当前版本号）</li>
+              <li><b>登录表单加《用户协议》勾选</b>：没勾住不发登录请求（与安卓 App 同一口径）</li>
+              <li><b>接口限速</b>：写接口 1 分钟 10 次 / 每天 200 次，读接口 1 分钟 120 次；超限回 429，中文提示原样显示</li>
+              <li><b>修复</b>：深色下出行方式 chip 选中的文字偏暗（换亮一档，与本页日志选项卡、导航返回链接同一处理）</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="timeline-item">
           <div class="timeline-date">2026-09-29</div>
           <span class="timeline-tag">v1.3.0</span>
           <div class="timeline-content">
@@ -409,6 +423,22 @@
 
       <div class="log-panel" id="logPanelApp" role="tabpanel" aria-labelledby="logTabApp" tabindex="0" hidden>
       <div class="timeline">
+
+        <div class="timeline-item">
+          <div class="timeline-date">2026-09-30</div>
+          <span class="timeline-tag">v0.7.0</span>
+          <div class="timeline-content">
+            <ul>
+              <li><b>新增外观开关</b>：「我的 → 设置 → 外观」可选浅色 / 深色 / 跟随系统，深色配色照网页端</li>
+              <li><b>「我的」页改设置分组</b>：补通行证中心入口、清除缓存与「关于软件」卡（含版本号）</li>
+              <li><b>主页加侧滑抽屉</b>：栏目由网页清单驱动，站内页面在内置 WebView 里打开，并把 App 身份交给网页</li>
+              <li><b>登录页加《用户协议》勾选</b>；更新清单支持公告，有未读时主页顶部出提示横幅</li>
+              <li>足迹编辑页与城市选择页对齐网页（城市表加国家字段、分组标题吸顶）</li>
+              <li><b>性能</b>：地图图层批量重绘、圆点图标按颜色复用、启动时后台预热城市表</li>
+              <li><b>修复</b>：深色下出行方式 chip 选中的文字偏暗</li>
+            </ul>
+          </div>
+        </div>
 
         <div class="timeline-item">
           <div class="timeline-date">2026-09-29</div>

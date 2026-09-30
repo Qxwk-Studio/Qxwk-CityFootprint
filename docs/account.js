@@ -3,7 +3,7 @@
 
 // 网页端当前版本号（硬编码）：本站是纯静态页、没有版本接口，「关于软件」卡片只把它作为
 // 一行文字展示。发版时改这里，并同步 docs/news.html「网页端」更新日志最新一条的 timeline-tag。
-const APP_VERSION = '1.3.0';
+const APP_VERSION = '1.3.1';
 // 登录表单：直接跨域调通行证 /api/login（app.js 的 passportLogin），成功后本地已存好 token，直接进个人中心
 document.getElementById('loginForm').addEventListener('submit', async function (e) {
   e.preventDefault();

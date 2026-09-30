@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 容器的「布局动画」：让子 View 按顺序依次播放 @anim/anim_item_in（逐个淡入），
+     挂法是在容器的 android:layoutAnimation 上引用本文件。
+
+     delay 是**每条延迟占单条动画时长的比例**（12% * 200ms ≈ 24ms）：
+     十条内容铺开约多花 240ms，既有「依次浮出来」的层次，又不会让人等。
+     调大到 30% 以上在长列表上会明显变慢，别顺手改。
+
+     注意 layoutAnimation 只在容器**下一次布局**时播一遍，不是每次 addView 都自动播 ——
+     数据是异步回来的（首帧布局时列表还是空的），所以代码里铺完内容还要自己调一次
+     scheduleLayoutAnimation()，见 VisitsFragment / AchievementsFragment / StatsFragment。 -->
+<layoutAnimation xmlns:android="http://schemas.android.com/apk/res/android"
+    android:animation="@anim/anim_item_in"
+    android:animationOrder="normal"
+    android:delay="12%" />

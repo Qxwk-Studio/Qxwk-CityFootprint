@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 退场：只淡出、不位移，且比入场短（120ms 对 200ms）。
+     入场动画的位移是给「内容浮上来」用的，退场再位移一次会显得页面在抖；
+     结尾用 linear 而不是 decelerate —— 退场本来就该干脆。 -->
+<alpha xmlns:android="http://schemas.android.com/apk/res/android"
+    android:duration="120"
+    android:fromAlpha="1.0"
+    android:toAlpha="0.0" />

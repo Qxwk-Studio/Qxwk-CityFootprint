@@ -175,6 +175,10 @@ const me = raw ? JSON.parse(raw) : null;   // 在普通浏览器里打开时没�
 与网页 IndexedDB 那份同形态：命中直接返回；过期**先返回旧内容**、后台**串行**重下换文件（SWR，不重画）。
 它**不跟登录态走** —— 边界是公共数据，别把它塞进 `Store` 的 `cache_` 前缀（那套会随退出登录 / 写操作整体作废）。
 
+图层绘制有一处约定（`MapFragment.renderCities`）：**整批画完才 `invalidate()` 一次**，而不是每座城各重绘一次；
+圆点图标按颜色缓存复用（`dotIcons`，同色只画一张 Bitmap），一个 MultiPolygon 的多个环也先攒齐、一次 `addAll`
+交给 overlay 列表。改这块时别把 `invalidate()` 塞回逐城绘制里 —— 一次筛选几十座城就是几十次重绘请求。
+
 ## 城市表（assets/cities.json 是生成物）
 
 `app/src/main/assets/cities.json` **不要手改**：它由 `app/tools/gen-cities.mjs` 从
@@ -191,6 +195,10 @@ node app/tools/gen-cities.mjs
 
 **前端改了城市数据（增删城市、改坐标）就重跑一次并提交这份 JSON** —— 两端同源靠的就是这一步。
 当前：384 座城市，370 座有 adcode，1 个国家/地区。
+
+`CityStore` 把它缓存在内存（只解一次）。**进程启动时 `CityFootprintApp` 会用一条后台线程先解一遍**：
+主页与统计页首帧要在**主线程**用它查省份（`CityStore.all`），不预热那一帧就得主线程读 asset
+再反序列化整份文件。`CityStore.all` 内部有 `synchronized` 兜底，所以预热与页面抢跑也只是等同一次解析。
 
 城市搜索在 `logic/City.kt`（名称 / 省份模糊匹配，空查询返回全部）。
 **没有做拼音首字母匹配**：源数据里没有拼音字段，要支持就得再维护一张几千字的拼音表；
@@ -220,6 +228,27 @@ node app/tools/gen-cities.mjs
 - 除了这五个 tab，主页左上角还有一颗**三横菜单**，拉出侧滑抽屉（`DrawerLayout`，外壳在 `activity_main.xml`）；
   抽屉里的栏目是一行一个网页，数据来自 `docs/version.json` 的 `menu`，见上面
   「`docs/version.json` 的 `menu`：主页抽屉里的栏目 + 网页取身份」。
+
+### 过渡动画（`res/anim/`）
+
+只有四处，全是系统自带的 View 动画，**没有引入动画库**（material 的 motion 也没用）：
+
+| 位置 | 动画 | 挂在哪儿 |
+| --- | --- | --- |
+| tab 切换 | `anim_fade_up` / `anim_fade_out` | `MainActivity.show()` 的 `setCustomAnimations` |
+| 主页行程、成就、统计排行与成就计数 | `anim_layout_items`（逐条淡入） | 容器 XML 的 `android:layoutAnimation` + 铺完内容补一次 `scheduleLayoutAnimation()` |
+| 地图的城市明细卡、图例展开 | `anim_fade_up` | `View.fadeIn()`（`ui/Anim.kt`） |
+| 登录页的表单卡片、报错文案 | `anim_fade_up` | 同上 |
+
+三条别踩的坑：
+
+- **`layoutAnimation` 不会因为 `addView` 就自动播**：它的语义是「容器**下一次**布局时播一遍」，
+  而首帧布局时数据还没回来（那一次是空容器），所以铺完内容必须自己补一次
+  `scheduleLayoutAnimation()`。漏了不报错，动画只是永远不出现。
+- **`translate` 的 `fromYDelta` 不要写 dp**：那个位置只认百分比和像素浮点数
+  （`12%` 相对自身高度、`2%p` 相对父容器），写法见 `anim_item_in.xml` 头部的注释。
+- **刻意只做进入、不做退出**：浮层（城市卡、图例）收起时直接 `GONE`，报错文案是原地换文字。
+  做淡出得监听动画结束后再隐藏、还得记得复位 alpha，为这点观感不值。真要加就在 `ui/Anim.kt` 里成对补上。
 
 ## 签名与发版
 
@@ -274,6 +303,12 @@ token 存在 `MODE_PRIVATE` 的 SharedPreferences（`data/Store.kt`），与网�
 **未加密**：安卓没有系统级加密存储，真机 root 后能被读走（与其它未加固 App 同级）。
 兜底靠三层：清单里 `allowBackup=false`（云备份不带 token）、全站 HTTPS、日志不打印 token。
 刻意**没用** `EncryptedSharedPreferences`（要求 targetSdk 更高，且换库要迁移存量数据，收益与改动不成比例）。
+
+外观偏好（浅色 / 深色 / 跟随系统）也放在同一份 SharedPreferences（`Store.appearance`），但它是**设备级**偏好：
+`clearSession` 刻意不清它（换个人登录不该把外观也换掉），键名不带 `cache_` 前缀、也不随写操作作废。
+生效点在**进程最早处** —— `CityFootprintApp`（清单里 `<application android:name>` 指过去）在 `onCreate`
+里把偏好交给 `AppCompatDelegate.setDefaultNightMode`；晚一步（比如写在 MainActivity 里）会让先起来的页面
+按系统默认渲染一帧再被重建 —— 有设置项的人每次冷启动都会看到一次闪烁。
 
 任何接口拿到 401 都走**同一个出口**（`ui/Session.kt`）：清本地 token → 提示一次 → 回登录页，
 避免三个页面各弹一次错、或者用户被反复踢。**退出登录**无论通行证那边成功与否都清本地 token。

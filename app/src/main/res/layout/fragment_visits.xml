@@ -24,11 +24,15 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
+        <!-- 条目逐个淡入：动画与错开比例在 res/anim/anim_layout_items。
+             layoutAnimation 是「容器下一次布局时按顺序播一遍」的机制，不是每次 addView 都自动播，
+             所以数据铺完之后 VisitsFragment 还会自己调一次 scheduleLayoutAnimation()。 -->
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/list"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:clipToPadding="false"
+            android:layoutAnimation="@anim/anim_layout_items"
             android:paddingStart="16dp"
             android:paddingEnd="16dp"
             android:paddingBottom="16dp" />

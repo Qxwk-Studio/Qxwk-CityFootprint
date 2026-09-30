@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 列表条目「逐个淡入 + 轻微上移」。两条别顺手改的约束：
+
+     1. 位移的 YDelta 只认百分比或**像素浮点数**（"12%" 是相对自身高度、"50%p" 是相对父容器），
+        **不能写 dp** —— 那个位置没有 dimension 语义，写了不会按 8dp 生效。
+        这里取 12%：条目高约 60~90dp，位移落在 7~11dp，各个列表都合适。
+        没用 %p：成就是铺在 NestedScrollView 里的，父容器高度是整段内容（可能好几千 dp），
+        按父容器比例算位移会大到像从屏幕外飞进来。
+     2. decelerate 收尾：动画快结束时几乎停住，和 material 的进入动效同一观感；
+        换成 accelerate 会像「被推下去」，与「淡入」的语义相反。 -->
+<set xmlns:android="http://schemas.android.com/apk/res/android"
+    android:duration="200"
+    android:interpolator="@android:anim/decelerate_interpolator">
+
+    <alpha
+        android:fromAlpha="0.0"
+        android:toAlpha="1.0" />
+
+    <translate
+        android:fromYDelta="12%"
+        android:toYDelta="0" />
+</set>

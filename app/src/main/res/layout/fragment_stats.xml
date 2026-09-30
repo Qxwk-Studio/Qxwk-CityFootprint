@@ -197,12 +197,15 @@
                         style="@style/CardTitle"
                         android:text="@string/stats_rank_title" />
 
-                    <!-- 行由代码 inflate（item_rank.xml）后 add 进来 -->
+                    <!-- 行由代码 inflate（item_rank.xml）后 add 进来。
+                         逐个淡入的动画挂在 layoutAnimation 上（见 res/anim/anim_layout_items），
+                         铺完内容后 StatsFragment 还会自己 scheduleLayoutAnimation() 一次 -->
                     <LinearLayout
                         android:id="@+id/rankContainer"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
+                        android:layoutAnimation="@anim/anim_layout_items"
                         android:orientation="vertical" />
 
                     <!-- 排行空态（等价网页 .empty）：全站还没人记过足迹时顶掉列表与展开按钮 -->
@@ -249,12 +252,14 @@
                         style="@style/CardTitle"
                         android:text="@string/stats_achv_count_title" />
 
-                    <!-- 分类标题与条目由代码 inflate 后 add 进来 -->
+                    <!-- 分类标题与条目由代码 inflate 后 add 进来。
+                         逐个淡入的动画挂在 layoutAnimation 上（见 res/anim/anim_layout_items） -->
                     <LinearLayout
                         android:id="@+id/achCountContainer"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
+                        android:layoutAnimation="@anim/anim_layout_items"
                         android:orientation="vertical" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>

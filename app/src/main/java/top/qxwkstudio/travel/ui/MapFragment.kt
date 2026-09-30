@@ -252,6 +252,9 @@ class MapFragment : Fragment() {
         val b = binding
         val collapsing = b.legendScroll.visibility == View.VISIBLE
         b.legendScroll.visibility = if (collapsing) View.GONE else View.VISIBLE
+        // 展开时淡入（动画见 res/anim/anim_fade_up）。收起直接 GONE：箭头与列表本来就同时收，
+        // 再补一个淡出只会让「收起」显得拖沓
+        if (!collapsing) b.legendScroll.fadeIn()
         b.legendToggle.setText(if (collapsing) R.string.map_legend_toggle_collapsed else R.string.map_legend_toggle_expanded)
     }
 
@@ -494,6 +497,9 @@ class MapFragment : Fragment() {
     /** 点城市 → 底部卡片列最近 10 条行程。明细按城市缓存，反复开关同一座城市不重复请求。 */
     private fun showCity(city: String) {
         val b = binding
+        // 卡片本来关着才淡入（动画见 res/anim/anim_fade_up）：点的是另一座城市时卡片一直开着、
+        // 只是内容被换掉（先出 loading 行），那种情况下再让整卡淡入一次会闪一下
+        if (b.cityCard.visibility != View.VISIBLE) b.cityCard.fadeIn()
         b.cityCard.visibility = View.VISIBLE
         b.cityCardTitle.text = city
         b.cityCardList.removeAllViews()

@@ -54,6 +54,9 @@ class LoginActivity : AppCompatActivity() {
 
         // 顶栏是四页共用的（view_top_bar.xml），不自带文案，标题在本页填
         b.topBar.title.setText(R.string.login_bar_title)
+        // 表单卡片淡入上移（动画见 res/anim/anim_fade_up）。这里视图还没 attach，
+        // 但 View 动画是从第一帧绘制才开始计时的，在 onCreate 里设好正好跟着进场播
+        b.loginCard.fadeIn()
         b.btnLogin.setOnClickListener { submit() }
         // 注册与找回密码只在通行证那边有，跳系统浏览器（注册是通行证登录页里的 tab，见 Api.PASSPORT_LOGIN）
         b.textRegisterTip.setOnClickListener { openUrl(Api.PASSPORT_LOGIN) }
@@ -173,6 +176,9 @@ class LoginActivity : AppCompatActivity() {
     private fun showError(message: String) {
         binding.textLoginError.text = message
         binding.textLoginError.visibility = View.VISIBLE
+        // 每次报错都重播一次淡入（动画见 res/anim/anim_fade_up）：提示就在同一个位置换文案，
+        // 不重播的话用户看不出「这次又错了」
+        binding.textLoginError.fadeIn()
     }
 
     private fun goMain() {

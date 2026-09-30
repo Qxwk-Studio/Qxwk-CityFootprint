@@ -135,6 +135,9 @@ class StatsFragment : Fragment() {
             item.textCount.text = getString(R.string.stats_rank_count, row.count)
             binding.rankContainer.addView(item.root)
         }
+        // 铺完调度一次逐条淡入（动画见 res/anim/anim_layout_items）：
+        // 展开/收起重铺时也走这里，于是同样会重播
+        binding.rankContainer.scheduleLayoutAnimation()
 
         // 全站还没有任何足迹：照网页把列表位置换成一句话空态，展开/收起按钮也就没意义了
         val rankEmpty = rows.isEmpty()
@@ -176,6 +179,8 @@ class StatsFragment : Fragment() {
                 binding.achCountContainer.addView(item.root)
             }
         }
+        // 铺完调度一次逐条淡入（动画见 res/anim/anim_layout_items）
+        binding.achCountContainer.scheduleLayoutAnimation()
     }
 
     /** 城市名 → 省份；本机城市表里查不到（或省份为空）就返回 null（该城市不计入省份数）。 */
