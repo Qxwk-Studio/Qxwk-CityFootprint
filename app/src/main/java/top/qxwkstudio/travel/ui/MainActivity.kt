@@ -1,9 +1,12 @@
 package top.qxwkstudio.travel.ui
 
 import android.os.Bundle
+import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.GravityCompat
 import androidx.core.view.doOnLayout
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
@@ -11,7 +14,10 @@ import top.qxwkstudio.travel.R
 import top.qxwkstudio.travel.data.Auth
 import top.qxwkstudio.travel.data.MeResult
 import top.qxwkstudio.travel.data.Store
+import top.qxwkstudio.travel.data.Update
 import top.qxwkstudio.travel.databinding.ActivityMainBinding
+import top.qxwkstudio.travel.databinding.ItemMenuBinding
+import top.qxwkstudio.travel.logic.MenuItem
 
 /**
  * 主页：底部五个 tab（主页 / 我的成就 / 地图 / 全站统计 / 我的）。
@@ -23,6 +29,9 @@ import top.qxwkstudio.travel.databinding.ActivityMainBinding
  * 注意：数据页（主页/成就/统计）**不**在这里重新拉数据 —— 切栏就打网络太浪费，
  * 它们只在首次创建时加载，要新的数据就下拉刷新（缓存见 data/Store）。目前只有
  * ProfileFragment 用 onHiddenChanged 重读一次本机状态（不涉及网络）。
+ *
+ * 左上角那颗三横菜单拉开的抽屉也归这一页管（栏目 = 一行一个网页，清单在网页端的 version.json，
+ * 见 setupDrawer / loadMenu）。抽屉是壳的一部分、不属于任何一个 tab，所以放 Activity 而不是 Fragment。
  */
 class MainActivity : AppCompatActivity() {
 
@@ -45,8 +54,10 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         val b = binding
         // 必须在 setContentView 之前（见 ui/EdgeToEdge.kt）。
-        // topBar 是带 id 的 <include>，ViewBinding 里是 ViewTopBarBinding 而不是 View，取 .root 才是那条栏本身
-        applyEdgeToEdge(b.topBar.root, b.bottomBar)
+        // topBar 是带 id 的 <include>，ViewBinding 里是 ViewTopBarBinding 而不是 View，取 .root 才是那条栏本身。
+        // 第三个参数是抽屉面板：这一页最外层是 DrawerLayout，三块（顶栏/底栏/抽屉）都由那一个监听分
+        // —— 少传它的话抽屉标题会被状态栏压住，理由见 EdgeToEdge 文件头第 4 点。
+        applyEdgeToEdge(b.topBar.root, b.bottomBar, b.drawerPanel)
         setContentView(b.root)
 
         // M3 底栏默认把文案沉在 item 底边，与图标之间留一截空；拉到布局完成后再修（说明见 pinBottomNavLabels）
@@ -68,7 +79,88 @@ class MainActivity : AppCompatActivity() {
             b.topBar.title.text = getString(titleOf(b.bottomNav.selectedItemId))
         }
 
+        setupDrawer()
         verifySession()
+    }
+
+    /**
+     * 左上角那颗三横菜单 + 它拉开的抽屉。
+     *
+     * 抽屉里是「栏目」：一行 = 一个网页，条目来自网页根下的 version.json（见 [loadMenu]）——
+     * 以后加限时活动只改那个 JSON、push 一次就生效，**不用发新版本**。
+     */
+    private fun setupDrawer() {
+        binding.topBar.btnMenu.visibility = View.VISIBLE
+        binding.topBar.btnMenu.setOnClickListener { binding.drawer.openDrawer(GravityCompat.START) }
+
+        // 返回键：抽屉开着时先关抽屉，而不是直接退出 App（默认行为是**退出**，
+        // 用户按一下发现 App 没了，只会以为返回键失灵）。抽屉本来就是浮层，先收浮层是通例。
+        // 没开抽屉就摘掉自己、交回默认处理，别把这颗返回键吃掉。
+        onBackPressedDispatcher.addCallback(
+            this,
+            object : OnBackPressedCallback(true) {
+                override fun handleOnBackPressed() {
+                    if (binding.drawer.isDrawerOpen(GravityCompat.START)) {
+                        binding.drawer.closeDrawer(GravityCompat.START)
+                    } else {
+                        isEnabled = false
+                        onBackPressedDispatcher.onBackPressed()
+                    }
+                }
+            },
+        )
+
+        loadMenu()
+    }
+
+    /**
+     * 拉清单里的栏目铺进抽屉。与公告同一口径：**只在页面创建时拉一次**，失败就给一句提示，
+     * 不做重试按钮 —— 抽屉不是内容主体，拉不到不该挡着用户用 App（要更新就下拉刷新或重进主页）。
+     */
+    private fun loadMenu() {
+        lifecycleScope.runIo({ Update.fetch() }) { result ->
+            val manifest = result.getOrNull()
+            if (manifest == null) {
+                showMenuState(getString(R.string.menu_load_failed))
+            } else {
+                renderMenu(manifest.menu)
+            }
+        }
+    }
+
+    /**
+     * 一行一个栏目。title 与 url **都必填**，缺一个整条跳过（理由见 logic/Models.kt 的 [MenuItem]）——
+     * 所以「清单里写了两条、抽屉里只出现一条」是有意为之，不是渲染漏了。
+     */
+    private fun renderMenu(items: List<MenuItem>) {
+        val usable = items.filter { it.title.isNotBlank() && it.url.isNotBlank() }
+        if (usable.isEmpty()) {
+            showMenuState(getString(R.string.menu_empty))
+            return
+        }
+
+        binding.menuScroll.visibility = View.VISIBLE
+        binding.menuState.visibility = View.GONE
+        binding.menuList.removeAllViews()
+        for (item in usable) {
+            val row = ItemMenuBinding.inflate(layoutInflater, binding.menuList, false)
+            row.textTitle.text = item.title
+            row.root.setOnClickListener {
+                // 先关抽屉再开页：不关的话从网页页返回时抽屉还敞着，看起来像刚才点错了
+                binding.drawer.closeDrawer(GravityCompat.START)
+                // withIdentity = true：自家页面的 WebView 里递一份当前身份过去
+                // （网页默认是未登录态 —— token 在 App 的 SharedPreferences 里，不在 WebView 的 localStorage 里）
+                startActivity(WebViewActivity.intent(this, item.url, item.title, withIdentity = true))
+            }
+            binding.menuList.addView(row.root)
+        }
+    }
+
+    /** 抽屉的空态：拉不到 / 一个栏目都没有时**只显示这一行灰字**（与列表互斥，见布局注释）。 */
+    private fun showMenuState(text: String) {
+        binding.menuState.text = text
+        binding.menuState.visibility = View.VISIBLE
+        binding.menuScroll.visibility = View.GONE
     }
 
     /**

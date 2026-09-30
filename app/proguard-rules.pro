@@ -13,3 +13,14 @@
 -keep class org.osmdroid.views.MapView { *; }
 -keep class org.osmdroid.views.overlay.** { *; }
 -keep class org.osmdroid.tileprovider.tilesource.** { *; }
+
+# ── WebView 的 JS 桥（跨语言契约：Java 方法 ↔ 网页 JS 调用）──
+# 网页那边写的是 window.CityFootprint.getIdentity()，方法名是**字符串**，
+# R8 看不见这个调用（它只看见我们自己的 Kotlin 代码里没人调 getIdentity）。
+# 用 -keepclassmembers 而不是 -keep：类名不参与契约（桥是以 "CityFootprint" 这个名字注册进 WebView 的），
+# 保住方法名就够，类本身照样可以被改名。
+# 症状对照：漏了这条，debug 包一切正常，**release 包**里网页调用会报
+# 「getIdentity is not a function」，而 App 侧看不出任何异常。
+-keepclassmembers class top.qxwkstudio.travel.ui.WebViewActivity$IdentityBridge {
+    @android.webkit.JavascriptInterface <methods>;
+}

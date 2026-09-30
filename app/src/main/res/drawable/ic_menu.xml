@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 主页左上角那颗三横线（几何是 Material menu：三条 2 单位高、左右各留 3 单位的横杠）。
+     与 ic_back 一样是实心 path，颜色交给 ImageButton 的 android:tint（见 view_top_bar.xml）——
+     vector 里写死的 #FF000000 只是占位，别当成最终颜色。 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M3,18 L21,18 L21,16 L3,16 Z M3,13 L21,13 L21,11 L3,11 Z M3,8 L21,8 L21,6 L3,6 Z" />
+</vector>

@@ -1,5 +1,5 @@
 {
-  "_comment": "City Footprint 的清单：安卓版本信息 + 公告（https://travel.qxwkstudio.top/version.json）。读它的有两处 ——「我的 → 检查更新」比 android.version_code；主页顶部的公告横幅与「我的 → 公告」看 notices。发新版时改 android 三项：version_name 是给人看的版本名；version_code 必须比上一版大 —— App 拿它跟自己的 BuildConfig.VERSION_CODE 比大小，相等或更小都会答「已是最新」；download_url 是点了「前往下载」要打开的地址。notes 是更新说明，**一行一条**（下面两行是示例，换成真实内容），会逐条列在弹窗里；不需要就写成空数组 []。**download_url 目前是占位符，必须换成真实下载地址**。notices 是公告，没有公告就写空数组 []：id 是**自增整数，只能往上加、不要改**（App 用它记「读到哪条了」，改小会让读过的公告又变成未读）；title 是标题；date 是日期（只做展示，不参与判断）；body 是一段正文。字段契约见 app/README.md 的「更新清单与公告」一节。",
+  "_comment": "City Footprint 的清单：安卓版本信息 + 公告 + 抽屉栏目（https://travel.qxwkstudio.top/version.json）。读它的有三处 ——「我的 → 检查更新」比 android.version_code；主页顶部的公告横幅与「我的 → 公告」看 notices；主页左上角三横菜单（抽屉）里的栏目看 menu。发新版时改 android 三项：version_name 是给人看的版本名；version_code 必须比上一版大 —— App 拿它跟自己的 BuildConfig.VERSION_CODE 比大小，相等或更小都会答「已是最新」；download_url 是点了「前往下载」要打开的地址。notes 是更新说明，**一行一条**（下面两行是示例，换成真实内容），会逐条列在弹窗里；不需要就写成空数组 []。**download_url 目前是占位符，必须换成真实下载地址**。notices 是公告，没有公告就写空数组 []：id 是**自增整数，只能往上加、不要改**（App 用它记「读到哪条了」，改小会让读过的公告又变成未读）；title 是标题；date 是日期（只做展示，不参与判断）；body 是一段正文。menu 是主页左上角三横菜单（抽屉）里的栏目，**一条 = 一行 = 一个网页**：title 是行上显示的文字（emoji 直接写在标题里），url 是这个网页的地址；两个都必填，缺一个整个条目就不显示（清单是手写的，漏了就该看不见，不做兜底猜测）。加栏目不用发版，改完 push 一下 App 就能看到。字段契约见 app/README.md 的「更新清单与公告」「抽屉栏目与网页取身份」两节。",
   "android": {
     "version_name": "0.0.1",
     "version_code": 1,
@@ -15,6 +15,12 @@
       "title": "（示例）公告标题，换成真实内容",
       "date": "2026-09-30",
       "body": "（示例）一段正文。不需要公告时，把整个 notices 改成空数组 [] 即可。"
+    }
+  ],
+  "menu": [
+    {
+      "title": "📖 用户协议",
+      "url": "https://travel.qxwkstudio.top/agreement.html"
     }
   ]
 }

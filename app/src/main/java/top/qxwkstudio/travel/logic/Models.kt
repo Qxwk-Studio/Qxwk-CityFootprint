@@ -211,8 +211,9 @@ data class CityVisit(
 )
 
 /**
- * 网页根下的静态清单（`docs/version.json`），一处读它两件事：
- * 「我的 → 检查更新」比 [android] 的 version_code，主页横幅与「我的 → 公告」看 [notices]。
+ * 网页根下的静态清单（`docs/version.json`），一处读它三件事：
+ * 「我的 → 检查更新」比 [android] 的 version_code，主页横幅与「我的 → 公告」看 [notices]，
+ * 主页左上角三横菜单（抽屉）看 [menu]。
  *
  * 放网页静态站而不是后端接口：整份内容都是**手改的常量**，改一次 push 一次就生效，
  * 不值得为一个文件重新部署 Worker。
@@ -224,6 +225,21 @@ data class CityVisit(
 data class VersionManifest(
     val android: ReleaseInfo = ReleaseInfo(),
     val notices: List<Notice> = emptyList(),
+    val menu: List<MenuItem> = emptyList(),
+)
+
+/**
+ * 抽屉里的一个栏目（清单顶层的 `menu` 数组）：一条 = 抽屉里一行 = 一个网页。
+ *
+ * 两个字段**都必填**，缺一个整条就不显示（见 MainActivity.renderMenu）：
+ * 这个数组是手写的，写漏了就该看不见，而不是把用户点进一个空白页或错误页。
+ * 也**不支持**「只填标题、点了做原生动作」这种扩展 —— 真有那种需求再加字段，
+ * 现在就按「一行一个网页」这一种形态。
+ */
+@Serializable
+data class MenuItem(
+    val title: String = "",
+    val url: String = "",
 )
 
 /**

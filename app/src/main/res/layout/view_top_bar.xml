@@ -6,13 +6,18 @@
      带 id 的 include 在 ViewBinding 里会生成一个 ViewTopBarBinding 字段，
      所以调用方写 binding.topBar.title / binding.topBar.btnBack。
 
-     返回按钮**默认隐藏**（gone）：只有需要返回的页面（编辑 / 城市选择）在代码里置 VISIBLE
-     并挂点击回调。做成默认隐藏而不是默认显示，是因为「多出一个不该有的返回箭头」
-     比「少一个箭头」更容易在开发期被发现 —— 后者只是点不动，前者会把用户带到上一页。
+     返回按钮与三横菜单按钮**都默认隐藏**（gone）：只有用到的页面在代码里置 VISIBLE 并挂点击回调
+     （返回：编辑 / 城市选择 / 网页页；菜单：只有主页，见 MainActivity）。
+     做成默认隐藏而不是默认显示，是因为「多出一个不该有的按钮」比「少一个」更容易在开发期被发现 ——
+     后者只是点不动，前者会把用户带到别的页面去。
 
-     返回按钮的间距放在它自己的 layout_marginEnd 上，而不是标题的 marginStart：
+     两颗按钮的间距都放在自己的 layout_marginEnd 上，而不是标题的 marginStart：
      LinearLayout 会整段跳过 GONE 的子 View（连它的 margin 一起跳过），
-     所以没有返回按钮的页面标题正好从 16dp 内边距起排，不会凭空偏出 10dp。 -->
+     所以一颗按钮都不显示的页面，标题正好从 16dp 内边距起排，不会凭空偏出 10dp。
+
+     顺序是「菜单在前、返回在后」：菜单按惯例贴最左，返回紧跟其右。
+     现在没有任何页面同时显示两颗（主页只有菜单，其余页只有返回），
+     这么排只是给将来万一两颗都要的页面留个符合直觉的顺序。 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     style="@style/Widget.App.ShellBand">
 
@@ -23,6 +28,19 @@
         android:orientation="horizontal"
         android:paddingStart="16dp"
         android:paddingEnd="16dp">
+
+        <!-- 三横菜单（主页左上角）：点开左侧抽屉，抽屉里是一行一个网页的栏目（见 ui/MainActivity） -->
+        <ImageButton
+            android:id="@+id/btnMenu"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_marginEnd="10dp"
+            android:background="@drawable/bg_action_button"
+            android:contentDescription="@string/common_menu"
+            android:padding="6dp"
+            android:src="@drawable/ic_menu"
+            android:tint="@color/sidebar_fg"
+            android:visibility="gone" />
 
         <ImageButton
             android:id="@+id/btnBack"
