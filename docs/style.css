@@ -443,6 +443,12 @@ body.no-scroll { overflow: hidden; }
 
 :root[data-theme="dark"] .back-link:hover { background:rgba(59,130,246,0.30); border-color:rgba(96,165,250,0.60); }
 
+/* 出行方式 chip 的选中态（浅色是 primary-light 底 + primary 文字/描边，见上面 .tp-chip 那段）：
+   深色下 primary 仍是深蓝 #2563eb，压在 primary-light 的淡蓝底上读不清 —— 与 news.html 的
+   .log-tab 选中态、上面的 .back-link 同一处理，把**文字**换亮一档的同色相蓝。
+   描边不跟着换：它与底同色相，深色下本来就是「整块蓝」，改了反而偏离浅色那套「换底不换线」 */
+:root[data-theme="dark"] .tp-chip input:checked + span { color:#60a5fa; }
+
 /* ========= 个人中心两列布局 =========
    个人中心（account.html）与足迹管理（visits.html）共用：电脑端左右两列，窄屏在下面的断点里并成一列。
    基础规则必须留在这里 —— 页内再各写一份 .personal-layout，会排在 <link> 之后把断点里的单列覆盖掉，

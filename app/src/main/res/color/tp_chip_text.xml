@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 出行方式 chip 的文字色：未选 = 次要文字色，选中 = 主色（网页端未选是 text-secondary、选中是 primary） -->
+<!-- 出行方式 chip 的文字色：未选 = 次要文字色（网页 text-secondary），选中 = 主色系文字那一档。
+     选中用的是 accent_soft_fg 而不是 accent：网页那边浅色选中态是 primary(#2563eb)，深色下**单独**
+     换成了亮一档的 #60a5fa（style.css 里 .tp-chip input:checked + span 的深色覆盖，与 news.html 的
+     .log-tab 同一处理），而 accent 在 values-night 里是刻意不翻的（按钮蓝底、白字压在上面都靠它），
+     所以「浅色=主色、深色=亮一档」这件事只能由 accent_soft_fg 承担。浅色下它是 #1d4ed8
+     （网页 primary-hover），比 accent 深一线，肉眼几乎不可分 -->
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:state_checked="true" android:color="@color/accent" />
+    <item android:state_checked="true" android:color="@color/accent_soft_fg" />
     <item android:color="@color/text_secondary" />
 </selector>
