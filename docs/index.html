@@ -368,10 +368,13 @@
     font-family: inherit;
     transition: all var(--transition);
   }
+  /* 悬停动画对齐 style.css 的 .btn-primary / .btn-ghost：确定（主按钮）上浮 1px + 投影，
+     取消（次按钮）只变底色。以前这两颗在弹窗里另写了一套（确定只换渐变、取消只变边框色），
+     跟全站主按钮（登录、保存修改等）对不上 —— 别再往这里加独立的 hover 效果 */
   .modal-btn-primary { background: linear-gradient(135deg, var(--primary), var(--secondary)); color: #fff; }
-  .modal-btn-primary:hover { background: linear-gradient(135deg, var(--primary-hover), #0f766e); }
+  .modal-btn-primary:hover { background: linear-gradient(135deg, var(--primary-hover), #0f766e); box-shadow: var(--shadow-md); transform: translateY(-1px); }
   .modal-btn-cancel { background: var(--bg); color: var(--text-secondary); border: 1px solid var(--border); }
-  .modal-btn-cancel:hover { color: var(--text-primary); border-color: var(--text-tertiary); }
+  .modal-btn-cancel:hover { background: var(--border); color: var(--text-primary); }
   .modal-btn:disabled { opacity: 0.6; cursor: not-allowed; }
   /* 弹窗提示文案 .msg / .msg.error 见 style.css */
 
