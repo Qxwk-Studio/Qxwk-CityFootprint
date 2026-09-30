@@ -35,15 +35,24 @@
   /* 「清除缓存 / 检查更新」这两颗次要按钮要撑满卡片宽度，与上面几张卡的主按钮对齐 */
   .btn-block { width: 100%; }
 
-  /* ========= 关于软件卡片 ========= */
-  .about-block + .about-block { margin-top: 14px; }
-  .about-label { font-size: 0.72rem; font-weight: 600; color: var(--text-tertiary);
-    text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 6px; }
+  /* ========= 关于软件卡片 =========
+     与 App 端「我的 → 关于软件」同一套层级（见 app/.../fragment_profile.xml）：
+     每组都是「标签在上（强）+ 内容在下（弱）」，组与组之间一条分隔线；
+     只有版本那一行是「标签左 / 值右」两列（对齐 App 的 SettingsRowValue）。
+     标签必须是「强」的一方（主文字色 + 加粗）—— 原来它写成比正文还小还淡的小灰字，
+     整块糊成一片、看不出分组，那正是要修的问题 */
+  .about-block { margin-top: 16px; }
+  .about-block + .about-block { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
+  .about-label { font-size: 0.9rem; font-weight: 600; color: var(--text-primary); margin-bottom: 4px; }
   .about-list { list-style: none; }
-  .about-list li { font-size: 0.84rem; color: var(--text-secondary); line-height: 1.75; }
-  .about-list a, .about-text a { color: var(--primary); text-decoration: none; }
+  .about-list li { font-size: 0.82rem; color: var(--text-secondary); line-height: 1.7; }
+  .about-list a, .about-text a, .about-value a { color: var(--primary); text-decoration: none; }
   .about-list a:hover, .about-text a:hover { text-decoration: underline; }
-  .about-text { font-size: 0.84rem; color: var(--text-secondary); }
+  .about-text { font-size: 0.82rem; color: var(--text-secondary); }
+  /* 版本行：标签左、值右（对齐 App：13sp、最弱色、贴右侧） */
+  .about-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+  .about-row .about-label { margin-bottom: 0; }
+  .about-value { font-size: 0.82rem; color: var(--text-tertiary); }
 
   /* ========= 退出登录：大卡片（与通行证 account 一致） ========= */
   .card-logout {
@@ -329,9 +338,10 @@
               <p class="about-text">青翔未阔工作室 · <a href="mailto:QxwkStudio@outlook.com">QxwkStudio@outlook.com</a></p>
             </div>
 
-            <div class="about-block">
-              <div class="about-label">版本</div>
-              <p class="about-text">当前版本 <b id="appVersion"></b></p>
+            <!-- 版本这一行是左右两列（标签左、值右），与 App 端 SettingsRowValue 同一形态 -->
+            <div class="about-block about-row">
+              <span class="about-label">当前版本</span>
+              <span class="about-value" id="appVersion"></span>
             </div>
           </div>
         </div>

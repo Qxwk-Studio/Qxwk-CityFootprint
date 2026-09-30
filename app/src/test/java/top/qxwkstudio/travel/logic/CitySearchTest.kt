@@ -12,13 +12,15 @@ import org.junit.Test
  */
 class CitySearchTest {
 
+    // 坐标往后一律具名传：City 的构造参数里夹着带默认值的 country（见 logic/City.kt），
+    // 位置传参会一路错位，这个用例就是被那次加字段踩到的
     private val cities = listOf(
-        City("北京", "北京", 39.904, 116.407, 110000),
-        City("石家庄", "河北", 38.043, 114.515, 130100),
-        City("唐山", "河北", 39.631, 118.180, 130200),
-        City("上海", "上海", 31.230, 121.474, 310000),
+        City("北京", "北京", lat = 39.904, lng = 116.407, adcode = 110000),
+        City("石家庄", "河北", lat = 38.043, lng = 114.515, adcode = 130100),
+        City("唐山", "河北", lat = 39.631, lng = 118.180, adcode = 130200),
+        City("上海", "上海", lat = 31.230, lng = 121.474, adcode = 310000),
         // 县级市在源数据里没有 adcode，这里也留一条，钉住「adcode 为 null 是合法值」
-        City("格尔木", "青海", 36.406, 94.903, null),
+        City("格尔木", "青海", lat = 36.406, lng = 94.903, adcode = null),
     )
 
     @Test
