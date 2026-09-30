@@ -1,7 +1,10 @@
 // 主页（地图）页面脚本，原先内联在 index.html 里。抽出是为了配合 CSP（script-src 'self'，
 // 内联脚本会被拦）；页面上的交互一律走 data-action，由 app.js 的 bindActions 统一分发。
 // 加载顺序：leaflet.js / cities.js / city-codes.js / app.js 先，本文件最后。
-const map = L.map('map', { zoomControl: false }).setView([35.5, 105], 4);
+// preferCanvas：城市边界多边形动辄几百个、每个几何点都是一条 SVG path 指令，
+// 改用 Canvas 渲染（而不是 Leaflet 默认的 SVG）能省掉大量 DOM 节点，缩放与平移明显更顺。
+// popup 与 mouseover 在 Canvas 渲染器下同样可用，交互行为不变。
+const map = L.map('map', { zoomControl: false, preferCanvas: true }).setView([35.5, 105], 4);
 // 高德免 Key 瓦片（国内加载快），style=8 街道图
 L.tileLayer('https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}', {
   subdomains: ['1', '2', '3', '4'],
@@ -9,7 +12,6 @@ L.tileLayer('https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scal
   attribution: '&copy; <a href="https://www.amap.com/" target="_blank" rel="noopener">高德地图</a>',
 }).addTo(map);
 
-let markers = [];
 // 空态提示控件：只建一次，且有数据后要移除 —— 否则「空态下加了第一条足迹」之后，
 // 这块「还没有足迹」会一直挂在图上
 let emptyCtl = null;
@@ -18,6 +20,14 @@ const offset = 0.15;         // 同城多点错开距离
 const geoCache = new Map();  // adcode -> Promise<geojson|null>，边界缓存
 let renderSeq = 0;           // 渲染批次号，避免异步竞态
 let citiesSeq = 0;           // /api/cities 请求批次号：首屏 SWR 与添加后的 reloadMap 可能并发，晚回的旧响应不许盖新数据
+// 城市名 -> { layer, color }：已建好的图层按城市留存复用。勾一次图例就重建几百个几何太亏，
+// 只有「这座城从显示变为不显示」才撤图层、只有「取到的颜色变了」才 setStyle。
+const cityLayers = new Map();
+// 城市名 -> 发起它的那一批渲染号：异步取边界回来时用它认出自己已被更新的批次顶掉
+const cityPending = new Map();
+// 上一次真正画上去的地图数据签名：SWR 的「缓存版 → 网络版」两份报文常常逐字节相同，
+// 相同就不必把几百个图层再画一遍（几何没变，重画纯属白费）
+let lastCitiesSig = null;
 
 // 边界请求并发控制：最多同时发起 GEO_CONCURRENCY 个，避免几十个城市同时请求
 const GEO_CONCURRENCY = 6;
@@ -140,6 +150,21 @@ function loadCityGeo(adcode) {
   return geoCache.get(adcode);
 }
 
+// 地图数据的签名：SWR 的「缓存版 → 网络版」两份报文常常一模一样，相同就不必把几百个图层
+// 再画一遍。people 顺序由后端按 created_at 固定给出、adcode 也随报文下发，序列化结果稳定，
+// 所以直接比字符串即可。
+function citiesSignature(data) {
+  return (data.isAdmin ? '1' : '0') + '|' + JSON.stringify(data.cities);
+}
+
+// 渲染地图数据。force = true 时不看签名 —— 写操作后必须让用户看见变化（见 reloadMap）
+function renderCities(data, force) {
+  const sig = citiesSignature(data);
+  if (!force && sig === lastCitiesSig) return;
+  lastCitiesSig = sig;
+  render(data);
+}
+
 function render(data) {
   // 首次加载时移除全屏加载层；添加行程后的局部刷新无需重复移除
   const loadingEl = document.getElementById('loading');
@@ -231,22 +256,46 @@ function currentSelected() {
 }
 
 function renderFilter() {
-  // 清掉旧图层
   const seq = ++renderSeq;
-  markers.forEach(m => m.remove());
-  markers = [];
 
   // 读取勾选的用户（全勾选 = 显示全部；全不勾 = 显示空）
   const selected = currentSelected();
   const allChecked = selected.size === userInfo.size;
 
   const cities = window.__citiesData;
+  // 先算一遍「这次该显示哪些城市、各用什么颜色」：颜色取该城市被勾选人中最后一位的颜色
+  // （people 由后端按 created_at 升序给出，末位 = 最新，见 worker.js /api/cities）
+  const wanted = new Map(); // 城市名 -> 颜色
   for (const c of cities) {
     const people = allChecked ? c.people : c.people.filter(p => selected.has(p.nickname));
-    if (!people.length) continue;
-    // 城市颜色：取该城市被勾选人中最后一位的颜色
-    // （people 由后端按 created_at 升序给出，末位 = 最新，见 worker.js /api/cities）
-    const color = people[people.length - 1].color;
+    if (people.length) wanted.set(c.city, people[people.length - 1].color);
+  }
+
+  // 这次不再显示的城市：撤图层，连缓存一起删（下次要显示时按新颜色重新加载）
+  for (const [name, rec] of cityLayers) {
+    if (wanted.has(name)) continue;
+    map.removeLayer(rec.layer);
+    cityLayers.delete(name);
+    cityPending.delete(name);
+  }
+
+  for (const c of cities) {
+    const color = wanted.get(c.city);
+    if (color === undefined) continue;
+
+    // 图层已建好且还在图上：只有颜色变了才动它 —— setStyle 换个颜色就够，几何不必重画
+    // （勾选集合一变，同一座城可能从「张三的蓝」变成「李四的绿」，就是这一支）
+    const cached = cityLayers.get(c.city);
+    if (cached) {
+      if (cached.color !== color) {
+        cached.color = color;
+        cached.layer.setStyle({ color, fillColor: color });
+      }
+      continue;
+    }
+
+    // 记下「这座城市由本批在等几何」：晚到的旧批次回调靠它认出自己已经作废
+    cityPending.set(c.city, seq);
 
     // adcode 现在由后端随 /api/cities 一起下发（写入时按城市字典派生），旧数据没有时再用
     // 本地城市表兜底 —— 两者都拿不到才回退圆点
@@ -255,7 +304,9 @@ function renderFilter() {
 
     // 异步加载边界，渲染半透明多边形；失败回退圆点
     loadCityGeo(adcode).then(geo => {
-      if (seq !== renderSeq) return; // 本次渲染已被新筛选作废
+      // 本批已被更新的勾选顶掉、或这座城已经有图层了（同一座城不画两次）→ 丢弃
+      if (cityPending.get(c.city) !== seq) return;
+      if (cityLayers.has(c.city)) return;
       if (geo) addPolygon(geo, color, c.city);
       else addFallbackDot(c, color);
     });
@@ -370,7 +421,7 @@ function addPolygon(geo, color, city) {
   layer.on('mouseout', () => layer.setStyle({ fillOpacity: 0.4 }));
   bindCityPopup(layer, city);
   layer.addTo(map);
-  markers.push(layer);
+  cityLayers.set(city, { layer, color });
 }
 
 // 边界加载失败或无 adcode 时的回退：圆点
@@ -380,7 +431,7 @@ function addFallbackDot(c, color) {
   });
   bindCityPopup(circle, c.city);
   circle.addTo(map);
-  markers.push(circle);
+  cityLayers.set(c.city, { layer: circle, color });
 }
 
 // ---------- Toast 提示（与其他项目统一：顶部滑入 + 信息图标） ----------
@@ -579,7 +630,8 @@ function reloadMap() {
     .then(data => {
       if (feedSeq !== citiesSeq) return; // 又被更新的一发放到后面去了，这版不要了
       window.__citiesData = data.cities;
-      render(data);
+      // 强制重绘：写操作后必须让用户看见变化，不能因为「签名碰巧和上一版一样」被跳过
+      renderCities(data, true);
     })
     .catch(err => showToast(err.message));
 }
@@ -622,7 +674,8 @@ apiWatch('/cities', data => {
   // 缓存命中的那一版是在发起时同步画的，那时本 seq 还是当前的，不受影响
   if (feedSeq !== citiesSeq) return;
   window.__citiesData = data.cities;
-  render(data);
+  // 内容与刚画过的缓存版相同的话，renderCities 会直接跳过（省掉一次全量重绘）
+  renderCities(data, false);
 })
   .catch(err => {
     // 失败时不能只把文案塞进加载层：那是一块 inset:0 / z-index 1500 的全屏遮罩，连导航栏一起盖住，

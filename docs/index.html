@@ -12,6 +12,11 @@
 <title>City Footprint - 青翔未阔工作室</title>
 <meta name="description" content="City Footprint 城市足迹地图 —— 记录每个人去过的城市，点亮属于自己的颜色，与朋友们一起拼出一张五彩斑斓的足迹大地图。">
 <link rel="icon" type="image/webp" href="/favicon.webp">
+<!-- 首屏就要连的两个跨域域名：后端接口（/api/cities、/api/geo）与高德瓦片。
+     提前握手 / 解析 DNS，省掉关键路径上的往返。瓦片有 1~4 四个子域，这里只预解析其中一个
+     —— TLS 握手省不了，先省 DNS 的解析时间即可 -->
+<link rel="preconnect" href="https://api.travel.qxwkstudio.top" crossorigin>
+<link rel="dns-prefetch" href="https://webrd01.is.autonavi.com">
 <link rel="stylesheet" href="vendor/leaflet.css">
 <link rel="stylesheet" href="/style.css">
 <style>
@@ -558,10 +563,13 @@
 
 <div id="map"></div>
 
-<script src="vendor/leaflet.js"></script>
-<script src="cities.js"></script>
-<script src="city-codes.js"></script>
-<script src="app.js"></script>
-<script src="index.js"></script>
+<!-- 五个脚本都加 defer：并行下载、按这里的先后顺序执行（依赖顺序不变），
+     慢网络上不再是一个下完才开始下一个。它们本来就放在 body 末尾、不阻塞首屏解析，
+     这一改是把约 190KB 的下载从串行变成并行 -->
+<script defer src="vendor/leaflet.js"></script>
+<script defer src="cities.js"></script>
+<script defer src="city-codes.js"></script>
+<script defer src="app.js"></script>
+<script defer src="index.js"></script>
 </body>
 </html>
