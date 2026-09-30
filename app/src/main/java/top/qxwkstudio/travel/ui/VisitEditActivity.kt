@@ -263,7 +263,9 @@ class VisitEditActivity : AppCompatActivity() {
 
     /** 取出文本里的数字（「2024 年」→ 2024，「仅年份」→ null）。 */
     private fun digitsOf(text: CharSequence?): Int? =
-        text?.filter { it.isDigit() }?.takeIf { it.isNotEmpty() }?.toIntOrNull()
+        // 先 toString 再 filter：CharSequence 版的 filter 返回的仍是 CharSequence，
+        // 而 toIntOrNull 只挂在 String 上（Editable 上直接 filter 会编不过）
+        text?.toString()?.filter { it.isDigit() }?.takeIf { it.isNotEmpty() }?.toIntOrNull()
 
     private fun updateCounter(length: Int) {
         binding.textNoteCounter.text = getString(R.string.edit_note_counter, length)
