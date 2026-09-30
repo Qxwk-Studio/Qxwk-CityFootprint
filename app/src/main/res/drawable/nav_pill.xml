@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 底栏选中态药丸：由 MainActivity 的共享药丸 View 使用（见 setupNavPill）——
+     item 自己画的药丸（itemBackground）只能瞬间切，做不了位移动画。
+     外观与原先 nav_item_bg.xml 的选中分支一致：主色 + 8dp 圆角，铺满整个 item。 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <corners android:radius="8dp" />
+    <solid android:color="@color/accent" />
+</shape>

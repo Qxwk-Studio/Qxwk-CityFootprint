@@ -133,8 +133,11 @@
     <style name="Widget.App.BottomNav" parent="Widget.Material3.BottomNavigationView">
         <item name="itemIconTint">@color/nav_item_tint</item>
         <item name="itemTextColor">@color/nav_item_text</item>
-        <item name="itemBackground">@drawable/nav_item_bg</item>
-        <!-- 关掉 M3 自带的活动指示器：否则会和上面的 itemBackground 药丸叠在一起 -->
+        <!-- 选中药丸改由 MainActivity 的共享 View 画（见 setupNavPill：item 自己画的药丸做不了位移动画），
+             所以 item 背景压成透明 —— 别直接删掉这一行：删了 M3 默认的 ripple 会回来，按下就有涟漪，
+             等于顺手改了观感 -->
+        <item name="itemBackground">@android:color/transparent</item>
+        <!-- 关掉 M3 自带的活动指示器：否则会和上面那颗共享药丸叠在一起 -->
         <item name="itemActiveIndicatorStyle">@style/Widget.App.NavIndicator</item>
         <item name="android:background">@color/sidebar</item>
         <item name="elevation">0dp</item>

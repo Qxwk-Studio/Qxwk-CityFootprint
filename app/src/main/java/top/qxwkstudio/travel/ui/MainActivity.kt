@@ -3,6 +3,7 @@ package top.qxwkstudio.travel.ui
 import android.os.Bundle
 import android.view.View
 import android.view.ViewGroup
+import android.view.animation.DecelerateInterpolator
 import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
@@ -40,6 +41,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var store: Store
 
+    // 底栏选中态那颗共享药丸（见 setupNavPill）：在 onCreate 里建好，与 Activity 同生共死
+    private lateinit var navPill: View
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         store = Store(this)
@@ -62,10 +66,13 @@ class MainActivity : AppCompatActivity() {
 
         // M3 底栏默认把文案沉在 item 底边，与图标之间留一截空；拉到布局完成后再修（说明见 pinBottomNavLabels）
         b.bottomNav.doOnLayout { pinBottomNavLabels() }
+        setupNavPill()
 
         b.bottomNav.setOnItemSelectedListener { item ->
             show(tagOf(item.itemId))
             b.topBar.title.text = getString(titleOf(item.itemId))
+            // 药丸滑到新选中的那一项（进场那一次由 setupNavPill 的布局回调直接落位，不走动画）
+            placeNavPill(true)
             true
         }
 
@@ -194,6 +201,64 @@ class MainActivity : AppCompatActivity() {
             // 用平移差值而不是改 gravity：改 gravity 要等下一次布局才生效（这里布局已完成，
             // 还得自己补 requestLayout），而「当前贴底位置 → 目标位置」的差值当下就能画对。
             group.translationY = (iconBox.bottom - group.top).toFloat()
+        }
+    }
+
+    // ---------- 底栏选中态药丸 ----------
+
+    /**
+     * 底栏那颗选中药丸：原先由 item 自己画（itemBackground 的 state_list），切换只能瞬间跳。
+     * 现在改成底栏里**一个共享的 View**，切 tab 时平移到目标项上（见 placeNavPill）——
+     * 外观不变（主色 + 8dp 圆角、铺满 item），只是从「跳」变成「滑」。
+     * itemBackground 相应地压成了透明，见 themes.xml 的 Widget.App.BottomNav。
+     *
+     * 药丸只能在代码里 addView、不能写进 activity_main.xml：BottomNavigationView 的 XML 子标签
+     * 另有含义（那是菜单的 <item>），塞一个 <View> 进去会被当成菜单项解析、直接崩。
+     */
+    private fun setupNavPill() {
+        val bar = binding.bottomNav
+        navPill = View(this)
+        navPill.setBackgroundResource(R.drawable.nav_pill)
+        // 不吃触摸：药丸垫在 item 下面，正常收不到手势；写上是为了它哪天露出 item 之外也不会截走点击
+        navPill.isClickable = false
+        // 宽高等于 item 的宽高，要等布局完成才知道，所以先把尺寸留 0，对齐统一交给布局回调。
+        // 插在 index 0：药丸是 itemBackground 的替身，必须画在 item **下面** ——
+        // 直接 addView 会加到最上层，把那颗 tab 的图标和文字一起盖住
+        bar.addView(navPill, 0, ViewGroup.LayoutParams(0, 0))
+        // 窗口尺寸变化（旋转、多窗口）时这次布局回调会再来一遍，顺手重新对齐
+        bar.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ -> placeNavPill(false) }
+        bar.doOnLayout { placeNavPill(false) }
+    }
+
+    /**
+     * 把药丸摆到当前选中项上：[animate] 为 true 平移过去，否则直接落位。
+     *
+     * 进程被杀后重建时不走 setOnItemSelectedListener（选中项是 FragmentManager 一起恢复的），
+     * 那种情况下由布局回调直接落位 —— 所以只有「切 tab」才看得见滑动，进场不会。
+     */
+    private fun placeNavPill(animate: Boolean) {
+        val bar = binding.bottomNav
+        val item = bar.findViewById<View>(bar.selectedItemId) ?: return
+        // 布局还没完成时 item 宽度是 0，这会儿算出来的药丸宽也是 0，摆没意义，等 doOnLayout 那次
+        if (item.width == 0) return
+        // 只在尺寸真的变了才写回 layoutParams：赋值会 requestLayout，而布局回调里又会回来调这个方法，
+        // 无条件写就是每帧一次重排的死循环
+        val lp = navPill.layoutParams
+        if (lp.width != item.width || lp.height != item.height) {
+            lp.width = item.width
+            lp.height = item.height
+            navPill.layoutParams = lp
+        }
+        // item 坐在 menu view 里，而底栏自己有 paddingStart/End（activity_main.xml 的 4dp），
+        // 药丸是底栏的直接子 View，x 要补上 menu view 的左偏移，否则整颗药丸会偏向一侧
+        val targetX = (item.parent as View).left + item.x
+        if (animate) {
+            // 200ms + decelerate，与 res/anim 那几份入场动画同一口径，别单独调快/调慢
+            navPill.animate().x(targetX).setDuration(200L)
+                .setInterpolator(DecelerateInterpolator()).start()
+        } else {
+            navPill.animate().cancel()
+            navPill.x = targetX
         }
     }
 
