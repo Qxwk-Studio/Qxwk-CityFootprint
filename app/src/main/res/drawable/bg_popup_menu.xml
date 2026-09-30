@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 主页右上角三横菜单弹出的那个栏目浮层的底（在 themes.xml 的 Widget.App.PopupMenu 里被引用）。
+     与全站卡片同一套 token：圆角 14dp + 1dp 描边 + @color/card，而不是系统弹层那张方角、无描边的底。
+     外面包一层 8dp inset 是给阴影留余量：浮层的高度是 4dp（m3_menu_elevation），
+     不留这段空白时阴影会被窗口边界裁掉，圆角外面直接是一条硬边。
+     另外这圈 inset 同时也是内容的留白（PopupWindow 会把底图的 padding 当内容内边距用），
+     所以第一行不会顶着圆角起排。 -->
+<inset xmlns:android="http://schemas.android.com/apk/res/android"
+    android:inset="8dp">
+    <shape android:shape="rectangle">
+        <corners android:radius="14dp" />
+        <solid android:color="@color/card" />
+        <stroke
+            android:width="1dp"
+            android:color="@color/border" />
+    </shape>
+</inset>

@@ -49,6 +49,8 @@
         <!-- 默认卡片 / 按钮样式：一处定义，全 app 一致（设计稿圆角 8px、1px 描边、无阴影） -->
         <item name="materialCardViewStyle">@style/Widget.App.CardView</item>
         <item name="materialButtonStyle">@style/Widget.App.Button</item>
+        <!-- 弹出式菜单（主页右上角三横菜单）的外观，见下方 Widget.App.PopupMenu -->
+        <item name="popupMenuStyle">@style/Widget.App.PopupMenu</item>
     </style>
 
     <!-- ===== 卡片：圆角 14dp + 1dp 描边 + 无阴影 =====
@@ -95,13 +97,28 @@
         <item name="android:textColor">@color/text_secondary</item>
     </style>
 
-    <!-- 危险动作按钮（退出登录 / 编辑页的删除）：描边 + 红字 + 胶囊
-         —— 网页的 .btn-logout 用 radius-pill，编辑弹窗里「取消 / 保存修改」那一对也都是胶囊；
-         网页列表行内的 .btn-danger.btn-sm(8px) 在 app 里不存在（删除已收进编辑页）。 -->
-    <style name="Widget.App.Button.Danger" parent="Widget.Material3.Button.OutlinedButton">
-        <item name="cornerRadius">999dp</item>
-        <item name="strokeColor">@color/border</item>
-        <item name="android:textColor">@color/destructive</item>
+    <!-- ===== 弹出式菜单（主页右上角三横菜单弹出的栏目浮层） =====
+         默认那套来自 AppCompat：底图是系统弹层那张**方角、无描边**的底，行高也偏紧，
+         与全站「14dp 圆角 + 1dp 描边」的卡片不是一套。这里只换这份样式表，
+         不换组件 —— 锚点、贴屏幕边缘时的避让、点外面关闭、返回键收掉，仍旧由 PopupMenu 现成地管着
+         （见 ui/MainActivity 的 showMenu）。 -->
+    <style name="Widget.App.PopupMenu" parent="Widget.Material3.PopupMenu">
+        <!-- 底图见 bg_popup_menu.xml：外面那圈 8dp inset 是给阴影留的余量 -->
+        <item name="android:popupBackground">@drawable/bg_popup_menu</item>
+        <!-- 行高取自 ?attr/dropdownListPreferredItemHeight（AppCompat 的行布局就是这么量的，
+             见 abc_popup_menu_item_layout.xml），默认那档偏紧，给到 52dp 与「外观」弹窗那三行一致。
+             **这里不能写 android: 前缀**：框架那个同名属性是 private，写 android: 会直接报
+             "style attribute is private" 编译失败；appcompat 自己另立了一个同名属性（默认值就是
+             ?attr/listPreferredItemHeightSmall），行布局读的正是它 -->
+        <item name="dropdownListPreferredItemHeight">52dp</item>
+        <!-- 行文字样式：AppCompat 的行布局里标题用的是 ?attr/textAppearanceLargePopupMenu -->
+        <item name="android:textAppearanceLargePopupMenu">@style/TextAppearance.App.PopupMenuItem</item>
+    </style>
+
+    <!-- 栏目名：清单的 title 里自带 emoji，行字号比正文大一档更好点 -->
+    <style name="TextAppearance.App.PopupMenuItem" parent="TextAppearance.Material3.BodyLarge">
+        <item name="android:textColor">@color/fg</item>
+        <item name="android:textSize">15sp</item>
     </style>
 
     <!-- ===== 头像的圆形裁剪 =====
@@ -264,9 +281,10 @@
     </style>
 
     <!-- ===== 「我的」页的设置页形态：分组 + 行 =====
-         这一页不用网页那种「一叠描边卡片」（account.html 的 .card），改成手机设置页的样子：
-         浅灰页面底 + 白色圆角分组（无描边，见 drawable/bg_settings_group.xml）+
-         组上方一行灰字组名 + 组内行之间 1dp 分隔线 + 可点行尾收一枚箭头。
+         分组块用的底就是全站的卡片底（drawable/bg_card：14dp 圆角 + 1dp 描边 + 卡片底色），
+         与「足迹」「统计」那些页面同一套 token —— 早先这里单有自己的 bg_settings_group
+         （白底无描边），按需求统一后就撤了，别再为一个页面单开一份卡片底。
+         分组形态：组上方一行灰字组名 + 组内行之间 1dp 分隔线 + 可点行尾收一枚箭头。
 
          行统一是「横向容器 [文字列 weight=1] [行尾元素]」，文字列内部再纵排「标题 / 副标题」——
          只有一行的行也套这层壳，不为了省一层就改结构，复制粘贴时才不会缺斤少两。 -->
@@ -277,7 +295,7 @@
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">wrap_content</item>
         <item name="android:orientation">vertical</item>
-        <item name="android:background">@drawable/bg_settings_group</item>
+        <item name="android:background">@drawable/bg_card</item>
     </style>
 
     <!-- 组名（「设置」「账号」「关于软件」）：12sp 最弱色，缩进 4dp —— 分组本身有 16dp 边距，

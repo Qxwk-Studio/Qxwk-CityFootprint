@@ -9,12 +9,13 @@
      （那句话在登录页仍有用，字符串 profile_account_note 保留，别连它一起删）。
 
      分组形态的约定（样式都在 themes.xml 的 SettingsGroup* 那一节）：
-     组名是组**上方**一行 12sp 灰字，分组本身是无描边白底圆角块，
+     组名是组**上方**一行 12sp 灰字，分组本身就是全站的卡片底（drawable/bg_card：
+     14dp 圆角 + 1dp 描边 + 卡片底色，与「足迹」「统计」那些页面同一套 token），
      组内行之间一条 1dp 分隔线，可点行尾收一枚 18dp 箭头（ic_arrow_right）。
 
      整页套 NestedScrollView：组多了以后比一屏高，不套的话最后一组在小屏上会被裁掉。
-     页面底色用主题的 colorBackground（@color/bg 浅灰）—— 「白分组浮在浅灰上」正是这一版要的层次，
-     所以**没有一个卡片带描边**（对比 drawable/bg_settings_group.xml 与 bg_card.xml 的注释）。 -->
+     页面底色用主题的 colorBackground（@color/bg 浅灰）——「卡片浮在浅灰上」与其它页面一致。
+     顶部身份区（头像 / 昵称 / 徽章 / UID）直接铺在页面底色上，不套卡片（按需求保留这个样子）。 -->
 <androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"

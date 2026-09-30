@@ -56,6 +56,10 @@
          与 accent_soft_fg 同值（浅色里那两个也是同值） -->
     <color name="private_badge">#60A5FA</color>
 
+    <!-- 地图夜间蒙版：45% 黑，等价网页给瓦片加的那句 filter: brightness(0.55)
+         （瓦片整体乘 0.55 = 盖一层 45% 黑）。浅色那份是全透明，见 values/colors.xml -->
+    <color name="map_dim">#73000000</color>
+
     <!-- 系统栏兜底：与顶栏同色（themes.xml 拿它当 statusBarColor / navigationBarColor）。
          浅色那份里还有个无引用的 window_bg_dark，不跟着翻 -->
     <color name="window_bg_light">#0F172A</color>

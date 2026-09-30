@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 垃圾桶（几何是 Material delete 的实心版：桶身 + 头顶那条盖与提手）。
+     编辑足迹页顶栏右上角那颗删除用它（见 view_top_bar.xml 的 btnDelete）——
+     颜色交给 ImageButton 的 android:tint，vector 里写死的 #FF000000 只是占位。 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M6,19 C6,20.1 6.9,21 8,21 L16,21 C17.1,21 18,20.1 18,19 L18,7 L6,7 Z M19,4 L15.5,4 L14.5,3 L9.5,3 L8.5,4 L5,4 L5,6 L19,6 Z" />
+</vector>

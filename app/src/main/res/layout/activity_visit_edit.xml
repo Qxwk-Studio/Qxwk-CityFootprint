@@ -262,11 +262,11 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- 底部按钮区：对齐网页编辑弹窗的 .dialog-actions —— 「取消 + 保存」并排、各占一半。
+            <!-- 底部按钮区：对齐网页编辑弹窗的 .dialog-actions —— 只有「取消 + 保存」两颗、并排各占一半。
                  取消走 Ghost（描边 + 次要文字色 + 胶囊），保存是主色胶囊；保存上不再挂 ✓ 图标：
-                 网页那两颗都是纯文字，加了图标的保存与旁边的删除看着就不像一套（这也正是它俩
-                 「文案不统一」的观感来源）。
-                 取消与顶栏返回都是「不保存退出」，留两颗不冲突：返回是系统习惯，取消是网页习惯 -->
+                 网页那两颗都是纯文字，多挂一个图标反而与全站按钮不是一套。
+                 取消与顶栏返回都是「不保存退出」，留两颗不冲突：返回是系统习惯，取消是网页习惯。
+                 删除不在这排里 —— 它收进了顶栏右上角（见 view_top_bar.xml 的 btnDelete） -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -297,19 +297,6 @@
                     android:textSize="14sp" />
             </LinearLayout>
 
-            <!-- 删除只在编辑态出现（新增时 hide 掉）：还没有的记录谈不上删除。
-                 不再整宽 —— 网页编辑弹窗里没有这颗（删除在列表行），这里是低频的危险动作，
-                 收成一颗靠左的小按钮，免得和上面那对主次按钮抢视线 -->
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnDelete"
-                style="@style/Widget.App.Button.Danger"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:minWidth="0dp"
-                android:text="@string/edit_delete"
-                android:visibility="gone" />
-
             <ProgressBar
                 android:id="@+id/editProgress"
                 android:layout_width="wrap_content"
@@ -326,13 +313,6 @@
                 android:textColor="@color/destructive"
                 android:textSize="13sp"
                 android:visibility="gone" />
-
-            <TextView
-                style="@style/BodyMuted"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:text="@string/edit_footnote" />
         </LinearLayout>
     </ScrollView>
 </LinearLayout>

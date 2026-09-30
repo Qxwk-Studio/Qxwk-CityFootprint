@@ -81,8 +81,9 @@
     white-space: nowrap;
   }
   .visit-actions { display: flex; gap: 6px; flex-shrink: 0; }
-  /* 分享按钮：只有图标、暂时没有行为（内容留空，等哪天真接上分享再接 onclick）。
-     图标按钮把 .btn-sm 的左右 12px 内边距收掉，不然会比旁边的文字按钮胖一圈 */
+  /* 分享按钮：只有图标，功能还没做 —— 点了在列表上方那行 .msg 里给句「制作中」提示
+     （见 visits.js 的 showShareWip）。图标按钮把 .btn-sm 的左右 12px 内边距收掉，
+     不然会比旁边的文字按钮胖一圈 */
   .visit-share { padding: 6px; }
 
   /* .empty 空态、.loading-view / .loading-spinner 加载态、.hint / .note-count 小字、
@@ -328,6 +329,10 @@
         <!-- 行程记录：每条足迹自成一张卡，标题行不可折叠（这层 div 只为在 .personal-col 里占一格，不画框） -->
         <div>
           <h3 class="section-title">📍 行程记录</h3>
+          <!-- 分享按钮的「制作中」提示落点：本页没引 index.js，用不了主页那颗 toast
+               （见 docs/visits.js 的 showShareWip），就复用全站的 .msg 提示行。
+               平时 display:none —— 不然 .msg 的 min-height 会在标题与列表之间留一条空白带 -->
+          <div class="msg" id="visitShareMsg" style="display:none"></div>
           <div id="visitList"><div class="empty">正在加载…</div></div>
         </div>
       </div>

@@ -78,8 +78,14 @@ class MainActivity : AppCompatActivity() {
         b.bottomNav.setOnItemSelectedListener { item ->
             show(tagOf(item.itemId))
             b.topBar.title.text = getString(titleOf(item.itemId))
-            // 药丸滑到新选中的那一项（进场那一次由 setupNavPill 的布局回调直接落位，不走动画）
-            placeNavPill(true)
+            // 药丸滑到新选中的那一项。落点用回调参数 item.itemId，**不能读 bottomNav.selectedItemId**：
+            // 这个回调是 MenuBuilder.performItemAction 里第一句 itemImpl.invoke() 调起来的，
+            // 而把选中态从旧项挪到新项的那次 setChecked(true) 还排在它后面 —— 底栏的 selectedItemId
+            // 由 NavigationBarMenuView.updateMenuView 跟着 checked 状态更新，比这里晚一步。
+            // 拿旧 id 算落点 = 药丸「滑」到它原本就在的地方（等于没动），紧接着选中引发的那次重排
+            // 又用新 id 把它瞬移过去 —— 表现就是「瞬间跳、完全没有滑动」。
+            // 进场那一次由 setupNavPill 的布局回调直接落位，不走动画
+            placeNavPill(item.itemId, animate = true)
             true
         }
 
@@ -115,6 +121,8 @@ class MainActivity : AppCompatActivity() {
      * 用 appcompat 的 PopupMenu 而不是自己搭 PopupWindow：锚点、贴近屏幕边缘时的避让、
      * 点外面关闭、返回键收掉，这几件事它都现成（早先是 DrawerLayout 的左侧抽屉，现按需求改浮层）。
      * 它自带返回键处理，所以 Activity 这边不用再注册 OnBackPressedCallback。
+     * 外观（圆角 / 描边 / 行高 / 行文字）不在这一处管：那是主题里的 popupMenuStyle
+     * （themes.xml 的 Widget.App.PopupMenu + drawable/bg_popup_menu.xml），改样式去那里改。
      */
     private fun showMenu() {
         val items = menuItems
@@ -210,20 +218,24 @@ class MainActivity : AppCompatActivity() {
         // 插在 index 0：药丸是 itemBackground 的替身，必须画在 item **下面** ——
         // 直接 addView 会加到最上层，把那颗 tab 的图标和文字一起盖住
         bar.addView(navPill, 0, ViewGroup.LayoutParams(0, 0))
-        // 窗口尺寸变化（旋转、多窗口）时这次布局回调会再来一遍，顺手重新对齐
-        bar.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ -> placeNavPill(false) }
-        bar.doOnLayout { placeNavPill(false) }
+        // 窗口尺寸变化（旋转、多窗口）时这次布局回调会再来一遍，顺手重新对齐。
+        // 这两处可以安心读 selectedItemId：布局发生在选中状态更新之后（时序见 setOnItemSelectedListener 那段注释）
+        bar.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ -> placeNavPill(bar.selectedItemId, animate = false) }
+        bar.doOnLayout { placeNavPill(bar.selectedItemId, animate = false) }
     }
 
     /**
-     * 把药丸摆到当前选中项上：[animate] 为 true 平移过去，否则直接落位。
+     * 把药丸摆到 [itemId] 那一项上：[animate] 为 true 平移过去，否则直接落位。
+     *
+     * 目标项为什么要由调用方传进来、而不是在这儿读 bottomNav.selectedItemId：见
+     * setOnItemSelectedListener 那段注释 —— 切 tab 的那次回调来得比选中状态更新早，在这里读会拿到旧项。
      *
      * 进程被杀后重建时不走 setOnItemSelectedListener（选中项是 FragmentManager 一起恢复的），
      * 那种情况下由布局回调直接落位 —— 所以只有「切 tab」才看得见滑动，进场不会。
      */
-    private fun placeNavPill(animate: Boolean) {
+    private fun placeNavPill(itemId: Int, animate: Boolean) {
         val bar = binding.bottomNav
-        val item = bar.findViewById<View>(bar.selectedItemId) ?: return
+        val item = bar.findViewById<View>(itemId) ?: return
         // 布局还没完成时 item 宽度是 0，这会儿算出来的药丸宽也是 0，摆没意义，等 doOnLayout 那次
         if (item.width == 0) return
         // 只在尺寸真的变了才写回 layoutParams：赋值会 requestLayout，而布局回调里又会回来调这个方法，

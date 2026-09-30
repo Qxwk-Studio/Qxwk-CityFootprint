@@ -6,11 +6,11 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.ConcatAdapter
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import top.qxwkstudio.travel.R
 import top.qxwkstudio.travel.data.CityStore
 import top.qxwkstudio.travel.data.Store
@@ -217,7 +217,9 @@ class VisitsFragment : Fragment() {
         d.rowNote.visibility = if (visit.note.isBlank()) View.GONE else View.VISIBLE
         d.textNote.text = visit.note
 
-        AlertDialog.Builder(requireContext())
+        // MaterialAlertDialogBuilder：M3 那套圆角 28dp 的弹窗壳（appcompat 的 AlertDialog
+        // 走的是系统弹窗外观 —— 方角、系统按钮，和全站这套卡片界面不是一回事）
+        MaterialAlertDialogBuilder(requireContext())
             .setView(d.root)
             .setPositiveButton(R.string.visits_detail_close, null)
             .show()

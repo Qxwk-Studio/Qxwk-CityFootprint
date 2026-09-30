@@ -10,10 +10,10 @@ import android.view.View
 import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.chip.Chip
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import top.qxwkstudio.travel.R
 import top.qxwkstudio.travel.data.ApiException
 import top.qxwkstudio.travel.data.CityStore
@@ -96,8 +96,9 @@ class VisitEditActivity : AppCompatActivity() {
         editId = intent.getLongExtra(EXTRA_ID, 0L)
         val editing = editId != 0L
         b.topBar.title.text = getString(if (editing) R.string.edit_title_old else R.string.edit_title_new)
-        // 新增时没有「删除」这回事
-        b.btnDelete.visibility = if (editing) View.VISIBLE else View.GONE
+        // 新增时没有「删除」这回事。删除按钮在顶栏右上角（view_top_bar.xml 的 btnDelete），
+        // 所以这里取的是 topBar 那一层，不是这一页自己的视图
+        b.topBar.btnDelete.visibility = if (editing) View.VISIBLE else View.GONE
 
         if (editing) {
             b.inputCity.setText(intent.getStringExtra(EXTRA_CITY).orEmpty())
@@ -140,7 +141,7 @@ class VisitEditActivity : AppCompatActivity() {
         b.btnSave.setOnClickListener { save() }
         // 取消 = 不保存退出，与顶栏返回等价（网页编辑弹窗那颗「取消」的位置就靠它对齐）
         b.btnCancel.setOnClickListener { finish() }
-        b.btnDelete.setOnClickListener { confirmDelete() }
+        b.topBar.btnDelete.setOnClickListener { confirmDelete() }
 
         // 城市栏右侧那颗准心：用户主动定位，覆盖已选中的城市
         b.cityLayout.setEndIconOnClickListener { locateIntoCity() }
@@ -358,13 +359,14 @@ class VisitEditActivity : AppCompatActivity() {
 
     private fun setBusy(busy: Boolean) {
         binding.btnSave.isEnabled = !busy
-        binding.btnDelete.isEnabled = !busy
+        binding.topBar.btnDelete.isEnabled = !busy
         binding.editProgress.visibility = if (busy) View.VISIBLE else View.GONE
     }
 
     private fun confirmDelete() {
         val city = binding.inputCity.text?.toString().orEmpty()
-        AlertDialog.Builder(this)
+        // MaterialAlertDialogBuilder：M3 那套圆角弹窗壳，别改回 appcompat 的 AlertDialog（系统弹窗外观）
+        MaterialAlertDialogBuilder(this)
             .setTitle(R.string.visits_delete_confirm_title)
             .setMessage(getString(R.string.visits_delete_confirm_message, city))
             .setPositiveButton(R.string.common_delete) { _, _ -> delete() }

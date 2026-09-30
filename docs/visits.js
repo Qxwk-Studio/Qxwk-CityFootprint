@@ -174,6 +174,19 @@ function loadVisits() {
   apiWatch('/my-visits', renderVisits, showVisitsError);
 }
 
+// 分享按钮：功能还没做，点了给句「制作中」的交代（app 端是同款文案的 Toast，
+// 见 app 的 VisitAdapter）。提示写进列表上方那行 .msg，2.5s 后连行一起收起 ——
+// 本页没引 index.js，用不了主页那颗 toast（toast 的 DOM 与 showToast 都在 index 那套里）。
+let shareMsgTimer = null;
+function showShareWip() {
+  const el = document.getElementById('visitShareMsg');
+  if (!el) return;
+  el.textContent = '分享功能正在制作中，敬请期待';
+  el.style.display = '';
+  if (shareMsgTimer) clearTimeout(shareMsgTimer);
+  shareMsgTimer = setTimeout(() => { el.textContent = ''; el.style.display = 'none'; }, 2500);
+}
+
 function renderVisits(data) {
   const list = document.getElementById('visitList');
   myVisits = data.visits;
@@ -206,6 +219,8 @@ function renderVisits(data) {
       if (e.target.closest('.visit-actions')) return;
       showVisitDetail(v.id);
     };
+    // 分享那颗还没接真行为，点了只给「制作中」提示（也在动作区里，不会连带弹详情）
+    item.querySelector('.visit-share').onclick = showShareWip;
     // 键盘等价物：可聚焦的是 .visit-main 而不是整行 —— role=button 放在行上会跟行内的
     // 编辑/删除按钮形成嵌套交互元素。回车 / 空格与点整行同效
     item.querySelector('.visit-main').onkeydown = (e) => {

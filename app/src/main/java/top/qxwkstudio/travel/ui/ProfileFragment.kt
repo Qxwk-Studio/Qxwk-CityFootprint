@@ -8,14 +8,19 @@ import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.os.Bundle
+import android.util.TypedValue
+import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.LinearLayout
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.launch
 import top.qxwkstudio.travel.Api
 import top.qxwkstudio.travel.BuildConfig
@@ -110,24 +115,64 @@ class ProfileFragment : Fragment() {
      * 「外观」三选：跟随系统 / 浅色 / 深色。用单选列表而不是 Switch —— 三档摆不下一个开关
      * （网页那颗太阳/月亮按钮只有两档），而单选的当前项天然就是「现在是什么」，与行尾那个值对得上。
      *
+     * 弹窗壳取 MaterialAlertDialogBuilder（本页三处弹窗——外观 / 检查更新 / 退出登录——都用它，
+     * 全 app 的弹窗也都是它：M3 那套圆角 28dp 的壳），但**不用 setSingleChoiceItems**：
+     * 它铺出来的是系统单选列表（三行 RadioButton、系统自带的行高与配色），
+     * 与全站那套卡片式界面不是一回事 —— 这里自己铺三行（见 [appearanceRow]）。
+     *
      * 选完**先收弹窗再切**：切外观会重建所有正在显示的 Activity（理由见 CityFootprintApp.applyAppearance），
      * 弹窗挂在一个正在销毁的窗口上会报 WindowLeaked。重建后本页自己会重新 refresh 出行尾的新值，
      * 这里不必手动改界面。
      */
     private fun chooseAppearance() {
+        val ctx = requireContext()
         val options = Appearance.entries
-        AlertDialog.Builder(requireContext())
+        val rows = LinearLayout(ctx).apply { orientation = LinearLayout.VERTICAL }
+        // 行的回调里要 dismiss，但弹窗要等 show() 才有：先留个可空引用，行建好后再赋值
+        var dialog: AlertDialog? = null
+        for (option in options) {
+            rows.addView(
+                appearanceRow(option, option == store.appearance) {
+                    dialog?.dismiss()
+                    store.saveAppearance(option)
+                    CityFootprintApp.applyAppearance(option)
+                }
+            )
+        }
+        dialog = MaterialAlertDialogBuilder(ctx)
             .setTitle(R.string.profile_appearance_title)
-            .setSingleChoiceItems(
-                options.map { getString(appearanceLabel(it)) }.toTypedArray(),
-                options.indexOf(store.appearance),
-            ) { dialog, which ->
-                val picked = options[which]
-                store.saveAppearance(picked)
-                dialog.dismiss()
-                CityFootprintApp.applyAppearance(picked)
-            }
+            .setView(rows)
             .show()
+    }
+
+    /** 外观弹窗里的一行：左侧档名、行尾一枚 ✓（只有当前那一档有）。整行可点、带按下涟漪。 */
+    private fun appearanceRow(option: Appearance, selected: Boolean, onClick: () -> Unit): View {
+        val ctx = requireContext()
+        val row = LinearLayout(ctx).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            // 左右 24dp 与 M3 对话框标题/正文的内边距对齐，整行热区左右也就顶到弹窗边上
+            setPadding(dp(24), dp(14), dp(24), dp(14))
+            // 按下涟漪取自主题（布局里那套 ?attr/selectableItemBackground 在代码里只能用这种取法）
+            val ripple = TypedValue()
+            ctx.theme.resolveAttribute(androidx.appcompat.R.attr.selectableItemBackground, ripple, true)
+            setBackgroundResource(ripple.resourceId)
+            setOnClickListener { onClick() }
+        }
+        row.addView(TextView(ctx).apply {
+            text = getString(appearanceLabel(option))
+            setTextColor(ContextCompat.getColor(ctx, if (selected) R.color.accent else R.color.fg))
+            textSize = 15f
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+        })
+        row.addView(TextView(ctx).apply {
+            text = getString(R.string.profile_appearance_check)
+            setTextColor(ContextCompat.getColor(ctx, R.color.accent))
+            textSize = 15f
+            // 用 INVISIBLE 而不是 GONE 占位：勾在几行之间出现/消失时，档名不会左右挪一下
+            visibility = if (selected) View.VISIBLE else View.INVISIBLE
+        })
+        return row
     }
 
     /**
@@ -210,7 +255,7 @@ class ProfileFragment : Fragment() {
                 Toast.makeText(requireContext(), R.string.profile_update_latest, Toast.LENGTH_SHORT).show()
                 return@runIo
             }
-            AlertDialog.Builder(requireContext())
+            MaterialAlertDialogBuilder(requireContext())
                 .setTitle(R.string.profile_update_new_title)
                 .setMessage(updateMessage(info))
                 .setPositiveButton(R.string.profile_update_go) { _, _ -> openDownload(info.downloadUrl) }
@@ -274,6 +319,9 @@ class ProfileFragment : Fragment() {
             )
         }
 
+    /** dp → 像素。外观弹窗那三行的内边距要用（同 MapFragment 的 dp()）。 */
+    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
+
     /**
      * 清除缓存：接口报文（[Store.invalidatePayloads]）+ 地图边界（[GeoCache.clear]），
      * 与网页 app.js 的 clearAppCache 同一范围。**不动登录态与偏好**，所以清完不必重新登录。
@@ -288,7 +336,7 @@ class ProfileFragment : Fragment() {
     }
 
     private fun confirmLogout() {
-        AlertDialog.Builder(requireContext())
+        MaterialAlertDialogBuilder(requireContext())
             .setTitle(R.string.profile_logout)
             .setMessage(R.string.profile_logout_confirm)
             .setPositiveButton(R.string.profile_logout) { _, _ -> logout() }

@@ -7,15 +7,15 @@
      所以调用方写 binding.topBar.title / binding.topBar.btnBack。
 
      返回按钮与三横菜单按钮**都默认隐藏**（gone）：只有用到的页面在代码里置 VISIBLE 并挂点击回调
-     （返回：编辑 / 城市选择 / 网页页；菜单：只有主页，见 MainActivity）。
+     （返回：编辑 / 城市选择 / 网页页；菜单：只有主页，见 MainActivity；删除：只有编辑足迹页）。
      做成默认隐藏而不是默认显示，是因为「多出一个不该有的按钮」比「少一个」更容易在开发期被发现 ——
      后者只是点不动，前者会把用户带到别的页面去。
 
-     顺序是「返回在左、菜单在右（右上角）」：标题 weight=1 顶在两者之间，
-     返回贴左（页面返回是通例），菜单贴右上 —— 现在没有任何页面同时显示两颗
-     （主页只有菜单，其余页只有返回），这么排只是给将来万一两颗都要的页面留个符合直觉的顺序。
+     顺序是「返回在左、动作按钮在右（右上角）」：标题 weight=1 顶在两者之间，
+     返回贴左（页面返回是通例），动作按钮贴右上 —— 现在没有任何页面同时显示两颗
+     （主页只有菜单，其余页只有返回或只有删除），这么排只是给将来万一两颗都要的页面留个符合直觉的顺序。
 
-     两颗按钮的间距放在**朝里的那一侧**（返回是 marginEnd、菜单是 marginStart），而不是标题的两侧 margin：
+     两颗按钮的间距放在**朝里的那一侧**（返回是 marginEnd、右侧两颗是 marginStart），而不是标题的两侧 margin：
      LinearLayout 会整段跳过 GONE 的子 View（连它的 margin 一起跳过），
      所以一颗按钮都不显示的页面，标题正好从 16dp 内边距起排，不会凭空偏出 10dp。 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
@@ -63,6 +63,22 @@
             android:padding="6dp"
             android:src="@drawable/ic_menu"
             android:tint="@color/sidebar_fg"
+            android:visibility="gone" />
+
+        <!-- 删除（编辑足迹页右上角，见 VisitEditActivity）：低频的危险动作，
+             收成右上角一颗图标按钮，底部那排就只剩「取消 + 保存」两颗
+             （与网页 visits.html 编辑弹窗的 .dialog-actions 一致 —— 那边也只有这两颗）。
+             用 destructive 上色：红色和左侧返回的普通图标色区分开，一眼看得出是危险动作 -->
+        <ImageButton
+            android:id="@+id/btnDelete"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_marginStart="10dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/edit_delete"
+            android:padding="6dp"
+            android:src="@drawable/ic_delete"
+            android:tint="@color/destructive"
             android:visibility="gone" />
     </LinearLayout>
 

@@ -55,6 +55,9 @@
     <!-- 行程条目右侧那两颗只有图标的按钮：文案只给无障碍朗读用（图标本身没有文字） -->
     <string name="visits_share">分享</string>
     <string name="visits_edit">编辑</string>
+    <!-- 点分享弹出的 Toast：分享还没做，先给个「制作中」的交代（网页那颗同文案，
+         见 docs/visits.js 的 showShareWip） -->
+    <string name="visits_share_wip">分享功能正在制作中，敬请期待</string>
 
     <!-- 「查看」弹窗（点行程条目打开，只读；列表里备注只有一行省略，完整的在这里看） -->
     <string name="visits_detail_date">到访时间</string>
@@ -92,7 +95,6 @@
     <string name="edit_transport">出行方式（可多选）</string>
     <string name="edit_private">仅自己可见</string>
     <string name="edit_private_hint">开启后不出现在公开地图与统计里</string>
-    <string name="edit_footnote">城市与坐标来自内置城市表，保存后地图上会自动落点；日期留空表示「去过但记不清了」</string>
     <string name="edit_save">保存</string>
     <string name="edit_delete">删除</string>
     <string name="edit_note_counter">%1$d/100</string>
@@ -190,10 +192,13 @@
     <string name="profile_appearance_follow_system">跟随系统</string>
     <string name="profile_appearance_light">浅色</string>
     <string name="profile_appearance_dark">深色</string>
+    <!-- 外观弹窗里标记当前那一档的勾。用字符而不是图标资源：全站只有这一处要枚小勾，
+         为此多一个 drawable 不值当（同 map_city_close_glyph 那颗 ✕ 的做法） -->
+    <string name="profile_appearance_check">✓</string>
 
     <!-- 清除缓存那一行（网页 account.html 那张卡）。文案照抄网页 -->
     <string name="profile_clear_cache_title">清除缓存</string>
-    <string name="profile_clear_cache_hint">清除本机缓存的接口数据与地图边界，不影响登录与足迹</string>
+    <string name="profile_clear_cache_hint">清除本机缓存的接口数据与地图边界</string>
     <!-- 清完的提示。网页是在卡片里内联一行 #cacheMsg（带绿色 .ok 样式）显示这句；
          App 全站提示一律用 Toast，也就不必为这一处再往色板里加一档「成功色」 -->
     <string name="profile_clear_cache_done">已清除本机缓存</string>

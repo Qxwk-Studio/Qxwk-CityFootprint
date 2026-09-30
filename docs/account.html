@@ -302,7 +302,7 @@
           <!-- 清除缓存：只清本机缓存（接口报文 + 地图边界），不动登录态与主题等偏好 -->
           <div class="card action-card">
             <h3>🧹 清除缓存</h3>
-            <p class="hint">清除本机缓存的接口数据与地图边界，不影响登录与足迹</p>
+            <p class="hint">清除本机缓存的接口数据与地图边界</p>
             <button class="btn btn-ghost btn-block" type="button" data-action="clear-cache">清除缓存</button>
             <p class="msg" id="cacheMsg"></p>
           </div>
@@ -319,10 +319,24 @@
             </button>
           </div>
 
-          <!-- 关于软件：开源致谢 + 开发者 + 版本 / 检查更新（右下角最底） -->
+          <!-- 关于软件：版本 + 开发者 + 开源致谢（右下角最底）。
+               顺序按需求与 App 端「我的 → 关于软件」一致：可点的 / 常看的在上、纯展示的在下 ——
+               App 那边是「公告 → 检查更新 → 当前版本 → 开发者 → 开源内容」，
+               网页没有公告与检查更新（App 特有），所以剩下这三段就按「版本 → 开发者 → 开源内容」排 -->
           <div class="card action-card">
             <h3>ℹ️ 关于软件</h3>
             <p class="hint">City Footprint · 青翔未阔工作室</p>
+
+            <!-- 版本这一行是左右两列（标签左、值右），与 App 端 SettingsRowValue 同一形态 -->
+            <div class="about-block about-row">
+              <span class="about-label">当前版本</span>
+              <span class="about-value" id="appVersion"></span>
+            </div>
+
+            <div class="about-block">
+              <div class="about-label">开发者</div>
+              <p class="about-text">青翔未阔工作室 · <a href="mailto:QxwkStudio@outlook.com">QxwkStudio@outlook.com</a></p>
+            </div>
 
             <div class="about-block">
               <div class="about-label">使用的开源内容</div>
@@ -331,17 +345,6 @@
                 <li><a href="https://www.amap.com/" target="_blank" rel="noopener">高德地图</a> — 底图瓦片</li>
                 <li><a href="https://datav.aliyun.com/portal/school/atlas/area_selector" target="_blank" rel="noopener">DataV GeoAtlas</a> — 行政区边界数据</li>
               </ul>
-            </div>
-
-            <div class="about-block">
-              <div class="about-label">开发者</div>
-              <p class="about-text">青翔未阔工作室 · <a href="mailto:QxwkStudio@outlook.com">QxwkStudio@outlook.com</a></p>
-            </div>
-
-            <!-- 版本这一行是左右两列（标签左、值右），与 App 端 SettingsRowValue 同一形态 -->
-            <div class="about-block about-row">
-              <span class="about-label">当前版本</span>
-              <span class="about-value" id="appVersion"></span>
             </div>
           </div>
         </div>

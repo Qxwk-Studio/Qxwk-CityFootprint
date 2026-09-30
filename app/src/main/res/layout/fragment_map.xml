@@ -19,6 +19,18 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
+    <!-- 夜间蒙版：网页深色下给瓦片加的是 filter: brightness(0.55)（docs/index.html 深色块），
+         整体乘 0.55 等价于盖一层 45% 的黑；osmdroid 没有 CSS 滤镜，只能这样盖出来。
+         位置很关键：**紧贴 MapView 之上、其余浮层之下** —— 于是只压暗瓦片（以及地图自带的水印），
+         图例、明细卡、彩色标记都不受影响，与网页「滤镜只作用于 .leaflet-tile」是同一范围。
+         不设 clickable / focusable：它不消费触摸，手势照旧穿透到下面的 MapView 去平移缩放。
+         颜色由 @color/map_dim 给：浅色那份是全透明、夜间那份是 45% 黑，
+         所以一份布局两套外观，代码里不必判昼夜（也没有 id，用不到引用） -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/map_dim" />
+
     <ProgressBar
         android:id="@+id/progress"
         android:layout_width="wrap_content"
@@ -57,6 +69,7 @@
             android:id="@+id/textAdminNote"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
             android:background="@drawable/bg_admin_note"
             android:paddingStart="14dp"
             android:paddingTop="6dp"
@@ -69,12 +82,15 @@
             android:visibility="gone" />
 
         <!-- 定位到我的位置。底图复用顶栏那颗动作按钮（36dp 正圆 + 描边，见 bg_action_button）——
-             地图是深浅不一的瓦片，透明底的图标按钮会看不清。尺寸必须跟着这个底图走（18dp 圆角 = 半高） -->
+             地图是深浅不一的瓦片，透明底的图标按钮会看不清。尺寸必须跟着这个底图走（18dp 圆角 = 半高）。
+
+             这颗按钮**不设上间距**：整组贴 12dp 顶边，它的顶边才与左上「谁的足迹」卡片齐平（两边 margin 都是 12dp）。
+             它与上面那条提示之间的距离挂在提示自己的 layout_marginBottom 上，**不能挂在这颗按钮的 marginTop 上** ——
+             提示非管理员时是 GONE，但按钮的上外边距照样撑出那段空隙，按钮就会比左卡片低 8dp。 -->
         <ImageButton
             android:id="@+id/btnLocate"
             android:layout_width="36dp"
             android:layout_height="36dp"
-            android:layout_marginTop="8dp"
             android:background="@drawable/bg_action_button"
             android:contentDescription="@string/map_locate"
             android:padding="8dp"

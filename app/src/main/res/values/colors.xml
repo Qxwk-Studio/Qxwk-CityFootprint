@@ -63,6 +63,10 @@
          否则会留着一条旧 Google 蓝的边。卡片底色用 accent_light（见 AchievementsFragment）。 -->
     <color name="achievement_done_stroke">#662563EB</color>
 
+    <!-- 地图夜间蒙版的底色：浅色下用不到这层，给全透明（0 alpha）等于没有；
+         夜间那份在 values-night/colors.xml（45% 黑）。见 fragment_map.xml 里那个 View -->
+    <color name="map_dim">#00000000</color>
+
     <!-- 图表色（设计稿 chart-1..5）：**目前无人引用**，地图图例的颜色是后端按用户下发的。
          保持原样不跟着换成主色系 —— 这是一组「多系列并列」的彩虹色，不是品牌色的深浅档。 -->
     <color name="chart_1">#4285F4</color>

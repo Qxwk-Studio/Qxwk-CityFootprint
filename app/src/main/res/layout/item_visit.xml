@@ -115,8 +115,8 @@
 
         <!-- 右侧动作区（网页 .visit-actions）：两颗图标按钮，不带文字。
              用 Outlined 样式 → 8dp 圆角 + 1dp 描边，对应网页的 .btn-ghost.btn-sm。
-             分享目前**不接行为**：网页那颗也只是占位（注释写着「等哪天真接上分享再接」），
-             两端保持一致，别一边能点一边不能点。 -->
+             分享功能还没做，点了弹一句「制作中」的 Toast（监听在 VisitAdapter）；
+             网页那颗同一套文案（见 docs/visits.js 的 showShareWip），两端保持一致。 -->
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
