@@ -10,6 +10,7 @@ import android.view.View
 import android.widget.ArrayAdapter
 import android.widget.LinearLayout
 import android.widget.Spinner
+import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -17,9 +18,11 @@ import androidx.lifecycle.lifecycleScope
 import com.google.android.material.chip.Chip
 import top.qxwkstudio.travel.R
 import top.qxwkstudio.travel.data.ApiException
+import top.qxwkstudio.travel.data.CityStore
 import top.qxwkstudio.travel.data.Store
 import top.qxwkstudio.travel.data.VisitRepo
 import top.qxwkstudio.travel.databinding.ActivityVisitEditBinding
+import top.qxwkstudio.travel.logic.CitySearch
 import top.qxwkstudio.travel.logic.Transport
 import top.qxwkstudio.travel.logic.Visit
 import top.qxwkstudio.travel.logic.VisitDate
@@ -65,6 +68,21 @@ class VisitEditActivity : AppCompatActivity() {
         binding.cityLayout.error = null
     }
 
+    /** 这次定位权限请求是不是用户点准心触发的。false = 进新增页时自动触发的那次。 */
+    private var locateByUser = false
+
+    /**
+     * 定位权限回调：给了就接着定位回填。
+     * 被拒时**只在用户主动点过准心**才提示 —— 进页面自动触发那次用户没要过定位，
+     * 再弹一句「未获得定位权限」就只剩打扰（网页那边是浏览器权限条，用户自己点出来的，情形不同）。
+     */
+    private val locatePermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        when {
+            granted -> locateIntoCity(force = true)
+            locateByUser -> toast(R.string.locate_no_permission, long = true)
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         store = Store(this)
@@ -94,6 +112,16 @@ class VisitEditActivity : AppCompatActivity() {
             b.switchPrivate.isChecked = intent.getBooleanExtra(EXTRA_PRIVATE, false)
             lat = intent.getDoubleExtra(EXTRA_LAT, Double.NaN).takeIf { !it.isNaN() }
             lng = intent.getDoubleExtra(EXTRA_LNG, Double.NaN).takeIf { !it.isNaN() }
+        } else {
+            // 新增默认填「本月」——与网页添加弹窗（docs/index.js 的 openQuickModal）同口径：
+            // 添加行程时最常见的值，用户不动就是对的。编辑时不动：有日期就回填、没有就留空（= 记不清了）
+            val now = Calendar.getInstance()
+            b.inputDate.setText("%04d-%02d".format(now.get(Calendar.YEAR), now.get(Calendar.MONTH) + 1))
+            // 进新增页顺手定位一次，对齐网页 openQuickAdd（开弹窗即尽力定位）。
+            // force=false：不覆盖用户已选的城市（自动那次可能晚于用户手动选城才回来）。
+            // post 到下一帧再跑：先把表单画出来（用户先看见这一页，再弹系统权限框），
+            // 也避开在 onCreate 里直接 launch 权限请求
+            b.root.post { locateIntoCity(force = false) }
         }
 
         // 出行方式 chips：新增时没有「已选」（getStringArrayListExtra 回 null），编辑时按已存的回填
@@ -118,6 +146,48 @@ class VisitEditActivity : AppCompatActivity() {
 
         b.btnSave.setOnClickListener { save() }
         b.btnDelete.setOnClickListener { confirmDelete() }
+
+        // 城市栏右侧那颗准心：用户主动定位，明确覆盖已选中的城市
+        b.cityLayout.setEndIconOnClickListener {
+            locateByUser = true
+            locateIntoCity(force = true)
+        }
+    }
+
+    /**
+     * 定位并把「城市」回填成最近的一座（对齐网页 docs/index.js 的 locateCity）。
+     *
+     * [force]=false 时城市已选就跳过 —— 进新增页那次是自动触发，别把用户已经选好的城顶掉；
+     * 用户点准心那次（force=true）当然要覆盖。权限还没给就顺手拉起系统权限弹窗，
+     * 结果会回 [locatePermission] 再调回这里。
+     */
+    private fun locateIntoCity(force: Boolean) {
+        if (!force && !binding.inputCity.text.isNullOrBlank()) return
+        if (!Locate.granted(this)) {
+            locatePermission.launch(Locate.PERMISSION)
+            return
+        }
+        toast(R.string.locate_locating)
+        // Locate.current 的回调在主线程；拿不到位置时只能区分「没开定位」与「其它」，见 Locate 的注释
+        Locate.current(this) { loc ->
+            if (loc == null) {
+                toast(if (Locate.enabled(this)) R.string.locate_failed else R.string.locate_disabled, long = true)
+                return@current
+            }
+            val city = CitySearch.nearest(CityStore.all(this), loc.latitude, loc.longitude)
+            if (city == null) {
+                toast(R.string.locate_no_city, long = true)
+                return@current
+            }
+            lat = city.lat
+            lng = city.lng
+            binding.inputCity.setText(city.name)
+            binding.cityLayout.error = null
+        }
+    }
+
+    private fun toast(resId: Int, long: Boolean = false) {
+        Toast.makeText(this, resId, if (long) Toast.LENGTH_LONG else Toast.LENGTH_SHORT).show()
     }
 
     private fun openPicker() {

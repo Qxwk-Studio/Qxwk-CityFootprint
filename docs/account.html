@@ -32,6 +32,18 @@
   .action-card { text-align: left; }
   .action-card h3 { font-size: 1.15rem; margin-bottom: 8px; }
   .action-card .btn { margin-top: 16px; }
+  /* 「清除缓存 / 检查更新」这两颗次要按钮要撑满卡片宽度，与上面几张卡的主按钮对齐 */
+  .btn-block { width: 100%; }
+
+  /* ========= 关于软件卡片 ========= */
+  .about-block + .about-block { margin-top: 14px; }
+  .about-label { font-size: 0.72rem; font-weight: 600; color: var(--text-tertiary);
+    text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 6px; }
+  .about-list { list-style: none; }
+  .about-list li { font-size: 0.84rem; color: var(--text-secondary); line-height: 1.75; }
+  .about-list a, .about-text a { color: var(--primary); text-decoration: none; }
+  .about-list a:hover, .about-text a:hover { text-decoration: underline; }
+  .about-text { font-size: 0.84rem; color: var(--text-secondary); }
 
   /* ========= 退出登录：大卡片（与通行证 account 一致） ========= */
   .card-logout {
@@ -236,16 +248,25 @@
             <p class="hint">管理你去过的城市、行程时间与回忆备注</p>
             <a href="/visits" class="btn btn-primary">进入足迹管理</a>
           </div>
-        </div>
 
-        <div class="personal-col">
+          <!-- 通行证中心：移到左列最下（右列腾给「清除缓存 / 退出登录 / 关于软件」三张卡） -->
           <div class="card action-card">
             <h3>🎫 通行证中心</h3>
             <p class="hint">在通行证中心修改昵称 / 颜色 / 密码、生成邀请码</p>
             <a href="https://account.qxwkstudio.top/account.html" target="_blank" rel="noopener" class="btn btn-primary">打开通行证中心</a>
           </div>
+        </div>
 
-          <!-- 退出登录：大卡片（右下角独立位置，与通行证 account 一致） -->
+        <div class="personal-col">
+          <!-- 清除缓存：只清本机缓存（接口报文 + 地图边界），不动登录态与主题等偏好 -->
+          <div class="card action-card">
+            <h3>🧹 清除缓存</h3>
+            <p class="hint">清除本机缓存的接口数据与地图边界，不影响登录与足迹</p>
+            <button class="btn btn-ghost btn-block" type="button" data-action="clear-cache">清除缓存</button>
+            <p class="msg" id="cacheMsg"></p>
+          </div>
+
+          <!-- 退出登录：大卡片（与通行证 account 一致） -->
           <div class="card-logout">
             <h3>退出登录</h3>
             <div class="logout-tip">
@@ -255,6 +276,31 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
               退出登录
             </button>
+          </div>
+
+          <!-- 关于软件：开源致谢 + 开发者 + 版本 / 检查更新（右下角最底） -->
+          <div class="card action-card">
+            <h3>ℹ️ 关于软件</h3>
+            <p class="hint">City Footprint · 青翔未阔工作室</p>
+
+            <div class="about-block">
+              <div class="about-label">使用的开源内容</div>
+              <ul class="about-list">
+                <li><a href="https://leafletjs.com/" target="_blank" rel="noopener">Leaflet</a> — 地图渲染（BSD-2-Clause）</li>
+                <li><a href="https://www.amap.com/" target="_blank" rel="noopener">高德地图</a> — 底图瓦片</li>
+                <li><a href="https://datav.aliyun.com/portal/school/atlas/area_selector" target="_blank" rel="noopener">DataV GeoAtlas</a> — 行政区边界数据</li>
+              </ul>
+            </div>
+
+            <div class="about-block">
+              <div class="about-label">开发者</div>
+              <p class="about-text">青翔未阔工作室 · <a href="mailto:QxwkStudio@outlook.com">QxwkStudio@outlook.com</a></p>
+            </div>
+
+            <div class="about-block">
+              <div class="about-label">版本</div>
+              <p class="about-text">当前版本 <b id="appVersion"></b></p>
+            </div>
           </div>
         </div>
       </div>

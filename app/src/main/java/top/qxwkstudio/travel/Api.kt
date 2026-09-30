@@ -20,8 +20,16 @@ import java.net.URLEncoder
  * （CORS 是浏览器的限制），所以后端给页面来源配的白名单不需要为 app 额外放行。
  */
 object Api {
-    const val ACCOUNT_BASE = "https://account.qxwkstudio.top/api"
+    /** 通行证站点根（不带 /api）。接口基址与「通行证中心」网页入口都从这里拼，见 [ACCOUNT_BASE] / [PASSPORT_CENTER]。 */
+    const val ACCOUNT_ORIGIN = "https://account.qxwkstudio.top"
+    const val ACCOUNT_BASE = "$ACCOUNT_ORIGIN/api"
     const val TRAVEL_BASE = "https://api.travel.qxwkstudio.top/api"
+
+    /**
+     * 「通行证中心」的网页入口（改昵称 / 颜色 / 密码、生成邀请码）。
+     * 这些功能只在通行证那边有，App 内不做，只能跳系统浏览器打开（对应网页 account.html 那张卡）。
+     */
+    const val PASSPORT_CENTER = "$ACCOUNT_ORIGIN/account.html"
 
     /**
      * 登录时上报的「来源应用名」。安卓没有 Origin 头，通行证只能靠这个字段记来源；

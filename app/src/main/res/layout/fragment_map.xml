@@ -37,6 +37,52 @@
         android:textSize="14sp"
         android:visibility="gone" />
 
+    <!-- 右上角浮层组：管理员提示在上、定位按钮在下。两块都得待在右上角（网页端管理员提示就在右上角），
+         只能竖着排 —— 横着排不开。管理员提示 GONE 时这组自动收成一颗按钮，不留空位。
+         定位按钮是 App 侧新增的入口：网页那颗「我的位置」蓝点由添加弹窗触发，
+         App 把添加/编辑与地图分成了两页，地图页得自己给个入口（见 MapFragment.locate） -->
+    <LinearLayout
+        android:id="@+id/topActions"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|end"
+        android:layout_margin="12dp"
+        android:gravity="end"
+        android:orientation="vertical">
+
+        <!-- 管理员视图提示（对齐网页 docs/index.html 的 .adminViewNote）：
+             文案与显隐由 MapFragment.load 按后端 isAdmin 给，非管理员时 GONE 不留空。
+             复用统计页那条横幅的底图/文字色（bg_admin_note + admin_note_fg），两端是同一套管理员视觉语言 -->
+        <TextView
+            android:id="@+id/textAdminNote"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_admin_note"
+            android:paddingStart="14dp"
+            android:paddingTop="6dp"
+            android:paddingEnd="14dp"
+            android:paddingBottom="6dp"
+            android:text="@string/map_admin_note"
+            android:textColor="@color/admin_note_fg"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:visibility="gone" />
+
+        <!-- 定位到我的位置。底图复用顶栏那颗动作按钮（36dp 正圆 + 描边，见 bg_action_button）——
+             地图是深浅不一的瓦片，透明底的图标按钮会看不清。尺寸必须跟着这个底图走（18dp 圆角 = 半高） -->
+        <ImageButton
+            android:id="@+id/btnLocate"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/bg_action_button"
+            android:contentDescription="@string/map_locate"
+            android:padding="8dp"
+            android:scaleType="centerInside"
+            android:src="@drawable/ic_locate"
+            android:tint="@color/accent" />
+    </LinearLayout>
+
     <!-- 图例（左上角）：标题行整行可点，用来收起/展开下面的用户列表。
          clickable="true" 是为了**吃掉落在卡片上的手势**：否则在卡片留白处拖动会穿透到下面的地图去平移 -->
     <LinearLayout
@@ -99,7 +145,10 @@
     </LinearLayout>
 
     <!-- 城市明细卡（底部）：点地图上的城市才出现，内容由 MapFragment.showCity 填。
-         clickable 同图例：吃掉卡片上的手势，别让拖动穿透到地图去平移 -->
+         clickable 同图例：吃掉卡片上的手势，别让拖动穿透到地图去平移。
+
+         整宽铺满、贴底；高度要压住 —— 一行一条行程，行数一多卡片就爬上半个屏幕，
+         所以上下内边距收薄，列表另设 maxHeight（装不下就在卡片内滚，不再长高） -->
     <LinearLayout
         android:id="@+id/cityCard"
         android:layout_width="match_parent"
@@ -109,10 +158,10 @@
         android:background="@drawable/bg_card"
         android:clickable="true"
         android:orientation="vertical"
-        android:paddingStart="14dp"
-        android:paddingTop="10dp"
-        android:paddingEnd="14dp"
-        android:paddingBottom="10dp"
+        android:paddingStart="12dp"
+        android:paddingTop="6dp"
+        android:paddingEnd="12dp"
+        android:paddingBottom="6dp"
         android:visibility="gone">
 
         <LinearLayout
@@ -149,17 +198,18 @@
             android:id="@+id/cityCardStatus"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
+            android:layout_marginTop="2dp"
             android:textColor="@color/text_tertiary"
             android:textSize="12sp"
             android:visibility="gone" />
 
+        <!-- 装不下就卡片内部滚：想再矮/再高就调这个 maxHeight（列表占卡片高度的大头） -->
         <ScrollView
             android:id="@+id/cityCardScroll"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:maxHeight="240dp">
+            android:layout_marginTop="4dp"
+            android:maxHeight="120dp">
 
             <LinearLayout
                 android:id="@+id/cityCardList"

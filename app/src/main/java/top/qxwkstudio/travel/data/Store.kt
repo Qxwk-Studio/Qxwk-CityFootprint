@@ -29,6 +29,18 @@ class Store(context: Context) {
     val color: String get() = sp.getString(KEY_COLOR, "").orEmpty()
     val avatar: String? get() = sp.getString(KEY_AVATAR, null)?.takeIf { it.isNotEmpty() }
 
+    /** 本地用户 id（通行证签发）。「我的」页展示 UID 用，对应网页 account.js 里的 s.userId。 */
+    val userId: Long get() = sp.getLong(KEY_UID, 0L)
+
+    /**
+     * 管理员标记。「我的」页的管理员徽章用它（对应网页 account.html 的 #adminBadge）。
+     *
+     * **只有 [saveMe]（/api/me）会把它写进来** —— 通行证的登录响应里根本没有 is_admin 这个字段
+     * （见 data/Auth 的 LoginResponse），所以进主页那次 /api/me 是唯一来源；网络不通时它就是 false，
+     * 与网页端同一行为（那边也只从 /api/me 拿）。
+     */
+    val isAdmin: Boolean get() = sp.getBoolean(KEY_IS_ADMIN, false)
+
     /** 登录成功后落库（token + 通行证顺手给的那几个字段，省得进主页再请求一次）。
      *  顺手作废报文缓存：换账号时不能把上一个人的足迹 / 统计留在这个文件里。 */
     fun saveSession(session: LoginSession) {
@@ -38,15 +50,18 @@ class Store(context: Context) {
             .putString(KEY_NICKNAME, session.nickname)
             .putString(KEY_COLOR, session.color)
             .putString(KEY_AVATAR, session.avatar.orEmpty())
+            .putLong(KEY_UID, session.userId)
             .apply()
     }
 
-    /** /api/me 回来后刷新资料（昵称/头像可能在通行证那边改过）。 */
+    /** /api/me 回来后刷新资料（昵称/头像可能在通行证那边改过）。is_admin 也在这里落库，见 [isAdmin]。 */
     fun saveMe(me: Me) {
         sp.edit()
             .putString(KEY_NICKNAME, me.nickname)
             .putString(KEY_COLOR, me.color)
             .putString(KEY_AVATAR, me.avatar.orEmpty())
+            .putLong(KEY_UID, me.userId)
+            .putBoolean(KEY_IS_ADMIN, me.isAdmin)
             .apply()
     }
 
@@ -109,6 +124,8 @@ class Store(context: Context) {
             .remove(KEY_NICKNAME)
             .remove(KEY_COLOR)
             .remove(KEY_AVATAR)
+            .remove(KEY_UID)
+            .remove(KEY_IS_ADMIN)
             .apply()
     }
 
@@ -121,6 +138,8 @@ class Store(context: Context) {
         const val KEY_NICKNAME = "nickname"
         const val KEY_COLOR = "color"
         const val KEY_AVATAR = "avatar"
+        const val KEY_UID = "uid"
+        const val KEY_IS_ADMIN = "is_admin"
 
         /** 报文缓存的有效期：一天（一天内不重复拉，除非用户手动刷新）。 */
         const val CACHE_TTL_MS = 24 * 60 * 60 * 1000L

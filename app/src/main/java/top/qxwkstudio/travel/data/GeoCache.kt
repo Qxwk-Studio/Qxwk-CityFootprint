@@ -64,6 +64,17 @@ internal object GeoCache {
         }
     }
 
+    /**
+     * 清空全部边界缓存（「我的」页那颗「清除缓存」，对应网页 app.js 的 clearAppCache）。
+     * 与 [Store.invalidatePayloads] 一起构成 App 的「本机缓存」全集 —— 那边管接口报文，这里管边界。
+     *
+     * 只删文件、目录留着：下次 [write] 直接往里写，不必每次读缓存都重新 mkdirs。
+     * 删不动的（正好被读着 / 系统占用）忽略：清理是尽力而为，剩下的下次清理或过期重下都会覆盖。
+     */
+    fun clear(context: Context) {
+        File(context.applicationContext.filesDir, DIR).listFiles()?.forEach { it.delete() }
+    }
+
     /** `filesDir/geo/{adcode}.json`。用 applicationContext：别让缓存文件把 Activity 拽住。 */
     private fun file(context: Context, adcode: Int): File =
         File(File(context.applicationContext.filesDir, DIR).apply { mkdirs() }, "$adcode.json")

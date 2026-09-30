@@ -42,13 +42,19 @@
                     android:padding="16dp">
 
                     <!-- 城市是「点开选择」而不是手输：坐标与 adcode 必须来自城市表，
-                         手输城市名会让地图上找不到点（lat/lng 填什么都是编的） -->
+                         手输城市名会让地图上找不到点（lat/lng 填什么都是编的）。
+                         右侧那颗准心是「定位到最近的城市」（网页 docs/index.html 添加弹窗里同款按钮）：
+                         用 TextInputLayout 的 endIcon 而不是另起一个按钮，省得为一个图标再拆一层布局 -->
                     <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/cityLayout"
                         style="@style/Widget.App.TextInputLayout"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:hint="@string/edit_city">
+                        android:hint="@string/edit_city"
+                        app:endIconContentDescription="@string/edit_locate"
+                        app:endIconDrawable="@drawable/ic_locate"
+                        app:endIconMode="custom"
+                        app:endIconTint="@color/accent">
 
                         <com.google.android.material.textfield.TextInputEditText
                             android:id="@+id/inputCity"

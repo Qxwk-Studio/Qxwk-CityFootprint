@@ -111,7 +111,8 @@ class VisitsFragment : Fragment() {
      * 概览：时间跨度 / 去过城市 / 足迹总数 / 覆盖省份 / 最常用出行。
      * 与网页端 docs/visits.html 的 updateVisitStats 同口径：
      *  - 城市去重（同一座城打卡多次只算一座）；
-     *  - 省份按城市名在本机 assets/cities.json 里查，查不到记「未知」（仍占一个名额，跟网页端一致）；
+     *  - 省份按城市名在本机 assets/cities.json 里查，查不到的**不计入**（与网页端
+     *    visits.js 的 filter(Boolean)、全站统计页同一口径 —— 别退回「未知」占名额那一版）；
      *  - 日期直接按字符串排序取首尾（数据形如 2024 或 2024-08，字典序即时间序）；
      *  - 最常用出行按「有多少条足迹用过它」投票，并列时取枚举里靠前的那个（见 logic/Transport）。
      */
@@ -119,9 +120,8 @@ class VisitsFragment : Fragment() {
         val cityNames = visits.map { it.city }.distinct()
 
         val allCities = CityStore.all(requireContext())
-        val unknown = getString(R.string.visits_overview_unknown_province)
-        val provinces = cityNames.map { name ->
-            allCities.firstOrNull { it.name == name }?.province?.takeIf { it.isNotBlank() } ?: unknown
+        val provinces = cityNames.mapNotNull { name ->
+            allCities.firstOrNull { it.name == name }?.province?.takeIf { it.isNotBlank() }
         }.toSet()
 
         val dates = visits.mapNotNull { it.visitDate }.filter { it.isNotBlank() }.sorted()

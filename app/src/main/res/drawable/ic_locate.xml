@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 「定位」准心。几何抄网页 docs/index.html 那颗定位按钮的内联 SVG
+     （circle r=10 + 四条从 r=10 伸到 r=12 的刻度线）。
+     用描边而不是填充：填充版被 tint 之后是一坨实心圆，看不出是准心。
+     与其余图标一样填白色，靠使用处的 tint 上色。 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M12,2a10,10 0 1,0 0,20a10,10 0 1,0 0,-20"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:strokeWidth="2" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M22,12L18,12M6,12L2,12M12,6L12,2M12,22L12,18"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeLineCap="round"
+        android:strokeWidth="2" />
+</vector>

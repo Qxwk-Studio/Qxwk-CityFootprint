@@ -64,4 +64,13 @@ class CitySearchTest {
         assertNull(CitySearch.findByName(cities, "格尔木")?.adcode)
         assertNull(CitySearch.findByName(cities, "石家庄市"))
     }
+
+    @Test
+    fun `nearest 取最近的城市 城市表为空回 null`() {
+        // 点落在石家庄与北京之间、离石家庄更近：必须取石家庄而不是更近纬度的北京
+        assertEquals("石家庄", CitySearch.nearest(cities, 38.5, 115.0)?.name)
+        assertEquals("上海", CitySearch.nearest(cities, 31.0, 121.0)?.name)
+        // 城市表读不到（asset 坏了会退化成空表）时不能崩，回 null 让上层提示
+        assertNull(CitySearch.nearest(emptyList(), 38.5, 115.0))
+    }
 }

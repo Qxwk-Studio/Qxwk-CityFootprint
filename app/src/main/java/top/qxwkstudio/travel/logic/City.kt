@@ -50,4 +50,14 @@ object CitySearch {
 
     /** 按名字找城市（编辑足迹时用它把已存的城市名还原成坐标/adcode）。找不到就是源数据里没这座城。 */
     fun findByName(cities: List<City>, name: String): City? = cities.firstOrNull { it.name == name }
+
+    /**
+     * 找离指定坐标最近的城市（定位后回填城市用，见 ui/Locate）。
+     *
+     * 直接比经纬度平方距离，**不做球面距离 / 不做坐标系偏移校正** —— 与网页 index.js 的
+     * nearestCity 同一算法：城市级反查（四百多座城，两两差着几十公里）这点误差影响不到
+     * 「最近的是哪一座」。城市表为空时返回 null。
+     */
+    fun nearest(cities: List<City>, lat: Double, lng: Double): City? =
+        cities.minByOrNull { (it.lat - lat) * (it.lat - lat) + (it.lng - lng) * (it.lng - lng) }
 }

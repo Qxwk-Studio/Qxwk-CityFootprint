@@ -18,6 +18,8 @@ import android.view.ViewGroup
 import android.widget.CheckBox
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
@@ -96,6 +98,15 @@ class MapFragment : Fragment() {
     /** [load] 那次拿到的是哪一版数据（[Store.dataVersion]）。写操作会让版本号变，切回地图页据此决定重拉。 */
     private var loadedVersion = -1
 
+    /** 「我的位置」圆点（对齐网页 index.js 的 myLocationMarker）：只在用户主动定位后出现，全局最多一颗。 */
+    private var myLocationMarker: Marker? = null
+
+    /** 定位权限回调。这颗按钮本来就是用户点的，被拒时直接提示一句就行。 */
+    private val locatePermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        val ctx = context ?: return@registerForActivityResult
+        if (granted) locate() else Toast.makeText(ctx, R.string.locate_no_permission, Toast.LENGTH_LONG).show()
+    }
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentMapBinding.inflate(inflater, container, false)
         return binding.root
@@ -146,6 +157,7 @@ class MapFragment : Fragment() {
 
         b.legendHeader.setOnClickListener { toggleLegend() }
         b.cityCardClose.setOnClickListener { hideCityCard() }
+        b.btnLocate.setOnClickListener { locate() }
 
         load()
     }
@@ -217,6 +229,9 @@ class MapFragment : Fragment() {
             hideCityCard()
             cities = data.cities
             binding.textEmpty.visibility = if (cities.isEmpty()) View.VISIBLE else View.GONE
+            // 管理员视图提示（对齐网页 index.js 的 #adminViewNote）：数据来自后端 isAdmin，
+            // 始终与「正在展示全部行程（含私密）」这一事实一致 —— 只读后端字段，不另存状态
+            binding.textAdminNote.visibility = if (data.isAdmin) View.VISIBLE else View.GONE
             buildLegend()
             renderCities()
         }
@@ -298,6 +313,12 @@ class MapFragment : Fragment() {
             // 两个下限都钉掉，尺寸回到图标本身；整行仍可点，点击热区不受影响
             minimumHeight = 0
             minimumWidth = 0
+            // 图标本身仍比网页那颗大（M3 勾选框约 20dp，网页 .user-check 是 14px），
+            // 绕中心缩一档对齐网页。缩放不改布局占位，多出来的那点空档正好当复选框与圆点之间的间隙
+            // （网页那颗 gap 是 8px；这里 20dp 占位 + 4dp margin，缩放后视觉间隙约 8dp 对得上）。
+            // 还嫌大 / 嫌小就调这一个常量
+            scaleX = LEGEND_CHECK_SCALE
+            scaleY = LEGEND_CHECK_SCALE
         })
         if (color != null) {
             row.addView(View(ctx).apply {
@@ -414,6 +435,7 @@ class MapFragment : Fragment() {
             cityOverlays.add(polygon)
             binding.map.overlays.add(polygon)
         }
+        bringMyLocationToFront()
         binding.map.invalidate()
     }
 
@@ -431,6 +453,7 @@ class MapFragment : Fragment() {
         }
         cityOverlays.add(marker)
         binding.map.overlays.add(marker)
+        bringMyLocationToFront()
         binding.map.invalidate()
     }
 
@@ -505,7 +528,8 @@ class MapFragment : Fragment() {
         val row = LinearLayout(ctx).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(0, dp(4), 0, dp(4))
+            // 纵向 3dp（网页 .popup-person 是 padding: 3px 0）：一行一个人，行距别太厚
+            setPadding(0, dp(3), 0, dp(3))
         }
         row.addView(TextView(ctx).apply {
             // 私密锁跟在昵称后面、用同一颜色（与网页 `style="color:…">昵称 🔒` 一致）
@@ -551,7 +575,71 @@ class MapFragment : Fragment() {
         binding.cityCard.visibility = View.GONE
     }
 
+    // ────────────────────────────── 定位 ──────────────────────────────
+
+    /**
+     * 定位并在图上放一颗「我的位置」圆点（对齐网页 index.js 的 locateCity + updateMyLocation）。
+     *
+     * 网页那颗蓝点是添加弹窗顺手触发的；App 的添加/编辑与地图是两个页面，所以这里单独给颗按钮。
+     * 颜色用当前登录用户的颜色（与图例里自己那颗点同色），取不到就退回主色。
+     */
+    private fun locate() {
+        val ctx = context ?: return
+        if (!Locate.granted(ctx)) {
+            locatePermission.launch(Locate.PERMISSION)
+            return
+        }
+        Toast.makeText(ctx, R.string.locate_locating, Toast.LENGTH_SHORT).show()
+        // 回调在主线程；拿不到位置时只能区分「没开定位」与「其它」，见 Locate 的注释
+        Locate.current(ctx) { loc ->
+            if (loc == null) {
+                Toast.makeText(
+                    ctx,
+                    if (Locate.enabled(ctx)) R.string.locate_failed else R.string.locate_disabled,
+                    Toast.LENGTH_LONG,
+                ).show()
+                return@current
+            }
+            showMyLocation(loc.latitude, loc.longitude)
+        }
+    }
+
+    /** 画出「我的位置」圆点：全局最多一颗，再定位就挪到新位置。 */
+    private fun showMyLocation(lat: Double, lng: Double) {
+        // 回调是异步的：回来时视图可能已经销毁（切走 tab 就销毁），那时什么都不做
+        val b = _binding ?: return
+        myLocationMarker?.let { b.map.overlays.remove(it) }
+        val point = GeoPoint(lat, lng)
+        val marker = Marker(b.map).apply {
+            position = point
+            icon = dotIcon(safeColor(store.color))
+            setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
+        }
+        myLocationMarker = marker
+        b.map.overlays.add(marker)
+        // 网页那颗蓝点画在后台的地图上、用户看不见；App 是用户当着地图点的按钮，
+        // 不把视野挪过去就等于「什么都没发生」
+        b.map.controller.animateTo(point)
+        b.map.invalidate()
+    }
+
     // ────────────────────────────── 小工具 ──────────────────────────────
+
+    /**
+     * 把「我的位置」圆点挪到 overlay 列表末尾。
+     *
+     * osmdroid 按 overlays 列表顺序绘制，而城市图层是**逐个追加**的（含边界异步回来后追加的那批），
+     * 不挪一下这颗点就会被后加的多边形盖住 —— 等价网页给它设的 zIndexOffset:1000。
+     * 每个往图上加图层的地方（drawCity / drawDot）加完都调一次。
+     *
+     * 置顶靠列表末尾，而不是另设 z-index：osmdroid 就是按 overlays 的列表顺序绘制的。
+     */
+    private fun bringMyLocationToFront() {
+        val b = _binding ?: return
+        val marker = myLocationMarker ?: return
+        b.map.overlays.remove(marker)
+        b.map.overlays.add(marker)
+    }
 
     /** 用户颜色来自后端（形如 #4285F4）；万一是坏值就退回主色，别让一颗脏数据把地图画崩。 */
     private fun safeColor(value: String): Int =
@@ -568,6 +656,9 @@ class MapFragment : Fragment() {
 
         /** 回退圆点的直径（dp）。 */
         const val DOT_SIZE_DP = 14
+
+        /** 图例复选框的视觉缩放：对齐网页 .user-check 的 14px（M3 勾选框约 20dp，见 legendRow）。 */
+        const val LEGEND_CHECK_SCALE = 0.72f
 
         /** 同时最多拉几条城市边界（与网页 GEO_CONCURRENCY 同值）。 */
         const val GEO_CONCURRENCY = 6

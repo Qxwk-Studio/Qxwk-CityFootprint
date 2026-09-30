@@ -84,6 +84,17 @@
         <item name="android:textColor">@color/destructive</item>
     </style>
 
+    <!-- ===== 头像的圆形裁剪 =====
+         「我的」页的真实头像用 ShapeableImageView（M3 自带），裁剪形状由 shapeAppearanceOverlay 决定：
+         cornerFamily=rounded（圆角那一支，cut 是切角）+ cornerSize=50% 就是正圆，
+         与旁边回退用的「首字 + 圆形底色」同一个形状。
+         样式名刻意**不带点号**：带点号时 AAPT 会把最后一段之前的部分当成父样式去解析
+         （同 Widget.App.ShellBand 那个坑，见上面那段说明）。 -->
+    <style name="AvatarCircle" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">50%</item>
+    </style>
+
     <!-- ===== 输入框：圆角 8dp + popover 底 + input 描边（设计稿的输入框形态） ===== -->
     <style name="Widget.App.TextInputLayout" parent="Widget.Material3.TextInputLayout.OutlinedBox">
         <item name="boxCornerRadiusTopStart">8dp</item>
@@ -202,7 +213,9 @@
         <item name="ensureMinTouchTargetSize">false</item>
     </style>
 
-    <!-- 列表里那条出行方式徽章：只读、比 chip 小一号（对齐网页 .tp-badge 的小胶囊） -->
+    <!-- 列表里那条出行方式徽章：只读、比 chip 小一号（对齐网页 .tp-badge 的小胶囊）。
+         左右内边距比网页那枚（padding: 1px 7px）再收一档：一条行程常带好几枚徽章，
+         横向省下来的地方够多塞一枚；高度不动（chipMinHeight 管的是高矮，不是长短） -->
     <style name="Widget.App.TpBadge" parent="Widget.Material3.Chip.Assist">
         <item name="android:clickable">false</item>
         <item name="android:focusable">false</item>
@@ -212,8 +225,8 @@
         <item name="chipStrokeColor">@color/border</item>
         <item name="chipStrokeWidth">1dp</item>
         <item name="chipCornerRadius">10dp</item>
-        <item name="chipStartPadding">8dp</item>
-        <item name="chipEndPadding">8dp</item>
+        <item name="chipStartPadding">5dp</item>
+        <item name="chipEndPadding">5dp</item>
         <item name="android:textColor">@color/text_secondary</item>
         <item name="android:textSize">11sp</item>
         <item name="ensureMinTouchTargetSize">false</item>
@@ -225,5 +238,30 @@
         <item name="android:layout_height">wrap_content</item>
         <item name="android:textSize">11sp</item>
         <item name="android:textColor">@color/muted_fg</item>
+    </style>
+
+    <!-- ===== 「我的」页「关于软件」卡里的两级文字（对应网页 .about-label / .about-list li） =====
+         单列出来而不是复用 CardTitle / BodyMuted：那两档是 16sp 正文色 / 11sp 弱色，
+         而这里是「11sp 粗体最弱色的小节名」与「13sp 次要色的条目」，
+         正好各自压在两者中间，硬套任何一档都会让层级糊掉。 -->
+
+    <!-- 小节名（「使用的开源内容 / 开发者 / 版本」）。marginTop 做出小节之间的间隔，
+         网页那边是 .about-block + .about-block 的 14px -->
+    <style name="ProfileAboutLabel">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginTop">14dp</item>
+        <item name="android:textSize">11sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/text_tertiary</item>
+    </style>
+
+    <!-- 小节里的一行（开源条目 / 开发者 / 版本号） -->
+    <style name="ProfileAboutItem">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginTop">2dp</item>
+        <item name="android:textSize">13sp</item>
+        <item name="android:textColor">@color/text_secondary</item>
     </style>
 </resources>

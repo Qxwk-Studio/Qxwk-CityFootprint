@@ -1,5 +1,9 @@
 // 个人中心页脚本，原先内联在 account.html 里。抽出是为了配合 CSP（script-src 'self'，内联脚本会被拦）。
 // 依赖顺序：app.js 先，本文件最后。
+
+// 网页端当前版本号（硬编码）：本站是纯静态页、没有版本接口，「关于软件」卡片只把它作为
+// 一行文字展示。发版时改这里，并同步 docs/news.html「网页端」更新日志最新一条的 timeline-tag。
+const APP_VERSION = '1.3.0';
 // 登录表单：直接跨域调通行证 /api/login（app.js 的 passportLogin），成功后本地已存好 token，直接进个人中心
 document.getElementById('loginForm').addEventListener('submit', async function (e) {
   e.preventDefault();
@@ -98,6 +102,19 @@ if (getSession()) {
   showAuthView();
 }
 
+// ---------- 关于软件：版本显示 ----------
+// 版本号在脚本执行时就填上（script 挂在 body 末尾，DOM 已就绪）
+document.getElementById('appVersion').textContent = 'v' + APP_VERSION;
+
+// 清除缓存：接口报文 + 地图边界缓存（具体清哪些见 app.js 的 clearAppCache）。
+// 不动登录态与主题 / 图例折叠等偏好，所以清完不必重新登录。
+function clearCache() {
+  const msg = document.getElementById('cacheMsg');
+  clearAppCache();
+  msg.className = 'msg ok';
+  msg.textContent = '已清除本机缓存';
+}
+
 // 退出登录按钮走 data-action（HTML 内联 onclick 会被 CSP 拦）。logout 定义在 app.js，
 // 不关心 bindActions 传进来的 (el, e)，直接挂引用即可
-bindActions({ logout });
+bindActions({ logout, 'clear-cache': clearCache });

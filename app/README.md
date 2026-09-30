@@ -156,7 +156,7 @@ app/
 ├── tools/gen-cities.mjs        # 城市表生成脚本
 └── src/
     ├── main/
-    │   ├── AndroidManifest.xml # 只有 INTERNET；四个 Activity
+    │   ├── AndroidManifest.xml # 只有 INTERNET + ACCESS_COARSE_LOCATION；四个 Activity
     │   ├── assets/cities.json  # 生成物（见上）
     │   ├── res/                # values / drawable / mipmap / menu / layout
     │   └── java/top/qxwkstudio/travel/

@@ -1,11 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- 只需要联网：足迹接口与通行证登录都在公网。
+    <!-- 只需要联网 + 定位：足迹接口与通行证登录都在公网。
          **没有 WAKE_LOCK / 后台服务 / 通知**：这个 app 不常驻后台、不发通知，
          所有操作都是用户点一下才发生。 -->
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- 地图瓦片从 OSM 拉，断网时只是没图，不做网络状态判断也就不用 ACCESS_NETWORK_STATE -->
+
+    <!-- 定位：编辑页「定位到最近的城市」与地图页「我的位置」用（见 ui/Locate）。
+         只要**粗略位置** —— 网页那侧就是 navigator.geolocation 的 enableHighAccuracy:false，
+         同一档低精度；找最近的城市用不到米级精度，权限也更轻，所以 ACCESS_FINE_LOCATION
+         刻意不在清单里、也不请求。 -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
     <application
         android:allowBackup="false"

@@ -1,81 +1,292 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 「我的」：本机登录身份的展示与退出登录。内容沿用现有（头像/昵称/账号说明/版本/退出），
-     样式按设计稿重做：圆角描边卡片、11~18sp 文字层级、退出用危险色描边按钮。 -->
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<!-- 「我的」：本机登录身份的展示（头像 / 昵称 / UID / 管理员徽章 / 专属地图颜色）、通行证入口、
+     本机缓存清理、退出登录与关于软件。内容对齐网页 docs/account.html 的个人中心 ——
+     头像取不到时回退「昵称首字 + 专属颜色」，另三张卡（通行证中心 / 清除缓存 / 关于软件）与网页逐句对应。
+     样式沿用设计稿：圆角描边卡片、11~18sp 文字层级、退出用危险色描边按钮。
+
+     整页套 NestedScrollView：补齐几张卡之后已经比一屏高（网页那边本来就是长页面），
+     不套的话底部那张卡在小屏上会被裁掉。也**没有**再像以前那样用 weight 弹簧把退出按钮钉在底部 ——
+     弹簧只在「内容撑不满一屏」时才有意义，这里内容必然超出一屏，顺序照网页两列合起来的阅读顺序排：
+     身份 → 通行证中心 → 清除缓存 → 退出登录 → 关于软件。 -->
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="16dp">
-
-    <com.google.android.material.card.MaterialCardView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content">
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:padding="16dp">
-
-            <!-- 头像用「昵称首字」而不是去下载通行证的头像图：
-                 为了一个头像引图片加载库不划算，而首字方块 + 通行证给的主题色已经够辨认。
-                 底色在代码里按通行证主题色画（ProfileFragment.avatarDrawable），布局不写死。 -->
-            <TextView
-                android:id="@+id/textAvatar"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:gravity="center"
-                android:textColor="#FFFFFFFF"
-                android:textSize="20sp"
-                android:textStyle="bold" />
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="12dp"
-                android:layout_weight="1"
-                android:orientation="vertical">
-
-                <TextView
-                    android:id="@+id/textNickname"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:ellipsize="end"
-                    android:maxLines="1"
-                    android:textColor="@color/fg"
-                    android:textSize="18sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/textAccountNote"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:text="@string/profile_account_note"
-                    android:textColor="@color/muted_fg"
-                    android:textSize="11sp" />
-            </LinearLayout>
-        </LinearLayout>
-    </com.google.android.material.card.MaterialCardView>
-
-    <TextView
-        android:id="@+id/textVersion"
-        style="@style/BodyMuted"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="12dp" />
+    android:layout_height="match_parent">
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:orientation="vertical" />
-
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btnLogout"
-        style="@style/Widget.App.Button.Danger"
-        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/profile_logout" />
-</LinearLayout>
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <!-- gravity=top（对应网页 .profile-head 的 align-items: flex-start）：
+                     右侧信息列比头像高，整行三个孩子都贴顶，管理员徽章才在右上角 -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="top"
+                    android:orientation="horizontal">
+
+                    <!-- 头像：真实头像（通行证给的图）与「昵称首字」两版叠在一起，
+                         同一时刻只显示一个 —— 图还没下来 / 没有 / 加载失败时显示首字那版（见 ProfileFragment.showAvatar）。
+                         首字版的底色在代码里按通行证主题色画（ProfileFragment.circleDrawable），布局不写死。 -->
+                    <FrameLayout
+                        android:layout_width="48dp"
+                        android:layout_height="48dp">
+
+                        <TextView
+                            android:id="@+id/textAvatar"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:gravity="center"
+                            android:textColor="#FFFFFFFF"
+                            android:textSize="20sp"
+                            android:textStyle="bold" />
+
+                        <!-- 真实头像。用 M3 的 ShapeableImageView 裁成正圆（形状见 themes.xml 的 AvatarCircle），
+                             而不是引图片加载库 —— 一张几十 KB 的图，HttpURLConnection + BitmapFactory 就够（见 ProfileFragment） -->
+                        <com.google.android.material.imageview.ShapeableImageView
+                            android:id="@+id/imageAvatar"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:contentDescription="@string/profile_avatar"
+                            android:scaleType="centerCrop"
+                            android:visibility="gone"
+                            app:shapeAppearanceOverlay="@style/AvatarCircle" />
+                    </FrameLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/textNickname"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:ellipsize="end"
+                            android:maxLines="1"
+                            android:textColor="@color/fg"
+                            android:textSize="18sp"
+                            android:textStyle="bold" />
+
+                        <!-- UID：与网页 .user-uid 同一档（0.78rem 等宽、最弱的 tertiary 色） -->
+                        <TextView
+                            android:id="@+id/textUid"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:ellipsize="end"
+                            android:maxLines="1"
+                            android:fontFamily="monospace"
+                            android:textColor="@color/text_tertiary"
+                            android:textSize="12sp" />
+
+                        <TextView
+                            android:id="@+id/textAccountNote"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:text="@string/profile_account_note"
+                            android:textColor="@color/muted_fg"
+                            android:textSize="11sp" />
+                    </LinearLayout>
+
+                    <!-- 管理员徽章（对应网页 account.html 的 #adminBadge）：非管理员时 GONE 不留空位。
+                         复用统计页那条横幅的底图/文字色（bg_admin_note + admin_note_fg），两端是同一套管理员视觉语言 -->
+                    <TextView
+                        android:id="@+id/textAdminBadge"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:background="@drawable/bg_admin_note"
+                        android:paddingStart="8dp"
+                        android:paddingTop="2dp"
+                        android:paddingEnd="8dp"
+                        android:paddingBottom="2dp"
+                        android:text="@string/profile_admin_badge"
+                        android:textColor="@color/admin_note_fg"
+                        android:textSize="11sp"
+                        android:textStyle="bold"
+                        android:visibility="gone" />
+                </LinearLayout>
+
+                <!-- 分隔线 + 专属地图颜色行（对应网页 .profile-color 上面那条 1px 分隔线与左侧 22px 色点）。
+                     色点在代码里画（ProfileFragment.colorDot）：实心是通行证主题色，外面一圈 border 描边 -->
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginTop="12dp"
+                    android:background="@color/border" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <View
+                        android:id="@+id/colorDot"
+                        android:layout_width="22dp"
+                        android:layout_height="22dp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:text="@string/profile_color_label"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="14sp" />
+                </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- 通行证中心：改昵称 / 颜色 / 密码、生成邀请码只在通行证那边有，App 里跳系统浏览器打开
+             （对齐网页 account.html 那张卡） -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    style="@style/CardTitle"
+                    android:text="@string/profile_passport_title" />
+
+                <TextView
+                    style="@style/BodyMuted"
+                    android:layout_width="match_parent"
+                    android:layout_marginTop="6dp"
+                    android:text="@string/profile_passport_hint" />
+
+                <!-- 主按钮（@style/Widget.App.Button 由主题 materialButtonStyle 兜住，是胶囊那一档） -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnPassport"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="@string/profile_passport_open" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- 清除缓存：只清接口报文（Store.invalidatePayloads）与地图边界（GeoCache.clear），
+             与网页 app.js 的 clearAppCache 同一范围 —— **不动登录态**，所以清完不必重新登录。
+             提示语用 Toast（全站惯例），没有网页卡片里那行内联的 #cacheMsg -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    style="@style/CardTitle"
+                    android:text="@string/profile_clear_cache_title" />
+
+                <TextView
+                    style="@style/BodyMuted"
+                    android:layout_width="match_parent"
+                    android:layout_marginTop="6dp"
+                    android:text="@string/profile_clear_cache_hint" />
+
+                <!-- 次要按钮（对应网页的 .btn-ghost.btn-block：撑满卡片、描边不填色） -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnClearCache"
+                    style="@style/Widget.App.Button.Outlined"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="@string/profile_clear_cache_btn" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnLogout"
+            style="@style/Widget.App.Button.Danger"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="@string/profile_logout" />
+
+        <!-- 关于软件：开源致谢 + 开发者 + 版本，逐块对齐网页 account.html 右下角那张卡。
+             条目是纯文本、不做超链接（网页那三条是外链）：App 里点不开也说不清，
+             真要跳浏览器就像「通行证中心」那样给个明确按钮，而不是塞一段 LinkMovementMethod -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    style="@style/CardTitle"
+                    android:text="@string/profile_about_title" />
+
+                <TextView
+                    style="@style/BodyMuted"
+                    android:layout_width="match_parent"
+                    android:layout_marginTop="6dp"
+                    android:text="@string/profile_about_subtitle" />
+
+                <TextView
+                    style="@style/ProfileAboutLabel"
+                    android:text="@string/profile_about_open_source" />
+
+                <TextView
+                    style="@style/ProfileAboutItem"
+                    android:text="@string/profile_about_osmdroid" />
+
+                <TextView
+                    style="@style/ProfileAboutItem"
+                    android:text="@string/profile_about_amap" />
+
+                <TextView
+                    style="@style/ProfileAboutItem"
+                    android:text="@string/profile_about_datav" />
+
+                <TextView
+                    style="@style/ProfileAboutLabel"
+                    android:text="@string/profile_about_developer" />
+
+                <TextView
+                    style="@style/ProfileAboutItem"
+                    android:text="@string/profile_about_developer_text" />
+
+                <TextView
+                    style="@style/ProfileAboutLabel"
+                    android:text="@string/profile_about_version" />
+
+                <!-- 版本号在 refresh() 里填（要 BuildConfig.VERSION_NAME），布局不写死 -->
+                <TextView
+                    android:id="@+id/textAboutVersion"
+                    style="@style/ProfileAboutItem" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+    </LinearLayout>
+</androidx.core.widget.NestedScrollView>

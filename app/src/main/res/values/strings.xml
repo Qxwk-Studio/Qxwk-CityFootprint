@@ -27,7 +27,8 @@
     <string name="visits_title">📍 行程记录</string>
     <string name="visits_empty">还没有记录。点右上角「添加足迹」添加第一条</string>
     <string name="visits_add">添加足迹</string>
-    <string name="visits_private">私密</string>
+    <!-- 私密徽章：列表条目与「查看」弹窗共用这一条，文案与网页 .visit-private-badge 一致（🔒 + 不公开） -->
+    <string name="visits_private">🔒 不公开</string>
     <!-- 行程条目里「城市 · 时间」那段：分隔点与时间一起给出，避免在代码里拼字符串 -->
     <string name="visits_meta">· %1$s</string>
     <string name="visits_delete_confirm_title">删除这条足迹？</string>
@@ -50,14 +51,14 @@
     <string name="visits_overview_visits">📍 足迹</string>
     <string name="visits_overview_provinces">🗺️ 省份</string>
     <string name="visits_overview_transport">🚆 最常用出行</string>
-    <!-- 城市名在本机 cities.json 里查不到省份时的占位（与网页端 findProvince 返回「未知」同口径） -->
-    <string name="visits_overview_unknown_province">未知</string>
 
     <!-- 新增 / 编辑 -->
     <string name="edit_title_new">添加足迹</string>
     <string name="edit_title_old">编辑足迹</string>
     <string name="edit_city">城市</string>
     <string name="edit_city_hint">点击选择城市</string>
+    <!-- 城市栏右侧那颗准心按钮（网页 docs/index.html 的同款按钮，它的 title 就是这句） -->
+    <string name="edit_locate">定位到最近的城市</string>
     <string name="edit_date">到访时间（可留空）</string>
     <string name="edit_date_hint">点击选择年 / 月，月份可留空</string>
     <string name="edit_date_year_only">仅年份</string>
@@ -78,6 +79,16 @@
     <string name="city_search_hint">搜索城市名或省份</string>
     <string name="city_empty">没有匹配的城市</string>
 
+    <!-- 定位（编辑页与地图页共用）。提示语对齐网页 docs/index.js：'正在定位…' / '未找到附近城市' /
+         '未获得定位权限，请允许定位'。网页的 geoErrorMsg 还分 POSITION_UNAVAILABLE / TIMEOUT 两句，
+         App 侧 [LocationManagerCompat] 拿不到位置时只能区分「没开定位」（enabled=false）与「其它」，
+         所以合成两句 —— 别为了凑齐三句去猜失败原因 -->
+    <string name="locate_locating">正在定位…</string>
+    <string name="locate_no_permission">未获得定位权限，请允许定位</string>
+    <string name="locate_disabled">定位失败，请检查是否已开启定位（GPS）</string>
+    <string name="locate_failed">定位失败，请重试</string>
+    <string name="locate_no_city">未找到附近城市</string>
+
     <!-- 统计（对齐网页 docs/stats.html：四张数字卡 + 城市次数排名 + 成就达成人数） -->
     <string name="stats_total_visits">✈️ 总行程</string>
     <string name="stats_total_cities">🏙️ 总城市</string>
@@ -93,6 +104,13 @@
 
     <!-- 地图 -->
     <string name="map_empty">还没有足迹，先去「足迹」页添加</string>
+    <!-- 管理员视图提示（浮在地图右上角，对齐网页 docs/index.html 的 .adminViewNote）。
+         网页端 index 只写「👑 管理员视图」，stats 那条才补「· 正在统计全部行程（含私密）」，
+         所以这里另给一条串，别复用 stats_admin_note -->
+    <string name="map_admin_note">👑 管理员视图</string>
+    <!-- 地图右上角那颗定位按钮。网页端颗「我的位置」蓝点是由添加弹窗触发的，App 两页分离，
+         得在地图页单独给个入口（见 MapFragment.locate），所以这条文案网页那边没有对应物 -->
+    <string name="map_locate">定位我的位置</string>
     <!-- 图例（按用户筛选，对齐网页 docs/index.html 的 .legend）：标题 + 全选 + 每个用户一行。
          标题用与网页 .legend-title 同一份文案（网页「谁的足迹」），两端别各叫一个名字 -->
     <string name="map_legend_title">谁的足迹</string>
@@ -111,8 +129,47 @@
     <!-- 我的 -->
     <string name="profile_logout">退出登录</string>
     <string name="profile_logout_confirm">退出后本地登录态会被清除，需要重新登录。</string>
-    <string name="profile_version">版本 %1$s</string>
     <string name="profile_account_note">登录由「Qxwk 通行证」(account.qxwkstudio.top) 提供，密码不经过足迹后端</string>
+    <!-- UID：本地用户 id，对应网页 account.js 的 `'UID：' + s.userId`（那边用等宽字体，这里同） -->
+    <string name="profile_uid">UID：%1$d</string>
+    <!-- 管理员徽章：网页 account.html 的 #adminBadge（👑 管理员），显隐看 /api/me 的 is_admin -->
+    <string name="profile_admin_badge">👑 管理员</string>
+    <!-- 头像的无障碍描述（头像本身是通行证给的图，回退时是昵称首字） -->
+    <string name="profile_avatar">头像</string>
+    <!-- 通行证中心：网页 account.html 那张卡（标题 / 提示 / 按钮三句照抄，两端别各编一套文案） -->
+    <string name="profile_passport_title">🎫 通行证中心</string>
+    <string name="profile_passport_hint">在通行证中心修改昵称 / 颜色 / 密码、生成邀请码</string>
+    <string name="profile_passport_open">打开通行证中心</string>
+    <!-- 跳外部浏览器失败（设备上没有任何能开 https 的应用）时的提示 -->
+    <string name="profile_passport_failed">没有可打开网页的应用</string>
+
+    <!-- 专属地图颜色：色点右边那行字，与网页 account.html 的 .profile-color-text 同一句
+         （色点本身在代码里按通行证主题色画，见 ProfileFragment.colorDot） -->
+    <string name="profile_color_label">专属地图颜色</string>
+
+    <!-- 清除缓存卡（网页 account.html 那张）。三句照抄网页，两端别各编一套文案 -->
+    <string name="profile_clear_cache_title">🧹 清除缓存</string>
+    <string name="profile_clear_cache_hint">清除本机缓存的接口数据与地图边界，不影响登录与足迹</string>
+    <string name="profile_clear_cache_btn">清除缓存</string>
+    <!-- 清完的提示。网页是在卡片里内联一行 #cacheMsg（带绿色 .ok 样式）显示这句；
+         App 全站提示一律用 Toast，也就不必为这一处再往色板里加一档「成功色」 -->
+    <string name="profile_clear_cache_done">已清除本机缓存</string>
+
+    <!-- 关于软件卡（网页 account.html 右下角那张） -->
+    <string name="profile_about_title">ℹ️ 关于软件</string>
+    <string name="profile_about_subtitle">City Footprint · 青翔未阔工作室</string>
+    <string name="profile_about_open_source">使用的开源内容</string>
+    <!-- 开源内容三条。**第一条不能照抄网页**：网页地图走 Leaflet，App 是 osmdroid，
+         各自列各自真正用到的那一个；底图瓦片与边界数据两端同源，照抄 -->
+    <string name="profile_about_osmdroid">osmdroid — 地图渲染（Apache-2.0）</string>
+    <string name="profile_about_amap">高德地图 — 底图瓦片</string>
+    <string name="profile_about_datav">DataV GeoAtlas — 行政区边界数据</string>
+    <string name="profile_about_developer">开发者</string>
+    <string name="profile_about_developer_text">青翔未阔工作室 · QxwkStudio@outlook.com</string>
+    <string name="profile_about_version">版本</string>
+    <!-- 版本号：网页把 'v' 显式拼在 APP_VERSION 前面（account.js），这里照同一形态，
+         与 CI 注入的 versionName（如 1.3.0）拼出来就是「当前版本 v1.3.0」 -->
+    <string name="profile_about_version_text">当前版本 v%1$s</string>
 
     <!-- 统计页排行行的文案与展开/收起（对齐网页 .rank-item / .rank-toggle） -->
     <string name="stats_rank_people">去过 %1$d 人</string>

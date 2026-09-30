@@ -64,6 +64,18 @@ function cacheInvalidate() {
   } catch (e) { /* 同上，失败不影响主流程 */ }
 }
 
+// 清除本站本地缓存：接口报文（sessionStorage）+ 地图行政边界（IndexedDB），供个人中心的
+// 「清除缓存」卡片调用。**不动** localStorage 里的登录态与主题 / 图例折叠等偏好 ——
+// 那些是用户设置、不是缓存，清掉只会让人莫名其妙（所以清完不必重新登录）。
+// 库名与 index.js 的 GEO_DB_NAME 同源（地图页的边界缓存就存在这个库里），改一处要同步另一处。
+function clearAppCache() {
+  cacheInvalidate();
+  try {
+    // 删库是异步的；account 页从没打开过这个连接，不会因为「连接未关」而删不掉
+    indexedDB.deleteDatabase('cityfootprint-geo');
+  } catch (e) { /* 不支持 IndexedDB（隐私模式等）时本来也没有边界缓存 */ }
+}
+
 /**
  * 读接口 + SWR：缓存命中就先把缓存交给页面画一版，网络回来再画一版。
  * 内容相同也照画一次，调用方只要守「渲染是幂等的」这一个约定，省掉一层深度比对。
