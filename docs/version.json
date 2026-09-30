@@ -3,11 +3,11 @@
   "android": {
     "version_name": "1.3.2",
     "version_code": 10302,
-    "download_url": "https://meng-2943.lanzouc.com/b007uu6jcb",
+    "download_url": "https://github.com/Qxwk-Studio/Qxwk-CityFootprint/releases/download/v1.3.2/CityFootprint-1.3.2.apk",
     "notes": [
-      "安装包提取密码:CtFp",
-      "版本号与网页端拉齐，本版起同为 1.3.2",
-      "修复底栏药丸切换标签不动效、城市选择页滚动崩溃",
+      "下载不了是正常的，过一会再试试",
+      "版本号与网页端对齐为 1.3.2",
+      "修复底栏动画不生效、城市选择页崩溃",
       "行程列表的分享按钮加「制作中」提示"
     ]
   },
