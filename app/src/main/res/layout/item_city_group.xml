@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 城市选择页的省份分组标题，同时也是吸顶条（见 CityPickerActivity 的 StickyProvinceDecoration）。
+     背景必须是**不透明**的：吸顶时它盖在列表行上面，透明底会把下面的城市名透出来。
+     根节点直接是 TextView，ViewBinding 里取 binding.root 就是它本身。 -->
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/textGroupTitle"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@color/bg"
+    android:paddingStart="16dp"
+    android:paddingTop="10dp"
+    android:paddingEnd="16dp"
+    android:paddingBottom="6dp"
+    android:textColor="@color/muted_fg"
+    android:textSize="12sp"
+    android:textStyle="bold" />

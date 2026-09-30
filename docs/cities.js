@@ -1,6 +1,11 @@
 // 国内地级市数据（市级单位，含经纬度）
 // 结构：[{ name: '市名', province: '省份', lat: 纬度, lng: 经度 }, ...]
 // 如需补充城市，按此格式往对应省份数组里加即可。
+//
+// 以后要收国外城市：在 name 后面插一个可选的 country（不写 = 中国），
+// 例如 { name: '东京', country: '日本', province: '关东', lat: 35.68, lng: 139.76 }。
+// 字段顺序不能换 —— App 的导出脚本（app/tools/gen-cities.mjs）按 name → country → province 认；
+// 顺序对了，网页端（这里的 country 已经在用）与 App 端的分组都会自动按国家分层，两边都不用改代码。
 // 坐标取城市主城区近似值，打点用足够。
 //
 // 与 adcode 的关系：不是本表每座城市都查得到 docs/city-codes.js 里的边界代码。台湾各市

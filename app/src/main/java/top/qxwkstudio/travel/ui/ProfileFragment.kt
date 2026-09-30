@@ -52,9 +52,10 @@ class ProfileFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         store = Store(requireContext())
-        binding.btnLogout.setOnClickListener { confirmLogout() }
-        binding.btnPassport.setOnClickListener { openPassport() }
-        binding.btnClearCache.setOnClickListener { clearCache() }
+        // 三处都是「整行可点」的设置行，没有按钮（见 fragment_profile.xml 的分组结构）
+        binding.rowLogout.setOnClickListener { confirmLogout() }
+        binding.rowPassport.setOnClickListener { openPassport() }
+        binding.rowClearCache.setOnClickListener { clearCache() }
         refresh()
     }
 
@@ -77,7 +78,7 @@ class ProfileFragment : Fragment() {
         // 管理员徽章：is_admin 只来自 /api/me，见 Store.isAdmin
         binding.textAdminBadge.visibility = if (store.isAdmin) View.VISIBLE else View.GONE
         binding.colorDot.background = colorDot(store.color)
-        binding.textAboutVersion.text = getString(R.string.profile_about_version_text, BuildConfig.VERSION_NAME)
+        binding.textAboutVersion.text = getString(R.string.profile_about_version_value, BuildConfig.VERSION_NAME)
         showAvatar(nickname)
     }
 

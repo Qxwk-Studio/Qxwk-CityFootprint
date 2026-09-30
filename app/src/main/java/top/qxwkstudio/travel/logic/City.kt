@@ -16,10 +16,21 @@ import kotlinx.serialization.Serializable
 data class City(
     val name: String,
     val province: String = "",
+    /**
+     * 所属国家。现在数据里清一色是「中国」—— docs/cities.js 里没有这个字段，生成脚本按
+     * [DEFAULT_COUNTRY] 补上（见 app/tools/gen-cities.mjs）。留着它是为了以后加国外城市：
+     * 城市表、生成脚本、选城页的分组都已经按国家分层，到时候只要往源数据里写 country。
+     */
+    val country: String = DEFAULT_COUNTRY,
     val lat: Double,
     val lng: Double,
     val adcode: Int? = null,
-)
+) {
+    companion object {
+        /** 缺省国家：源数据不带 country 时按它归类。 */
+        const val DEFAULT_COUNTRY = "中国"
+    }
+}
 
 /**
  * 城市搜索。刻意做成纯函数（不碰 Context / 不读 assets），单测才好直接喂数据进来。

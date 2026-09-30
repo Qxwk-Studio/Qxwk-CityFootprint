@@ -8,8 +8,6 @@ import android.text.Editable
 import android.text.TextWatcher
 import android.view.View
 import android.widget.ArrayAdapter
-import android.widget.LinearLayout
-import android.widget.Spinner
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
@@ -107,22 +105,26 @@ class VisitEditActivity : AppCompatActivity() {
 
         if (editing) {
             b.inputCity.setText(intent.getStringExtra(EXTRA_CITY).orEmpty())
-            b.inputDate.setText(intent.getStringExtra(EXTRA_DATE).orEmpty())
             b.inputNote.setText(intent.getStringExtra(EXTRA_NOTE).orEmpty())
             b.switchPrivate.isChecked = intent.getBooleanExtra(EXTRA_PRIVATE, false)
             lat = intent.getDoubleExtra(EXTRA_LAT, Double.NaN).takeIf { !it.isNaN() }
             lng = intent.getDoubleExtra(EXTRA_LNG, Double.NaN).takeIf { !it.isNaN() }
         } else {
-            // 新增默认填「本月」——与网页添加弹窗（docs/index.js 的 openQuickModal）同口径：
-            // 添加行程时最常见的值，用户不动就是对的。编辑时不动：有日期就回填、没有就留空（= 记不清了）
-            val now = Calendar.getInstance()
-            b.inputDate.setText("%04d-%02d".format(now.get(Calendar.YEAR), now.get(Calendar.MONTH) + 1))
             // 进新增页顺手定位一次，对齐网页 openQuickAdd（开弹窗即尽力定位）。
             // force=false：不覆盖用户已选的城市（自动那次可能晚于用户手动选城才回来）。
             // post 到下一帧再跑：先把表单画出来（用户先看见这一页，再弹系统权限框），
             // 也避开在 onCreate 里直接 launch 权限请求
             b.root.post { locateIntoCity(force = false) }
         }
+
+        // 年月两个下拉：编辑时回填已存的日期，新增时默认填「本月」——与网页添加弹窗
+        // （docs/index.js 的 openQuickModal）同口径：添加行程时最常见的值，用户不动就是对的。
+        // 编辑时不兜底：有日期就回填、没有就是「记不清了」（开关由 setupDateSelects 勾上）
+        val now = Calendar.getInstance()
+        setupDateSelects(
+            if (editing) intent.getStringExtra(EXTRA_DATE).orEmpty()
+            else "%04d-%02d".format(now.get(Calendar.YEAR), now.get(Calendar.MONTH) + 1)
+        )
 
         // 出行方式 chips：新增时没有「已选」（getStringArrayListExtra 回 null），编辑时按已存的回填
         buildTransportChips(intent.getStringArrayListExtra(EXTRA_TRANSPORT).orEmpty())
@@ -141,10 +143,11 @@ class VisitEditActivity : AppCompatActivity() {
         // focusable=false 也照样吃掉触摸事件，挂在外层收不到点击（这正是「点城市没反应」的原因）。
         b.inputCity.setOnClickListener { openPicker() }
 
-        // 到访时间同理：点一下弹年月选择器，选中后写回 YYYY-MM（见 pickDate）
-        b.inputDate.setOnClickListener { pickDate() }
+        // 到访时间不再点开对话框：两个下拉就摆在表单里（见 setupDateSelects）
 
         b.btnSave.setOnClickListener { save() }
+        // 取消 = 不保存退出，与顶栏返回等价（网页编辑弹窗那颗「取消」的位置就靠它对齐）
+        b.btnCancel.setOnClickListener { finish() }
         b.btnDelete.setOnClickListener { confirmDelete() }
 
         // 城市栏右侧那颗准心：用户主动定位，明确覆盖已选中的城市
@@ -195,59 +198,72 @@ class VisitEditActivity : AppCompatActivity() {
     }
 
     /**
-     * 到访时间选择器：一个「年份 + 月份」的对话框，月份里带「仅年份」一项。
-     * 与网页端 docs/visits.html 的 visitYear / visitMonth 两个下拉同口径，也正好覆盖后端只认的
-     * YYYY 与 YYYY-MM 两种形态（worker.js 的 ^\d{4}(-\d{2})?$）：年份必有、月份可空。
-     * 「清除」按钮对应网页端的「记不清了」（后端允许 visit_date 为 null）。
+     * 年月两个下拉：与网页 docs/visits.html 编辑弹窗的 visitYear / visitMonth + forgotDate 同一套。
+     *
+     * 选项：年份「今年 → 2000」，月份「仅年份 / 1 月 … 12 月」。刻意不给两个下拉加空首项（网页有，
+     * 因为 select 得靠它取消选择）—— app 这边「没有日期」由「记不清了」开关表达，下拉一旦被点开
+     * 就总能选到值，不必再多一个「空」选项去猜用户的意思。
+     *
+     * [date] 是已存的日期（'' 或 YYYY / YYYY-MM）：能解析出年份就回填两个下拉，否则勾上「记不清了」。
      */
-    private fun pickDate() {
-        val parts = binding.inputDate.text?.toString()?.trim().orEmpty().split("-")
-        val now = Calendar.getInstance()
-        val years = (now.get(Calendar.YEAR) downTo 2000).toList()
-        // 已填的年份/月份用来定位初始选项；「2024」与「2024-08」都能还原
-        val initYear = parts.getOrNull(0)?.toIntOrNull()?.takeIf { it in years } ?: now.get(Calendar.YEAR)
-        val initMonth = parts.getOrNull(1)?.toIntOrNull()?.coerceIn(1, 12) ?: 0
-
-        val yearSpinner = makeSpinner(years.map { "$it 年" }, years.indexOf(initYear))
-        val monthSpinner = makeSpinner(listOf(getString(R.string.edit_date_year_only)) + (1..12).map { "$it 月" }, initMonth)
-
-        val d = resources.displayMetrics.density
-        val row = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            setPadding((20 * d).toInt(), (8 * d).toInt(), (20 * d).toInt(), 0)
-            addView(yearSpinner, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
-            addView(
-                monthSpinner,
-                LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-                    .apply { marginStart = (8 * d).toInt() },
+    private fun setupDateSelects(date: String) {
+        val b = binding
+        val years = (Calendar.getInstance().get(Calendar.YEAR) downTo 2000).toList()
+        b.inputYear.setAdapter(
+            ArrayAdapter(this, android.R.layout.simple_list_item_1, years.map { "$it 年" })
+        )
+        b.inputMonth.setAdapter(
+            ArrayAdapter(
+                this,
+                android.R.layout.simple_list_item_1,
+                listOf(getString(R.string.edit_date_year_only)) + (1..12).map { "$it 月" },
             )
+        )
+
+        val parts = date.trim().split("-")
+        val year = parts.getOrNull(0)?.toIntOrNull()?.takeIf { it in years }
+        val month = parts.getOrNull(1)?.toIntOrNull()?.coerceIn(1, 12)
+        if (year != null) {
+            b.inputYear.setText("$year 年", false)
+            // 月份缺省（YYYY 形态）时选下标 0，也就是「仅年份」
+            b.inputMonth.setText(b.inputMonth.adapter.getItem(month ?: 0).toString(), false)
         }
 
-        AlertDialog.Builder(this)
-            .setTitle(R.string.edit_date)
-            .setView(row)
-            .setPositiveButton(R.string.common_confirm) { _, _ ->
-                val y = years[yearSpinner.selectedItemPosition]
-                val m = monthSpinner.selectedItemPosition
-                // m == 0 是「仅年份」那一项
-                binding.inputDate.setText(if (m == 0) "$y" else "%04d-%02d".format(y, m))
-                binding.dateLayout.error = null
-            }
-            .setNeutralButton(R.string.edit_date_clear) { _, _ ->
-                binding.inputDate.setText("")
-                binding.dateLayout.error = null
-            }
-            .setNegativeButton(R.string.common_cancel, null)
-            .show()
+        // 先定勾选态、再挂监听：isChecked 的赋值不该被当成用户操作走一遍 applyForgot
+        b.switchForgot.isChecked = year == null
+        b.switchForgot.setOnCheckedChangeListener { _, forgot -> applyForgot(forgot) }
+        applyForgot(year == null)
     }
 
-    /** 生成一个把 [labels] 铺进下拉、预选第 [selected] 项的 Spinner。 */
-    private fun makeSpinner(labels: List<String>, selected: Int): Spinner =
-        Spinner(this).apply {
-            adapter = ArrayAdapter(this@VisitEditActivity, android.R.layout.simple_spinner_item, labels)
-                .apply { setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
-            setSelection(selected)
+    /**
+     * 「记不清了」= 这条足迹没有日期（后端允许 visit_date 为空）：清空并置灰两个下拉。
+     * 与网页 toggleDate 同口径 —— 那边也是 disabled + value=''，而不是把已选的年月留在框里看着还在。
+     */
+    private fun applyForgot(forgot: Boolean) {
+        if (forgot) {
+            binding.inputYear.setText("", false)
+            binding.inputMonth.setText("", false)
         }
+        listOf(binding.inputYear, binding.inputMonth).forEach { it.isEnabled = !forgot }
+        listOf(binding.yearLayout, binding.monthLayout).forEach { it.isEnabled = !forgot }
+        binding.yearLayout.error = null
+    }
+
+    /**
+     * 由两个下拉组合出要提交的日期：'2024-08'，月份选的是「仅年份」时是 '2024'；没选年份返回 null（= 没日期）。
+     *
+     * 从「2024 年」里取数字而不是比对后缀：月份那栏的「仅年份」正好取不到数字，于是「月份缺失」
+     * 与「年份缺失」两种情况都能用一次 [digitsOf] 区分开，不用再引两个「年/月」后缀字符串。
+     */
+    private fun dateValue(): String? {
+        val year = digitsOf(binding.inputYear.text) ?: return null
+        val month = digitsOf(binding.inputMonth.text)
+        return if (month == null) "%04d".format(year) else "%04d-%02d".format(year, month)
+    }
+
+    /** 取出文本里的数字（「2024 年」→ 2024，「仅年份」→ null）。 */
+    private fun digitsOf(text: CharSequence?): Int? =
+        text?.filter { it.isDigit() }?.takeIf { it.isNotEmpty() }?.toIntOrNull()
 
     private fun updateCounter(length: Int) {
         binding.textNoteCounter.text = getString(R.string.edit_note_counter, length)
@@ -297,12 +313,15 @@ class VisitEditActivity : AppCompatActivity() {
         }
         b.cityLayout.error = null
 
-        val rawDate = b.inputDate.text?.toString()
+        // 日期由两个下拉现组合（见 dateValue）：形态只可能是 '' / YYYY / YYYY-MM，
+        // 理论上过不了校验的情况已经不存在。这道与后端同口径的检查留着，是因为它同时也是
+        // 「万一以后又有人把这个字段改回手输」的兜底，成本只是一次正则
+        val rawDate = dateValue()
         if (!VisitDate.isValid(rawDate)) {
-            b.dateLayout.error = getString(R.string.edit_err_date)
+            b.yearLayout.error = getString(R.string.edit_err_date)
             return
         }
-        b.dateLayout.error = null
+        b.yearLayout.error = null
 
         val draft = VisitDraft(
             city = city,

@@ -68,27 +68,86 @@
                             android:maxLines="1" />
                     </com.google.android.material.textfield.TextInputLayout>
 
-                    <!-- 到访时间也改成「点开选择」：与城市一样是只读框，点一下弹年月选择器。
-                         既避开数字键盘上没有减号的问题，也从源头杜绝手输格式错误。 -->
-                    <com.google.android.material.textfield.TextInputLayout
-                        android:id="@+id/dateLayout"
-                        style="@style/Widget.App.TextInputLayout"
+                    <!-- 到访时间：两个下拉（年 / 月），对齐网页 docs/visits.html 编辑弹窗的
+                         visitYear + visitMonth 与「记不清了」开关。
+                         之前是点开一个对话框选，现在摆在台面上，少一次点击、也少一层遮挡。
+
+                         下拉用 AutoCompleteTextView（inputType=none 只让选不让敲）而不是 Spinner：
+                         Spinner 的弹层是系统对话框样式，与全 app 的 M3 弹层不是一套。
+                         年份是「年」下拉的首项、月份是「月」下拉的首项，两张菜单都认空选 ——
+                         后端只认 YYYY 与 YYYY-MM 两种形态（worker.js），所以「没选年份」= 没有日期，
+                         「选了年份没选月份」= 只有年份。 -->
+                    <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:hint="@string/edit_date"
-                        app:helperText="@string/edit_date_hint">
+                        android:layout_marginTop="16dp"
+                        android:text="@string/edit_date"
+                        android:textColor="@color/fg"
+                        android:textSize="14sp" />
 
-                        <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/inputDate"
-                            android:layout_width="match_parent"
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:orientation="horizontal">
+
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:id="@+id/yearLayout"
+                            style="@style/Widget.App.TextInputLayout"
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:clickable="true"
-                            android:cursorVisible="false"
-                            android:focusable="false"
-                            android:inputType="none"
-                            android:maxLines="1" />
-                    </com.google.android.material.textfield.TextInputLayout>
+                            android:layout_weight="1"
+                            android:hint="@string/edit_date_year"
+                            app:endIconMode="dropdown_menu">
+
+                            <AutoCompleteTextView
+                                android:id="@+id/inputYear"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:inputType="none" />
+                        </com.google.android.material.textfield.TextInputLayout>
+
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:id="@+id/monthLayout"
+                            style="@style/Widget.App.TextInputLayout"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:layout_weight="1"
+                            android:hint="@string/edit_date_month"
+                            app:endIconMode="dropdown_menu">
+
+                            <AutoCompleteTextView
+                                android:id="@+id/inputMonth"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:inputType="none" />
+                        </com.google.android.material.textfield.TextInputLayout>
+                    </LinearLayout>
+
+                    <!-- 「记不清了」开关：与网页的 forgotDate 同义 —— 勾上 = 这条足迹没有日期
+                         （后端允许 visit_date 为空），两个下拉随之清空并置灰 -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="@string/edit_date_forgot"
+                            android:textColor="@color/muted_fg"
+                            android:textSize="13sp" />
+
+                        <com.google.android.material.materialswitch.MaterialSwitch
+                            android:id="@+id/switchForgot"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:contentDescription="@string/edit_date_forgot" />
+                    </LinearLayout>
 
                     <!-- 出行方式：可多选、也可一个都不选（老数据本来就没这个概念）。
                          9 个 chip 由 VisitEditActivity 按 logic/Transport.kt 的顺序铺进来，
@@ -191,29 +250,51 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnSave"
-                style="@style/Widget.App.Button"
+            <!-- 底部按钮区：对齐网页编辑弹窗的 .dialog-actions —— 「取消 + 保存」并排、各占一半。
+                 取消走 Ghost（描边 + 次要文字色 + 胶囊），保存是主色胶囊；保存上不再挂 ✓ 图标：
+                 网页那两颗都是纯文字，加了图标的保存与旁边的删除看着就不像一套（这也正是它俩
+                 「文案不统一」的观感来源）。
+                 取消与顶栏返回都是「不保存退出」，留两颗不冲突：返回是系统习惯，取消是网页习惯 -->
+            <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="44dp"
+                android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                android:insetTop="0dp"
-                android:insetBottom="0dp"
-                android:text="@string/edit_save"
-                android:textSize="14sp"
-                app:icon="@drawable/ic_check"
-                app:iconGravity="textEnd"
-                app:iconPadding="6dp"
-                app:iconSize="16dp"
-                app:iconTint="@color/on_accent" />
+                android:orientation="horizontal">
 
-            <!-- 删除只在编辑态出现（新增时 hide 掉）：还没有的记录谈不上删除 -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnCancel"
+                    style="@style/Widget.App.Button.Ghost"
+                    android:layout_width="0dp"
+                    android:layout_height="44dp"
+                    android:layout_weight="1"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
+                    android:text="@string/common_cancel"
+                    android:textSize="14sp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnSave"
+                    style="@style/Widget.App.Button"
+                    android:layout_width="0dp"
+                    android:layout_height="44dp"
+                    android:layout_marginStart="10dp"
+                    android:layout_weight="1"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
+                    android:text="@string/edit_save"
+                    android:textSize="14sp" />
+            </LinearLayout>
+
+            <!-- 删除只在编辑态出现（新增时 hide 掉）：还没有的记录谈不上删除。
+                 不再整宽 —— 网页编辑弹窗里没有这颗（删除在列表行），这里是低频的危险动作，
+                 收成一颗靠左的小按钮，免得和上面那对主次按钮抢视线 -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnDelete"
                 style="@style/Widget.App.Button.Danger"
-                android:layout_width="match_parent"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="10dp"
+                android:minWidth="0dp"
                 android:text="@string/edit_delete"
                 android:visibility="gone" />
 

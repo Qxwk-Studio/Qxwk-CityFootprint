@@ -16,6 +16,7 @@
  *
  * 用到的两个源文件格式（改格式必须同步改这里）：
  *   docs/cities.js     { name: '北京', province: '北京', lat: 39.904, lng: 116.407 },
+ *                      country 可选（不写 = 中国）：{ name: '东京', country: '日本', province: '关东', … }
  *   docs/city-codes.js "北京": 110000,
  *
  * 跑法：node app/tools/gen-cities.mjs
@@ -32,8 +33,15 @@ const citiesSource = resolve(repoRoot, 'docs', 'cities.js');
 const codesSource = resolve(repoRoot, 'docs', 'city-codes.js');
 const outFile = resolve(here, '..', 'src', 'main', 'assets', 'cities.json');
 
-/** 一条城市记录。lat/lng 必须都是数字，借此天然跳过文件头注释里那份「示例」。 */
-const CITY_RE = /\{\s*name:\s*'([^']+)'\s*,\s*province:\s*'([^']+)'\s*,\s*lat:\s*(-?\d+(?:\.\d+)?)\s*,\s*lng:\s*(-?\d+(?:\.\d+)?)\s*\}/g;
+/**
+ * 一条城市记录。name 必须在最前，province/lat/lng 跟在后面；country **可选**，缺省 = 中国：
+ *   { name: '北京', province: '北京', lat: 39.904, lng: 116.407 },
+ *   { name: '东京', country: '日本', province: '关东', lat: 35.68, lng: 139.76 },
+ * 顺序就是这里的约定：以后加国外城市，把 country 插在 name 与 province 之间。
+ * 插错位置这条正则就认不出那座城市 —— 末尾「解析条数 vs 行首条数」的校验会直接报错，
+ * 不会悄悄少导出一座城。lat/lng 必须都是数字，借此天然跳过文件头注释里那份「示例」。
+ */
+const CITY_RE = /\{\s*name:\s*'([^']+)'\s*,\s*(?:country:\s*'([^']+)'\s*,\s*)?province:\s*'([^']+)'\s*,\s*lat:\s*(-?\d+(?:\.\d+)?)\s*,\s*lng:\s*(-?\d+(?:\.\d+)?)\s*\}/g;
 /**
  * 用来独立数一遍条数：与上面解析出的条数必须一致，否则说明正则漏了格式变体。
  * 锚在行首（`^\s*{`）是必须的：文件头的注释里也有一句「// 结构：[{ name: '市名', ...」，
@@ -51,6 +59,9 @@ function fail(message) {
   process.exit(1);
 }
 
+/** 源数据没写 country 时的缺省国家，与 app 侧 logic/City.kt 的 DEFAULT_COUNTRY 同一口径。 */
+const DEFAULT_COUNTRY = '中国';
+
 // ── 解析 ──
 const citiesText = read(citiesSource);
 const codesText = read(codesSource);
@@ -59,9 +70,10 @@ const cities = [];
 for (const m of citiesText.matchAll(CITY_RE)) {
   cities.push({
     name: m[1],
-    province: m[2],
-    lat: Number(m[3]),
-    lng: Number(m[4]),
+    country: m[2] ?? DEFAULT_COUNTRY,
+    province: m[3],
+    lat: Number(m[4]),
+    lng: Number(m[5]),
   });
 }
 
@@ -82,9 +94,15 @@ for (const c of cities) {
   if (seen.has(c.name)) fail(`cities.js 里有重复城市名：${c.name}`);
   seen.add(c.name);
   if (!Number.isFinite(c.lat) || !Number.isFinite(c.lng)) fail(`${c.name} 的坐标不是数字`);
-  // 中国的经纬度大致范围，防止 lat/lng 写反（写反了地图上会跑到境外，肉眼很难往回查）
-  if (c.lat < 3 || c.lat > 54 || c.lng < 73 || c.lng > 136) {
-    fail(`${c.name} 的坐标 (${c.lat}, ${c.lng}) 超出中国范围，检查 lat/lng 是否写反`);
+  // 中国的经纬度大致范围，防止 lat/lng 写反（写反了地图上会跑到境外，肉眼很难往回查）。
+  // 只卡中国的城市：国外城市本来就该落在这范围之外，拿它去卡会把正常数据判成错误。
+  // 非中国城市退一步只校验经纬度本身合法，免得小数点或符号打错却能一路导出。
+  if (c.country === DEFAULT_COUNTRY) {
+    if (c.lat < 3 || c.lat > 54 || c.lng < 73 || c.lng > 136) {
+      fail(`${c.name} 的坐标 (${c.lat}, ${c.lng}) 超出中国范围，检查 lat/lng 是否写反`);
+    }
+  } else if (Math.abs(c.lat) > 90 || Math.abs(c.lng) > 180) {
+    fail(`${c.name}（${c.country}）的坐标 (${c.lat}, ${c.lng}) 不是合法经纬度`);
   }
 }
 
@@ -103,7 +121,7 @@ const merged = cities.map((c) => {
     }
     usedCodes.add(adcode);
   }
-  return { name: c.name, province: c.province, lat: c.lat, lng: c.lng, adcode };
+  return { name: c.name, country: c.country, province: c.province, lat: c.lat, lng: c.lng, adcode };
 });
 
 const payload = {
@@ -124,6 +142,8 @@ const missing = merged.filter((c) => c.adcode === null);
 const unusedCodes = [...codes.keys()].filter((name) => !seen.has(name));
 console.log(`✓ ${rel(outFile)}`);
 console.log(`  城市 ${merged.length} 条（${rel(citiesSource)} ${rawEntries} 条），其中 ${withAdcode} 条有 adcode`);
+const countries = [...new Set(merged.map((c) => c.country))];
+console.log(`  国家/地区 ${countries.length} 个：${countries.join('、')}`);
 console.log(`  缺 adcode ${missing.length} 条：${missing.map((c) => c.name).join('、') || '无'}`);
 if (unusedCodes.length) {
   console.log(`  未被城市表用到的 adcode ${unusedCodes.length} 条（城市表里没有这些名字）：${unusedCodes.join('、')}`);

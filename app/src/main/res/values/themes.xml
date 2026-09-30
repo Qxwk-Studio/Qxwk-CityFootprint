@@ -75,6 +75,15 @@
         <item name="android:textColor">@color/fg</item>
     </style>
 
+    <!-- 无填充的次要按钮（编辑页底部那颗「取消」）：描边 + 次要文字色 + 胶囊
+         —— 对齐网页的 .btn-ghost（透明底、1px border、次要色文字），
+         它与右边的「保存」主色胶囊成对出现（网页 .dialog-actions 里就是这一对） -->
+    <style name="Widget.App.Button.Ghost" parent="Widget.Material3.Button.OutlinedButton">
+        <item name="cornerRadius">999dp</item>
+        <item name="strokeColor">@color/border</item>
+        <item name="android:textColor">@color/text_secondary</item>
+    </style>
+
     <!-- 危险动作按钮（退出登录 / 编辑页的删除）：描边 + 红字 + 胶囊
          —— 网页的 .btn-logout 用 radius-pill，编辑弹窗里「取消 / 保存修改」那一对也都是胶囊；
          网页列表行内的 .btn-danger.btn-sm(8px) 在 app 里不存在（删除已收进编辑页）。 -->
@@ -240,28 +249,82 @@
         <item name="android:textColor">@color/muted_fg</item>
     </style>
 
-    <!-- ===== 「我的」页「关于软件」卡里的两级文字（对应网页 .about-label / .about-list li） =====
-         单列出来而不是复用 CardTitle / BodyMuted：那两档是 16sp 正文色 / 11sp 弱色，
-         而这里是「11sp 粗体最弱色的小节名」与「13sp 次要色的条目」，
-         正好各自压在两者中间，硬套任何一档都会让层级糊掉。 -->
+    <!-- ===== 「我的」页的设置页形态：分组 + 行 =====
+         这一页不用网页那种「一叠描边卡片」（account.html 的 .card），改成手机设置页的样子：
+         浅灰页面底 + 白色圆角分组（无描边，见 drawable/bg_settings_group.xml）+
+         组上方一行灰字组名 + 组内行之间 1dp 分隔线 + 可点行尾收一枚箭头。
 
-    <!-- 小节名（「使用的开源内容 / 开发者 / 版本」）。marginTop 做出小节之间的间隔，
-         网页那边是 .about-block + .about-block 的 14px -->
-    <style name="ProfileAboutLabel">
-        <item name="android:layout_width">wrap_content</item>
+         行统一是「横向容器 [文字列 weight=1] [行尾元素]」，文字列内部再纵排「标题 / 副标题」——
+         只有一行的行也套这层壳，不为了省一层就改结构，复制粘贴时才不会缺斤少两。 -->
+
+    <!-- 分组容器。clipToOutline 由各分组自己加上：让行内的水波纹被圆角裁掉，
+         不然最上面那行的方角水波纹会溢到圆角外面去 -->
+    <style name="SettingsGroup">
+        <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">wrap_content</item>
-        <item name="android:layout_marginTop">14dp</item>
-        <item name="android:textSize">11sp</item>
-        <item name="android:textStyle">bold</item>
+        <item name="android:orientation">vertical</item>
+        <item name="android:background">@drawable/bg_settings_group</item>
+    </style>
+
+    <!-- 组名（「设置」「账号」「关于软件」）：12sp 最弱色，缩进 4dp —— 分组本身有 16dp 边距，
+         合起来视觉上约等于行内文字的起始位置 -->
+    <style name="SettingsGroupTitle">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginStart">4dp</item>
+        <item name="android:layout_marginTop">20dp</item>
+        <item name="android:layout_marginBottom">8dp</item>
+        <item name="android:textSize">12sp</item>
         <item name="android:textColor">@color/text_tertiary</item>
     </style>
 
-    <!-- 小节里的一行（开源条目 / 开发者 / 版本号） -->
-    <style name="ProfileAboutItem">
+    <!-- 一行。minHeight + 上下 10dp 内边距：只有标题时撑到 52dp（手机设置里一行的高矮），
+         带副标题时自会长高。**不含水波纹与 clickable** —— 只读行（关于软件那几行）不该有，
+         可点行各自补上 background=selectableItemBackground + clickable + focusable -->
+    <style name="SettingsRow">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:minHeight">52dp</item>
+        <item name="android:gravity">center_vertical</item>
+        <item name="android:orientation">horizontal</item>
+        <item name="android:paddingStart">16dp</item>
+        <item name="android:paddingEnd">16dp</item>
+        <item name="android:paddingTop">10dp</item>
+        <item name="android:paddingBottom">10dp</item>
+    </style>
+
+    <!-- 行里的文字列（标题 + 可选的副标题）—— weight=1 把它撑开，
+         是为了让行尾的箭头 / 值贴到最右边 -->
+    <style name="SettingsRowCopy">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:orientation">vertical</item>
+    </style>
+
+    <!-- 行标题（含开头那个 emoji 图标，与网页的文案同一条字符串，不必拆成两个 View） -->
+    <style name="SettingsRowTitle">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textSize">15sp</item>
+        <item name="android:textColor">@color/fg</item>
+    </style>
+
+    <!-- 行副标题（清除缓存的说明、通行证中心的用途、开源条目…） -->
+    <style name="SettingsRowSub">
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">wrap_content</item>
         <item name="android:layout_marginTop">2dp</item>
+        <item name="android:textSize">12sp</item>
+        <item name="android:textColor">@color/muted_fg</item>
+    </style>
+
+    <!-- 行尾的值（版本号这类只读信息）：13sp 最弱色，与左边的标题留出 12dp -->
+    <style name="SettingsRowValue">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginStart">12dp</item>
         <item name="android:textSize">13sp</item>
-        <item name="android:textColor">@color/text_secondary</item>
+        <item name="android:textColor">@color/text_tertiary</item>
     </style>
 </resources>
