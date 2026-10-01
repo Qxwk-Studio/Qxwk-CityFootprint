@@ -16,6 +16,19 @@ function adcodeOf(city) {
   return code == null ? null : String(code);
 }
 
+// 城市名的**形态**校验（入库前的最后一道）。
+// 不强制命中 CITY_CODES：前端 docs/cities.js 里有 15 座字典里没有的城市（东京、台北、高雄/台中/台南
+// 那几个，以及西昌/康定/格尔木/伊宁/库尔勒），硬查字典等于把它们全拒了 —— 所以上面那句「自造的名字
+// 不拒绝」是有意保留的。这里拦的是「不可能是城市名」的输入：尖括号与引号（存储型 XSS 的入口，
+// 现在两端渲染都转义了，但那靠的是纪律）、控制字符、以及塞进城市排行榜的超长垃圾。长度仍卡 30。
+// 允许的字符：汉字 / 拉丁字母 / 数字 / 空格 / 中点（音译名，如「撒马尔罕」那种写法）/ 句点 /
+// 连字符 / 撇号 / 括号（「St. John's」「阿坝州(马尔康)」这类）。
+const CITY_NAME_RE = /^[\u4e00-\u9fffA-Za-z0-9][\u4e00-\u9fffA-Za-z0-9 ·\-'().]{0,29}$/;
+
+function isCityName(city) {
+  return CITY_NAME_RE.test(city);
+}
+
 // 出行方式白名单 + 固定顺序：入库前过滤未知 code、按下面的顺序去重排序，落成 JSON 数组字符串。
 // 顺序写死而不是沿用用户勾选顺序 —— 否则同一组选择会落出不同的字符串，比较/统计都不方便。
 // code 列表必须与前端 docs/app.js 的 window.TRANSPORTS 保持一致。
@@ -236,7 +249,7 @@ async function handleApi(request, env) {
     const isPrivate = body.is_private ? 1 : 0;
     const transport = pickTransports(body.transport);
 
-    if (!city || city.length > 30) return error('请选择城市');
+    if (!isCityName(city)) return error('请选择城市');
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) return error('城市坐标无效');
     if (visitDate !== null && !/^\d{4}(-\d{2})?$/.test(visitDate)) return error('日期格式应为 2024 或 2024-08');
 
@@ -278,7 +291,7 @@ async function handleApi(request, env) {
     const isPrivate = body.is_private ? 1 : 0;
     const transport = pickTransports(body.transport);
 
-    if (!city || city.length > 30) return error('请选择城市');
+    if (!isCityName(city)) return error('请选择城市');
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) return error('城市坐标无效');
     if (visitDate !== null && !/^\d{4}(-\d{2})?$/.test(visitDate)) return error('日期格式应为 2024 或 2024-08');
 
@@ -363,7 +376,10 @@ export default {
       } catch (e) {
         // 首次到本站却没验证邮箱（见 lib.js 的 resolveViewer ③）：这是正常的业务拒绝，别当 500
         if (e instanceof NeedEmailVerifyError) return withCors(error(e.message, 403), request);
-        return withCors(json({ error: '服务器错误: ' + (e && e.message ? e.message : String(e)) }, 500), request);
+        // 异常原文只进日志（wrangler tail / Workers Logs 才看得到），不回给调用方 ——
+        // D1 抛的错里带着 SQL 片段和表名，透出去等于把库结构告诉对面
+        console.error('接口异常:', e && e.stack ? e.stack : e);
+        return withCors(error('服务器错误，请稍后再试', 500), request);
       }
     }
 

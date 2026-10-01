@@ -12,7 +12,7 @@
 //
 // 管理员**不豁免**，与普通用户同一档（这是有意选择，不是漏写）。
 
-import { error, json } from './lib.js';
+import { json } from './lib.js';
 
 // 限速文案。两端都是**原样透出**后端 error 字段的（网页 docs/app.js 抛 new Error(data.error)、
 // 安卓 data/ApiException.kt 优先取报文里的 error），所以这里写的就是用户最终看到的那句话，
@@ -30,17 +30,40 @@ export const WRITE_DAY_LIMIT = 200;
  * **fail open**：绑定没配（旧版 wrangler 静默丢弃了配置、或本地 dev）或调用自己抛错，
  * 一律放行 —— 限速是保护措施，它坏了不该把正常用户挡在门外。
  *
+ * 但绑定缺失必须留痕：那种情况下分钟档是**整体失效**的（不只这一次），只在日志里说一次，
+ * 免得每个被放行的请求都刷一行；`wrangler tail` 里看到这行就说明配置掉了，得去查 wrangler.toml。
+ * 调用自己抛错不记 —— 那是运行时抖动，不是配置问题。
+ *
  * @returns {Promise<boolean>} true = 放行
  */
 export async function allowMinute(env, binding, key) {
   const limiter = env && env[binding];
-  if (!limiter) return true;
+  if (!limiter) {
+    if (!bindingWarned.has(binding)) {
+      bindingWarned.add(binding);
+      console.warn(`[ratelimit] 绑定 ${binding} 未配置，分钟档已跳过（fail open）`);
+    }
+    return true;
+  }
   try {
     const { success } = await limiter.limit({ key });
     return !!success;
   } catch {
     return true;
   }
+}
+
+// 已经就「绑定缺失」告警过的 binding。模块级 Set：每个 isolate 各记各的，只用来去重日志。
+const bindingWarned = new Set();
+
+/**
+ * 天级窗口还剩多少秒到点：key 用的是 SQL 的 date('now')（UTC），下个窗口从**明天 UTC 零点**开始。
+ * 别写死 60 —— 那等于骗客户端「一分钟后再试」，其实还是要被挡到第二天。
+ */
+function secondsUntilUtcMidnight() {
+  const now = Date.now();
+  const d = new Date(now);
+  return Math.max(1, Math.ceil((Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + 1) - now) / 1000));
 }
 
 /**
@@ -63,6 +86,8 @@ export async function checkWriteLimit(env, DB, userId) {
      RETURNING count`
   ).bind('w:' + userId).first();
 
-  if (row && row.count > WRITE_DAY_LIMIT) return error(MSG_WRITE_DAY, 429);
+  if (row && row.count > WRITE_DAY_LIMIT) {
+    return json({ error: MSG_WRITE_DAY }, 429, { 'Retry-After': String(secondsUntilUtcMidnight()) });
+  }
   return null;
 }
