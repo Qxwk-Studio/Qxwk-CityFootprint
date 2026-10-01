@@ -29,7 +29,7 @@ import top.qxwkstudio.travel.logic.transportLabels
  * 接口：GET /api/my-visits（后端按 created_at DESC 排好序）。
  * 本页只「读」和给编辑入口：点条目看只读详情弹窗，铅笔进 VisitEditActivity，
  * 增删改三个请求都在那一页里发（POST / PUT / DELETE）。
- * 顶部那条公告横幅的数据不走上面这个接口，而是网页根下的静态清单（见 [loadNotices]）。
+ * 顶部那条公告横幅的数据不走上面这个接口，而是 App 清单（见 [loadNotices]）。
  */
 class VisitsFragment : Fragment() {
 
@@ -110,7 +110,7 @@ class VisitsFragment : Fragment() {
     }
 
     /**
-     * 拉公告（与「检查更新」同一个静态清单，见 data/Update），决定页头那条横幅显不显示。
+     * 拉公告（与「检查更新」「主页菜单栏目」共用 App 清单，见 data/Update），决定页头那条横幅显不显示。
      * **失败就静默**：公告不是这一页的主体，为主页拉不到公告弹一句错只会打扰人，
      * 横幅不出现即可（公告页那边相反，拉不到要明确说一声，见 NoticeActivity.load）。
      *

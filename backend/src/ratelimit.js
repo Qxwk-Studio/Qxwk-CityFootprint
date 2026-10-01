@@ -1,4 +1,4 @@
-// 接口限速：**分钟级**走 Cloudflare 的 Rate Limiting 绑定，**天级**走 D1（见 migrations/0002_rate_limit.sql）。
+// 接口限速：**分钟级**走 Cloudflare 的 Rate Limiting 绑定，**天级**走 D1（见 migrations/0001_init.sql）。
 //
 // 为什么拆成两套：
 //   · 分钟级是「防突发」—— 高频、每次请求都要判，用边缘的绑定最省（不落库、不占 D1 额度，

@@ -40,7 +40,8 @@ namespace_id = "9101"
   period = 60
 
 # 读接口这一档给得宽得多：一次地图/统计页加载本来就会发好几发，加上 /api/geo 按城市数逐个拉，
-# 卡在写接口那档（10）会立刻误伤正常用户。天级上限读侧不给，理由见 migrations/0002_rate_limit.sql。
+# 卡在写接口那档（10）会立刻误伤正常用户。天级上限读侧不给，理由见 migrations/0001_init.sql
+# 里 cf_rate_daily 那段注释。
 [[ratelimits]]
 name = "RL_READ"
 namespace_id = "9102"

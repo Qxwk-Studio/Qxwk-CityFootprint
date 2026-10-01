@@ -54,15 +54,47 @@ cd app
 三个域名（通行证 `account.qxwkstudio.top` / 网页 `travel.qxwkstudio.top` / 接口 `api.travel.qxwkstudio.top`）
 都是 HTTPS，所以清单里只有 `INTERNET` 权限、没有 `network_security_config` 的明文例外。
 
-### `docs/version.json`：检查更新与公告
+### App 清单（`GET /api/manifest`）：检查更新 / 公告 / 主页菜单栏目
 
-「我的」页的「检查更新」与「公告」两行，读的都是**网页根下的同一个静态文件** `docs/version.json`，
-不是后端接口 —— 整份内容都是手改的常量，改一次 push 一次就生效，不值得为它重新部署 Worker。
+「我的」页的「检查更新」与「公告」两行，以及主页右上角菜单里的栏目，读的都是**同一个后端接口**
+`GET /api/manifest`（`backend/src/worker.js`）。数据在 D1 的三张表里，建表与用法见
+`backend/migrations/0001_init.sql` 末尾的「App 清单」一段：`cf_app_version`（安卓版本，**一行一个版本、历史都留着**，
+接口取 `version_code` 最大的那行；更新说明是这行的 `notes` 列）/ `cf_notices`（公告）/ `cf_menu`（主页菜单栏目）。
+
+> 这三样原先放在网页静态文件 `docs/version.json`。搬进 D1 是为了改内容不必再走
+> 「改仓库 → push → 等 GitHub Pages 构建」：现在一条 `npx wrangler d1 execute` 就生效。
+> 那份文件**仍留在仓库里但已不再被读**，改它不会有任何效果。
+
+报文形状与旧文件**逐字段一致**（所以 App 侧的 `VersionManifest` 模型一行都没改）：
+
+**怎么改（命令都在 `backend/` 目录下执行，`--remote` 指线上库）**
+
+```bash
+# 看历史版本与当前「最新版」是哪行（最新 = version_code 最大的那行）
+npx wrangler d1 execute qxwk-data --remote --command "SELECT id, version_name, version_code, download_url FROM cf_app_version ORDER BY version_code DESC"
+
+# 发新版：INSERT 一行新记录（version_code 必须比上一版大），**旧行不要动**
+# 更新说明是一段多行文本、**一行一条**，用 char(10) 拼起来（SQL 字符串里不能直接写 \n 转义）
+npx wrangler d1 execute qxwk-data --remote --command "INSERT INTO cf_app_version (version_name, version_code, download_url, notes) VALUES ('1.4.0', 10400, 'https://…', '提取密码：CtFp' || char(10) || '新增足迹地图夜间模式')"
+
+# 补 / 改某一版（刚发的漏了一条说明、或下载地址换了）：照 id 改那一行，别新插一行顶替
+# 不想要说明就把整列置空
+npx wrangler d1 execute qxwk-data --remote --command "UPDATE cf_app_version SET notes='第一条说明' || char(10) || '第二条说明' WHERE id=2"
+
+# 发公告（id 自动往下排；**别去改已有的 id**）
+npx wrangler d1 execute qxwk-data --remote --command \
+  "INSERT INTO cf_notices (title, date, body) VALUES ('标题', '2026-10-01', '一段正文')"
+
+# 主页菜单加一个栏目（一条 = 一行 = 一个网页，title 与 url 都要给）
+npx wrangler d1 execute qxwk-data --remote --command \
+  "INSERT INTO cf_menu (title, url) VALUES ('🎉 限时活动', 'https://travel.qxwkstudio.top/activity-2026-fall.html')"
+```
 
 ```json
 {
-  "android": { "version_name": "0.0.1", "version_code": 1, "download_url": "https://…", "notes": ["一行一条更新说明"] },
-  "notices": [{ "id": 1, "title": "标题", "date": "2026-09-30", "body": "一段正文" }]
+  "android": { "version_name": "1.3.2", "version_code": 10302, "download_url": "https://…", "notes": ["一行一条更新说明"] },
+  "notices": [{ "id": 1, "title": "标题", "date": "2026-09-30", "body": "一段正文" }],
+  "menu": [{ "title": "📖 用户协议", "url": "https://travel.qxwkstudio.top/agreement.html" }]
 }
 ```
 
@@ -71,21 +103,21 @@ cd app
 - 比的是 `version_code`（整数）**不是** `version_name`：版本名是给人看的，「1.2.10 与 1.2.9 谁大」用字符串比一定答错。
   App 拿它跟自己的 `BuildConfig.VERSION_CODE`（CI 发版时用 `version_code` 注入）比，**严格大于**才算有新版本；
   相等或更小一律答「已是最新版本」。
-- `notes` 是更新说明，**一行一条**（JSON 数组），弹窗里逐条列在版本号下面；不需要就写 `[]`，
-  或者整个键不写 —— 那时弹窗里连「更新说明」这个小标题都不会出现。写成数组而不是一整段，
-  是为了手工改这个文件的人不必在 JSON 里写 `\n` 转义。
-- `download_url` **目前是占位符**（`https://example.com/...`），有可公开下载的 APK 之前必须换掉这一点 —— 在那之前，
-  点「前往下载」只会打开一个没有意义的页面。App 内**不做**下载与安装（那要处理存储权限、FileProvider 与「未知来源」授权），
+- `notes` 是更新说明，**一行一条**，弹窗里逐条列在版本号下面；没有就一行都不留（连「更新说明」这个小标题
+  也不会出现）。它是**最新版那一行**的 `notes` 列里的一段多行文本（`\n` 分隔，接口拆成数组），
+  所以加减一行说明不必写转义，用 `char(10)` 拼即可。
+- `download_url` 是点「前往下载」要打开的地址（现指向蓝奏云分享页），可以空着 —— 空地址时 App 只提示
+  「下载地址暂不可用」。App 内**不做**下载与安装（那要处理存储权限、FileProvider 与「未知来源」授权），
   点下去是跳系统浏览器。
-- 网页端**不做**更新检查（只显示静态版本号文字），这份文件现在只有安卓在读。
-- 发版时**这个文件要跟着一起 push**，否则 App 永远看不到新版本。
+- 网页端**不做**更新检查（只显示静态版本号文字），这份清单现在只有安卓在读。
+- 发版时**要往 `cf_app_version` 插一行新记录**（不是改旧行），否则 App 永远看不到新版本；旧行留着当历史。
 
-**`notices`（公告，没有就写 `[]`）**
+**`notices`（公告，没有就空数组）**
 
 - 一条 = `{ id, title, date, body }`。`date` 只做展示；`body` 是**一整段**正文（不做多段 / 富文本，要分段就拆成两条）。
 - `id` 是**自增整数**，**只能往上加，不要改已有的值**：App 用「已读的最大 id」记进度
   （`Store.noticeReadId`，本机 SharedPreferences，key `notice_read_id`），
-  清单里出现比它大的 id 就认为有未读 —— 改小一个 id 会让读过的公告重新变成未读。
+  接口回的数组里出现比它大的 id 就认为有未读 —— 改小一个 id 会让读过的公告重新变成未读。
 - App 里两处入口，都进同一个页面（`ui/NoticeActivity`）：
   「我的 → 关于软件 → 📢 公告」，以及**主页顶部的「📢 有新公告」横幅**（只在有未读时出现）。
   **进公告页就算已读**（不做「划到底才算读」），回到主页横幅自动收掉。
@@ -97,9 +129,9 @@ cd app
 全程只改了这一行 `TRAVEL_BASE`，其余代码都按相对路径拼。前后端分家后网页要过 CORS，
 但**安卓走原生 HTTP、不带 `Origin` 头，不受浏览器那套 CORS 规矩约束** —— 白名单里没有安卓、也不用加。
 
-### `docs/version.json` 的 `menu`：主页菜单里的栏目 + 网页取身份
+### App 清单的 `menu`：主页菜单里的栏目 + 网页取身份
 
-主页右上角那颗三横菜单弹出的栏目浮层（`PopupMenu`），条目同样来自网页根下的 `docs/version.json`（顶层 `menu` 数组）：
+主页右上角那颗三横菜单弹出的栏目浮层（`PopupMenu`），条目同样来自上面那个接口（`menu` 数组，库表 `cf_menu`）：
 
 ```json
 {
@@ -113,10 +145,11 @@ cd app
 - **一条 = 菜单里一行 = 一个网页**。`title` 是行上显示的文字（emoji 直接写进标题），`url` 指向页面；
   点一下就在 App 内的 WebView（`ui/WebViewActivity`）里打开 —— 同域名的页面留在 WebView 里，
   链去别处的交系统浏览器。
-- 两个字段**都必填**，缺一个整条不显示（清单是手写的，漏了就该看不见，不做兜底猜测）。
+- 两个字段**都必填**，缺一个整条不显示（栏目是手写的，漏了就该看不见，不做兜底猜测）。
   点按钮时：一条都没有弹「暂无内容」，拉不到清单弹「栏目加载失败」（都是 Toast，不配重试按钮 ——
   菜单不是内容主体，拉不到不该挡着用户用 App）。
-- **加一个限时活动不用发新版**：在网页仓库里把页面建好，把 `{title, url}` 加进 `menu`、push 一次即可。
+- **加一个限时活动不用发新版**：在网页仓库里把页面建好，往 `cf_menu` 插一行即可
+  （命令见上面「怎么改」那段）。
 - 条目**只在主页创建时拉一次**（切 tab、下拉刷新都不会重拉 —— 下拉刷新重拉的是 `notices`）。
   清单改完，用户杀进程重进主页就能看到。
 
@@ -126,7 +159,7 @@ App 的 token 在 SharedPreferences、网页的 token 在 localStorage，**两�
 所以从菜单打开的自家页面默认是**未登录态**。为此 `WebViewActivity` 会在满足两个条件时挂一个 JS 桥：
 
 1. 调用方传了 `withIdentity = true`（菜单里点条目就是这么调的，协议页那种纯文档页不传）；
-2. 页面地址的域名等于 `Api.WEB_ORIGIN`（自家网页站）—— 栏目地址来自 `version.json`，
+2. 页面地址的域名等于 `Api.WEB_ORIGIN`（自家网页站）—— 栏目地址来自后端清单（D1），
    那是**数据不是代码**，万一被改成外站，token 不该跟着流出去。
 
 网页侧这样取（`getIdentity()` 返回一个 **JSON 字符串**，字段名与网页 localStorage 里那份用户对象一致）：
@@ -224,8 +257,8 @@ node app/tools/gen-cities.mjs
   各页感知「被切回来」用 `onHiddenChanged` 而不是 `onResume`。
 - 除了这五个 tab，主页右上角还有一颗**三横菜单**，点开是贴着按钮弹出的栏目浮层
   （`androidx.appcompat.widget.PopupMenu`，布局外壳在 `activity_main.xml`，逻辑在 `MainActivity.setupMenu`）；
-  里面的栏目是一行一个网页，数据来自 `docs/version.json` 的 `menu`，见上面
-  「`docs/version.json` 的 `menu`：主页菜单里的栏目 + 网页取身份」。
+  里面的栏目是一行一个网页，数据来自 App 清单的 `menu`（D1），见上面
+  「App 清单的 `menu`：主页菜单里的栏目 + 网页取身份」。
 
 ### 过渡动画（`res/anim/`）
 

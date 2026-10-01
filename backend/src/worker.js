@@ -113,6 +113,47 @@ async function handleApi(request, env) {
     }
   }
 
+  // GET /api/manifest（公开：App 的「检查更新 / 公告 / 主页菜单栏目」清单）
+  //
+  // 这三样原先放在网页静态文件 docs/version.json（只有 App 读它）。搬进 D1 后，改内容只需一条
+  // `wrangler d1 execute`（表的用法见 migrations/0001_init.sql 末尾的「App 清单」一段），不必改仓库、push、等 Pages 构建。
+  //
+  // 一次回全：三块本来就是同一个清单（App 拉一次全部用到），分三个接口等于让 App 多发两发请求。
+  // 报文形状与旧 version.json **逐字段一致** —— 所以 App 侧的 VersionManifest 模型与三个消费点
+  // 一行都不用改，只是把取数地址从静态文件换成了这个接口（见 app/Api.kt 的 VERSION_MANIFEST）。
+  //
+  // 刻意不带 Cache-Control：公告随时可能发 / 撤，缓存它会让用户看到已经撤回的公告。
+  //
+  // 限速这里不用写：读接口那档是**兜底**的 —— 末尾 fetch 里对「一切 GET（/api/geo/* 除外）」按 IP
+  // 判 RL_READ（120 次/分钟），这个公开接口自动落在里面，别误以为公开接口就不限速。
+  if (method === 'GET' && path === '/api/manifest') {
+    // 三张表互不依赖，并发取（D1 每次查询都是一次往返，串行三发没有必要）
+    const [version, notices, menu] = await Promise.all([
+      // 版本表是「一行一个版本、历史都留着」，取 version_code 最大的那行当最新版
+      // （次级键 id DESC 只为结果唯一确定，口径与理由见 migrations/0001_init.sql 里 cf_app_version 的注释）
+      DB.prepare('SELECT version_name, version_code, download_url, notes FROM cf_app_version ORDER BY version_code DESC, id DESC LIMIT 1').first(),
+      DB.prepare('SELECT id, title, date, body FROM cf_notices ORDER BY id ASC').all(),
+      DB.prepare('SELECT title, url FROM cf_menu ORDER BY id ASC').all(),
+    ]);
+    return json({
+      // 表里一行都没有时给全空值：App 侧 ReleaseInfo 各字段有默认值，version_code 为 0 等同「没有新版本」，
+      // 宁可答一句「已是最新」，也别让 App 因为少一个键就解析失败。
+      android: {
+        version_name: (version && version.version_name) || '',
+        version_code: (version && version.version_code) || 0,
+        download_url: (version && version.download_url) || '',
+        // 更新说明跟版本挤在 cf_app_version 同一行里，notes 是一列多行文本（见 migrations/0001_init.sql）：
+        // 按 \n 拆行、逐行 trim（顺带吃掉手写时带进来的 \r）再丢掉空行 ——
+        // 否则弹窗里会多出一行只剩「·」的空条目。
+        notes: (version && version.notes)
+          ? version.notes.split('\n').map((s) => s.trim()).filter(Boolean)
+          : [],
+      },
+      notices: notices.results,
+      menu: menu.results,
+    });
+  }
+
   // GET /api/cities（公开：地图数据；已登录用户可见自己的私密行程，管理员可见全部）
   // 只回「城市 + 坐标 + 去过的人（昵称/颜色）」—— 这三样正是地图上色和「谁的足迹」图例筛选取的。
   // 日期 / 备注 / 私密标记这些明细不在这里铺开：点开某座城市时再调 GET /api/city/{城市名} 按需拉。

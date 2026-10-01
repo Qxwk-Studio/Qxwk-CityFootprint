@@ -25,7 +25,7 @@ import top.qxwkstudio.travel.databinding.ActivityWebviewBinding
  * App 内看网页的通用页：顶栏（标题 + 返回）+ WebView。
  *
  * 两个入口：登录页那行「我已阅读并同意《用户协议》」里的链接（跳 Api.AGREEMENT），
- * 以及主页左上角抽屉里的栏目（地址来自网页端 version.json 的 menu，见 ui/MainActivity）。
+ * 以及主页右上角菜单里的栏目（地址来自 App 清单的 menu，见 ui/MainActivity）。
  * 以后要再加限时活动之类的页面，还是走这一个页面，`startActivity(WebViewActivity.intent(...))` 即可，
  * 不必再开第二个 WebView 页。**不引 androidx.webkit**：这里用到的东西（WebViewClient、
  * settings 那几个开关）都在系统框架里，为一个只读页面多带一个依赖不值。
@@ -125,7 +125,7 @@ class WebViewActivity : AppCompatActivity() {
 
         // 身份桥（见文件头第 4 点）。两个条件都满足才挂：
         //  - 调用方点名要（withIdentity）：协议页这种纯文档页不需要，少开一个口子；
-        //  - 地址是自家域名：栏目地址来自网页上的 version.json，那是**数据不是代码** ——
+        //  - 地址是自家域名：栏目地址来自后端清单（D1），那是**数据不是代码** ——
         //    万一哪天被改成外站，token 不该跟着流出去。
         // 必须在 loadUrl **之前**注入：网页脚本一执行就可能来找 window.CityFootprint，
         // 晚一步就是「第一次打开拿不到、退出去重进才有」这种最难查的毛病。

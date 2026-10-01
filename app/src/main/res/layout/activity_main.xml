@@ -9,7 +9,7 @@
 
      ===== 顶栏右上角那颗三横菜单 =====
      点开的是**弹出式菜单**（androidx.appcompat.widget.PopupMenu），一行 = 一个网页，
-     条目由 version.json 的 menu 渲染（见 MainActivity.setupMenu）——
+     条目由 App 清单的 menu 渲染（见 MainActivity.setupMenu）——
      早先是左侧抽屉，现按需求改成贴着按钮弹出的浮层，所以这一层不再需要 DrawerLayout。
 
      edge-to-edge 的监听挂在最外这层 LinearLayout 上，一次把 inset 分给顶栏与底栏

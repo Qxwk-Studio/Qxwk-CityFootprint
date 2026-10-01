@@ -61,7 +61,7 @@
             android:parentActivityName=".ui.MainActivity"
             android:windowSoftInputMode="adjustResize" />
 
-        <!-- 公告页：读网页根下 version.json 的 notices，两处入口（「我的 → 公告」与主页顶部横幅） -->
+        <!-- 公告页：读后端清单的 notices（GET /api/manifest），两处入口（「我的 → 公告」与主页顶部横幅） -->
         <activity
             android:name=".ui.NoticeActivity"
             android:exported="false"

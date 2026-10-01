@@ -94,8 +94,7 @@
 │   ├── test/
 │   │   └── achievements.test.js  # 成就判定与达成人数的单测（cd backend && npm test）
 │   ├── migrations/
-│   │   ├── 0001_init.sql     # 建表：users（与 Qxwk-Blog 共享）/ cf_users（本站独占）/ cf_visits（足迹，含 adcode / transport 与 CHECK 约束）
-│   │   └── 0002_rate_limit.sql  # 限速的天级计数表 cf_rate_daily（分钟档不落库，见 ratelimit.js）
+│   │   └── 0001_init.sql     # 全站唯一建表文件：users（与 Qxwk-Blog 共享）/ cf_users（独占）/ cf_visits（含 adcode / transport 与 CHECK 约束）/ cf_rate_daily（限速天级计数）/ cf_app_version、cf_notices、cf_menu（App 清单，GET /api/manifest 读这三张）
 │   ├── package.json        # 只声明 ESM（"type":"module"）+ npm test，无任何依赖
 │   └── wrangler.toml       # Worker 配置（D1 绑定 + 两个限速绑定 RL_WRITE / RL_READ；静态资源段已删 —— 页面在 GitHub Pages）
 ├── app/                    # 安卓 app，见 app/README.md（Kotlin + XML View/viewBinding，原生 osmdroid 地图，不用 WebView）
@@ -113,6 +112,7 @@
 | 方法 | 路径 | 鉴权 | 说明 |
 |------|------|------|------|
 | GET | `/api/me` | Bearer | 当前用户信息（token 经通行证验证，返回 `userId/nickname/color/avatar/is_admin/created_at`） |
+| GET | `/api/manifest` | 无 | App 清单：安卓版本（`android`）、公告（`notices`）、主页菜单栏目（`menu`）—— 数据在 D1 |
 | GET | `/api/cities` | 可选 Bearer | 地图数据：城市 + 坐标 + `adcode` + 去过的人（仅 `nickname/color`；登录可见本人私密，管理员可见全部）。日期/备注等明细不在这里下发 |
 | GET | `/api/city/:city` | 可选 Bearer | 某座城市的全部行程（地图弹窗**点开时才拉**；无记录回 200 + 空数组，前端只铺最近 10 条）。城市名直接当路径参数，每条带 `adcode` 与 `transport`（数组） |
 | GET | `/api/stats` | 可选 Bearer | 全站统计（`totalVisits/totalCities/totalUsers/cityRank/achievements/isAdmin`，管理员含私密行程） |
@@ -132,7 +132,7 @@
 - **前后端跨域，接口自带 CORS**：页面在 `travel.qxwkstudio.top`（GitHub Pages）、接口在 `api.travel.qxwkstudio.top`（Worker），不同源。前端请求带 `Authorization` / `Content-Type`，浏览器会先发 `OPTIONS` 预检，所以 Worker 必须处理预检并回 `Access-Control-Allow-*`；**4xx/5xx 也要带头**，否则浏览器只报 "CORS error"，前端那套 401 清 token / 回登录视图的逻辑永远触发不了。白名单（`backend/src/worker.js` 的 `ALLOWED_ORIGINS`）只放行前端域与 localhost —— 身份靠 Bearer token、不用 cookie，本就没有「靠 CORS 挡人」的安全边界，但也没必要让任意站点读响应。
 - **接口限速**：两套机制各管一段，判定都在 `backend/src/ratelimit.js`（阈值、文案、key 拼法的单一出处）。
   - **分钟档**用 Cloudflare 的 **Rate Limiting 绑定**（`RL_WRITE` / `RL_READ`，配置在 `backend/wrangler.toml`）。选它是因为它由边缘侧计数、不落任何库：既绕开了「Workers 无状态、可能多 isolate 并发，进程内计数不可靠」，也不占 D1 额度。限制是**只能给 10s / 60s 窗口**，且按 colo **近似**（不是全局精确值）—— 防滥用够用，别拿它当计费口径。
-  - **天档**（写接口每天 200 次）必须持久化，落在 D1 的 `cf_rate_daily`（`migrations/0002_rate_limit.sql`），一天一行、upsert 原地累加。计数用**单条** `INSERT ... ON CONFLICT DO UPDATE ... RETURNING count` 先加再读回，才是原子的；换成「先 SELECT 再 UPDATE」并发时会双双读到最后一个名额而一起放行。**读接口刻意没有天档**：读请求量大，逐条写这张表会白白吃掉 D1 的每日写入额度（免费 10 万行/天），换来的只是「防一个已登录的人多翻几页」。
+  - **天档**（写接口每天 200 次）必须持久化，落在 D1 的 `cf_rate_daily`（`migrations/0001_init.sql`），一天一行、upsert 原地累加。计数用**单条** `INSERT ... ON CONFLICT DO UPDATE ... RETURNING count` 先加再读回，才是原子的；换成「先 SELECT 再 UPDATE」并发时会双双读到最后一个名额而一起放行。**读接口刻意没有天档**：读请求量大，逐条写这张表会白白吃掉 D1 的每日写入额度（免费 10 万行/天），换来的只是「防一个已登录的人多翻几页」。
   - **维度**：写接口按**登录用户**（本来就要求登录，userId 稳定、不受 NAT 影响），读接口按 **IP**（`CF-Connecting-IP`，Cloudflare 注入、客户端伪造不了）—— 因为 `/api/cities`、`/api/stats` 这些匿名就能访问，没有 userId 可用。每个请求只落一种 key，不是双重计数。**管理员不豁免**。
   - **顺序**：限速判定在鉴权**之后**（未登录该回 401，不该消耗配额）、在解析 body 与落库**之前**；写接口先判分钟档、过了才动 D1，否则被分钟档挡下的请求照样能让刷子每次多写一行 D1。
   - **fail open**：绑定没配（旧版 wrangler 会静默丢弃配置段）或调用抛错一律放行 —— 限速坏了不该把正常用户挡在门外；`/api/geo/:adcode` 也整条豁免（首屏按城市数逐个拉边界是正常行为，Worker 与浏览器各缓存 7 天已经不回源）。
@@ -182,9 +182,18 @@ npx wrangler d1 migrations apply qxwk-data --remote
 
 > PowerShell 下请把 `npx` 写成 `npx.cmd`（执行策略会拦掉 `npx`；下同，所有 wrangler 命令都适用）。
 
-这条命令会把 `migrations/` 下所有还没应用的迁移一次跑完，**新增迁移后重跑一次即可**（例如接口限速的 `0002_rate_limit.sql` 会建出计数表 `cf_rate_daily`）。
+这条命令只会跑**还没记录在 D1 的 `d1_migrations` 表里的**迁移，新增迁移文件后重跑一次即可。
 
-迁移会创建本站所需的全部表：`cf_users`（`is_admin` 管理员标志、`color` 颜色随通行证同步、`passport_id` 通行证 userId，本站独占）、`cf_visits`（足迹，含 `is_private` / `adcode` / `transport` 与一批 CHECK 约束）与 `users`（**与 Qxwk-Blog 共享**，博客的 `bg_*` 表外键指着它，本站已不再读写），并建出两个 `passport_id` 唯一索引。
+> ⚠ **已有线上库要注意**：上面那些新表是**合并进 `0001_init.sql`** 的，而这份文件早先已经应用过 ——
+> `migrations apply` 只认「没跑过的文件」，**不会重跑改过的 `0001`**。所以老库要手动跑一次（幂等）：
+>
+> ```bash
+> npx wrangler d1 execute qxwk-data --remote --file=migrations/0001_init.sql
+> ```
+>
+> 整份文件都是 `IF NOT EXISTS` / `INSERT OR IGNORE`，重复执行无副作用；全新库直接 `apply` 即可，不必单独跑这条。
+
+迁移会创建本站所需的全部表：`cf_users`（`is_admin` 管理员标志、`color` 颜色随通行证同步、`passport_id` 通行证 userId，本站独占）、`cf_visits`（足迹，含 `is_private` / `adcode` / `transport` 与一批 CHECK 约束）、`cf_rate_daily`（接口限速的天级计数）以及 App 清单的三张表 `cf_app_version`（含更新说明 `notes` 列）/ `cf_notices` / `cf_menu`，另有 `users`（**与 Qxwk-Blog 共享**，博客的 `bg_*` 表外键指着它，本站已不再读写），并建出两个 `passport_id` 唯一索引。
 
 ### 3️⃣ 在通行证注册本站
 
@@ -302,8 +311,16 @@ localhost 的任意端口（见 `backend/src/worker.js` 的 `ALLOWED_ORIGINS`）
 **7. 限时活动页面（App 主页菜单里的栏目）**
 
 活动页就是 `docs/` 下的一个普通页面（自己起名，例如 `activity-2026-fall.html`），
-把它的 `{ title, url }` 加进 `docs/version.json` 顶层的 `menu`、push 一次即可 —— **不用发新版 App**：
+把它一行插进后端 D1 的 `cf_menu` 表（`title` + `url`）即可 —— **不用发新版 App**：
+
+```bash
+# 在 backend/ 目录下执行
+npx wrangler d1 execute qxwk-data --remote --command \
+  "INSERT INTO cf_menu (title, url) VALUES ('🎉 限时活动', 'https://travel.qxwkstudio.top/activity-2026-fall.html')"
+```
+
 主页右上角三横菜单里会多出一行，点开在 App 内的 WebView 里打开（同域名的页面留在 WebView，外链交系统浏览器）。
+（同理，「检查更新」与「公告」的内容也在 D1，见 `app/README.md` 的「App 清单」一节。）
 
 页面在 App 里打开时**默认是未登录态**（App 的 token 在 SharedPreferences、网页的 token 在 localStorage，
 两套身份互不相通）。需要用户身份就调 App 留的 JS 方法：

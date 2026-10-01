@@ -29,11 +29,15 @@ object Api {
     const val WEB_ORIGIN = "https://travel.qxwkstudio.top"
 
     /**
-     * 「检查更新」的版本清单（`docs/version.json`）。
-     * 放网页静态文件而不是后端接口：整份内容都是手改的常量，改版本号只需 push 一次，
-     * 不必为一个文件重新部署 Cloudflare Worker（字段含义见 logic/Models.kt 的 [ReleaseInfo]）。
+     * App 清单：「检查更新」的安卓版本信息 + 「公告」+ 主页菜单里的栏目，一次全给。
+     *
+     * 数据在后端 D1（cf_app_version 含更新说明 notes 列 / cf_notices / cf_menu，
+     * 见 backend/migrations/0001_init.sql 末尾的「App 清单」一段），由 backend 的 GET /api/manifest 读出来。
+     * 报文形状与旧的那个静态文件（docs/version.json）**逐字段一致**，
+     * 所以 logic/Models.kt 的 [VersionManifest] 与三个消费点都不用改。
+     * 旧文件仍留在仓库里（不再被读），改数据请改 D1 —— 改那个文件不会有任何效果。
      */
-    const val VERSION_MANIFEST = "$WEB_ORIGIN/version.json"
+    const val VERSION_MANIFEST = "$TRAVEL_BASE/manifest"
 
     /**
      * 用户协议（网页端 docs/agreement.html）。登录页勾选行里那个链接点了跳这里。

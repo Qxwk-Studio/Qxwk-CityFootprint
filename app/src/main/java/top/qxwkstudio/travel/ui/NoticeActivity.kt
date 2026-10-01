@@ -15,10 +15,11 @@ import top.qxwkstudio.travel.databinding.ItemNoticeBinding
 import top.qxwkstudio.travel.logic.Notice
 
 /**
- * 公告页：把网页根下清单里的 `notices` 一条条列出来（见 data/Update 与 logic/Models 的 [Notice]）。
+ * 公告页：把 App 清单里的 `notices` 一条条列出来（见 data/Update 与 logic/Models 的 [Notice]）。
  *
- * 数据源与「检查更新」是**同一个静态文件**：整份清单都靠手改，不值得为公告单开一个后端接口，
- * 也不必在两端各维护一份公告（网页 news.html 的公告区是手写的，不跟着这份清单走）。
+ * 数据源与「检查更新」「主页菜单栏目」是**同一个后端接口**（GET /api/manifest，数据在 D1，
+ * 见 [top.qxwkstudio.travel.Api.VERSION_MANIFEST]）—— 三块内容本来就同源，不值得各开一个接口。
+ * 也不在两端各维护一份公告：网页 news.html 的公告区是手写的，不跟着这份清单走。
  *
  * **进页面就算读过**：渲染完就把当前最大的 id 记进 Store（见 Store.noticeReadId），
  * 主页顶部那条「有新公告」的横幅下次自然就收了。不做「划到底才算读」那一套 ——
@@ -68,7 +69,7 @@ class NoticeActivity : AppCompatActivity() {
 
     /**
      * 逐条摊开。**按 id 从大到小**：最新的一条排在最上面，进来第一眼看到的就是它
-     * （清单里是顺着写下来的，id 越大越新）。
+     * （接口回的数组是按 id 升序的，id 越大越新）。
      */
     private fun render(notices: List<Notice>) {
         val b = binding

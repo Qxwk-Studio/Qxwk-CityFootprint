@@ -211,14 +211,14 @@ data class CityVisit(
 )
 
 /**
- * 网页根下的静态清单（`docs/version.json`），一处读它三件事：
- * 「我的 → 检查更新」比 [android] 的 version_code，主页横幅与「我的 → 公告」看 [notices]，
- * 主页左上角三横菜单（抽屉）看 [menu]。
+ * App 清单：一处读它三件事 —— 「我的 → 检查更新」比 [android] 的 version_code，
+ * 主页横幅与「我的 → 公告」看 [notices]，主页右上角三横菜单看 [menu]。
  *
- * 放网页静态站而不是后端接口：整份内容都是**手改的常量**，改一次 push 一次就生效，
- * 不值得为一个文件重新部署 Worker。
+ * 数据在后端 D1（cf_app_version 含更新说明 notes 列 / cf_notices / cf_menu），
+ * 由 `GET /api/manifest` 一次返回（见 [top.qxwkstudio.travel.Api.VERSION_MANIFEST]）。
+ * 字段名（这里的 @SerialName）与后端 worker.js 那个接口是**跨端契约**，改一处必须两端一起改。
  *
- * 外层留一层 `android`：这份文件将来也可能记网页 / iOS 的版本；现在只有安卓会读，
+ * 外层留一层 `android`：这份清单将来也可能记网页 / iOS 的版本；现在只有安卓会读，
  * 多出来的键靠 data/Json.kt 的 ignoreUnknownKeys 兜住。
  */
 @Serializable
@@ -229,10 +229,10 @@ data class VersionManifest(
 )
 
 /**
- * 抽屉里的一个栏目（清单顶层的 `menu` 数组）：一条 = 抽屉里一行 = 一个网页。
+ * 抽屉里的一个栏目（清单的 `menu` 数组，库里是 cf_menu 表）：一条 = 一行 = 一个网页。
  *
  * 两个字段**都必填**，缺一个整条就不显示（见 MainActivity.renderMenu）：
- * 这个数组是手写的，写漏了就该看不见，而不是把用户点进一个空白页或错误页。
+ * 这个数组是手写的（往 cf_menu 里加行），写漏了就该看不见，而不是把用户点进一个空白页或错误页。
  * 也**不支持**「只填标题、点了做原生动作」这种扩展 —— 真有那种需求再加字段，
  * 现在就按「一行一个网页」这一种形态。
  */
@@ -243,10 +243,10 @@ data class MenuItem(
 )
 
 /**
- * 一条公告（清单顶层的 `notices` 数组，没有公告时就是空数组）。
+ * 一条公告（清单的 `notices` 数组，没有公告时就是空数组）。
  *
  * [id] 是**自增整数**，App 拿它记「读到哪一条了」（见 data/Store.noticeReadId）——
- * 所以维护这个文件时只能往上加，**别改已有的 id**，改小会让读过的公告又变成未读。
+ * 所以维护这个清单（往 cf_notices 加行）时只能往上加，**别改已有的 id**，改小会让读过的公告又变成未读。
  * 判定用 id 而不是日期：日期是给人看的，手滑写错一个月的格式也不该影响「有没有新公告」。
  *
  * [body] 是一整段正文（与网页 news.html 的 `.notice-text` 一样是一段），
@@ -268,8 +268,8 @@ data class Notice(
  * 各字段都有默认值（配 data/Json.kt 的 coerceInputValues）：缺字段不抛异常，
  * [versionCode] 缺省为 0 就等同「没有新版本」—— 宁可漏一次提示，也别因为清单写漏一个键就把所有人推向浏览器。
  *
- * [notes] 是更新说明，**一行一条**（JSON 数组，弹窗里逐条列出来）。用数组而不是一整段字符串，
- * 是因为这个文件由人手工改：一整段就得在 JSON 里写 `\n` 转义，改起来容易漏、也难看。
+ * [notes] 是更新说明，**一行一条**（弹窗里逐条列出来）。后端把 cf_app_version.notes 那一列的多行文本
+ * 按 \n 拆成这个数组，所以加减一行说明就是改那一列里的一段文本。
  */
 @Serializable
 data class ReleaseInfo(

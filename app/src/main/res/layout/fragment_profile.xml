@@ -256,7 +256,7 @@
 
         <!-- ===== 关于软件 =====
              顺序按用户要求改成「公告 → 检查更新 → 当前版本 → 开发者 → 开源内容」：
-             前两行是常点的（分别进公告页、拉 version.json 比版本），后三行是偶尔瞄一眼的只读信息，
+             前两行是常点的（分别进公告页、拉后端清单比版本），后三行是偶尔瞄一眼的只读信息，
              所以可点的在上、纯展示的在下。
              只读那些行的形态：标题在左，内容做副标题（开源那三条本身就是三条独立字符串，逐行一个 TextView 排下来），
              版本是行尾的值。条目仍是纯文本、不做超链接（理由见下面 @+id/textAboutVersion 那段注释） -->
@@ -268,7 +268,7 @@
             style="@style/SettingsGroup"
             android:clipToOutline="true">
 
-            <!-- 公告：整行可点 → 进公告页（ui/NoticeActivity，读 version.json 的 notices）。
+            <!-- 公告：整行可点 → 进公告页（ui/NoticeActivity，读后端清单的 notices）。
                  这一行**不显示未读数**：本页 refresh() 在每次切回 tab 时都跑（onHiddenChanged），
                  为了一枚小红点在这里打网络，与「切 tab 不打网络」的约定冲突；
                  有没有新公告由主页顶部那条横幅负责提示 -->
@@ -300,7 +300,7 @@
                 android:layout_marginStart="16dp"
                 android:background="@color/border" />
 
-            <!-- 检查更新：整行可点 → 拉 docs/version.json 比 version_code
+            <!-- 检查更新：整行可点 → 拉后端清单（GET /api/manifest）比 version_code
                  （App 特有的一行，网页端明确不做更新检查，只留静态版本号文字） -->
             <LinearLayout
                 android:id="@+id/rowCheckUpdate"

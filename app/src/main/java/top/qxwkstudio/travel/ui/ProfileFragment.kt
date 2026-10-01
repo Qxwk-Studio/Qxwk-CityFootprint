@@ -237,12 +237,12 @@ class ProfileFragment : Fragment() {
     }
 
     /**
-     * 检查更新：拉网页根下的版本清单（[Api.VERSION_MANIFEST]，就是 docs/version.json），
+     * 检查更新：拉 App 清单（[Api.VERSION_MANIFEST]，后端 GET /api/manifest，数据在 D1），
      * 把清单里的 version_code 与当前 [BuildConfig.VERSION_CODE] 比大小（为什么比 code 而不是版本名，见 logic/Models.kt 的 ReleaseInfo）。
      *
      * 三条出路：拉不到 → Toast 一句；不新 → Toast 一句；有新版本 → 弹窗问一句，点「前往下载」交给系统浏览器。
      * **App 内不做下载与安装** —— 那要一路处理存储权限、FileProvider 与「未知来源」安装授权，
-     * 而现在连 APK 的公开下载地址都还没定（version.json 里是占位符），跳浏览器是最不容易做错的一步。
+     * 跳浏览器是最不容易做错的一步。
      */
     private fun checkUpdate() {
         viewLifecycleOwner.lifecycleScope.runIo({ Update.fetch() }) { result ->
@@ -282,7 +282,7 @@ class ProfileFragment : Fragment() {
     }
 
     /**
-     * 「前往下载」：清单里的 download_url 是手改的，可能空着 ——
+     * 「前往下载」：清单里的 download_url 可能空着（D1 的 cf_app_version.download_url 允许为空）——
      * 空地址别塞给 [Uri.parse]（会得到一个空的 URI，浏览器打开一片空白），直接提示一句。
      */
     private fun openDownload(url: String) {

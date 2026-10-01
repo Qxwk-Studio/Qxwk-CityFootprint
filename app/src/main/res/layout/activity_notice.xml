@@ -3,7 +3,7 @@
      内容区 id=content 是给 edge-to-edge 用的：导航栏那截高度加到它的 paddingBottom 上，
      最后一条公告不会被手势条盖住（见 ui/EdgeToEdge.kt）。
 
-     列表用 ScrollView + LinearLayout，不用 RecyclerView：公告是手写在 version.json 里的一小串
+     列表用 ScrollView + LinearLayout，不用 RecyclerView：公告是库里（cf_notices）的一小串
      （通常三五条），渲染时一次性摊开最省事，也就不必为了它多一个 adapter 与 DiffUtil。 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"

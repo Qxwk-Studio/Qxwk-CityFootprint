@@ -31,8 +31,8 @@ import top.qxwkstudio.travel.logic.MenuItem
  * 它们只在首次创建时加载，要新的数据就下拉刷新（缓存见 data/Store）。目前只有
  * ProfileFragment 用 onHiddenChanged 重读一次本机状态（不涉及网络）。
  *
- * 右上角那颗三横菜单弹出的「栏目」浮层也归这一页管（栏目 = 一行一个网页，清单在网页端的
- * version.json，见 setupMenu / loadMenu）。它是壳的一部分、不属于任何一个 tab，所以放 Activity 而不是 Fragment。
+ * 右上角那颗三横菜单弹出的「栏目」浮层也归这一页管（栏目 = 一行一个网页，清单来自 App 清单接口
+ * GET /api/manifest，见 setupMenu / loadMenu）。它是壳的一部分、不属于任何一个 tab，所以放 Activity 而不是 Fragment。
  */
 class MainActivity : AppCompatActivity() {
 
@@ -106,8 +106,8 @@ class MainActivity : AppCompatActivity() {
     /**
      * 右上角那颗三横菜单 + 它弹出的栏目浮层。
      *
-     * 浮层里是「栏目」：一行 = 一个网页，条目来自网页根下的 version.json（见 [loadMenu]）——
-     * 以后加限时活动只改那个 JSON、push 一次就生效，**不用发新版本**。
+     * 浮层里是「栏目」：一行 = 一个网页，条目来自 App 清单的 `menu`（见 [loadMenu]）——
+     * 以后加限时活动只往 D1 的 cf_menu 里插一行就生效，**不用发新版本**。
      */
     private fun setupMenu() {
         binding.topBar.btnMenu.visibility = View.VISIBLE
