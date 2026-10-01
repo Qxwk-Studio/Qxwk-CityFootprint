@@ -86,7 +86,15 @@ class VisitEditActivity : AppCompatActivity() {
         // 必须在 setContentView 之前（见 ui/EdgeToEdge.kt）。
         // 这一页没有底栏，把表单滚动容器 content 当「底」交给它吃导航栏那截高度。
         // topBar 是带 id 的 <include>，ViewBinding 里是 ViewTopBarBinding 而不是 View，取 .root 才是那条栏本身
-        applyEdgeToEdge(b.topBar.root, b.content)
+        //
+        // 第三个参数是键盘弹出时的回调：备注框在表单底部，键盘一弹就压在它下面。
+        // content 的 padding 补上键盘高度后「能滚上去」了，但 ScrollView 的视口没变矮，
+        // 系统不认为备注框被挡住、不会自动滚 —— 只能这一页自己动手滚到底，
+        // 让备注框（以及它下面的私密开关、保存按钮）一起露到键盘上方。
+        // post 一下是因为回调是在 insets 分发的**遍历中途**发出的，等这一轮走完再动滚动位置，稳妥些（见 ui/EdgeToEdge.kt）。
+        applyEdgeToEdge(b.topBar.root, b.content) {
+            b.content.post { b.content.fullScroll(View.FOCUS_DOWN) }
+        }
         setContentView(b.root)
 
         // 顶栏（view_top_bar.xml）不自带文案，返回按钮也默认隐藏：这一页两样都要自己填
