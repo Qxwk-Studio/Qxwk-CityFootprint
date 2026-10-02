@@ -22,6 +22,12 @@ const TAIWAN = ['台湾', '台北', '新北', '桃园', '台中', '台南', '高
 const HK_MACAU = ['香港', '澳门'];
 const GREAT_WALL = ['北京', '秦皇岛', '酒泉', '张家口', '忻州', '榆林', '承德', '嘉峪关', '天津', '丹东', '阳泉'];
 
+// 数据集全量城市数：docs/cities.js（→ app/src/main/assets/cities.json 的 count 字段）当前为 384。
+// 「到过所有区域」= 去重城市名数量达到这个上限 —— 行程里的城市名只可能来自这份数据集，
+// 数量到顶就等价于把每一座都打卡，用不着在后端再存一份 384 条的名单。
+// 数据集增删城市后这里要跟着改：跑完 app/tools/gen-cities.mjs 看 cities.json 的 count 即可。
+const ALL_CITIES_COUNT = 384;
+
 /**
  * 按「去过的城市名」判定全部成就。
  * @param {string[]} cityNames 城市名（可重复，内部会去重）
@@ -44,13 +50,9 @@ export function getAchievements(cityNames) {
         { code: 'globe_trotter', icon: '🌍', name: '环游达人', desc: '到访过 50 座及以上城市', done: cityCount >= 50 },
         { code: 'city_collector', icon: '🏆', name: '城市收藏家', desc: '到访过 100 座及以上城市', done: cityCount >= 100 },
         { code: 'city_king', icon: '👑', name: '城市之王', desc: '到访过 200 座及以上城市', done: cityCount >= 200 },
-        // 293 是「地级市」的全国数量（民政部/国家统计局口径，多年稳定在 293），这里只借它当个
-        // 够高的门槛：判定实际数的是**去重城市名总数**，不区分城市类型。数据集 384 条名字里还有
-        // 4 个直辖市、台港澳、9 个台湾城市、5 个县级市（西昌/康定/格尔木/伊宁/库尔勒），以及
-        // 40 个并非地级市的地级行政区（7 地区 + 30 自治州 + 3 盟），所以凑够 293 个名字
-        // 并不等于走遍 293 个地级市 —— 文案只能照判定写。
-        // 真要改成严格的地级市口径，得先把上面那 40 个短名排掉再判，别只改这句文案。
         { code: 'grand_tour', icon: '🌟', name: '全境巡礼', desc: '到访过 293 座及以上城市', done: cityCount >= 293 },
+        // 「所有区域」的终极成就：比全境巡礼更狠，要的是数据集全覆盖（见 ALL_CITIES_COUNT）。
+        { code: 'all_regions', icon: '🏁', name: '走遍全国', desc: '到访过全部 384 座城市（数据集全量）', done: cityCount >= ALL_CITIES_COUNT },
       ],
     },
     {

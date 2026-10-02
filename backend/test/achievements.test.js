@@ -29,6 +29,11 @@ test('城市数量阈值逐级点亮，差一座就不给', () => {
   assert.equal(find(fake(293), 'grand_tour').done, true);
 });
 
+test('走遍全国：数据集全量（384）到顶才给', () => {
+  assert.equal(find(fake(383), 'all_regions').done, false);
+  assert.equal(find(fake(384), 'all_regions').done, true);
+});
+
 test('同一座城市重复去只算一座', () => {
   assert.equal(find(['北京', '北京', '北京'], 'first_trip').done, false);
 });
@@ -66,10 +71,10 @@ test('吐鲁番同时点亮「盆地之渊」与「火洲炼狱」', () => {
   assert.ok(codes.includes('hottest_turpan'), '应点亮火洲炼狱');
 });
 
-test('共 42 条成就、4 个分类', () => {
+test('共 43 条成就、4 个分类', () => {
   const cats = getAchievements([]);
   assert.equal(cats.length, 4);
-  assert.equal(cats.flatMap(c => c.items).length, 42);
+  assert.equal(cats.flatMap(c => c.items).length, 43);
 });
 
 test('code 全局唯一 —— 统计页拿它当计数键的前提', () => {
@@ -86,9 +91,9 @@ test('每条成就的展示字段都齐全（网页/app 要靠它渲染，缺一
   }
 });
 
-test('achievementCounts：按人累计，且骨架保留全部 42 条', () => {
+test('achievementCounts：按人累计，且骨架保留全部 43 条', () => {
   const all = achievementCounts([['北京', '上海'], ['北京'], []]).flatMap(c => c.items);
-  assert.equal(all.length, 42);
+  assert.equal(all.length, 43);
   const get = code => all.find(a => a.code === code).count;
   assert.equal(get('first_trip'), 1); // 只有第一位用户 ≥2 城
   assert.equal(get('city_xuzhou'), 0); // 没人去过徐州
