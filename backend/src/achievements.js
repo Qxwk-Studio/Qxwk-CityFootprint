@@ -73,18 +73,44 @@ export function getAchievements(cityNames) {
       title: '📍 城市打卡',
       items: [
         // 按城市所属省份聚类，省份顺序照数据集（docs/cities.js）的行政区划顺序；同省内保持原有先后。
+        // 覆盖面：27 个省/自治区，每个至少 1 条、辨识度高的给 2 条；直辖市与港澳台不在此组
+        // （分别见「巡游四方」的直辖市览胜 / 港澳穿梭）。新增城市前先确认它在这份数据集里。
         // 河北
         { code: 'city_shijiazhuang', icon: '🏘️', name: '国际庄', desc: '到访过 石家庄', done: citySet.has('石家庄') },
         { code: 'city_chengde', icon: '🏰', name: '避暑山庄', desc: '到访过 承德', done: citySet.has('承德') },
 
+        // 山西
+        { code: 'city_taiyuan', icon: '🐉', name: '龙城', desc: '到访过 太原', done: citySet.has('太原') },
+
+        // 内蒙古
+        { code: 'city_hohhot', icon: '🐎', name: '青城', desc: '到访过 呼和浩特', done: citySet.has('呼和浩特') },
+
         // 辽宁
         { code: 'city_dandong', icon: '☀️', name: '\\o/\\o/', desc: '到访过 丹东', done: citySet.has('丹东') },
+        { code: 'city_shenyang', icon: '🏭', name: '共和国长子', desc: '到访过 沈阳', done: citySet.has('沈阳') },
+
+        // 吉林
+        { code: 'city_changchun', icon: '🚗', name: '汽车城', desc: '到访过 长春', done: citySet.has('长春') },
+
+        // 黑龙江
+        { code: 'city_harbin', icon: '⛄', name: '冰城', desc: '到访过 哈尔滨', done: citySet.has('哈尔滨') },
 
         // 江苏
         { code: 'city_xuzhou', icon: '🎯', name: '优势在我', desc: '到访过 徐州', done: citySet.has('徐州') },
+        { code: 'city_suzhou', icon: '🏛️', name: '园林之城', desc: '到访过 苏州', done: citySet.has('苏州') },
+
+        // 浙江
+        { code: 'city_hangzhou', icon: '🛶', name: '人间天堂', desc: '到访过 杭州', done: citySet.has('杭州') },
+
+        // 安徽
+        { code: 'city_hefei', icon: '💪', name: '霸都', desc: '到访过 合肥', done: citySet.has('合肥') },
+
+        // 福建
+        { code: 'city_sanming', icon: '🍜', name: '沙县小吃', desc: '到访过 三明', done: citySet.has('三明') },
 
         // 江西
         { code: 'city_nanchang', icon: '🏯', name: '滕王高阁', desc: '到访过 南昌', done: citySet.has('南昌') },
+        { code: 'city_jingdezhen', icon: '🏺', name: '瓷都', desc: '到访过 景德镇', done: citySet.has('景德镇') },
 
         // 山东
         { code: 'city_heze', icon: '🪐', name: '宇宙中心', desc: '到访过 菏泽', done: citySet.has('菏泽') },
@@ -93,16 +119,55 @@ export function getAchievements(cityNames) {
 
         // 河南
         { code: 'city_xinxiang', icon: '🗽', name: 'New York', desc: '到访过 新乡', done: citySet.has('新乡') },
+        { code: 'city_luoyang', icon: '🌺', name: '牡丹花城', desc: '到访过 洛阳', done: citySet.has('洛阳') },
 
         // 湖北
         { code: 'city_wuhan', icon: '🌙', name: '黄鹤楼下', desc: '到访过 武汉', done: citySet.has('武汉') },
+        { code: 'city_yichang', icon: '🚢', name: '三峡门户', desc: '到访过 宜昌', done: citySet.has('宜昌') },
 
         // 湖南
         { code: 'city_yueyang', icon: '🌅', name: '岳阳楼记', desc: '到访过 岳阳', done: citySet.has('岳阳') },
         { code: 'city_changsha', icon: '🏝️', name: '橘子洲头', desc: '到访过 长沙', done: citySet.has('长沙') },
 
+        // 广东
+        { code: 'city_foshan', icon: '🥋', name: '无影脚', desc: '到访过 佛山', done: citySet.has('佛山') },
+
+        // 广西
+        { code: 'city_guilin', icon: '🏞️', name: '甲天下', desc: '到访过 桂林', done: citySet.has('桂林') },
+        { code: 'city_liuzhou', icon: '🍜', name: '螺蛳粉', desc: '到访过 柳州', done: citySet.has('柳州') },
+
+        // 海南
+        { code: 'city_sanya', icon: '🌴', name: '天涯海角', desc: '到访过 三亚', done: citySet.has('三亚') },
+
+        // 四川
+        { code: 'city_chengdu', icon: '🐼', name: '熊猫之都', desc: '到访过 成都', done: citySet.has('成都') },
+
+        // 贵州
+        { code: 'city_guiyang', icon: '🌤️', name: '爽爽的贵阳', desc: '到访过 贵阳', done: citySet.has('贵阳') },
+
+        // 云南
+        { code: 'city_dali', icon: '🌸', name: '风花雪月', desc: '到访过 大理', done: citySet.has('大理') },
+        { code: 'city_kunming', icon: '🌷', name: '春城', desc: '到访过 昆明', done: citySet.has('昆明') },
+
+        // 西藏
+        { code: 'city_lhasa', icon: '🛕', name: '日光城', desc: '到访过 拉萨', done: citySet.has('拉萨') },
+
         // 陕西
         { code: 'city_xian', icon: '🎤', name: '西安人的歌', desc: '到访过 西安', done: citySet.has('西安') },
+        { code: 'city_yanan', icon: '⭐', name: '革命圣地', desc: '到访过 延安', done: citySet.has('延安') },
+
+        // 甘肃
+        { code: 'city_lanzhou', icon: '🥣', name: '牛肉面', desc: '到访过 兰州', done: citySet.has('兰州') },
+
+        // 青海
+        { code: 'city_xining', icon: '🌬️', name: '夏都', desc: '到访过 西宁', done: citySet.has('西宁') },
+
+        // 宁夏
+        { code: 'city_yinchuan', icon: '🏜️', name: '塞上江南', desc: '到访过 银川', done: citySet.has('银川') },
+
+        // 新疆
+        { code: 'city_urumqi', icon: '🍇', name: '亚心之都', desc: '到访过 乌鲁木齐', done: citySet.has('乌鲁木齐') },
+        { code: 'city_kashgar', icon: '🕌', name: '西域古城', desc: '到访过 喀什', done: citySet.has('喀什') },
       ],
     },
     {
@@ -123,7 +188,7 @@ export function getAchievements(cityNames) {
 }
 
 /**
- * 全站「成就达成人数」：骨架仍走 getAchievements([])（拿到全部 43 条的 code/图标/文案），
+ * 全站「成就达成人数」：骨架仍走 getAchievements([])（拿到全部 70 条的 code/图标/文案），
  * 再叠上每个成就被多少人达成。网页与 app 的统计页都不再需要本地定义。
  * @param {string[][]} perUserCities 每个用户的「去过的城市名」数组
  * @returns {{title: string, items: {code, icon, name, desc, count}[]}[]}

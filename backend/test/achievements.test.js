@@ -3,6 +3,8 @@
 // 等价的用例搬到了这里。判定逻辑一旦改动，这个文件是唯一的守门人。
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { getAchievements, achievementCounts } from '../src/achievements.js';
 
 const items = cities => getAchievements(cities).flatMap(c => c.items);
@@ -71,10 +73,30 @@ test('吐鲁番同时点亮「盆地之渊」与「火洲炼狱」', () => {
   assert.ok(codes.includes('hottest_turpan'), '应点亮火洲炼狱');
 });
 
-test('共 43 条成就、4 个分类', () => {
+test('共 70 条成就、4 个分类', () => {
   const cats = getAchievements([]);
   assert.equal(cats.length, 4);
-  assert.equal(cats.flatMap(c => c.items).length, 43);
+  assert.equal(cats.flatMap(c => c.items).length, 70);
+});
+
+// 「城市打卡」覆盖面守门人：拿 app 的城市数据集（城市名→省份）反查，确保 27 个省/自治区
+// 每个至少一条。数据集是唯一权威的城市→省份来源，故直接从 assets 读，不在后端再抄一份。
+const CITIES_JSON = fileURLToPath(new URL('../../app/src/main/assets/cities.json', import.meta.url));
+const NON_PROVINCE = new Set(['北京', '天津', '上海', '重庆', '台湾', '香港', '澳门']);
+
+test('城市打卡：27 个省/自治区每个至少一条（直辖市与港澳台除外）', () => {
+  const { cities } = JSON.parse(readFileSync(CITIES_JSON, 'utf8'));
+  const provinceOf = new Map(cities.map(c => [c.name, c.province]));
+  const wanted = new Set(cities.map(c => c.province).filter(p => !NON_PROVINCE.has(p)));
+  assert.equal(wanted.size, 27, '数据集里的省/自治区应为 27 个');
+
+  const covered = new Set(
+    getAchievements([])
+      .find(c => c.title === '📍 城市打卡').items
+      .map(a => provinceOf.get(a.desc.replace(/^到访过\s*/, '')))
+  );
+  const missing = [...wanted].filter(p => !covered.has(p));
+  assert.deepEqual(missing, [], '以下省/自治区在「城市打卡」里没有条目：' + missing.join('、'));
 });
 
 test('code 全局唯一 —— 统计页拿它当计数键的前提', () => {
@@ -91,9 +113,9 @@ test('每条成就的展示字段都齐全（网页/app 要靠它渲染，缺一
   }
 });
 
-test('achievementCounts：按人累计，且骨架保留全部 43 条', () => {
+test('achievementCounts：按人累计，且骨架保留全部 70 条', () => {
   const all = achievementCounts([['北京', '上海'], ['北京'], []]).flatMap(c => c.items);
-  assert.equal(all.length, 43);
+  assert.equal(all.length, 70);
   const get = code => all.find(a => a.code === code).count;
   assert.equal(get('first_trip'), 1); // 只有第一位用户 ≥2 城
   assert.equal(get('city_xuzhou'), 0); // 没人去过徐州
