@@ -73,30 +73,31 @@ test('吐鲁番同时点亮「盆地之渊」与「火洲炼狱」', () => {
   assert.ok(codes.includes('hottest_turpan'), '应点亮火洲炼狱');
 });
 
-test('共 70 条成就、4 个分类', () => {
+test('共 55 条成就、4 个分类', () => {
   const cats = getAchievements([]);
   assert.equal(cats.length, 4);
-  assert.equal(cats.flatMap(c => c.items).length, 70);
+  assert.equal(cats.flatMap(c => c.items).length, 55);
 });
 
-// 「城市打卡」覆盖面守门人：拿 app 的城市数据集（城市名→省份）反查，确保 27 个省/自治区
-// 每个至少一条。数据集是唯一权威的城市→省份来源，故直接从 assets 读，不在后端再抄一份。
+// 「城市打卡」的名字守门人：desc 里写的城市名必须真的在 app 的城市数据集里 —— 拼错一个字，
+// 这条成就就永远点不亮，而接口不会报错。数据集是唯一权威的城市名单，故直接从 assets 读。
+// desc 形如「到访过 徐州，并说出那句著名的话」，城市名取「到访过」之后、首个分隔符之前那段。
 const CITIES_JSON = fileURLToPath(new URL('../../app/src/main/assets/cities.json', import.meta.url));
-const NON_PROVINCE = new Set(['北京', '天津', '上海', '重庆', '台湾', '香港', '澳门']);
 
-test('城市打卡：27 个省/自治区每个至少一条（直辖市与港澳台除外）', () => {
+test('城市打卡：每条的城市名都在数据集里（防拼错）', () => {
   const { cities } = JSON.parse(readFileSync(CITIES_JSON, 'utf8'));
-  const provinceOf = new Map(cities.map(c => [c.name, c.province]));
-  const wanted = new Set(cities.map(c => c.province).filter(p => !NON_PROVINCE.has(p)));
-  assert.equal(wanted.size, 27, '数据集里的省/自治区应为 27 个');
+  const names = new Set(cities.map(c => c.name));
+  const unknown = getAchievements([])
+    .find(c => c.title === '📍 城市打卡').items
+    .map(a => a.desc.match(/^到访过\s*([^\s，,（(]+)/)[1])
+    .filter(n => !names.has(n));
+  assert.deepEqual(unknown, [], '以下城市名不在 cities.json 里：' + unknown.join('、'));
+});
 
-  const covered = new Set(
-    getAchievements([])
-      .find(c => c.title === '📍 城市打卡').items
-      .map(a => provinceOf.get(a.desc.replace(/^到访过\s*/, '')))
-  );
-  const missing = [...wanted].filter(p => !covered.has(p));
-  assert.deepEqual(missing, [], '以下省/自治区在「城市打卡」里没有条目：' + missing.join('、'));
+test('巡游四方：热河寻踪要求集齐承德/赤峰/朝阳，缺一不可', () => {
+  assert.equal(find(['承德', '赤峰', '朝阳'], 'rehe_province').done, true);
+  assert.equal(find(['承德', '赤峰'], 'rehe_province').done, false);
+  assert.equal(find([], 'rehe_province').done, false);
 });
 
 test('code 全局唯一 —— 统计页拿它当计数键的前提', () => {
@@ -113,9 +114,9 @@ test('每条成就的展示字段都齐全（网页/app 要靠它渲染，缺一
   }
 });
 
-test('achievementCounts：按人累计，且骨架保留全部 70 条', () => {
+test('achievementCounts：按人累计，且骨架保留全部 55 条', () => {
   const all = achievementCounts([['北京', '上海'], ['北京'], []]).flatMap(c => c.items);
-  assert.equal(all.length, 70);
+  assert.equal(all.length, 55);
   const get = code => all.find(a => a.code === code).count;
   assert.equal(get('first_trip'), 1); // 只有第一位用户 ≥2 城
   assert.equal(get('city_xuzhou'), 0); // 没人去过徐州
