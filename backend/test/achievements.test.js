@@ -73,10 +73,10 @@ test('吐鲁番同时点亮「盆地之渊」与「火洲炼狱」', () => {
   assert.ok(codes.includes('hottest_turpan'), '应点亮火洲炼狱');
 });
 
-test('共 55 条成就、4 个分类', () => {
+test('共 54 条成就、4 个分类', () => {
   const cats = getAchievements([]);
   assert.equal(cats.length, 4);
-  assert.equal(cats.flatMap(c => c.items).length, 55);
+  assert.equal(cats.flatMap(c => c.items).length, 54);
 });
 
 // 「城市打卡」的名字守门人：desc 里写的城市名必须真的在 app 的城市数据集里 —— 拼错一个字，
@@ -114,9 +114,9 @@ test('每条成就的展示字段都齐全（网页/app 要靠它渲染，缺一
   }
 });
 
-test('achievementCounts：按人累计，且骨架保留全部 55 条', () => {
+test('achievementCounts：按人累计，且骨架保留全部 54 条', () => {
   const all = achievementCounts([['北京', '上海'], ['北京'], []]).flatMap(c => c.items);
-  assert.equal(all.length, 55);
+  assert.equal(all.length, 54);
   const get = code => all.find(a => a.code === code).count;
   assert.equal(get('first_trip'), 1); // 只有第一位用户 ≥2 城
   assert.equal(get('city_xuzhou'), 0); // 没人去过徐州
