@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 自定义主题属性。
+     appAccent：「主题色」的单一入口。布局/drawable 里要跟着用户选择走的强调色都引用
+     ?attr/appAccent，而不是直接写 @color/accent —— 后者是固定值，改主题色时不会跟着变。
+     默认值在 Theme.CityFootprint 里给（appAccent = @color/accent），
+     用户选的预设由 ThemeOverlay.App.Accent.* 覆盖（见 themes_accent.xml）。 -->
+<resources>
+    <attr name="appAccent" format="color" />
+</resources>

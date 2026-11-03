@@ -1,11 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 编辑页 / 城市选择页顶栏的返回箭头（几何是 Material arrow_back） -->
+<!-- ic_back：Material Icons（Apache-2.0），路径取自 google/material-design-icons 的
+     navigation/arrow_back/materialicons/24px.svg，未改动手绘路径。 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
     android:viewportWidth="24"
-    android:viewportHeight="24">
+    android:viewportHeight="24"
+    android:tint="?attr/colorControlNormal">
     <path
-        android:fillColor="#FF000000"
-        android:pathData="M20,11 L7.83,11 L13.42,5.41 L12,4 L4,12 L12,20 L13.41,18.59 L7.83,13 L20,13 Z" />
+        android:fillColor="@android:color/white"
+        android:pathData="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
 </vector>

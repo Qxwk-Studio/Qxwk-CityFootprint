@@ -1,13 +1,17 @@
-# City Footprint · 安卓端
+# City Footprint · 安卓端（2.0 离线版）
 
-Qxwk City Footprint 的原生安卓客户端。登录走「Qxwk 通行证」，足迹数据走本项目后端（Cloudflare Worker）。
+把「去过哪些城市」记下来、在地图上点亮它们的单机应用。**2.0 是离线单机**：数据全在本机
+SQLite，不登录、不上传；整个 app 只有**一个**网络请求 —— 「检查更新」读版本清单。
+
+工程口径与任务分解在仓库根目录的 [`2.0-development.md`](../2.0-development.md)；
+那份是给改代码的人看的（为什么这么做、哪条口径是谁定的），本文件是使用/维护说明。
 
 ## 包名与技术栈
 
 | 项 | 值 |
 | --- | --- |
-| 包名 / applicationId | `top.qxwkstudio.travel` |
-| 语言与界面 | Kotlin + **XML View + viewBinding**（无 Compose、**无 WebView**） |
+| 包名 / applicationId | `top.qxwkstudio.travel`（debug 包加 `.dev` 后缀，见「发版」） |
+| 语言与界面 | Kotlin + **XML View + viewBinding**（无 Compose） |
 | SDK | compileSdk 34 / minSdk 24 / targetSdk 34，Java 17 |
 | 构建 | AGP 8.2.2 + Kotlin 1.9.22 + Gradle 8.2 |
 
@@ -16,330 +20,204 @@ Qxwk City Footprint 的原生安卓客户端。登录走「Qxwk 通行证」，�
 
 ```bash
 cd app
-./gradlew testDebugUnitTest    # 纯 JVM 单测（成就阈值 / visit_date / 城市搜索）
+./gradlew testDebugUnitTest    # 纯 JVM 单测（不需要设备）
 ./gradlew assembleDebug        # 需要本机有 Android SDK
 ```
 
 ## 依赖取舍
 
-**压得很小**：`core-ktx`、`appcompat`、`material`、`recyclerview`、`swiperefreshlayout`、`osmdroid`、
-`kotlinx-coroutines-android` + `lifecycle-runtime-ktx`、`kotlinx-serialization-json`、`junit`（测试）。
+压得很小，每一处都有理由：
 
-- **网络**仍是 JDK 的 `HttpURLConnection`（`net/Http.kt`），**不引** Retrofit/OkHttp：
-  一共十来个接口、全是「点一下发一次」，Retrofit 的注解接口 + converter 换不到什么，
-  OkHttp 的连接池/拦截器也用不上。
-- **JSON** 从 `org.json` 换成 `kotlinx-serialization`（`@Serializable` 数据类，见 `logic/Models.kt` 与 `data/Json.kt`）：
-  序列化器在**编译期**生成、运行时不用反射，所以**不需要手写 keep 规则**（这是相对 Gson/Moshi 的主要好处）。
-  后端那个「没有布尔类型、`is_private` 存 0/1」的怪癖用一个自定义序列化器表达
-  （`IntBooleanSerializer`），界面上只见到 Boolean。
-- **异步**用协程 + lifecycle（`ui/Coroutines.kt` 的 `runIo`）：挂在 `viewLifecycleOwner.lifecycleScope`
-  （Fragment）或 `lifecycleScope`（Activity）上，**页面销毁时请求自动取消** —— 因此各页不再需要
-  `_binding ?: return` 那一堆兜底判空。退出登录那次「尽力而为」的撤销请求挂在进程级 `appScope` 上
-  （挂 UI scope 会被页面销毁一起取消，那就发不出去了）。
-- **边界 GeoJSON 仍是手工解析**（`ui/GeoJson.kt`，用 Android 自带的 `org.json`）：坐标是异构嵌套数组，
-  换成 kotlinx 也得手动遍历 `JsonElement`，省不下多少，而这里只要 Polygon / MultiPolygon 的坐标。
-- release 开了 R8（`isMinifyEnabled` + `isShrinkResources`）。**风险点在 `proguard-rules.pro`**：
-  `fragment_map.xml` 里按类名写死的 `org.osmdroid.views.MapView` 走的是 LayoutInflater 反射路径，
-  名字被改掉会在**打开地图页时直接崩**，所以那里显式 keep 了地图相关包。
-  （kotlinx-serialization 与协程都不需要手写 keep 规则。）
+| 依赖 | 为什么 |
+| --- | --- |
+| `androidx.room` + KSP | 本地库是 2.0 的**唯一真相**。Room 在编译期校验 SQL、迁移有 schema 比对；KSP 版本必须与 Kotlin 完全对齐（`1.9.22-1.0.18`） |
+| `kotlinx-serialization-json` | 序列化器编译期生成、无反射，R8 不需要 keep 规则；时间线事件用它存 JSON |
+| `androidx.lifecycle` + 协程 | `runIo`（`ui/Coroutines.kt`）把「后台跑一段活、回主线程交结果」挂在页面生命周期上，页面销毁自动取消 |
+| `org.maplibre.gl:android-sdk` | 地图。选它的唯一原因是**原生支持 PMTiles**（11.7.0 起），不需要自建读取器或本地 HTTP 服务 |
+| Material Components | 按钮/开关/对话框/底栏；主题色跟着 `appAccent` 走 |
+| **没有** Retrofit/OkHttp | 只剩一个 GET 请求，`HttpURLConnection` 足够（`net/Http.kt`） |
+| **没有**图片加载库 | 只有一张本地头像，`BitmapFactory` + 手写缩放 |
 
-## 后端与域名（要改地址只改一处）
+## 数据层
 
-`app/src/main/java/top/qxwkstudio/travel/Api.kt` 是域名与接口路径的**唯一出处**：
+四张表（`data/db/Entities.kt`，schema 快照在 `app/schemas/`，**要入库**）：
 
-- `ACCOUNT_BASE = https://account.qxwkstudio.top/api` —— 「Qxwk 通行证」，管登录 / 登出 / 身份。密码只发到这里，**不经过足迹后端**。
-- `TRAVEL_BASE = https://api.travel.qxwkstudio.top/api` —— 本项目后端（Cloudflare Worker），管足迹数据（`/my-visits`、`/visits`、`/stats`）与地图边界（`/geo/{adcode}`）。
-- `WEB_ORIGIN = https://travel.qxwkstudio.top` —— 网页站点根（GitHub Pages，就是仓库里 `docs/` 那一层）。**静态文件**从这儿取，不走 `api.` 那个域名。
+| 表 | 内容 |
+| --- | --- |
+| `trips` | 行程：标题、备注、时间线 JSON、起止时间与总花销（冗余列，列表排序不解析 JSON）、软删列、同步预留列 |
+| `city_checkins` | 打卡：手动打卡 + 由行程派生的关联打卡共用一张表，`source` 区分；唯一索引 `(trip_uuid, city_name, source)` 是重算幂等的依据 |
+| `achievement_states` | 成就状态：达成与否能重算，但**解锁时间重算不出来**，必须落表 |
+| `app_settings` | 设备级键值：昵称、UUID、头像路径、徽章色 |
 
-三个域名（通行证 `account.qxwkstudio.top` / 网页 `travel.qxwkstudio.top` / 接口 `api.travel.qxwkstudio.top`）
-都是 HTTPS，所以清单里只有 `INTERNET` 权限、没有 `network_security_config` 的明文例外。
+三条硬约定：
 
-### App 清单（`GET /api/manifest`）：检查更新 / 公告 / 主页菜单栏目
+1. **时间一律存 UTC 毫秒**；时间线事件另存记录时的时区偏移 `tz`（分钟），否则跨时区旅行后
+   「当时几点」还原不出来、排序又会错。
+2. **派生数据不落表**：统计（城市/省份/次数/花销）与派生打卡都是现算的。
+3. **派生打卡重算用物理删除**：唯一索引不认 `deleted_at`，软删的旧行会一直占着键。
 
-「我的」页的「检查更新」与「公告」两行，以及主页右上角菜单里的栏目，读的都是**同一个后端接口**
-`GET /api/manifest`（`backend/src/worker.js`）。数据在 D1 的三张表里，建表与用法见
-`backend/migrations/0001_init.sql` 末尾的「App 清单」一段：`cf_app_version`（安卓版本，**一行一个版本、历史都留着**，
-接口取 `version_code` 最大的那行；更新说明是这行的 `notes` 列）/ `cf_notices`（公告）/ `cf_menu`（主页菜单栏目）。
+### 时间线（`logic/Timeline.kt`）
 
-> 这三样原先放在网页静态文件 `docs/version.json`。搬进 D1 是为了改内容不必再走
-> 「改仓库 → push → 等 GitHub Pages 构建」：现在一条 `npx wrangler d1 execute` 就生效。
-> 那份文件**仍留在仓库里但已不再被读**，改它不会有任何效果。
+一条行程 = 一个**有序事件数组**，四种类型：到访 / 乘坐 / 进行 / 前往。
 
-报文形状与旧文件**逐字段一致**（所以 App 侧的 `VersionManifest` 模型一行都没改）：
+- JSON 里的 `type` 与字段名是**数据格式契约**（改一个等于让存量行解不出来）；
+- 时间必须非降序（相等可以），逆序不允许保存；
+- 短文本（交通方式 / 活动名 / 地点名）≤ 23 字，备注 ≤ 233 字（`logic/Limits.kt` 唯一出处）；
+- `costCents` 用分：`null` = 没填，`0` = 合法的「花了 0 元」。
 
-**怎么改（命令都在 `backend/` 目录下执行，`--remote` 指线上库）**
+### 派生打卡（`data/TripRepo.kt` + `logic/DerivedCheckin.kt`）
 
-```bash
-# 看历史版本与当前「最新版」是哪行（最新 = version_code 最大的那行）
-npx wrangler d1 execute qxwk-data --remote --command "SELECT id, version_name, version_code, download_url FROM cf_app_version ORDER BY version_code DESC"
+保存行程时，在**同一个事务**里按时间线重算关联打卡：同一座城市只取**首次到访**，
+一城一条 `source = 派生` 的打卡。城市表里查不到的名字直接跳过（宁可少一条，不写脏数据）。
 
-# 发新版：INSERT 一行新记录（version_code 必须比上一版大），**旧行不要动**
-# 更新说明是一段多行文本、**一行一条**，用 char(10) 拼起来（SQL 字符串里不能直接写 \n 转义）
-npx wrangler d1 execute qxwk-data --remote --command "INSERT INTO cf_app_version (version_name, version_code, download_url, notes) VALUES ('1.4.0', 10400, 'https://…', '提取密码：CtFp' || char(10) || '新增足迹地图夜间模式')"
+### 刷新链（`data/DataVersion.kt`）
 
-# 补 / 改某一版（刚发的漏了一条说明、或下载地址换了）：照 id 改那一行，别新插一行顶替
-# 不想要说明就把整列置空
-npx wrangler d1 execute qxwk-data --remote --command "UPDATE cf_app_version SET notes='第一条说明' || char(10) || '第二条说明' WHERE id=2"
+五个 tab 用 add + hide/show 切换，隐藏的 Fragment 仍是 RESUMED —— 从表单页回到列表页
+**收不到 `onHiddenChanged`**。所以写操作成功后 `DataVersion` 自增，各页在 `onResume` 比对版本号决定
+要不要重读。只在事务成功后自增，回滚不白刷。
 
-# 发公告（id 自动往下排；**别去改已有的 id**）
-npx wrangler d1 execute qxwk-data --remote --command \
-  "INSERT INTO cf_notices (title, date, body) VALUES ('标题', '2026-10-01', '一段正文')"
+## 页面
 
-# 主页菜单加一个栏目（一条 = 一行 = 一个网页，title 与 url 都要给）
-npx wrangler d1 execute qxwk-data --remote --command \
-  "INSERT INTO cf_menu (title, url) VALUES ('🎉 限时活动', 'https://travel.qxwkstudio.top/activity-2026-fall.html')"
-```
+底部五 tab：**主页 / 行程 / 地图 / 成就 / 我的**（`ui/MainActivity.kt` 的路由与本页顶栏文案）。
 
-```json
-{
-  "android": { "version_name": "1.3.2", "version_code": 10302, "download_url": "https://…", "notes": ["一行一条更新说明"] },
-  "notices": [{ "id": 1, "title": "标题", "date": "2026-09-30", "body": "一段正文" }],
-  "menu": [{ "title": "📖 用户协议", "url": "https://travel.qxwkstudio.top/agreement.html" }]
-}
-```
-
-**`android`（检查更新）**
-
-- 比的是 `version_code`（整数）**不是** `version_name`：版本名是给人看的，「1.2.10 与 1.2.9 谁大」用字符串比一定答错。
-  App 拿它跟自己的 `BuildConfig.VERSION_CODE`（CI 发版时用 `version_code` 注入）比，**严格大于**才算有新版本；
-  相等或更小一律答「已是最新版本」。
-- `notes` 是更新说明，**一行一条**，弹窗里逐条列在版本号下面；没有就一行都不留（连「更新说明」这个小标题
-  也不会出现）。它是**最新版那一行**的 `notes` 列里的一段多行文本（`\n` 分隔，接口拆成数组），
-  所以加减一行说明不必写转义，用 `char(10)` 拼即可。
-- `download_url` 是点「前往下载」要打开的地址（现指向蓝奏云分享页），可以空着 —— 空地址时 App 只提示
-  「下载地址暂不可用」。App 内**不做**下载与安装（那要处理存储权限、FileProvider 与「未知来源」授权），
-  点下去是跳系统浏览器。
-- 网页端**不做**更新检查（只显示静态版本号文字），这份清单现在只有安卓在读。
-- 发版时**要往 `cf_app_version` 插一行新记录**（不是改旧行），否则 App 永远看不到新版本；旧行留着当历史。
-
-**`notices`（公告，没有就空数组）**
-
-- 一条 = `{ id, title, date, body }`。`date` 只做展示；`body` 是**一整段**正文（不做多段 / 富文本，要分段就拆成两条）。
-- `id` 是**自增整数**，**只能往上加，不要改已有的值**：App 用「已读的最大 id」记进度
-  （`Store.noticeReadId`，本机 SharedPreferences，key `notice_read_id`），
-  接口回的数组里出现比它大的 id 就认为有未读 —— 改小一个 id 会让读过的公告重新变成未读。
-- App 里两处入口，都进同一个页面（`ui/NoticeActivity`）：
-  「我的 → 关于软件 → 📢 公告」，以及**主页顶部的「📢 有新公告」横幅**（只在有未读时出现）。
-  **进公告页就算已读**（不做「划到底才算读」），回到主页横幅自动收掉。
-- 公告页按 id 从大到小排（最新的在最上面）；主页横幅在**页面创建**与**下拉刷新**时各取一次清单，
-  切 tab 不会重拉 —— 所以维护者新发 / 撤回公告后，用户下拉一次主页即可对上。
-- 网页端 `docs/news.html` 的公告区是**手写的**，不跟着这份清单走 —— 同一件事两边都要说时，得两边各改一次。
-
-**阶段 2 已完成**（页面搬去 GitHub Pages `travel.qxwkstudio.top`、接口挪到 `api.travel.qxwkstudio.top`）：
-全程只改了这一行 `TRAVEL_BASE`，其余代码都按相对路径拼。前后端分家后网页要过 CORS，
-但**安卓走原生 HTTP、不带 `Origin` 头，不受浏览器那套 CORS 规矩约束** —— 白名单里没有安卓、也不用加。
-
-### App 清单的 `menu`：主页菜单里的栏目 + 网页取身份
-
-主页右上角那颗三横菜单弹出的栏目浮层（`PopupMenu`），条目同样来自上面那个接口（`menu` 数组，库表 `cf_menu`）：
-
-```json
-{
-  "menu": [
-    { "title": "🎉 限时活动", "url": "https://travel.qxwkstudio.top/activity-2026-fall" },
-    { "title": "📖 用户协议", "url": "https://travel.qxwkstudio.top/agreement.html" }
-  ]
-}
-```
-
-- **一条 = 菜单里一行 = 一个网页**。`title` 是行上显示的文字（emoji 直接写进标题），`url` 指向页面；
-  点一下就在 App 内的 WebView（`ui/WebViewActivity`）里打开 —— 同域名的页面留在 WebView 里，
-  链去别处的交系统浏览器。
-- 两个字段**都必填**，缺一个整条不显示（栏目是手写的，漏了就该看不见，不做兜底猜测）。
-  点按钮时：一条都没有弹「暂无内容」，拉不到清单弹「栏目加载失败」（都是 Toast，不配重试按钮 ——
-  菜单不是内容主体，拉不到不该挡着用户用 App）。
-- **加一个限时活动不用发新版**：在网页仓库里把页面建好，往 `cf_menu` 插一行即可
-  （命令见上面「怎么改」那段）。
-- 条目**只在主页创建时拉一次**（切 tab、下拉刷新都不会重拉 —— 下拉刷新重拉的是 `notices`）。
-  清单改完，用户杀进程重进主页就能看到。
-
-**网页怎么拿 App 的身份**
-
-App 的 token 在 SharedPreferences、网页的 token 在 localStorage，**两套身份互不相通**，
-所以从菜单打开的自家页面默认是**未登录态**。为此 `WebViewActivity` 会在满足两个条件时挂一个 JS 桥：
-
-1. 调用方传了 `withIdentity = true`（菜单里点条目就是这么调的，协议页那种纯文档页不传）；
-2. 页面地址的域名等于 `Api.WEB_ORIGIN`（自家网页站）—— 栏目地址来自后端清单（D1），
-   那是**数据不是代码**，万一被改成外站，token 不该跟着流出去。
-
-网页侧这样取（`getIdentity()` 返回一个 **JSON 字符串**，字段名与网页 localStorage 里那份用户对象一致）：
-
-```js
-const raw = window.CityFootprint && window.CityFootprint.getIdentity();
-const me = raw ? JSON.parse(raw) : null;   // 在普通浏览器里打开时没有这个桥，必须留兜底
-// me = { token, userId, nickname, color, avatar, is_admin }；未登录时字段照给、值为空串 / false
-```
-
-- 桥名 `CityFootprint`、方法名 `getIdentity`、报文字段名**都是跨语言契约**，改一个就要两端一起改。
-  `app/proguard-rules.pro` 里有一条显式的 keep 规则保住这个方法名 ——
-  漏了它，debug 包正常、**release 包**里网页会报 `getIdentity is not a function`。
-- 现在只有这一条**只读**的取身份接口。哪天需要「网页登录后把会话回写给 App」之类的反向通道再加。
-
-### `client` 字符串与通行证登记的关系
-
-登录时 body 里带 `"client": "CityFootprint Android"`（常量在 `Api.CLIENT_NAME`）。
-安卓没有 `Origin` 头，通行证只能靠这个字段记「这次登录来自哪个应用」，会话管理页据此分类展示。
-
-**若通行证侧没登记过这个名字，登录照常可用**，只是那条会话在通行证后台会被记成「未登记来源」。
-要让它在会话列表里有正式名字/能被单独撤销，需要**在通行证（Qxwk-Account）侧登记这个字符串**。
-改这里的字符串就要同步登记，否则又回到「未登记来源」。
-
-## 地图选型
-
-用 **osmdroid 6.1.20**（`org.osmdroid:osmdroid-android`，Maven Central）。理由：
-
-- 纯原生 Android View 的 OSM 地图，**不需要 API key**、不用在控制台绑包名与签名，个人项目少一处密钥管理；
-- 6.1.20 是它在 Maven Central 上的最后一个正式版（上游仓库 2024-11 已归档，包还在、API 稳定）。
-
-边界数据用阿里 DataV GeoJSON，**手工解析**（`ui/GeoJson.kt`，只认 Polygon / MultiPolygon 的坐标），
-不引通用 GeoJSON 库。整条边界链路都是可降级的：城市在源数据里没有 `adcode`（县级市）、
-或 GeoJSON 解析失败，都只提示一句、**标记照旧保留**。
-
-瓦片缓存**用 osmdroid 的默认值**，不要再加 `setExpirationOverrideDuration`：文件缓存的默认有效期
-是 `DEFAULT_MAXIMUM_CACHED_FILE_AGE`（一周）—— `MapTileFilesystemProvider` 的构造器把
-`Configuration.getExpirationExtendedDuration()`（默认 0）加上它，正好就是「瓦片缓存 7 天」。
-另有一个常量 `TILE_EXPIRY_TIME_MILLISECONDS`（30 天），走的是 HTTP 头那条路径的兜底，别与它说混。
-边界与瓦片都极少变动，过期只是标记 stale 触发重下，并不会删掉已缓存的文件。
-
-边界 GeoJSON 另有本机落盘缓存（`data/GeoCache.kt`，`filesDir/geo/{adcode}.json`，按文件 mtime 判 7 天），
-与网页 IndexedDB 那份同形态：命中直接返回；过期**先返回旧内容**、后台**串行**重下换文件（SWR，不重画）。
-它**不跟登录态走** —— 边界是公共数据，别把它塞进 `Store` 的 `cache_` 前缀（那套会随退出登录 / 写操作整体作废）。
-
-图层绘制有一处约定（`MapFragment.renderCities`）：**整批画完才 `invalidate()` 一次**，而不是每座城各重绘一次；
-圆点图标按颜色缓存复用（`dotIcons`，同色只画一张 Bitmap），一个 MultiPolygon 的多个环也先攒齐、一次 `addAll`
-交给 overlay 列表。改这块时别把 `invalidate()` 塞回逐城绘制里 —— 一次筛选几十座城就是几十次重绘请求。
-
-## 城市表（assets/cities.json 是生成物）
-
-`app/src/main/assets/cities.json` **不要手改**：它由 `app/tools/gen-cities.mjs` 从
-`docs/cities.js`（名称 / 国家 / 省份 / 坐标）与 `docs/city-codes.js`（名称 → adcode）生成，
-零依赖、可重复运行（同样的输入产出逐字节相同的输出，diff 干净）。
-
-```bash
-node app/tools/gen-cities.mjs
-```
-
-脚本会自己校验并在失败时**以退出码 1 结束、不写文件**：城市条数与源文件条数一致、无重名、
-坐标是数字且在国境内（`country` 非中国时只校验经纬度本身合法 —— 见源文件头的写法说明）。
-输出还会报告有多少城市缺 `adcode`（源数据里的县级市，地图上会降级成「只显示标记」）以及有几个国家/地区。
-
-**前端改了城市数据（增删城市、改坐标）就重跑一次并提交这份 JSON** —— 两端同源靠的就是这一步。
-当前：384 座城市，370 座有 adcode，1 个国家/地区。
-
-`CityStore` 把它缓存在内存（只解一次）。**进程启动时 `CityFootprintApp` 会用一条后台线程先解一遍**：
-主页与统计页首帧要在**主线程**用它查省份（`CityStore.all`），不预热那一帧就得主线程读 asset
-再反序列化整份文件。`CityStore.all` 内部有 `synchronized` 兜底，所以预热与页面抢跑也只是等同一次解析。
-
-城市搜索在 `logic/City.kt`（名称 / 省份模糊匹配，空查询返回全部）。
-**没有做拼音首字母匹配**：源数据里没有拼音字段，要支持就得再维护一张几千字的拼音表；
-哪天 `cities.js` 出现了拼音字段，在那里加一条比对即可。
-
-城市选择页（`ui/CityPickerActivity`）默认按「国家 + 省份」分组浏览（组标题吸顶，排序用
-`Collator` 按拼音），一进入搜索框就切成平铺的结果列表、行尾补上省份。
-`City.country` 现在都是「中国」；将来源数据里写了 `country`，分组与标题会自己带上国家，
-不用改代码。
-
-## 界面结构（底部导航 5 个 tab）
-
-五个 tab 的正文都对齐网页端，改 tab 时两端一起看：
-
-| tab | 图标 | 正文 = 网页端的 | Fragment |
-| --- | --- | --- | --- |
-| 主页 | `ic_home` | 足迹管理页（`visits.html`，含顶部「足迹统计」概览） | `VisitsFragment` |
-| 我的成就 | `ic_achievement` | 足迹管理页的成就区（`visits.html`，成就结果由后端 `backend/src/achievements.js` 下发） | `AchievementsFragment` |
-| 地图 | `ic_map` | 首页足迹大地图（`index.html`） | `MapFragment` |
-| 全站统计 | `ic_stats` | 全站统计页（`stats.html`） | `StatsFragment` |
-| 我的 | `ic_person` | 个人中心（`account.html`）与设置 | `ProfileFragment` |
-
-- 图标必须是**单色矢量**（`BottomNavigationView` 按选中态自己染色），放在 `res/drawable/ic_*.xml`；
-  菜单在 `res/menu/bottom_nav.xml`，路由（tag / 标题 / 首个 Fragment）在 `ui/MainActivity.kt`。
-- Fragment 用 **add + hide/show**（不是 replace），所以隐藏页仍是 RESUMED，
-  各页感知「被切回来」用 `onHiddenChanged` 而不是 `onResume`。
-- 除了这五个 tab，主页右上角还有一颗**三横菜单**，点开是贴着按钮弹出的栏目浮层
-  （`androidx.appcompat.widget.PopupMenu`，布局外壳在 `activity_main.xml`，逻辑在 `MainActivity.setupMenu`）；
-  里面的栏目是一行一个网页，数据来自 App 清单的 `menu`（D1），见上面
-  「App 清单的 `menu`：主页菜单里的栏目 + 网页取身份」。
-
-### 过渡动画（`res/anim/`）
-
-只有四处，全是系统自带的 View 动画，**没有引入动画库**（material 的 motion 也没用）：
-
-| 位置 | 动画 | 挂在哪儿 |
+| tab | 内容 | 实现 |
 | --- | --- | --- |
-| tab 切换 | `anim_fade_up` / `anim_fade_out` | `MainActivity.show()` 的 `setCustomAnimations` |
-| 主页行程、成就、统计排行与成就计数 | `anim_layout_items`（逐条淡入） | 容器 XML 的 `android:layoutAnimation` + 铺完内容补一次 `scheduleLayoutAnimation()` |
-| 地图的城市明细卡、图例展开 | `anim_fade_up` | `View.fadeIn()`（`ui/Anim.kt`） |
-| 登录页的表单卡片、报错文案 | `anim_fade_up` | 同上 |
+| 主页 | 时间跨度 / 打卡城市 / 打卡省份 / 次数最多 / 总花销 + 城市排名（次数↔时间） | `HomeFragment` |
+| 行程 | 分段控件「打卡 (N) / 足迹 (N)」；三种卡片（足迹蓝 / 独立打卡绿 / 关联打卡灰） | `TripsFragment` |
+| 地图 | MapLibre 离线底图 + 点亮去过的城市 + 点击只读面板 | `MapFragment` |
+| 成就 | 54 条成就，分类胶囊、解锁日期、进度条 | `AchievementsFragment` |
+| 我的 | 头像 / 昵称 / UUID / 主题色 / 徽章色 / 外观 / 检查更新 / 版本 | `MineFragment` |
 
-三条别踩的坑：
+四个独立页面：`CheckinEditActivity`（手动打卡，四档日期精度）、`TripEditActivity`（行程编辑器，
+时间线增删改、正序校验、返回拦截）、`CityPickerActivity`（选城，分组 + 搜索）、以及主壳。
 
-- **`layoutAnimation` 不会因为 `addView` 就自动播**：它的语义是「容器**下一次**布局时播一遍」，
-  而首帧布局时数据还没回来（那一次是空容器），所以铺完内容必须自己补一次
-  `scheduleLayoutAnimation()`。漏了不报错，动画只是永远不出现。
-- **`translate` 的 `fromYDelta` 不要写 dp**：那个位置只认百分比和像素浮点数
-  （`12%` 相对自身高度、`2%p` 相对父容器），写法见 `anim_item_in.xml` 头部的注释。
-- **刻意只做进入、不做退出**：浮层（城市卡、图例）收起时直接 `GONE`，报错文案是原地换文字。
-  做淡出得监听动画结束后再隐藏、还得记得复位 alpha，为这点观感不值。真要加就在 `ui/Anim.kt` 里成对补上。
+入口：主页右上角 **「+」** = 城市打卡 / 添加足迹（自动记录在 2.1）。
+
+## 地图（`ui/MapFragment.kt` + `logic/MapStyle.kt` + `data/BasemapStore.kt`）
+
+- **底图**：`assets/basemap/cn-z0-6.pmtiles`（Protomaps 中国区 z0–6，5.8 MB，ODbL）。
+  MapLibre 的 PMTiles 读取在原生层，**只认 `pmtiles://file://…`，不支持 `asset://`** ——
+  所以首次进地图页时把资产拷到 `filesDir`（`BasemapStore.ensure`，按文件大小判断是否要重拷）。
+- **style** 运行时拼（`MapStyle.json`）：底色 / 陆地 / 用地 / 水系 / 道路 / 边界六层，
+  颜色取主题色板；**PMTiles 源写在 `url` 字段**，写进 `tiles` 数组会被当成瓦片模板、静默空白。
+- **点亮**：把判定用的那份边界（`CityShapes.shapesFor`）拼成 GeoJSON 叠填充 + 描边，
+  另加一层城市圆点（来自城市表，不依赖边界解析）兜底。
+- **交互**：点城市 → 底部只读面板（该城市打卡列表）；右下角定位按钮判城后把镜头挪过去。
+- 右下角 `© OpenStreetMap` 署名是 ODbL 的强制要求，别删。
+
+已知限制：底图只到 z6（再放大底图是空的，叠加层不受影响）；没有地名标注（需要 glyphs 字体包）；
+`ndk.abiFilters` 只留 arm64-v8a + armeabi-v7a（四个 ABI 全打包 APK 会从 8 MB 涨到 50 MB）。
+
+## 城市边界与判定（`logic/CityShapes.kt`、`logic/CityLocator.kt`）
+
+- 数据是**生成物**（不要手改）：`assets/data/city_boundaries.geojson`（370 城，已从 **GCJ-02 转 WGS-84**、
+  简化 20%，4.6 MB）与 `assets/data/provinces.geojson`（省界，背景线）。
+  重跑命令见「assets 生成物」一节。系统定位给的是 WGS-84，不转的话判定整体偏 500–640 m。
+- **解析是手写流式扫描器**：4.6 MB、四十多万个坐标点，用 `JsonElement` 建语法树在手机上会 OOM，
+  而失败被静默吞成「空边界」（症状：地图面数 0、定位退化成最近城市中心）。现在边扫边填扁平数组。
+- 判定：0.5° 网格粗筛 → 包围盒 → 射线法（含洞）→ 都不中时按**最近城市中心**兜底，上限 50 km
+  （海上/国外返回「判不到」让用户手选）。台湾岛内一律判成「台湾」（DataV 整岛只有一个 adcode）。
+- `AssetPathsTest` 直接断言三份资产在仓库里的路径存在 —— 路径常量写错会立刻红，
+  这类「路径错→静默降级」的坑不该靠真机发现第二次。
+
+## 成就（`logic/Achievements.kt`）
+
+54 条，四类（足迹丰碑 / 巡游四方 / 城市打卡 / 极限挑战），判定输入只有本地打卡的城市集合。
+三种规则：城市数里程碑、全部去过、任一去过。
+
+**回溯解锁日期**：按时间升序喂打卡，某条成就第一次成立时记下那一刻 —— 重装、清库、以后导入备份后
+重算，得到的仍是当初那条打卡的日期，而不是「今天」。结果落 `achievement_states`，写入时**保留已有的
+`unlocked_at`**（后来删记录导致暂时不满足，不该抹掉已点亮的成就）。
+
+1.x 把这套放后端（`backend/src/achievements.js`），2.0 搬到本地时逐条比对过（数量/顺序/名称/描述 0 差异）。
+
+## 统计口径（`logic/Stats.kt`）
+
+- 打卡城市 / 省份：去重；省份为空的不计入。
+- 时间跨度：只统计**完整日期**的打卡（只记得年/年月/记不清的记录带占位日期，混进去会把跨度起点拉偏）。
+- 次数最多：按**城市**计次，并列取名字字典序靠前。
+- 总花销：各行程花销之和，只出现在主页那张卡与行程卡上；**城市排名不按花费**（一笔行程可能去多城，
+  花销拆到城市要么重复计入、要么靠分摊猜）。
+
+## 个性化
+
+- **外观**：跟随系统 / 浅色 / 深色。应用点在进程最早处（`CityFootprintApp`），晚一步会让先起来的页面
+  按系统默认渲染一帧再重建 —— 有设置项的人每次冷启动都会看到闪一下。
+- **主题色**：6 个预设（蓝/绿/紫/橙/玫瑰/青），走 `ThemeOverlay.App.Accent.*` 覆盖 `appAccent` 与
+  `colorPrimary/colorSecondary`，所以按钮、开关、输入框、底栏选中态会一起换色；代码里画的强调色
+  走 `ui/Palette.accent()`。
+  已知限制：主色的「浅底」（`accent_light`）与主色系小字仍是固定淡蓝，换紫/橙时这一档略偏蓝。
+- **徽章色**：头像圆底与「我的」页色点，8 个预设。
+- **头像**：系统照片选择器（不需要读存储权限），缩到 512px 存 JPEG 进 `filesDir`，原图不留。
+- 外观与主题色存 `SharedPreferences`（Activity 在 `setContentView` 前必须同步读），
+  昵称/头像/徽章色存 `app_settings`（跟着数据走）。
+
+## 检查更新
+
+`GET /api/manifest`（`Api.VERSION_MANIFEST`，后端在 `backend/`）只读 `android` 那一节：
+比 `version_code`（整数，**不是**版本名），严格大于当前 `BuildConfig.VERSION_CODE` 才算有新版本。
+发新版时**往 `cf_app_version` 插一行新记录**（不是改旧行），否则永远看不到更新。
+App 内不做下载安装，点「前往下载」跳系统浏览器。
+
+## assets 生成物（不要手改）
+
+| 文件 | 来源 | 重跑命令 |
+| --- | --- | --- |
+| `assets/cities.json` | `docs/cities.js` + `docs/city-codes.js` | `node app/tools/gen-cities.mjs` |
+| `assets/data/city_boundaries.geojson` | DataV 逐市边界 → GCJ→WGS → 简化 20% | `node app/tools/build-city-geo.mjs` |
+| `assets/data/provinces.geojson` | DataV `100000_full` → 同上 | `node app/tools/build-provinces.mjs` |
+| `assets/basemap/cn-z0-6.pmtiles` | Protomaps 中国区 z0–6（外部下载，非本仓库生成） | 见 2.0-development.md §7.1 |
+
+前三个脚本都是**可重复运行、失败不写文件**的；中间产物落在 `app/tools/.cache` 与 `.out`（已 gitignore）。
+
+## 测试
+
+```bash
+cd app && ./gradlew testDebugUnitTest
+```
+
+46 条纯 JVM 测试（不需要设备）：时间线校验与编解码、派生打卡、统计口径、城市判定（合成数据 + 真实数据
+抽查：天安门→北京且落在面内、外滩→上海、台北→台湾、远海→null）、成就（54 条数量 / code 唯一 / 回溯 /
+进度封顶）、地图 style 字段契约、assets 路径存在性。
 
 ## 签名与发版
 
-1. 生成 keystore（别名按本仓库的习惯叫 `city-footprint`）：
-   ```bash
-   keytool -genkeypair -v -keystore release.jks -alias city-footprint -keyalg RSA -keysize 2048 -validity 10000
-   ```
-2. base64 一份填进 Secrets（PowerShell）：
-   ```powershell
-   [Convert]::ToBase64String([IO.File]::ReadAllBytes("release.jks"))
-   ```
-3. 仓库 Secrets 要齐四个（日志里都叫 `CF_*` 前缀是给 `build.gradle.kts` 读的环境变量名，与 Secrets 名字无关）：
-   `KEYSTORE_BASE64`、`KEYSTORE_PASSWORD`、`KEY_ALIAS`、`KEY_PASSWORD`。**密钥与口令务必另行备份**，
-   丢了只能改包名、让所有人重装一次。
-4. Actions → `Build Android APK` → `Run workflow`，填 `version_name`（如 `1.0.0`）与 `version_code`（整数）。
-   CI 会：单测 → `assembleRelease` → 把产物改名为 `CityFootprint-<version_name>.apk` 并上传为 artifact。
-   缺 `KEYSTORE_BASE64` 会直接 `::error::` 退出；签名没生效时产物叫 `app-release-unsigned.apk`，
-   改名那一步会因为找不到 `app-release.apk` 而失败 —— 这是**故意的**，绝不把未签名包当正式包传上去。
+1. keystore 与口令在仓库 Secrets（`KEYSTORE_BASE64` / `KEYSTORE_PASSWORD` / `KEY_ALIAS` / `KEY_PASSWORD`），
+   离库原件在 `C:\Code\.闲置文件\签名密钥-足迹.jks`。
+2. Actions → `Build Android APK` → `Run workflow`，填 `version_name` 与 `version_code`（**必须大于线上值**）。
+   CI 会跑单测 → `assembleRelease` → 改名上传；缺 keystore 直接失败，签名没生效也会因找不到
+   `app-release.apk` 而失败（故意的，绝不把未签名包当正式包传）。
+3. **debug 包带 `.dev` 后缀**（`top.qxwkstudio.travel.dev`），可以和线上 1.x 并排装 ——
+   签名不同，同包名是装不上的。
+4. 2.0 正式顶替 1.x 时：`applicationId` 不变、签名与 1.x 一致、`versionCode` 取 20000+。
+   **1.x 的历史数据不会自动迁过来**（数据在后端 D1，2.0 是纯本地），迁移方案见 2.0-development.md §2/§8。
+
+## 已知限制 / 2.1 计划
+
+- 自动记录（前台服务 + 通知 + 草稿）整块推后；「+」菜单第三项目前置灰。
+- 分享按钮已摆好，点了只提示「功能即将推出」。
+- 数据导出/导入未做：**换手机或卸载会丢数据**（这是当前最大的缺口）。
+- 底图只到 z6、没有地名；主题色的浅底一档仍固定淡蓝。
+- 1.x 的后端（Cloudflare Worker + D1）仍存在，网页版还用它；2.0 只调 `/api/manifest`。
 
 ## 目录
 
 ```
 app/
-├── build.gradle.kts            # 根项目：applicationId / 版本号（CI 用 sed 注入）/ 签名 / R8 / 依赖
+├── build.gradle.kts            # 根项目：版本号（CI 注入）/ 签名 / R8 / abiFilters / 依赖
 ├── settings.gradle.kts         # 单模块工程，没有 include(":app")
+├── schemas/                    # Room schema 快照（入库，迁移的依据）
 ├── proguard-rules.pro
-├── tools/gen-cities.mjs        # 城市表生成脚本
+├── tools/                      # 生成 assets 的脚本（cities / 城市边界 / 省界）
 └── src/
     ├── main/
-    │   ├── AndroidManifest.xml # 只有 INTERNET + ACCESS_COARSE_LOCATION；六个 Activity
-    │   │                        # （登录 / 主壳 / 编辑足迹 / 城市选择 / 公告 / WebView）
-    │   ├── assets/cities.json  # 生成物（见上）
-    │   ├── res/                # values / drawable / mipmap / menu / layout
+    │   ├── AndroidManifest.xml # 只有 INTERNET + ACCESS_COARSE_LOCATION；四个页面
+    │   ├── assets/              # cities.json / data/*.geojson / basemap/*.pmtiles（生成物）
     │   └── java/top/qxwkstudio/travel/
-    │       ├── Api.kt          # 域名与接口路径的唯一出处
-    │       ├── logic/          # 纯 Kotlin：不 import android.*，所以能在 JVM 上单测
-    │       ├── net/ data/      # HttpURLConnection / kotlinx-serialization / SharedPreferences / 各接口
-    │       └── ui/             # Activity / Fragment / Adapter / 协程封装 / 401 统一处理
-    └── test/java/top/qxwkstudio/travel/         # 单测（JVM，不需要设备）：
-        ├── logic/   # 成就边界、visit_date、城市搜索
-        └── data/    # JsonWireTest：请求/响应报文字段契约
+    │       ├── Api.kt           # 域名与接口路径的唯一出处（现在只剩 manifest）
+    │       ├── CityFootprintApp.kt  # MapLibre 初始化 / 外观 / 城市表预热
+    │       ├── logic/           # 纯 Kotlin、可 JVM 单测：时间线 / 判城 / 统计 / 成就 / style / 日期
+    │       ├── data/            # Room 实体与 DAO、仓库、偏好、底图缓存、单次 HTTP
+    │       └── ui/              # Activity / Fragment / Palette / Notify / EdgeToEdge / Locate
+    └── test/                    # 46 条 JVM 测试
 ```
-
-> **启动图标是生成物**：`res/mipmap-*/ic_launcher.png` 五档（mdpi 48 / hdpi 72 / xhdpi 96 /
-> xxhdpi 144 / xxxhdpi 192）都是**同一张 1024×1024 的 logo 源图**缩放出来的（圆角方形、四角透明），
-> 源图不进仓库，所以**不要手改这些 PNG**。网页端的 `docs/favicon.webp`（256×256，lossless webp）
-> 也出自这张源图 —— 换 logo 时两边要一起换，否则网页与 app 的图标会不一致。
-
-## 本机状态与登录态
-
-token 存在 `MODE_PRIVATE` 的 SharedPreferences（`data/Store.kt`），与网页版放 localStorage 属同一级别，
-**未加密**：安卓没有系统级加密存储，真机 root 后能被读走（与其它未加固 App 同级）。
-兜底靠三层：清单里 `allowBackup=false`（云备份不带 token）、全站 HTTPS、日志不打印 token。
-刻意**没用** `EncryptedSharedPreferences`（要求 targetSdk 更高，且换库要迁移存量数据，收益与改动不成比例）。
-
-外观偏好（浅色 / 深色 / 跟随系统）也放在同一份 SharedPreferences（`Store.appearance`），但它是**设备级**偏好：
-`clearSession` 刻意不清它（换个人登录不该把外观也换掉），键名不带 `cache_` 前缀、也不随写操作作废。
-生效点在**进程最早处** —— `CityFootprintApp`（清单里 `<application android:name>` 指过去）在 `onCreate`
-里把偏好交给 `AppCompatDelegate.setDefaultNightMode`；晚一步（比如写在 MainActivity 里）会让先起来的页面
-按系统默认渲染一帧再被重建 —— 有设置项的人每次冷启动都会看到一次闪烁。
-
-任何接口拿到 401 都走**同一个出口**（`ui/Session.kt`）：清本地 token → 提示一次 → 回登录页，
-避免三个页面各弹一次错、或者用户被反复踢。**退出登录**无论通行证那边成功与否都清本地 token。

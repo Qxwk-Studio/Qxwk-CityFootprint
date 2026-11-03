@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 地图页（2.0）：MapLibre 底图 + 点亮去过的城市 + 点击城市弹只读面板。
+     底图与城市面都在 MapFragment 里配（style 是运行时拼的），这里只有容器与两块浮层。 -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <org.maplibre.android.maps.MapView
+        android:id="@+id/mapView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <!-- 载入中/失败提示：底图在真机上要几百毫秒才出来，不提示就是一片空白 -->
+    <TextView
+        android:id="@+id/textStatus"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:text="@string/map_loading"
+        android:textColor="@color/text_secondary"
+        android:textSize="13sp" />
+
+    <!-- 版权署名：Protomaps 底图是 ODbL，必须标（点上去没有动作，纯展示） -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|start"
+        android:layout_marginStart="8dp"
+        android:layout_marginBottom="4dp"
+        android:background="#66FFFFFF"
+        android:paddingStart="4dp"
+        android:paddingEnd="4dp"
+        android:text="@string/map_osm_credit"
+        android:textColor="@color/text_secondary"
+        android:textSize="10sp" />
+
+    <ImageButton
+        android:id="@+id/btnLocate"
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        android:layout_gravity="bottom|end"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="28dp"
+        android:background="@drawable/bg_action_button"
+        android:contentDescription="@string/map_locate"
+        android:padding="10dp"
+        android:src="@drawable/ic_locate"
+        android:tint="@color/on_accent" />
+
+    <!-- 点击城市后的只读面板：城市名 + 打卡条数 + 关闭，列表在代码里铺 -->
+    <LinearLayout
+        android:id="@+id/cityCard"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:layout_margin="8dp"
+        android:background="@drawable/bg_card"
+        android:orientation="vertical"
+        android:padding="14dp"
+        android:visibility="gone">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/textCity"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/fg"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/textCount"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_weight="1"
+                android:textColor="@color/text_tertiary"
+                android:textSize="12sp" />
+
+            <ImageButton
+                android:id="@+id/btnClose"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/map_close"
+                android:padding="6dp"
+                android:src="@drawable/ic_close"
+                android:tint="@color/text_secondary" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/cityList"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:orientation="vertical" />
+    </LinearLayout>
+</FrameLayout>

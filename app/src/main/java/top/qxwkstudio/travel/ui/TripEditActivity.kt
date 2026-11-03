@@ -89,6 +89,8 @@ class TripEditActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // 主题色叠层：必须在 setContentView 之前应用，Material 控件（按钮/开关/输入框）的颜色取自主题
+        theme.applyStyle(Palette.selected(this).overlay, true)
         binding = ActivityTripEditBinding.inflate(layoutInflater)
         val b = binding
         applyEdgeToEdge(b.topBar.root, null)

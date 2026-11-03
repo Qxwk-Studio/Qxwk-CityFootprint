@@ -22,7 +22,6 @@
     <string name="home_rank">城市排名</string>
     <string name="home_rank_count">次数</string>
     <string name="home_rank_time">时间</string>
-    <string name="home_range_sep">%1$s — %2$s</string>
     <string name="home_cost_value">¥%1$s</string>
     <string name="home_count_value">%1$s 次</string>
     <string name="home_empty">还没有点亮任何城市，快去添加第一条足迹吧</string>
@@ -37,6 +36,15 @@
     <string name="trips_trip_seq">#%1$d</string>
     <string name="trips_trip_timeline">%1$d 个时间线</string>
     <string name="trips_trip_empty_title">未命名</string>
+    <string name="trips_menu_share">分享</string>
+    <string name="trips_menu_edit">编辑</string>
+    <string name="trips_menu_delete">删除</string>
+    <string name="trips_share_wip">分享功能即将推出</string>
+    <string name="trips_delete_title">删除这条记录？</string>
+    <string name="trips_delete_message">「%1$s」将从本机删除，无法撤销。</string>
+    <string name="trips_deleted">已删除</string>
+    <string name="checkin_edit_title">编辑打卡</string>
+    <string name="checkin_delete_title">删除这条打卡？</string>
 
     <!-- ===== 我的 ===== -->
     <string name="mine_nickname_default">旅行者</string>
@@ -48,6 +56,12 @@
     <string name="mine_appearance_title">外观</string>
     <string name="mine_version">版本</string>
     <string name="mine_check_update">检查更新</string>
+
+    <string name="mine_change_avatar">点击更换头像</string>
+    <string name="mine_avatar_done">头像已更新</string>
+    <string name="mine_avatar_failed">头像读取失败</string>
+    <string name="mine_theme_color">主题色</string>
+    <string name="mine_badge_color">徽章色</string>
 
     <!-- ===== 主页「+」菜单 ===== -->
     <string name="menu_checkin">城市打卡</string>
@@ -96,7 +110,6 @@
     <string name="trip_event_city">选择城市</string>
     <string name="trip_event_transport_hint">交通方式</string>
     <string name="trip_event_activity_hint">做了什么</string>
-    <string name="trip_event_place_hint">地点名称</string>
     <string name="trip_event_cost_hint">花费</string>
     <string name="trip_event_cost_unit">元</string>
     <string name="trip_counter">%1$d/%2$d</string>
@@ -105,8 +118,22 @@
     <string name="trip_saved">已保存</string>
     <string name="trip_discard_message">有未保存的更改，确定放弃？</string>
 
+    <!-- ===== 成就页 ===== -->
+    <string name="ach_summary">已点亮 %1$d / %2$d</string>
+    <string name="ach_progress">%1$d/%2$d</string>
+    <string name="ach_all">全部</string>
+    <string name="ach_unlocked_at">%1$s 解锁</string>
+
+    <!-- ===== 地图页 ===== -->
+    <string name="map_city_count">%1$d 条打卡</string>
+    <string name="map_empty_city">这座城市还没有打卡记录</string>
+    <string name="map_close">关闭</string>
+    <!-- map_locate 在 1.x 的 strings.xml 里已经有了（「我的位置」），这里不再重复定义 -->
+    <string name="map_osm_credit">© OpenStreetMap</string>
+    <string name="map_loading">正在载入地图…</string>
+    <string name="map_failed">底图载入失败（叠加的城市面仍可用）</string>
+    <string name="map_loaded_count">底图已载入 · 面 %1$d · 城市 %2$d</string>
+
     <!-- ===== 占位页（P4 地图 / P5 成就） ===== -->
-    <string name="placeholder_map">地图页正在重做（MapLibre + 本地 PMTiles）</string>
-    <string name="placeholder_achievements">成就页正在重做（54 条成就改为本地判定）</string>
 
 </resources>

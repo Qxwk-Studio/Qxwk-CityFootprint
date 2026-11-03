@@ -14,11 +14,12 @@
          NoActionBar：本 app 全部页面自带顶栏，不要系统那条 ActionBar。 -->
     <style name="Theme.CityFootprint" parent="Theme.Material3.DayNight.NoActionBar">
         <!-- 把设计稿的语义色接进 Material，让按钮 / 开关 / 输入框 / 进度自动跟着走 -->
-        <item name="colorPrimary">@color/accent</item>
+        <item name="appAccent">@color/accent</item>
+        <item name="colorPrimary">?attr/appAccent</item>
         <item name="colorOnPrimary">@color/on_accent</item>
         <item name="colorPrimaryContainer">@color/accent_light</item>
         <item name="colorOnPrimaryContainer">@color/accent_soft_fg</item>
-        <item name="colorSecondary">@color/accent</item>
+        <item name="colorSecondary">?attr/appAccent</item>
         <item name="colorSecondaryContainer">@color/accent_light</item>
         <item name="colorOnSecondaryContainer">@color/accent_soft_fg</item>
         <item name="colorSurface">@color/card</item>

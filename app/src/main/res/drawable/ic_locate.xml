@@ -1,24 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 「定位」准心。几何抄网页 docs/index.html 那颗定位按钮的内联 SVG
-     （circle r=10 + 四条从 r=10 伸到 r=12 的刻度线）。
-     用描边而不是填充：填充版被 tint 之后是一坨实心圆，看不出是准心。
-     与其余图标一样填白色，靠使用处的 tint 上色。 -->
+<!-- ic_locate：Material Icons（Apache-2.0），路径取自 google/material-design-icons 的
+     maps/my_location/materialicons/24px.svg，未改动手绘路径。 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
     android:viewportWidth="24"
-    android:viewportHeight="24">
+    android:viewportHeight="24"
+    android:tint="?attr/colorControlNormal">
     <path
-        android:fillColor="#00000000"
-        android:pathData="M12,2a10,10 0 1,0 0,20a10,10 0 1,0 0,-20"
-        android:strokeColor="#FFFFFFFF"
-        android:strokeLineCap="round"
-        android:strokeLineJoin="round"
-        android:strokeWidth="2" />
-    <path
-        android:fillColor="#00000000"
-        android:pathData="M22,12L18,12M6,12L2,12M12,6L12,2M12,22L12,18"
-        android:strokeColor="#FFFFFFFF"
-        android:strokeLineCap="round"
-        android:strokeWidth="2" />
+        android:fillColor="@android:color/white"
+        android:pathData="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3c-.46-4.17-3.77-7.48-7.94-7.94V1h-2v2.06C6.83 3.52 3.52 6.83 3.06 11H1v2h2.06c.46 4.17 3.77 7.48 7.94 7.94V23h2v-2.06c4.17-.46 7.48-3.77 7.94-7.94H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z" />
 </vector>

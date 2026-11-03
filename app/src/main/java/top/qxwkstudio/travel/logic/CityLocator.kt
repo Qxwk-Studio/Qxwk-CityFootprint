@@ -60,6 +60,9 @@ class CityLocator(
 
     val shapeCount: Int get() = shapes.size
 
+    /** 地图用：去过的城市的边界形状（判定与绘制共用同一份解析结果）。 */
+    fun shapesFor(names: Set<String>): List<CityShapes.Shape> = shapes.shapesFor(names)
+
     companion object {
         /** 兜底的最大距离。超过它就认为「不在这片地方」，返回 null 让调用方提示手选。 */
         const val MAX_FALLBACK_METERS = 50_000.0

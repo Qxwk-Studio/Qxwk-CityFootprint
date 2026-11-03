@@ -52,16 +52,17 @@
             android:textSize="16sp"
             android:textStyle="bold" />
 
-        <!-- 三横菜单（主页右上角）：点开弹出式菜单，一行一个网页栏目（见 ui/MainActivity） -->
+        <!-- 右上角那颗「+」：2.0 的主页快捷菜单入口（打卡 / 足迹 / 自动记录）。
+             1.x 时它是「栏目菜单」的三横线，2.0 换成加号 —— 语义从「打开导航」变成「添加记录」。 -->
         <ImageButton
             android:id="@+id/btnMenu"
             android:layout_width="36dp"
             android:layout_height="36dp"
             android:layout_marginStart="10dp"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="@string/common_menu"
+            android:contentDescription="@string/common_add"
             android:padding="6dp"
-            android:src="@drawable/ic_menu"
+            android:src="@drawable/ic_add"
             android:tint="@color/sidebar_fg"
             android:visibility="gone" />
 

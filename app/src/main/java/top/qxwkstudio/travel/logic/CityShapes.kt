@@ -1,29 +1,23 @@
 package top.qxwkstudio.travel.logic
 
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.intOrNull
-import kotlinx.serialization.json.jsonArray
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
-
 /**
- * 城市边界（`assets/data/city_boundaries.geojson`）的**纯解析 + 命中判定**。
+ * 城市边界（`assets/data/city_boundaries.geojson`）的解析 + 命中判定。
  *
  * 数据是生成物（`app/tools/build-city-geo.mjs`）：370 个市级面，**已从 GCJ-02 转到 WGS-84**、
- * 简化到 20%。这一步很重要 —— 定位拿到的是 WGS-84，不转的话判定整体偏 500–640 m。
+ * 简化到 20%。不转的话判定整体偏 500–640 m（详见生成脚本的注释）。
  *
- * 为什么自己解析而不是引 GeoJSON 库：这里只要「一个多边形 = 外环 + 若干洞」这一件事，
- * 引一个通用库要多一份依赖与 R8 规则，换来的只是省下这一百来行。
+ * **为什么是手写的流式扫描器，而不是 kotlinx-serialization 的 JsonElement 树**：
+ * 这份文件 4.6 MB、四十多万个坐标点，先建一棵 JsonElement 树在手机上会吃掉一两百 MB ——
+ * 真机上实测直接 OOM，而 `runCatching` 把失败吞了，症状是「面 0」、地图一个多边形都没有
+ * （JVM 单测因为堆大，一直是过的，所以没提前发现）。现在边扫边把数字填进扁平 DoubleArray，
+ * 峰值内存只有原始字符串 + 坐标数组（约 5 + 7 MB）。
  *
- * 为什么不用 `org.json`（app 里 GeoJson.kt 用的是它）：那份是给 Android 运行时用的，
- * 而这里的解析要能在 JVM 单测里跑（Android 的 org.json 在单测里会抛 "not mocked"）。
- * kotlinx-serialization 的 JsonElement 两边都能用，且已经是本项目的既有依赖。
+ * 坐标存**扁平 DoubleArray**（`[lng0, lat0, lng1, lat1, …]`）：370 个面十几万个点，
+ * 每点一个对象在手机上就是几十 MB 的无谓分配；拍平之后命中判定也只是一次线性扫描。
  *
- * 坐标存储用**扁平 DoubleArray**（[lng0, lat0, lng1, lat1, …]）而不是 `List<LatLng>` 一类对象：
- * 370 个面、十几万个点，每点一个对象在手机上就是几十 MB 的无谓分配；拍平之后是一个 double 数组，
- * 命中判定也只是一次线性扫描。
+ * 文件格式假定（都由我们自己的生成脚本产出，见脚本头）：FeatureCollection → features[] →
+ * 每个 feature 有 `properties{name, adcode}` 与 `geometry{type, coordinates}`。
+ * 解析器对字段顺序不敏感（properties 与 geometry 谁先都行），坏数据整体退化为空。
  */
 class CityShapes private constructor(
     private val shapes: List<Shape>,
@@ -54,10 +48,12 @@ class CityShapes private constructor(
         return null
     }
 
-    /** 解析出来的面数（370 个城市里有的城市是多面，所以这个数可能大于城市数）。 */
+    /** 解析出来的面数（有的城市是多面，所以这个数可能大于城市数）。 */
     val size: Int get() = shapes.size
 
-    /** 网格粗筛的格子边长（度）。0.5° 约 55 km，比 R-Tree 简单且够用（P0 结论）。 */
+    /** 取出名字在 [names] 里的面（地图只画去过的城市，不必重新解析一遍原始文件）。 */
+    fun shapesFor(names: Set<String>): List<Shape> = shapes.filter { it.name in names }
+
     private fun cellKey(lng: Double, lat: Double): Long =
         ((lng / CELL).toLong() shl 32) xor ((lat / CELL).toLong() and 0xffffffffL)
 
@@ -72,77 +68,37 @@ class CityShapes private constructor(
         private const val CELL = 0.5
 
         /**
-         * 解析。**结构不符/坏 JSON 返回 empty 而不是抛异常**：地图与定位都是可降级的功能，
-         * 边界文件坏了应该退化成「只按城市中心画点」，而不是让打卡页崩掉。
+         * 解析。**坏 JSON / 结构不符返回 empty 而不是抛异常**：边界是可降级的功能，
+         * 文件坏了应该退化成「只按城市中心画点」，而不是让地图页崩掉。
          */
-        fun parse(raw: String): CityShapes = runCatching { parseOrThrow(raw) }.getOrElse { empty() }
+        /**
+         * 上一次解析失败的原因（成功为 null）。
+         *
+         * 为什么留这个字段：解析失败是**静默降级**（地图只剩圆点），真机上没有 logcat 时
+         * 根本不知道是内存、格式还是资产没读到。地图页会把这条挂到界面上。
+         */
+        @Volatile
+        var lastError: String? = null
+            private set
+
+        fun parse(raw: String): CityShapes {
+            lastError = null
+            if (raw.isEmpty()) {
+                lastError = "边界资产为空（没读到）"
+                return empty()
+            }
+            return try {
+                val shapes = Scanner(raw).readFeatures()
+                lastError = null
+                CityShapes(shapes, buildGrid(shapes))
+            } catch (t: Throwable) {
+                // 连带把位置带出来：结构不符时报的就是「位置 N 期望 X」，很好定位
+                lastError = t.javaClass.simpleName + ": " + (t.message ?: "")
+                empty()
+            }
+        }
 
         fun empty(): CityShapes = CityShapes(emptyList(), emptyMap())
-
-        private fun parseOrThrow(raw: String): CityShapes {
-            val root = Json.parseToJsonElement(raw).jsonObject
-            val features = root["features"]?.jsonArray ?: return empty()
-
-            val shapes = ArrayList<Shape>(features.size)
-            for (element in features) {
-                val feature = element.jsonObject
-                val props = feature["properties"]?.jsonObject
-                val name = props?.get("name")?.jsonPrimitive?.contentOrNull?.takeIf { it.isNotBlank() }
-                    ?: continue
-                val adcode = props["adcode"]?.jsonPrimitive?.intOrNull ?: continue
-                val geometry = feature["geometry"]?.jsonObject ?: continue
-
-                when (geometry["type"]?.jsonPrimitive?.contentOrNull) {
-                    "Polygon" -> geometry["coordinates"]?.jsonArray?.let { shapes += polygon(name, adcode, it) }
-                    "MultiPolygon" -> geometry["coordinates"]?.jsonArray?.forEach { part ->
-                        (part as? JsonArray)?.let { shapes += polygon(name, adcode, it) }
-                    }
-                    // 其余几何类型（点/线）对判定没有意义，直接跳过
-                }
-            }
-            return CityShapes(shapes, buildGrid(shapes))
-        }
-
-        /** 一个 Polygon 的 coordinates = [外环, 洞…]。 */
-        private fun polygon(name: String, adcode: Int, rings: JsonArray): List<Shape> {
-            if (rings.isEmpty()) return emptyList()
-            val parsed = rings.mapNotNull { ring -> (ring as? JsonArray)?.let(::flatRing) }
-            val outer = parsed.firstOrNull() ?: return emptyList()
-            return listOf(withBounds(name, adcode, outer, parsed.drop(1)))
-        }
-
-        private fun withBounds(name: String, adcode: Int, outer: DoubleArray, holes: List<DoubleArray>): Shape {
-            var minLng = Double.MAX_VALUE
-            var minLat = Double.MAX_VALUE
-            var maxLng = -Double.MAX_VALUE
-            var maxLat = -Double.MAX_VALUE
-            var i = 0
-            while (i < outer.size) {
-                val lng = outer[i]
-                val lat = outer[i + 1]
-                if (lng < minLng) minLng = lng
-                if (lng > maxLng) maxLng = lng
-                if (lat < minLat) minLat = lat
-                if (lat > maxLat) maxLat = lat
-                i += 2
-            }
-            return Shape(name, adcode, outer, holes, minLng, minLat, maxLng, maxLat)
-        }
-
-        /** `[[lng,lat],[lng,lat],…]` → 扁平数组；点数 < 3 的环丢掉（闭合不成面）。 */
-        private fun flatRing(ring: JsonArray): DoubleArray? {
-            if (ring.size < 3) return null
-            val out = DoubleArray(ring.size * 2)
-            var i = 0
-            for (point in ring) {
-                val pair = point as? JsonArray ?: return null
-                val lng = pair.getOrNull(0)?.jsonPrimitive?.contentOrNull?.toDoubleOrNull() ?: return null
-                val lat = pair.getOrNull(1)?.jsonPrimitive?.contentOrNull?.toDoubleOrNull() ?: return null
-                out[i++] = lng
-                out[i++] = lat
-            }
-            return out
-        }
 
         /** 建网格索引：把一个面的包围盒覆盖到的每个格子都登记上它，查询时只看一个格子。 */
         private fun buildGrid(shapes: List<Shape>): Map<Long, List<Shape>> {
@@ -159,7 +115,7 @@ class CityShapes private constructor(
             return grid
         }
 
-        /** 射线法（含「点在边上」的抖动容忍交给调用方，这里只回答严格的内外）。 */
+        /** 射线法（含洞靠调用方逐个环判）。[ring] 是扁平 [lng, lat, …]。 */
         private fun inRing(ring: DoubleArray, x: Double, y: Double): Boolean {
             var inside = false
             var i = 0
@@ -179,3 +135,339 @@ class CityShapes private constructor(
         }
     }
 }
+
+/**
+ * GeoJSON 的单遍扫描器：只认我们需要的字段，其余整段跳过。
+ *
+ * 关键点：
+ *  - 不建语法树，读到坐标就直接填 [DoubleArray]；
+ *  - 字段顺序不敏感：feature 里 properties 与 geometry 谁先都行；
+ *  - 任何结构不符都抛异常，由 [CityShapes.parse] 统一退化成空。
+ */
+private class Scanner(private val s: String) {
+
+    private var i = 0
+
+    fun readFeatures(): List<CityShapes.Shape> {
+        val out = ArrayList<CityShapes.Shape>(512)
+        skipWs()
+        expect('{')
+        while (true) {
+            skipWs()
+            if (peek() == '}') { i++; break }
+            val key = readString()
+            skipWs()
+            expect(':')
+            skipWs()
+            if (key == "features") readFeatureArray(out) else skipValue()
+            skipWs()
+            if (peek() == ',') { i++; continue }
+            expect('}')
+            break
+        }
+        return out
+    }
+
+    private fun readFeatureArray(out: MutableList<CityShapes.Shape>) {
+        expect('[')
+        skipWs()
+        if (peek() == ']') { i++; return }
+        while (true) {
+            readFeature(out)
+            skipWs()
+            if (peek() == ',') { i++; skipWs(); continue }
+            expect(']')
+            return
+        }
+    }
+
+    /** 一个 Feature：收集 name/adcode 与几何，最后把名字补到几何上（两者顺序不定）。 */
+    private fun readFeature(out: MutableList<CityShapes.Shape>) {
+        expect('{')
+        var name: String? = null
+        var adcode = 0
+        val pending = ArrayList<CityShapes.Shape>(2)
+
+        while (true) {
+            skipWs()
+            if (peek() == '}') { i++; break }
+            val key = readString()
+            skipWs()
+            expect(':')
+            skipWs()
+            when (key) {
+                "properties" -> readProperties { n, a -> if (n != null) { name = n; adcode = a } }
+                "geometry" -> pending += readGeometry()
+                else -> skipValue()
+            }
+            skipWs()
+            if (peek() == ',') { i++; continue }
+            expect('}')
+            break
+        }
+
+        // 没名字的几何没法跟城市表对上，直接丢（与旧实现「查不到就跳过」同一口径）
+        val resolved = name ?: return
+        pending.forEach { out += it.copyWithName(resolved, adcode) }
+    }
+
+    private fun readProperties(onProps: (String?, Int) -> Unit) {
+        expect('{')
+        var name: String? = null
+        var adcode = 0
+        while (true) {
+            skipWs()
+            if (peek() == '}') { i++; break }
+            val key = readString()
+            skipWs()
+            expect(':')
+            skipWs()
+            when (key) {
+                "name" -> name = readString()
+                "adcode" -> adcode = readNumber().toInt()
+                else -> skipValue()
+            }
+            skipWs()
+            if (peek() == ',') { i++; continue }
+            expect('}')
+            break
+        }
+        onProps(name, adcode)
+    }
+
+    /** geometry：type 可能先于 coordinates 出现（我们自己的生成脚本就是如此）。 */
+    private fun readGeometry(): List<CityShapes.Shape> {
+        expect('{')
+        var type: String? = null
+        val shapes = ArrayList<CityShapes.Shape>(1)
+        while (true) {
+            skipWs()
+            if (peek() == '}') { i++; break }
+            val key = readString()
+            skipWs()
+            expect(':')
+            skipWs()
+            when (key) {
+                "type" -> type = readString()
+                "coordinates" -> when (type) {
+                    "Polygon" -> readPolygon(shapes)
+                    "MultiPolygon" -> readMultiPolygon(shapes)
+                    // 类型未知（点/线或顺序颠倒时）：跳过坐标，别把解析带崩
+                    else -> skipValue()
+                }
+                else -> skipValue()
+            }
+            skipWs()
+            if (peek() == ',') { i++; continue }
+            expect('}')
+            break
+        }
+        return shapes
+    }
+
+    /** Polygon：coordinates = [外环, 洞…]。 */
+    private fun readPolygon(out: MutableList<CityShapes.Shape>) {
+        expect('[')
+        val rings = ArrayList<DoubleArray>(2)
+        skipWs()
+        if (peek() == ']') { i++; return }
+        while (true) {
+            rings += readRing()
+            skipWs()
+            if (peek() == ',') { i++; skipWs(); continue }
+            expect(']')
+            break
+        }
+        addPolygon(rings, out)
+    }
+
+    /** MultiPolygon：coordinates = [多边形…]，每个多边形又是一组环。 */
+    private fun readMultiPolygon(out: MutableList<CityShapes.Shape>) {
+        expect('[')
+        skipWs()
+        if (peek() == ']') { i++; return }
+        while (true) {
+            val rings = ArrayList<DoubleArray>(2)
+            expect('[')
+            skipWs()
+            if (peek() == ']') { i++ } else {
+                while (true) {
+                    rings += readRing()
+                    skipWs()
+                    if (peek() == ',') { i++; skipWs(); continue }
+                    expect(']')
+                    break
+                }
+            }
+            addPolygon(rings, out)
+            skipWs()
+            if (peek() == ',') { i++; skipWs(); continue }
+            expect(']')
+            return
+        }
+    }
+
+    private fun addPolygon(rings: List<DoubleArray>, out: MutableList<CityShapes.Shape>) {
+        val outer = rings.firstOrNull() ?: return
+        if (outer.size < 6) return // 少于 3 个点闭合不成面
+        out += newShape("", 0, outer, rings.drop(1))
+    }
+
+    private fun readRing(): DoubleArray {
+        expect('[')
+        val buffer = RingBuffer()
+        skipWs()
+        if (peek() == ']') { i++; return buffer.toArray() }
+        while (true) {
+            expect('[')
+            skipWs()
+            buffer.add(readNumber())
+            skipWs()
+            expect(',')
+            skipWs()
+            buffer.add(readNumber())
+            skipWs()
+            expect(']')
+            skipWs()
+            if (peek() == ',') { i++; skipWs(); continue }
+            expect(']')
+            break
+        }
+        return buffer.toArray()
+    }
+
+    // ── 基础读取 ──
+
+    private fun peek(): Char = s[i]
+
+    private fun skipWs() {
+        while (i < s.length) {
+            val c = s[i]
+            if (c == ' ' || c == '\n' || c == '\r' || c == '\t') i++ else return
+        }
+    }
+
+    private fun expect(c: Char) {
+        if (i >= s.length || s[i] != c) throw IllegalStateException("GeoJSON 结构不符：位置 $i 期望 '$c'")
+        i++
+    }
+
+    private fun readString(): String {
+        expect('"')
+        val sb = StringBuilder(16)
+        while (i < s.length) {
+            val c = s[i++]
+            when (c) {
+                '"' -> return sb.toString()
+                '\\' -> {
+                    if (i >= s.length) break
+                    when (val esc = s[i++]) {
+                        '"', '\\', '/' -> sb.append(esc)
+                        'b' -> sb.append('\b')
+                        'f' -> sb.append('\u000C')
+                        'n' -> sb.append('\n')
+                        'r' -> sb.append('\r')
+                        't' -> sb.append('\t')
+                        'u' -> {
+                            if (i + 4 <= s.length) {
+                                sb.append(s.substring(i, i + 4).toInt(16).toChar())
+                                i += 4
+                            }
+                        }
+                        else -> sb.append(esc)
+                    }
+                }
+                else -> sb.append(c)
+            }
+        }
+        throw IllegalStateException("GeoJSON 字符串未闭合：位置 $i")
+    }
+
+    private fun readNumber(): Double {
+        val start = i
+        if (i < s.length && (s[i] == '-' || s[i] == '+')) i++
+        while (i < s.length) {
+            val c = s[i]
+            if ((c in '0'..'9') || c == '.' || c == 'e' || c == 'E' || c == '+' || c == '-') i++ else break
+        }
+        return s.substring(start, i).toDouble()
+    }
+
+    /** 跳过任意 JSON 值（未知字段/未知几何类型）。 */
+    private fun skipValue() {
+        when (peek()) {
+            '{', '[' -> {
+                val open = s[i]
+                val close = if (open == '{') '}' else ']'
+                var depth = 0
+                while (i < s.length) {
+                    val c = s[i]
+                    if (c == '"') { skipString() ; continue }
+                    if (c == open) depth++
+                    if (c == close) {
+                        depth--
+                        i++
+                        if (depth == 0) return
+                        continue
+                    }
+                    i++
+                }
+                throw IllegalStateException("GeoJSON 容器未闭合：位置 $i")
+            }
+            '"' -> skipString()
+            else -> {
+                while (i < s.length && s[i] != ',' && s[i] != '}' && s[i] != ']') i++
+            }
+        }
+    }
+
+    private fun skipString() {
+        expect('"')
+        while (i < s.length) {
+            val c = s[i++]
+            if (c == '\\') { i++; continue }
+            if (c == '"') return
+        }
+        throw IllegalStateException("GeoJSON 字符串未闭合：位置 $i")
+    }
+
+    /** 可增长的 double 缓冲：避免 `ArrayList<Double>` 的装箱（四十多万个点会很明显）。 */
+    private class RingBuffer {
+        private var data = DoubleArray(1024)
+        private var size = 0
+
+        fun add(value: Double) {
+            if (size == data.size) data = data.copyOf(data.size * 2)
+            data[size++] = value
+        }
+
+        fun toArray(): DoubleArray = data.copyOf(size)
+    }
+
+    private fun newShape(
+        name: String,
+        adcode: Int,
+        outer: DoubleArray,
+        holes: List<DoubleArray>,
+    ): CityShapes.Shape {
+        var minLng = Double.MAX_VALUE
+        var minLat = Double.MAX_VALUE
+        var maxLng = -Double.MAX_VALUE
+        var maxLat = -Double.MAX_VALUE
+        var p = 0
+        while (p < outer.size) {
+            val lng = outer[p]
+            val lat = outer[p + 1]
+            if (lng < minLng) minLng = lng
+            if (lng > maxLng) maxLng = lng
+            if (lat < minLat) minLat = lat
+            if (lat > maxLat) maxLat = lat
+            p += 2
+        }
+        return CityShapes.Shape(name, adcode, outer, holes, minLng, minLat, maxLng, maxLat)
+    }
+}
+
+/** 解析时还不知道名字的临时形状：拿到 properties 之后再补名字。 */
+private fun CityShapes.Shape.copyWithName(name: String, adcode: Int): CityShapes.Shape =
+    CityShapes.Shape(name, adcode, outer, holes, minLng, minLat, maxLng, maxLat)

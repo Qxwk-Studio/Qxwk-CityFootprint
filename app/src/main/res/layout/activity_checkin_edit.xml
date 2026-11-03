@@ -60,7 +60,7 @@
                     android:contentDescription="@string/checkin_locate"
                     android:padding="8dp"
                     android:src="@drawable/ic_locate"
-                    android:tint="@color/accent" />
+                    android:tint="?attr/appAccent" />
             </LinearLayout>
 
             <TextView

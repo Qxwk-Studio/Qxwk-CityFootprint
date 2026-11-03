@@ -15,6 +15,7 @@ import top.qxwkstudio.travel.data.CheckinRepo
 import top.qxwkstudio.travel.data.CityBoundaries
 import top.qxwkstudio.travel.data.CityStore
 import top.qxwkstudio.travel.data.db.AppDatabase
+import top.qxwkstudio.travel.data.db.CheckinEntity
 import top.qxwkstudio.travel.databinding.ActivityCheckinEditBinding
 import top.qxwkstudio.travel.logic.City
 import top.qxwkstudio.travel.logic.DatePrecision
@@ -42,6 +43,10 @@ class CheckinEditActivity : AppCompatActivity() {
     /** 选中的城市（名字 + 坐标 + adcode + 省份），由选城页或定位给出。 */
     private var city: City? = null
 
+    /** 0 = 新增；非 0 = 编辑这条打卡（从行程页的 `...` → 编辑进来）。 */
+    private var editingId = 0L
+    private var editingEntity: CheckinEntity? = null
+
     private val picker = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode != Activity.RESULT_OK) return@registerForActivityResult
         val data = result.data ?: return@registerForActivityResult
@@ -64,12 +69,16 @@ class CheckinEditActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // 主题色叠层：必须在 setContentView 之前应用，Material 控件（按钮/开关/输入框）的颜色取自主题
+        theme.applyStyle(Palette.selected(this).overlay, true)
         binding = ActivityCheckinEditBinding.inflate(layoutInflater)
         val b = binding
         applyEdgeToEdge(b.topBar.root, null)
         setContentView(b.root)
 
-        b.topBar.title.setText(R.string.checkin_title)
+        editingId = intent.getLongExtra(EXTRA_ID, 0L)
+        val editing = editingId != 0L
+        b.topBar.title.setText(if (editing) R.string.checkin_edit_title else R.string.checkin_title)
         b.topBar.btnBack.visibility = View.VISIBLE
         b.topBar.btnBack.setOnClickListener { finish() }
 
@@ -86,6 +95,8 @@ class CheckinEditActivity : AppCompatActivity() {
             override fun afterTextChanged(s: Editable) = updateCounter(s.length)
         })
         updateCounter(0)
+
+        if (editing) loadForEdit()
     }
 
     // ────────────────────────── 日期 ──────────────────────────
@@ -186,6 +197,68 @@ class CheckinEditActivity : AppCompatActivity() {
         }
     }
 
+    // ────────────────────────── 编辑已有打卡 ──────────────────────────
+
+    /**
+     * 载入一条已有打卡：城市、四档日期、备注。
+     *
+     * 城市表里查不到名字时（旧数据/搬迁）仍然允许编辑其余字段：城市用「名字 + 空 province」兜着，
+     * 用户重新点一次选城就能补全 —— 但不能因为查不到就整页不可用。
+     */
+    private fun loadForEdit() {
+        lifecycleScope.runIo({
+            AppDatabase.get(this).checkins().byId(editingId)
+        }) { result ->
+            val entity = result.getOrNull() ?: run {
+                notify(R.string.common_error, long = true)
+                finish()
+                return@runIo
+            }
+            editingEntity = entity
+            val base = CityStore.all(this).firstOrNull { it.name == entity.cityName }
+            city = base?.copy(adcode = entity.cityCode ?: base.adcode)
+                ?: City(
+                    name = entity.cityName,
+                    province = entity.province,
+                    lat = 0.0,
+                    lng = 0.0,
+                    adcode = entity.cityCode,
+                )
+            binding.inputCity.setText(entity.cityName)
+            binding.inputNote.setText(entity.note.orEmpty())
+            applyPrecision(entity)
+        }
+    }
+
+    /** 把库里存的精度还原成三个下拉 + 「记不清了」开关的形态。 */
+    private fun applyPrecision(entity: CheckinEntity) {
+        val c = Calendar.getInstance().apply { timeInMillis = entity.checkinAt }
+        val yearIndex = years.indexOf(c.get(Calendar.YEAR))
+        if (yearIndex >= 0) binding.spinYear.setSelection(yearIndex, false)
+
+        when (entity.datePrecision) {
+            DatePrecision.UNKNOWN -> {
+                binding.switchForgot.isChecked = true
+                applyForgot(true)
+            }
+
+            DatePrecision.YEAR -> {
+                binding.spinMonth.setSelection(0, false)
+                binding.spinDay.setSelection(0, false)
+            }
+
+            DatePrecision.MONTH -> {
+                binding.spinMonth.setSelection(c.get(Calendar.MONTH) + 1, false)
+                binding.spinDay.setSelection(0, false)
+            }
+
+            else -> {
+                binding.spinMonth.setSelection(c.get(Calendar.MONTH) + 1, false)
+                binding.spinDay.setSelection(c.get(Calendar.DAY_OF_MONTH), false)
+            }
+        }
+    }
+
     // ────────────────────────── 保存 ──────────────────────────
 
     private fun save() {
@@ -198,14 +271,31 @@ class CheckinEditActivity : AppCompatActivity() {
         val note = binding.inputNote.text?.toString()?.trim().orEmpty().take(Limits.NOTE)
 
         binding.btnSave.isEnabled = false
+        val existing = editingEntity
         lifecycleScope.runIo({
-            CheckinRepo.createManual(
-                db = AppDatabase.get(this),
-                city = picked,
-                checkinAt = at,
-                datePrecision = precision,
-                note = note.ifBlank { null },
-            )
+            val db = AppDatabase.get(this)
+            if (existing == null) {
+                CheckinRepo.createManual(
+                    db = db,
+                    city = picked,
+                    checkinAt = at,
+                    datePrecision = precision,
+                    note = note.ifBlank { null },
+                )
+            } else {
+                // 编辑：整体替换可编辑字段，id / uuid / 编号 / 来源保持不动
+                CheckinRepo.updateManual(
+                    db,
+                    existing.copy(
+                        cityName = picked.name,
+                        cityCode = picked.adcode,
+                        province = picked.province,
+                        checkinAt = at,
+                        datePrecision = precision,
+                        note = note.ifBlank { null },
+                    ),
+                )
+            }
         }) { result ->
             binding.btnSave.isEnabled = true
             val error = result.exceptionOrNull()
@@ -226,5 +316,13 @@ class CheckinEditActivity : AppCompatActivity() {
     /** 所有错误提示统一走 Toast（见 ui/Notify.kt），不再往表单里塞内联红字。 */
     private fun showError(message: String) {
         notify(message, long = true)
+    }
+
+    companion object {
+        private const val EXTRA_ID = "checkin_id"
+
+        /** 新增传 0（或不传），编辑传打卡 id。 */
+        fun intent(context: android.content.Context, checkinId: Long = 0L): Intent =
+            Intent(context, CheckinEditActivity::class.java).putExtra(EXTRA_ID, checkinId)
     }
 }

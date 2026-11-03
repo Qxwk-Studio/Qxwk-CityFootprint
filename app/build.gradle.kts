@@ -25,6 +25,13 @@ android {
         // 本地手改也行；改完记得两边一致，否则发出来的包版本号与 Release 标签对不上
         versionCode = 1
         versionName = "0.0.1"
+
+        // MapLibre 的原生库四个 ABI 各 12 MB 左右，全打进去 APK 会从 8 MB 涨到 50 MB。
+        // 只保留 arm64（真机主流）与 armeabi-v7a（老设备），x86/x86_64 只在模拟器里用到 —— 需要时
+        // 临时加回来调，别长期留在发布包里。
+        ndk {
+            abiFilters += listOf("arm64-v8a", "armeabi-v7a")
+        }
     }
 
     // 正式签名：CI 从 Secrets 还原出 keystore，再用环境变量把路径与口令传进来。
@@ -120,6 +127,10 @@ dependencies {
     implementation("androidx.room:room-runtime:2.6.1")
     implementation("androidx.room:room-ktx:2.6.1")
     ksp("androidx.room:room-compiler:2.6.1")
+
+    // 地图：MapLibre Native（12.3.1 是「支持 PMTiles 且没有 Vulkan 硬要求」的最高点，见
+    // 2.0-development.md §7.1）。PMTiles 读取在原生层，Kotlin 侧只负责拼 pmtiles://file:// 的 URL。
+    implementation("org.maplibre.gl:android-sdk:12.3.1")
 
     // 纯 Kotlin 逻辑（成就判定 / visit_date 校验与展示 / 城市搜索）用 JVM 单测钉住：
     // 这些代码算错了不崩，只会悄悄少给一个成就、或把日期显示成别的样子。

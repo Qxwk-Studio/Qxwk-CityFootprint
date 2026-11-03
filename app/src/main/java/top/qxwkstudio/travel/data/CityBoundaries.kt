@@ -15,7 +15,13 @@ import top.qxwkstudio.travel.logic.CityLocator
  */
 object CityBoundaries {
 
-    private const val ASSET = "city_boundaries.geojson"
+    /**
+     * 资产路径（相对 assets/）。**必须带 data/ 前缀** —— 第一条实现漏了它，
+     * 于是 assets.open 一直抛 FileNotFoundException，被 runCatching 吞成「空边界」：
+     * 地图上没有城市面、定位判城退化成「最近城市中心」兜底（也能给出城市，所以一直没人发现）。
+     * 单测 AssetPathsTest 会校验这个路径真能对上仓库里的文件。
+     */
+    internal const val ASSET = "data/city_boundaries.geojson"
 
     @Volatile
     private var cache: CityLocator? = null
@@ -27,12 +33,29 @@ object CityBoundaries {
         }
     }
 
+    /** 上一次读到的边界资产字符数；-1 表示还没读。诊断用。 */
+    @Volatile
+    var lastAssetChars: Int = -1
+        private set
+
+    /** 资产读取失败的原因（成功为 null）。诊断用。 */
+    @Volatile
+    var lastAssetError: String? = null
+        private set
+
     private fun load(context: Context): CityLocator {
         // applicationContext：缓存里不该拽住任何 Activity
         val app = context.applicationContext
-        val boundaries = runCatching {
-            app.assets.open(ASSET).bufferedReader().use { it.readText() }
-        }.getOrDefault("")
+        val boundaries = try {
+            app.assets.open(ASSET).bufferedReader().use { it.readText() }.also {
+                lastAssetChars = it.length
+                lastAssetError = null
+            }
+        } catch (t: Throwable) {
+            lastAssetError = t.javaClass.simpleName + ": " + (t.message ?: "")
+            lastAssetChars = 0
+            ""
+        }
         return CityLocator.build(CityStore.all(app), boundaries)
     }
 }

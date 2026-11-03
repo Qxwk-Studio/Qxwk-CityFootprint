@@ -117,7 +117,7 @@ class HomeFragment : Fragment() {
     private fun renderRank() {
         val b = binding
         // 选中的维度用主色，另一个用次要色 —— 只有两种状态，不值得为它写 selector
-        val accent = ContextCompat.getColor(requireContext(), R.color.accent)
+        val accent = Palette.accent(requireContext())
         val secondary = ContextCompat.getColor(requireContext(), R.color.text_secondary)
         b.btnRankCount.setTextColor(if (rankBy == RankBy.COUNT) accent else secondary)
         b.btnRankTime.setTextColor(if (rankBy == RankBy.TIME) accent else secondary)
@@ -158,7 +158,7 @@ class HomeFragment : Fragment() {
             // Drawable 缓存（所有名次圆会一起变色），backgroundTintList 只作用于这个 View
             if (rank <= 3) {
                 backgroundTintList = android.content.res.ColorStateList.valueOf(
-                    ContextCompat.getColor(ctx, R.color.accent),
+                    Palette.accent(ctx),
                 )
             }
             layoutParams = android.widget.LinearLayout.LayoutParams(dp(22), dp(22))

@@ -1,20 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- 只需要联网 + 定位：足迹接口与通行证登录都在公网。
+    <!-- 只需要联网 + 定位：联网只剩「检查更新」一个接口（GET /api/manifest），定位用于「定位到当前城市」。
          **没有 WAKE_LOCK / 后台服务 / 通知**：这个 app 不常驻后台、不发通知，
-         所有操作都是用户点一下才发生。 -->
+         所有操作都是用户点一下才发生。
+         （2.1 加「自动记录」时会引入前台服务与通知权限，届时在这里补。） -->
     <uses-permission android:name="android.permission.INTERNET" />
-    <!-- 地图瓦片从 OSM 拉，断网时只是没图，不做网络状态判断也就不用 ACCESS_NETWORK_STATE -->
 
-    <!-- 定位：编辑页「定位到最近的城市」与地图页「我的位置」用（见 ui/Locate）。
-         只要**粗略位置** —— 网页那侧就是 navigator.geolocation 的 enableHighAccuracy:false，
-         同一档低精度；找最近的城市用不到米级精度，权限也更轻，所以 ACCESS_FINE_LOCATION
-         刻意不在清单里、也不请求。 -->
+    <!-- 定位：打卡页的准心按钮与地图页的「我的位置」用（见 ui/Locate）。
+         只要**粗略位置** —— 找最近的城市用不到米级精度，权限也更轻，
+         所以 ACCESS_FINE_LOCATION 刻意不在清单里、也不请求。 -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
-    <!-- android:name 指向 CityFootprintApp：它唯一的活是**在任何 Activity 之前**把用户选的
-         外观（浅色 / 深色 / 跟随系统）交给 AppCompat —— 删掉这一行，外观设置就不再生效（见那个类） -->
+    <!-- android:name 指向 CityFootprintApp：它做三件事 —— 初始化 MapLibre、把用户选的
+         外观交给 AppCompat、后台预热城市表。删掉这一行这三件事都不再发生
+         （地图会在 inflate MapView 时直接崩）。 -->
     <application
         android:name=".CityFootprintApp"
         android:allowBackup="false"
@@ -23,19 +23,11 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.CityFootprint"
         android:usesCleartextTraffic="false">
-        <!-- 三个域名（account.qxwkstudio.top 通行证 / travel.qxwkstudio.top 页面 / api.travel.qxwkstudio.top 接口）
-             都是 HTTPS，所以**刻意没有** network_security_config 的明文例外。
-             usesCleartextTraffic="false" 在这里只是把「全站禁明文」摆到明面上：
-             targetSdk ≥ 28 起系统本来就默认禁。 -->
+        <!-- 三个域名（通行证 / 网页 / 足迹接口）都是 HTTPS，所以**刻意没有**
+             network_security_config 的明文例外；usesCleartextTraffic="false" 只是把这件事摆到明面上。 -->
 
-        <!-- 登录页：已登录时不会出现在用户眼前（MainActivity 直接进主页） -->
-        <activity
-            android:name=".ui.LoginActivity"
-            android:exported="false"
-            android:windowSoftInputMode="adjustResize" />
-
-        <!-- 主页：底部五个 tab（主页 / 我的成就 / 地图 / 全站统计 / 我的），LAUNCHER 入口
-             （LoginActivity 只是启动后转发，未登录才留在它那）。
+        <!-- 主页：底部五个 tab（主页 / 行程 / 地图 / 成就 / 我的）。
+             2.0 没有登录页 —— MainActivity 就是入口，数据全部来自本地库。
              singleTop + 不写 configChanges：旋转时重建，五个 Fragment 由 FragmentManager 自己恢复。 -->
         <activity
             android:name=".ui.MainActivity"
@@ -47,46 +39,27 @@
             </intent-filter>
         </activity>
 
-        <!-- 新增/编辑足迹。parentActivityName 让系统返回箭头能回主页 -->
-        <activity
-            android:name=".ui.VisitEditActivity"
-            android:exported="false"
-            android:parentActivityName=".ui.MainActivity"
-            android:windowSoftInputMode="adjustResize" />
-
-        <!-- 城市选择页：从 assets/cities.json 里搜城市，返回选中的坐标 -->
+        <!-- 城市选择页：从 assets/cities.json 里搜城市，把城市名与坐标回传给调用方
+             （手动打卡页 / 行程编辑器）。 -->
         <activity
             android:name=".ui.CityPickerActivity"
             android:exported="false"
             android:parentActivityName=".ui.MainActivity"
             android:windowSoftInputMode="adjustResize" />
 
-        <!-- 手动打卡页（2.0 新增）：城市 + 四档日期 + 备注，落本地库 -->
+        <!-- 手动打卡页：城市 + 四档日期精度 + 备注 -->
         <activity
             android:name=".ui.CheckinEditActivity"
             android:exported="false"
             android:parentActivityName=".ui.MainActivity"
             android:windowSoftInputMode="adjustResize" />
 
-        <!-- 行程编辑器（2.0 新增）：标题 + 时间线事件 + 备注；保存时自动派生关联打卡 -->
+        <!-- 行程编辑器：标题 + 时间线事件列表 + 备注；保存时自动派生关联打卡 -->
         <activity
             android:name=".ui.TripEditActivity"
             android:exported="false"
             android:parentActivityName=".ui.MainActivity"
             android:windowSoftInputMode="adjustResize" />
-
-        <!-- 公告页：读后端清单的 notices（GET /api/manifest），两处入口（「我的 → 公告」与主页顶部横幅） -->
-        <activity
-            android:name=".ui.NoticeActivity"
-            android:exported="false"
-            android:parentActivityName=".ui.MainActivity" />
-
-        <!-- App 内看网页（协议正文，以后的限时活动也走这里）。
-             只读页面留在本 app，改文案不用发版；「前往下载」「通行证中心」仍走系统浏览器（见 WebViewActivity） -->
-        <activity
-            android:name=".ui.WebViewActivity"
-            android:exported="false"
-            android:parentActivityName=".ui.MainActivity" />
     </application>
 
 </manifest>

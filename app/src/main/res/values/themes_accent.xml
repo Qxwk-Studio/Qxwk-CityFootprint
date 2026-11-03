@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 「主题色」的预设（口径 16）。每个预设一个 ThemeOverlay：只覆盖主色相关的几个槽位，
+     其余外观（面、文字、边框）沿用基础主题。
+
+     为什么要 ThemeOverlay 而不是在代码里 setTheme：
+     Activity 的主题在 setContentView 之前就确定了，Material 控件的颜色（按钮、开关、复选框、
+     输入框描边）全都从 colorPrimary/colorSecondary 取。覆盖主题属性是唯一能让这些**系统控件**
+     一起换色的办法；代码里自己画的强调色则走 ui/Palette.kt（同一个色值）。
+
+     深色模式不用另写一套：这些色值本身就是中饱和的主色，压在深色背景上仍然可读；
+     accent_light 这类「主色的浅底」仍是固定的淡色（见 colors.xml 的注释）。 -->
+<resources>
+
+    <style name="ThemeOverlay.App.Accent.Blue" parent="">
+        <item name="appAccent">#2563EB</item>
+        <item name="colorPrimary">#2563EB</item>
+        <item name="colorSecondary">#2563EB</item>
+    </style>
+
+    <style name="ThemeOverlay.App.Accent.Green" parent="">
+        <item name="appAccent">#16A34A</item>
+        <item name="colorPrimary">#16A34A</item>
+        <item name="colorSecondary">#16A34A</item>
+    </style>
+
+    <style name="ThemeOverlay.App.Accent.Purple" parent="">
+        <item name="appAccent">#7C3AED</item>
+        <item name="colorPrimary">#7C3AED</item>
+        <item name="colorSecondary">#7C3AED</item>
+    </style>
+
+    <style name="ThemeOverlay.App.Accent.Orange" parent="">
+        <item name="appAccent">#EA580C</item>
+        <item name="colorPrimary">#EA580C</item>
+        <item name="colorSecondary">#EA580C</item>
+    </style>
+
+    <style name="ThemeOverlay.App.Accent.Rose" parent="">
+        <item name="appAccent">#DB2777</item>
+        <item name="colorPrimary">#DB2777</item>
+        <item name="colorSecondary">#DB2777</item>
+    </style>
+
+    <style name="ThemeOverlay.App.Accent.Teal" parent="">
+        <item name="appAccent">#0891B2</item>
+        <item name="colorPrimary">#0891B2</item>
+        <item name="colorSecondary">#0891B2</item>
+    </style>
+
+</resources>

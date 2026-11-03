@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 卡片左侧那条贯穿竖条的底：只负责形状（左圆角贴住卡片圆角、右侧直角），
+     颜色由代码按卡片类别 tint（足迹 / 独立打卡 / 关联打卡，色值见 colors.xml 的 stripe_*）。
+
+     为什么用 tint 而不是三份 drawable：三个形状完全一样，只有颜色不同；
+     三份文件以后改圆角要改三遍，tint 一处就够。 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@android:color/white" />
+    <corners
+        android:topLeftRadius="12dp"
+        android:bottomLeftRadius="12dp" />
+</shape>

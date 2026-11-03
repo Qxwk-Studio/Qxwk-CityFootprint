@@ -2,6 +2,7 @@ package top.qxwkstudio.travel
 
 import android.app.Application
 import androidx.appcompat.app.AppCompatDelegate
+import org.maplibre.android.MapLibre
 import top.qxwkstudio.travel.data.Appearance
 import top.qxwkstudio.travel.data.CityStore
 import top.qxwkstudio.travel.data.Store
@@ -23,6 +24,11 @@ class CityFootprintApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        // MapLibre 的 MapView 在构造时就要求 SDK 已初始化，否则直接抛
+        // IllegalStateException（症状是一点地图 tab 就闪退）。必须放在进程最早处，
+        // 晚于任何一个 Activity 的 onCreate 都不行 —— MapView 是在布局 inflate 时构造的。
+        // 这行只做进程内的原生库/上下文注册，不联网、不需要 key。
+        MapLibre.getInstance(this)
         // 读一次本机偏好（SharedPreferences 首读要落一次磁盘，就这么点开销），随后交给 AppCompat
         applyAppearance(Store(this).appearance)
         preloadCities()

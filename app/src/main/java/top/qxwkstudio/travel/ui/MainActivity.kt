@@ -25,7 +25,7 @@ import top.qxwkstudio.travel.databinding.ActivityMainBinding
  * 统计页也会重新跑一遍聚合。代价是隐藏的 Fragment 仍是 RESUMED，所以各页感知「被切回来」
  * 用 `onHiddenChanged` 而不是 `onResume`（主页与行程页都这么写）。
  *
- * 这一版地图与成就还是 [PlaceholderFragment]：主壳先落地，页面按 P4/P5 一个个填进来。
+ * 五个页面都是各自独立的实现；2.1 会把「自动记录」接进「+」菜单的第三项。
  */
 class MainActivity : AppCompatActivity() {
 
@@ -39,6 +39,8 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // 主题色叠层：必须在 setContentView 之前应用，Material 控件（按钮/开关/输入框）的颜色取自主题
+        theme.applyStyle(Palette.selected(this).overlay, true)
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         val b = binding
@@ -85,7 +87,7 @@ class MainActivity : AppCompatActivity() {
             popup.setOnMenuItemClickListener { item ->
                 when (item.itemId) {
                     ID_CHECKIN -> startActivity(
-                        android.content.Intent(this, CheckinEditActivity::class.java)
+                        CheckinEditActivity.intent(this)
                     )
                     ID_TRIP -> startActivity(
                         TripEditActivity.intent(this)
@@ -115,8 +117,8 @@ class MainActivity : AppCompatActivity() {
 
     private fun newFragment(tag: String): Fragment = when (tag) {
         TAG_TRIPS -> TripsFragment()
-        TAG_MAP -> PlaceholderFragment.newInstance(R.string.placeholder_map)
-        TAG_ACHV -> PlaceholderFragment.newInstance(R.string.placeholder_achievements)
+        TAG_MAP -> MapFragment()
+        TAG_ACHV -> AchievementsFragment()
         TAG_MINE -> MineFragment()
         else -> HomeFragment()
     }

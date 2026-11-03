@@ -26,7 +26,7 @@ import java.util.Locale
 
 /**
  * 城市选择页：从 assets/cities.json（由 app/tools/gen-cities.mjs 从 docs/ 生成）里搜索，
- * 选中后把 **城市名 + 坐标**回传给 VisitEditActivity。
+ * 选中后把 **城市名 + 坐标**回传给调用方（手动打卡页 / 行程编辑器）。
  *
  * 为什么用本机的城市表而不是联网搜索：坐标与名称是跨端约定（网页版也用同一份数据），
  * 联网搜出来的城市名与 adcode 未必对得上，地图边界就会取不到。
@@ -47,6 +47,8 @@ class CityPickerActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // 主题色叠层：必须在 setContentView 之前应用，Material 控件（按钮/开关/输入框）的颜色取自主题
+        theme.applyStyle(Palette.selected(this).overlay, true)
         binding = ActivityCityPickerBinding.inflate(layoutInflater)
         val b = binding
         // 必须在 setContentView 之前（见 ui/EdgeToEdge.kt）。
