@@ -106,16 +106,16 @@ class CheckinEditActivity : AppCompatActivity() {
     private fun setupDateSpinners() {
         val b = binding
         b.spinYear.adapter = ArrayAdapter(
-            this, android.R.layout.simple_spinner_dropdown_item, years.map { getString(R.string.checkin_year, it) },
+            this, R.layout.item_spinner, years.map { getString(R.string.checkin_year, it) },
         )
         // 月份第 0 项就是「仅到年份」：选了它等于这一档只到年。
         // 不另放一个「空」项，是因为「有没有日期」已经由「记不清了」开关表达。
         b.spinMonth.adapter = ArrayAdapter(
-            this, android.R.layout.simple_spinner_dropdown_item,
+            this, R.layout.item_spinner,
             listOf(getString(R.string.checkin_month_year_only)) + (1..12).map { getString(R.string.checkin_month, it) },
         )
         b.spinDay.adapter = ArrayAdapter(
-            this, android.R.layout.simple_spinner_dropdown_item,
+            this, R.layout.item_spinner,
             listOf(getString(R.string.checkin_day_unknown)) + (1..31).map { getString(R.string.checkin_day, it) },
         )
         selectToday()

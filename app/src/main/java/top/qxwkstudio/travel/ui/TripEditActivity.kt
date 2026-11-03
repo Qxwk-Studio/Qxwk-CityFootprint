@@ -216,7 +216,7 @@ class TripEditActivity : AppCompatActivity() {
         header.addView(Spinner(this).apply {
             adapter = ArrayAdapter(
                 this@TripEditActivity,
-                android.R.layout.simple_spinner_dropdown_item,
+                R.layout.item_spinner,
                 listOf(
                     getString(R.string.trip_event_visit),
                     getString(R.string.trip_event_ride),
@@ -256,22 +256,14 @@ class TripEditActivity : AppCompatActivity() {
             gravity = Gravity.CENTER_VERTICAL
             setPadding(0, dp(6), 0, 0)
         }
-        dateRow.addView(TextView(this).apply {
-            text = Dates.ymd(draft.time)
-            setTextColor(getColor(R.color.accent))
-            textSize = 13f
-            setPadding(dp(8), dp(6), dp(8), dp(6))
-            setBackgroundResource(R.drawable.bg_rank_circle)
-            setOnClickListener { pickDate(index) }
+        // 日期/时间用圆角小块（Chips.tag）：之前复用了「名次圆」的椭圆底，看起来像两颗药丸
+        dateRow.addView(Chips.tag(this, Dates.ymd(draft.time)) { pickDate(index) }.apply {
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+            ).apply { marginEnd = dp(8) }
         })
-        dateRow.addView(TextView(this).apply {
-            text = hm(draft.time)
-            setTextColor(getColor(R.color.accent))
-            textSize = 13f
-            setPadding(dp(8), dp(6), dp(8), dp(6))
-            setBackgroundResource(R.drawable.bg_rank_circle)
-            setOnClickListener { pickTime(index) }
-        })
+        dateRow.addView(Chips.tag(this, hm(draft.time)) { pickTime(index) })
         card.addView(dateRow)
 
         // 第三行：内容（到访/前往 → 选城市；乘坐/进行 → 文本）

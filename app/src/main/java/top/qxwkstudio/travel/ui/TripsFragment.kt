@@ -109,13 +109,11 @@ class TripsFragment : Fragment() {
 
     private fun render() {
         val b = binding
-        val accent = Palette.accent(requireContext())
-        val secondary = ContextCompat.getColor(requireContext(), R.color.text_secondary)
-
         b.btnSegCheckins.text = getString(R.string.trips_seg_checkins, checkins.size)
         b.btnSegTrips.text = getString(R.string.trips_seg_trips, trips.size)
-        b.btnSegCheckins.setTextColor(if (segment == Segment.CHECKINS) accent else secondary)
-        b.btnSegTrips.setTextColor(if (segment == Segment.TRIPS) accent else secondary)
+        // 分段控件统一用胶囊（与成就页的分类筛选同一个工厂，见 ui/Chips.kt）
+        Chips.styleAsPill(b.btnSegCheckins, requireContext(), segment == Segment.CHECKINS)
+        Chips.styleAsPill(b.btnSegTrips, requireContext(), segment == Segment.TRIPS)
 
         b.listContainer.removeAllViews()
         val empty = when (segment) {
@@ -161,7 +159,7 @@ class TripsFragment : Fragment() {
         card.addView(TextView(ctx).apply {
             text = dateText(checkin)
             setTextColor(ContextCompat.getColor(ctx, R.color.text_secondary))
-            textSize = 12f
+            textSize = 13f
             setPadding(0, dp(4), 0, 0)
         })
 
@@ -177,7 +175,7 @@ class TripsFragment : Fragment() {
                 getString(R.string.trips_checkin_manual)
             }
             setTextColor(ContextCompat.getColor(ctx, R.color.text_tertiary))
-            textSize = 11f
+            textSize = 12f
             setPadding(0, dp(6), 0, 0)
         })
         return root
@@ -223,7 +221,7 @@ class TripsFragment : Fragment() {
                 timelineCountByUuid[trip.uuid] ?: 0,
             ) + " · " + Dates.ymd(trip.startTime)
             setTextColor(ContextCompat.getColor(ctx, R.color.text_secondary))
-            textSize = 12f
+            textSize = 13f
             setPadding(0, dp(4), 0, 0)
         })
 
@@ -272,6 +270,7 @@ class TripsFragment : Fragment() {
             setColorFilter(ContextCompat.getColor(requireContext(), R.color.text_tertiary))
             contentDescription = getString(R.string.common_menu)
             setPadding(dp(6), dp(6), dp(6), dp(6))
+            layoutParams = android.widget.LinearLayout.LayoutParams(dp(40), dp(40))
             setOnClickListener(onClick)
         }
 

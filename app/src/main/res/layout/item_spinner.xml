@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Spinner 的下拉项：默认的 simple_spinner_dropdown_item 是 16sp + 系统内边距，
+     在两个表单页里偏大、和其它 13/14sp 的正文不成比例。统一成 14sp、16dp 横向内边距。 -->
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="48dp"
+    android:ellipsize="end"
+    android:gravity="center_vertical"
+    android:maxLines="1"
+    android:paddingStart="16dp"
+    android:paddingEnd="16dp"
+    android:textColor="@color/fg"
+    android:textSize="14sp" />

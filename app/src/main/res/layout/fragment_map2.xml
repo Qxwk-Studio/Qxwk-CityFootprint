@@ -32,7 +32,7 @@
         android:paddingEnd="4dp"
         android:text="@string/map_osm_credit"
         android:textColor="@color/text_secondary"
-        android:textSize="10sp" />
+        android:textSize="11sp" />
 
     <ImageButton
         android:id="@+id/btnLocate"

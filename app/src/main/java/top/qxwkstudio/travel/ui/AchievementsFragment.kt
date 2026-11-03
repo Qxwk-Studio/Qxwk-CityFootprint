@@ -121,27 +121,11 @@ class AchievementsFragment : Fragment() {
 
     /** 一个胶囊：选中态主色底白字，未选中浅底次要色。 */
     private fun addChip(parent: LinearLayout, text: String, selected: Boolean, onClick: () -> Unit) {
-        val ctx = requireContext()
-        val accent = Palette.accent(ctx)
-        val chip = TextView(ctx).apply {
-            this.text = text
-            textSize = 13f
-            setPadding(dp(14), dp(7), dp(14), dp(7))
-            setTextColor(
-                if (selected) ContextCompat.getColor(ctx, R.color.on_accent)
-                else ContextCompat.getColor(ctx, R.color.text_secondary),
-            )
-            background = GradientDrawable().apply {
-                cornerRadius = dp(16).toFloat()
-                setColor(if (selected) accent else ContextCompat.getColor(ctx, R.color.popover))
-                setStroke(dp(1), ContextCompat.getColor(ctx, R.color.border))
-            }
-            setOnClickListener { onClick() }
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-            ).apply { marginEnd = dp(8) }
-        }
+        val chip = Chips.pill(requireContext(), text, selected, onClick)
+        chip.layoutParams = LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.WRAP_CONTENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT,
+        ).apply { marginEnd = dp(8) }
         parent.addView(chip)
     }
 
@@ -204,7 +188,7 @@ class AchievementsFragment : Fragment() {
             imageTintList = android.content.res.ColorStateList.valueOf(
                 Palette.accent(ctx),
             )
-            layoutParams = LinearLayout.LayoutParams(dp(28), dp(28)).apply { marginEnd = dp(10) }
+            layoutParams = LinearLayout.LayoutParams(dp(32), dp(32)).apply { marginEnd = dp(10) }
             contentDescription = null
         })
 
@@ -221,7 +205,7 @@ class AchievementsFragment : Fragment() {
         texts.addView(TextView(ctx).apply {
             text = def.desc
             setTextColor(ContextCompat.getColor(ctx, R.color.text_secondary))
-            textSize = 12f
+            textSize = 13f
             setPadding(0, dp(3), 0, 0)
         })
         header.addView(texts)
@@ -230,7 +214,7 @@ class AchievementsFragment : Fragment() {
             header.addView(TextView(ctx).apply {
                 text = getString(R.string.ach_unlocked_at, Dates.ymd(state.unlockedAt))
                 setTextColor(ContextCompat.getColor(ctx, R.color.text_tertiary))
-                textSize = 11f
+                textSize = 12f
                 setPadding(dp(8), 0, 0, 0)
             })
         }

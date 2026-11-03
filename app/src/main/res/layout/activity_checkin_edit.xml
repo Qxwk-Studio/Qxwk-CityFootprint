@@ -171,7 +171,7 @@
                 android:layout_marginTop="4dp"
                 android:gravity="end"
                 android:textColor="@color/text_tertiary"
-                android:textSize="11sp" />
+                android:textSize="12sp" />
 
             <Button
                 android:id="@+id/btnSave"

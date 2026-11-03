@@ -30,7 +30,7 @@
     <color name="text_primary">#E2E8F0</color>        <!-- 与 fg 同值，兼容既有引用 -->
     <color name="text_secondary">#94A3B8</color>      <!-- text-secondary -->
     <color name="muted_fg">#94A3B8</color>            <!-- text-secondary（同值） -->
-    <color name="text_tertiary">#64748B</color>       <!-- text-tertiary -->
+    <color name="text_tertiary">#94A3B8</color>       <!-- text-tertiary：原 #64748B 对深色底只有 3.7:1，提到与 secondary 同值 -->
     <!-- muted 与 popover 在浅色里分别等于 border 与 bg，深色下继续跟着那两个走：
          muted 是「开关关闭态轨道 / 进度轨道」，取 border 那档深灰；
          popover 是输入框底，要比卡片（#1E293B）再深一档才有「凹进去」的层次 -->

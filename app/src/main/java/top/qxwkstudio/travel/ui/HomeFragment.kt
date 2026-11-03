@@ -117,10 +117,8 @@ class HomeFragment : Fragment() {
     private fun renderRank() {
         val b = binding
         // 选中的维度用主色，另一个用次要色 —— 只有两种状态，不值得为它写 selector
-        val accent = Palette.accent(requireContext())
-        val secondary = ContextCompat.getColor(requireContext(), R.color.text_secondary)
-        b.btnRankCount.setTextColor(if (rankBy == RankBy.COUNT) accent else secondary)
-        b.btnRankTime.setTextColor(if (rankBy == RankBy.TIME) accent else secondary)
+        Chips.styleAsPill(b.btnRankCount, requireContext(), rankBy == RankBy.COUNT)
+        Chips.styleAsPill(b.btnRankTime, requireContext(), rankBy == RankBy.TIME)
 
         b.rankContainer.removeAllViews()
         val rows = Stats.rank(entries, rankBy)
@@ -161,7 +159,7 @@ class HomeFragment : Fragment() {
                     Palette.accent(ctx),
                 )
             }
-            layoutParams = android.widget.LinearLayout.LayoutParams(dp(22), dp(22))
+            layoutParams = android.widget.LinearLayout.LayoutParams(dp(24), dp(24))
         })
 
         line.addView(TextView(ctx).apply {
@@ -178,7 +176,7 @@ class HomeFragment : Fragment() {
                 RankBy.TIME -> Dates.ymd(row.lastVisitAt)
             }
             setTextColor(ContextCompat.getColor(ctx, R.color.text_secondary))
-            textSize = 12f
+            textSize = 13f
         })
         return line
     }
