@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 主页（2.0）：五张统计卡 + 城市排名。
+     整页一起滚（ScrollView），统计卡不钉在顶上 —— 排名可能有几十行，钉住会吃掉半屏。
+
+     卡片按设计稿分三行：第 1 行单卡（时间跨度）、第 2/3 行各两张并列。 -->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- 第 1 行：时间跨度 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_card"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <TextView
+                style="@style/TextHomeStatLabel"
+                android:text="@string/home_range" />
+
+            <TextView
+                android:id="@+id/valueRange"
+                style="@style/TextHomeStatValue"
+                android:text="@string/home_dash" />
+        </LinearLayout>
+
+        <!-- 第 2 行：打卡城市 / 打卡省份 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:orientation="horizontal">
+
+            <LinearLayout
+                style="@style/CardHomeStat"
+                android:layout_weight="1">
+
+                <TextView
+                    style="@style/TextHomeStatLabel"
+                    android:text="@string/home_cities" />
+
+                <TextView
+                    android:id="@+id/valueCities"
+                    style="@style/TextHomeStatValue"
+                    android:text="@string/home_dash" />
+            </LinearLayout>
+
+            <LinearLayout
+                style="@style/CardHomeStat"
+                android:layout_marginStart="12dp"
+                android:layout_weight="1">
+
+                <TextView
+                    style="@style/TextHomeStatLabel"
+                    android:text="@string/home_provinces" />
+
+                <TextView
+                    android:id="@+id/valueProvinces"
+                    style="@style/TextHomeStatValue"
+                    android:text="@string/home_dash" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- 第 3 行：次数最多 / 总花销 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:orientation="horizontal">
+
+            <LinearLayout
+                style="@style/CardHomeStat"
+                android:layout_weight="1">
+
+                <TextView
+                    style="@style/TextHomeStatLabel"
+                    android:text="@string/home_most" />
+
+                <TextView
+                    android:id="@+id/valueMost"
+                    style="@style/TextHomeStatValue"
+                    android:text="@string/home_dash" />
+            </LinearLayout>
+
+            <LinearLayout
+                style="@style/CardHomeStat"
+                android:layout_marginStart="12dp"
+                android:layout_weight="1">
+
+                <TextView
+                    style="@style/TextHomeStatLabel"
+                    android:text="@string/home_cost" />
+
+                <TextView
+                    android:id="@+id/valueCost"
+                    style="@style/TextHomeStatValue"
+                    android:text="@string/home_dash" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- 城市排名：标题 + 两个排序维度（次数 / 时间）。
+             刻意**没有**「花费」这一维：一笔行程可能去多座城市，把花销拆到城市
+             要么重复计入、要么靠分摊猜（见 2.0-development.md 口径 12）。 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/home_rank"
+                android:textColor="@color/fg"
+                android:textSize="15sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/btnRankCount"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="?attr/selectableItemBackground"
+                android:paddingStart="12dp"
+                android:paddingTop="6dp"
+                android:paddingEnd="12dp"
+                android:paddingBottom="6dp"
+                android:text="@string/home_rank_count"
+                android:textSize="13sp" />
+
+            <TextView
+                android:id="@+id/btnRankTime"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="?attr/selectableItemBackground"
+                android:paddingStart="12dp"
+                android:paddingTop="6dp"
+                android:paddingEnd="12dp"
+                android:paddingBottom="6dp"
+                android:text="@string/home_rank_time"
+                android:textSize="13sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/rankContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:orientation="vertical" />
+
+        <TextView
+            android:id="@+id/textEmpty"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:gravity="center"
+            android:text="@string/home_empty"
+            android:textColor="@color/text_tertiary"
+            android:textSize="13sp"
+            android:visibility="gone" />
+    </LinearLayout>
+</ScrollView>

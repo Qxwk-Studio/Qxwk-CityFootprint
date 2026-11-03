@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 「行程」tab 的图标：一条折线 + 两个节点，与「时间线」这个核心概念对应。
+     单色矢量为的是让 BottomNavigationView 自己按选中态染色（2.0 的图标统一换成 Material Symbols 时，
+     这一颗也会被替掉，见 2.0-development.md 任务 2.4）。 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24"
+    android:tint="?attr/colorControlNormal">
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M7,4m-2,0a2,2 0,1 1,4 0a2,2 0,1 1,-4 0" />
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M17,20m-2,0a2,2 0,1 1,4 0a2,2 0,1 1,-4 0" />
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M8.6,5.2l7.6,12.4l-1.7,1l-7.6,-12.4z" />
+</vector>

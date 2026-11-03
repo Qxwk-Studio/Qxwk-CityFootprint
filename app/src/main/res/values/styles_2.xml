@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 2.0 页面用的样式。单独一份、不污染 themes.xml：那一份是 1.x 的外观主题（含登录页、
+     公告页等一堆 2.0 用不到的样式），等 1.x 页面全部下线后再合并。
+
+     命名**不带点**：`A.B` 这种名字在 Android 里意味着 B 继承 A，A 不存在时 AAPT 直接报
+     "resource style/A not found"。这里几个样式互斥、没有继承关系，所以用平铺命名。 -->
+<resources>
+
+    <!-- 统计卡上的小标签（「时间跨度」「打卡城市」…） -->
+    <style name="TextHomeStatLabel">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textColor">@color/text_secondary</item>
+        <item name="android:textSize">12sp</item>
+    </style>
+
+    <!-- 统计卡上的数字/短值 -->
+    <style name="TextHomeStatValue">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginTop">6dp</item>
+        <item name="android:textColor">@color/fg</item>
+        <item name="android:textSize">18sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <!-- 主页第 2/3 行那种「并排两卡」的半宽卡：宽度由 layout_weight 分配，所以这里写 0dp -->
+    <style name="CardHomeStat">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:orientation">vertical</item>
+        <item name="android:background">@drawable/bg_card</item>
+        <item name="android:padding">16dp</item>
+    </style>
+
+</resources>

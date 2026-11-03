@@ -8,6 +8,9 @@ plugins {
     // kotlinx.serialization 的编译器插件：序列化器在**编译期**生成，运行时不用反射，
     // 所以 R8 不需要额外 keep 规则（这正是不选 Gson/Moshi 的原因）
     id("org.jetbrains.kotlin.plugin.serialization") version "1.9.22"
+    // Room 的注解处理器走 KSP。版本号必须与上面的 Kotlin **完全对齐**（前缀就是 Kotlin 版本），
+    // 对不上时 KSP 会直接拒绝启动（报 ksp 与 kotlin 版本不匹配），不是慢慢报错
+    id("com.google.devtools.ksp") version "1.9.22-1.0.18"
 }
 
 android {
@@ -41,6 +44,12 @@ android {
     }
 
     buildTypes {
+        debug {
+            // 并行内测：debug 包用 `top.qxwkstudio.travel.dev`，可以和线上 1.x 并排装在一台机器上
+            // （否则正式签名与 debug 签名冲突，得先卸载 1.x）。release 包名不受影响，
+            // 2.0 正式顶替时仍是 `top.qxwkstudio.travel`（见 2.0-development.md §2）。
+            applicationIdSuffix = ".dev"
+        }
         release {
             // R8 压缩 + 混淆：省体积，也是最基本的反编译门槛。
             // 风险点在网上查不到的那一类 —— 反射/XML 里按类名写死的组件会被改名后失效，
@@ -73,6 +82,12 @@ android {
     }
 }
 
+// Room 的 schema 导出：每次改表，schemas/ 下会多一份带版本号的 DDL 快照，**要入库**。
+// 它是迁移测试与「这一版到底改了什么列」的唯一凭据 —— 没有它，改表就只能靠人记。
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
+}
+
 dependencies {
     // 依赖仍然压得很小：网络还是 JDK 的 HttpURLConnection（**不引** Retrofit/OkHttp），
     // JSON 从 org.json 换成 kotlinx-serialization（编译期生成、无反射、无需 keep 规则），
@@ -99,6 +114,12 @@ dependencies {
     // 与「界面本身和地图都要原生」的要求一致。6.1.20 是它在 Maven Central 上的最后一个正式版
     // （上游仓库 2024-11 已归档，但包还在、API 稳定）。
     implementation("org.osmdroid:osmdroid-android:6.1.20")
+
+    // 本地库（2.0 起是数据的唯一真相）：4 张表见 data/db/AppDatabase.kt。
+    // room-ktx 提供挂起 DAO 的实现（CoroutinesRoom），没有它就只能在 DAO 上写阻塞调用。
+    implementation("androidx.room:room-runtime:2.6.1")
+    implementation("androidx.room:room-ktx:2.6.1")
+    ksp("androidx.room:room-compiler:2.6.1")
 
     // 纯 Kotlin 逻辑（成就判定 / visit_date 校验与展示 / 城市搜索）用 JVM 单测钉住：
     // 这些代码算错了不崩，只会悄悄少给一个成就、或把日期显示成别的样子。

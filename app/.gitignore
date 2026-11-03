@@ -5,6 +5,10 @@ local.properties
 *.iml
 .DS_Store
 captures/
+# 城市边界/省界生成脚本留下的中间文件（原始下载、简化前的中间产物）。
+# 最终入库的是 src/main/assets/data/*.geojson —— 那两个**要**提交。
+tools/.cache/
+tools/.out/
 # 正式签名密钥绝不进仓库（CI 从 Secrets 还原，见 README「签名与发版」）
 *.jks
 *.keystore

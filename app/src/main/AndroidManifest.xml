@@ -61,6 +61,20 @@
             android:parentActivityName=".ui.MainActivity"
             android:windowSoftInputMode="adjustResize" />
 
+        <!-- 手动打卡页（2.0 新增）：城市 + 四档日期 + 备注，落本地库 -->
+        <activity
+            android:name=".ui.CheckinEditActivity"
+            android:exported="false"
+            android:parentActivityName=".ui.MainActivity"
+            android:windowSoftInputMode="adjustResize" />
+
+        <!-- 行程编辑器（2.0 新增）：标题 + 时间线事件 + 备注；保存时自动派生关联打卡 -->
+        <activity
+            android:name=".ui.TripEditActivity"
+            android:exported="false"
+            android:parentActivityName=".ui.MainActivity"
+            android:windowSoftInputMode="adjustResize" />
+
         <!-- 公告页：读后端清单的 notices（GET /api/manifest），两处入口（「我的 → 公告」与主页顶部横幅） -->
         <activity
             android:name=".ui.NoticeActivity"

@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 行程编辑器（2.0）：标题 + 时间线事件列表 + 备注。
+     事件行是代码动态拼出来的（每个类型要显示的字段不同），所以这里只有外壳与容器。 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg"
+    android:orientation="vertical">
+
+    <include
+        android:id="@+id/topBar"
+        layout="@layout/view_top_bar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <!-- 标题（≤23 字） -->
+            <TextView
+                style="@style/TextFormLabel"
+                android:text="@string/trip_title_label" />
+
+            <EditText
+                android:id="@+id/inputTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_card"
+                android:hint="@string/trip_title_hint"
+                android:inputType="text"
+                android:maxLength="23"
+                android:padding="12dp"
+                android:textColor="@color/fg"
+                android:textSize="15sp" />
+
+            <TextView
+                android:id="@+id/textTitleCounter"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:gravity="end"
+                android:textColor="@color/text_tertiary"
+                android:textSize="11sp" />
+
+            <!-- 时间线 -->
+            <TextView
+                style="@style/TextFormLabel"
+                android:layout_marginTop="16dp"
+                android:text="@string/trip_timeline_label" />
+
+            <LinearLayout
+                android:id="@+id/eventContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
+
+            <Button
+                android:id="@+id/btnAddEvent"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="@string/trip_add_event" />
+
+            <!-- 备注（≤233 字） -->
+            <TextView
+                style="@style/TextFormLabel"
+                android:layout_marginTop="16dp"
+                android:text="@string/trip_note_label" />
+
+            <EditText
+                android:id="@+id/inputNote"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_card"
+                android:gravity="top"
+                android:hint="@string/trip_note_hint"
+                android:inputType="textMultiLine"
+                android:maxLength="233"
+                android:minLines="3"
+                android:padding="12dp"
+                android:textColor="@color/fg"
+                android:textSize="14sp" />
+
+            <TextView
+                android:id="@+id/textNoteCounter"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:gravity="end"
+                android:textColor="@color/text_tertiary"
+                android:textSize="11sp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/btnCancel"
+                    style="?attr/materialButtonOutlinedStyle"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:text="@string/trip_cancel" />
+
+                <Button
+                    android:id="@+id/btnSave"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_marginStart="12dp"
+                    android:layout_weight="1"
+                    android:text="@string/trip_save" />
+            </LinearLayout>
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>
