@@ -59,7 +59,7 @@ object SyncState {
  *
  * [uuid] 客户端生成：给以后的分享/同步当稳定标识（自增 id 换设备就变了）。
  * [seqNo] 是界面上那个 `#编号`，**行程与独立打卡各自一套序列**，不复用、删了留空洞
- * （见 2.0-development.md 口径 18）。
+ * （见 2.0 工程口径文档 口径 18）。
  */
 @Entity(tableName = "trips")
 data class TripEntity(

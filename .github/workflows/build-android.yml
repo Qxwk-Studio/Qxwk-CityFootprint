@@ -111,27 +111,27 @@ jobs:
         working-directory: app
 
       - name: Rename APK
-        # 文件名用通配符取，不写死。APK 的基名取自 Gradle **工程名**而非目录名：
-        # 本项目是单模块（application 插件直接挂在根项目上），工程名是
-        # settings.gradle.kts 里的 rootProject.name = "CityFootprint"，
-        # 所以产物叫 CityFootprint-release.apk（多模块工程下的 :app 才会是 app-release.apk）。
-        # 写死任一名字，都会在改 rootProject.name 或改成多模块时静默失配，CI 只报
-        # `mv: cannot stat`，看不出是命名问题。
+        # 按 ABI 拆包后产物是 CityFootprint-<abi>-release.apk（见 app/build.gradle.kts 的 splits）。
+        # **两个 ABI 都上传**：arm64-v8a 给主流真机、armeabi-v7a 给 32 位设备，
+        # 用户按自己的机型取（Android 装包不会自动挑 ABI，所以两个都得给）。
         #
-        # 守卫保持不变：签名配置没生效时产物叫 CityFootprint-release-unsigned.apk，
-        # 它**不匹配** *-release.apk，取不到就报错退出并打印目录内容（顺便让人看到真名），
-        # 不会把未签名包当正式包传上去。
+        # 守卫：签名没生效时产物叫 *-release-unsigned.apk，不匹配下面的模式，取不到就报错退出
+        # 并打印目录内容 —— 绝不把未签名包当正式包传上去。
         run: |
           DIR=app/build/outputs/apk/release
-          APK=$(ls "$DIR"/*-release.apk 2>/dev/null) || {
-            echo "::error::没找到已签名的 *-release.apk（签名没生效？），目录实际内容如下："
-            ls -l "$DIR"
-            exit 1
-          }
-          mv "$APK" "$DIR/CityFootprint-${{ github.event.inputs.version_name }}.apk"
+          for abi in arm64-v8a armeabi-v7a; do
+            APK=$(ls "$DIR"/*-$abi-release.apk 2>/dev/null) || {
+              echo "::error::没找到已签名的 *-$abi-release.apk（签名没生效？），目录实际内容如下："
+              ls -l "$DIR"
+              exit 1
+            }
+            mv "$APK" "$DIR/CityFootprint-${{ github.event.inputs.version_name }}-$abi.apk"
+          done
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: CityFootprint-${{ github.event.inputs.version_name }}
-          path: app/build/outputs/apk/release/CityFootprint-${{ github.event.inputs.version_name }}.apk
+          path: |
+            app/build/outputs/apk/release/CityFootprint-${{ github.event.inputs.version_name }}-arm64-v8a.apk
+            app/build/outputs/apk/release/CityFootprint-${{ github.event.inputs.version_name }}-armeabi-v7a.apk

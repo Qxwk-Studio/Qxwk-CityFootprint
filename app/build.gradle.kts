@@ -22,15 +22,29 @@ android {
         minSdk = 24
         targetSdk = 34
         // 这两行由 CI 用 sed 覆盖（.github/workflows/build-android.yml 的 Inject version 一步），
-        // 本地手改也行；改完记得两边一致，否则发出来的包版本号与 Release 标签对不上
-        versionCode = 1
-        versionName = "0.0.1"
+        // 本地手改也行；改完记得两边一致，否则发出来的包版本号与 Release 标签对不上。
+        //
+        // 2.0 的首发版本号刻意取 **20000 起跳**（不是 1）：1.x 线上最高是 103xx，
+        // 覆盖安装要求 versionCode 严格大于线上值；直接从 20000 起跳也顺手给 2.0 划了版本段。
+        versionCode = 20000
+        versionName = "2.0.0"
 
         // MapLibre 的原生库四个 ABI 各 12 MB 左右，全打进去 APK 会从 8 MB 涨到 50 MB。
-        // 只保留 arm64（真机主流）与 armeabi-v7a（老设备），x86/x86_64 只在模拟器里用到 —— 需要时
-        // 临时加回来调，别长期留在发布包里。
-        ndk {
-            abiFilters += listOf("arm64-v8a", "armeabi-v7a")
+        // ABI 的取舍写在下面的 `splits { abi { include(...) } }` 里 —— 那里已经限定了
+        // 只打 arm64-v8a 与 armeabi-v7a，**不能再写 ndk.abiFilters**：
+        // 两者同时存在时 AGP 直接报 "Conflicting configuration ... cannot be present when
+        // splits abi filters are set"。
+    }
+
+    // 按 ABI 拆包：两个 ABI 打在一个包里是 31.8 MB，拆开后 arm64 单包约 25 MB。
+    // 注意 AGP 的 splits 是**全局**的（没有按 buildType 开关）：debug 也会拆成两个，
+    // 装真机时取 CityFootprint-arm64-v8a-debug.apk 那个。CI 的改名步骤按 arm64 的名字取。
+    splits {
+        abi {
+            isEnable = true
+            reset()
+            include("arm64-v8a", "armeabi-v7a")
+            isUniversalApk = false
         }
     }
 
@@ -54,7 +68,7 @@ android {
         debug {
             // 并行内测：debug 包用 `top.qxwkstudio.travel.dev`，可以和线上 1.x 并排装在一台机器上
             // （否则正式签名与 debug 签名冲突，得先卸载 1.x）。release 包名不受影响，
-            // 2.0 正式顶替时仍是 `top.qxwkstudio.travel`（见 2.0-development.md §2）。
+            // 2.0 正式顶替时仍是 `top.qxwkstudio.travel`（见 2.0 工程口径文档 §2）。
             applicationIdSuffix = ".dev"
         }
         release {
@@ -129,7 +143,7 @@ dependencies {
     ksp("androidx.room:room-compiler:2.6.1")
 
     // 地图：MapLibre Native（12.3.1 是「支持 PMTiles 且没有 Vulkan 硬要求」的最高点，见
-    // 2.0-development.md §7.1）。PMTiles 读取在原生层，Kotlin 侧只负责拼 pmtiles://file:// 的 URL。
+    // 2.0 工程口径文档 §7.1）。PMTiles 读取在原生层，Kotlin 侧只负责拼 pmtiles://file:// 的 URL。
     implementation("org.maplibre.gl:android-sdk:12.3.1")
 
     // 纯 Kotlin 逻辑（成就判定 / visit_date 校验与展示 / 城市搜索）用 JVM 单测钉住：

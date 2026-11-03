@@ -205,7 +205,7 @@ class MapFragment : Fragment() {
         )
         // 圆点层：**不依赖边界解析**。边界文件 4.6 MB，解析失败在手机上可能是静默的（OOM 被
         // runCatching 吞掉），那时多边形一条都画不出来、看起来就像「什么都没渲染」。
-        // 圆点只需要城市表里的经纬度，永远画得出来 —— 与 2.0.md「无边界城市画圆点」也一致。
+        // 圆点只需要城市表里的经纬度，永远画得出来 —— 与 2.0 设计文档「无边界城市画圆点」也一致。
         loaded.addSource(GeoJsonSource(POINTS_SOURCE, visitedPointsJson(visited)))
         loaded.addLayer(
             CircleLayer(POINTS_SOURCE_LAYER, POINTS_SOURCE).withProperties(

@@ -7,7 +7,7 @@ import java.io.File
  * 离线矢量底图（Protomaps 中国区 z0–6，打包在 `assets/basemap/cn-z0-6.pmtiles`）。
  *
  * **为什么要先拷到 filesDir**：MapLibre 的 PMTiles 读取在原生层，官方只认
- * `pmtiles://https://…` 与 `pmtiles://file://…` 两种 URL（见 2.0-development.md §7.1），
+ * `pmtiles://https://…` 与 `pmtiles://file://…` 两种 URL（见 2.0 工程口径文档 §7.1），
  * **不支持 `asset://`**。所以首次进地图页时把 5.8 MB 的资产拷到应用私有目录，之后直接用绝对路径。
  *
  * 判「要不要再拷」用文件大小而不是存在性：升级时 asset 变了（重新抽的包）而旧文件还在，

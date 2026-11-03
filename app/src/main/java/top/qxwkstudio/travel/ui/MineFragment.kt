@@ -252,7 +252,7 @@ class MineFragment : Fragment() {
 
     /**
      * 检查更新：读后端 `GET /api/manifest`，比 `version_code`（不是版本名）。
-     * 2.0 只保留这一个网络请求（见 2.0-development.md 口径 2）。
+     * 2.0 只保留这一个网络请求（见 2.0 工程口径文档 口径 2）。
      */
     private fun checkUpdate() {
         viewLifecycleOwner.lifecycleScope.runIo({ Update.fetch() }) { result ->

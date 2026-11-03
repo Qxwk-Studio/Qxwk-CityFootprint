@@ -19,7 +19,7 @@ import kotlin.math.sqrt
  * 那种情况宁可不判（返回 null）也不要把人算成去了边境城市。
  *
  * 台湾：DataV 把整岛给了 adcode 710000，所以岛内一律判成「台湾」；台北/新北/桃园这些
- * 没有自己边界数据，只能手选。这是数据限制，不是算法问题（2.0-development.md 口径 23）。
+ * 没有自己边界数据，只能手选。这是数据限制，不是算法问题（2.0 工程口径文档 口径 23）。
  *
  * 纯 Kotlin：城市表与边界 JSON 都由调用方喂进来（Android 侧的读 assets 在 data/CityBoundaries.kt），
  * 所以整段判定能在 JVM 单测里跑。

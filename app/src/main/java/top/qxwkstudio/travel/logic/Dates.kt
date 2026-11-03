@@ -10,7 +10,7 @@ import java.util.Calendar
  *
  * 两种形态刻意不同：
  *  - [ymd] 给列表行用（`2024-08-01`，定长、对齐好看）；
- *  - [range] 给主页「时间跨度」用（`2015.9.3`，与 2.0.md 的示例一致、不补零）。
+ *  - [range] 给主页「时间跨度」用（`2015.9.3`，与 2.0 设计文档 的示例一致、不补零）。
  *
  * 时区：用设备当前时区。记录时另存了时区偏移（timeline 的 `tz`），但统计与列表展示
  * 统一按本地时间看 —— 跨时区旅行的「当时几点」只在行程详情里有意义。
@@ -28,7 +28,7 @@ object Dates {
         return "${dot(start)} — ${dot(end)}"
     }
 
-    /** 不补零的 `年.月.日`（与 2.0.md 的示例同形态）。 */
+    /** 不补零的 `年.月.日`（与 2.0 设计文档 的示例同形态）。 */
     fun dot(millis: Long): String {
         val c = calendar(millis)
         return "${c.get(Calendar.YEAR)}.${c.get(Calendar.MONTH) + 1}.${c.get(Calendar.DAY_OF_MONTH)}"

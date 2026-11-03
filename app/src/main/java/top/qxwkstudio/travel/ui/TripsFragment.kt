@@ -27,7 +27,7 @@ import top.qxwkstudio.travel.logic.Timeline
 /**
  * 行程页（2.0）：分段控件「打卡 (N) / 足迹 (N)」，两段各自按时间倒序。
  *
- * 打卡那一段里**关联打卡与独立打卡是混排的**（2.0.md §2）：关联打卡底部标「来自足迹 #17」、
+ * 打卡那一段里**关联打卡与独立打卡是混排的**（2.0 设计文档 §2）：关联打卡底部标「来自足迹 #17」、
  * 没有编辑入口；独立打卡标「手动打卡」。两种来源共用 `city_checkins` 一张表，
  * 这里只是按 [CheckinEntity.source] 决定底部那行文案。
  *
@@ -137,7 +137,7 @@ class TripsFragment : Fragment() {
         val derived = checkin.source == CheckinSource.DERIVED
         val (root, card) = cardWithStripe(if (derived) R.color.stripe_derived else R.color.stripe_manual)
 
-        // 第一行：城市 + 「更多」。关联打卡是派生物，菜单里只给分享（2.0.md 的权限差异）
+        // 第一行：城市 + 「更多」。关联打卡是派生物，菜单里只给分享（2.0 设计文档 的权限差异）
         val header = LinearLayout(ctx).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL

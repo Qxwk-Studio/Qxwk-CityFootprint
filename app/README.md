@@ -3,8 +3,9 @@
 把「去过哪些城市」记下来、在地图上点亮它们的单机应用。**2.0 是离线单机**：数据全在本机
 SQLite，不登录、不上传；整个 app 只有**一个**网络请求 —— 「检查更新」读版本清单。
 
-工程口径与任务分解在仓库根目录的 [`2.0-development.md`](../2.0-development.md)；
-那份是给改代码的人看的（为什么这么做、哪条口径是谁定的），本文件是使用/维护说明。
+工程口径与任务分解在**仓库外**的《2.0 工程口径》文档里（`C:\Code\.闲置文件\2.0-文档\`，含
+`2.0-development.md` 与产品设计稿 `2.0.md`）—— 那两份是内部笔记，不入库；本文件是仓库内唯一
+的安卓端说明。
 
 ## 包名与技术栈
 
@@ -166,7 +167,7 @@ App 内不做下载安装，点「前往下载」跳系统浏览器。
 | `assets/cities.json` | `docs/cities.js` + `docs/city-codes.js` | `node app/tools/gen-cities.mjs` |
 | `assets/data/city_boundaries.geojson` | DataV 逐市边界 → GCJ→WGS → 简化 20% | `node app/tools/build-city-geo.mjs` |
 | `assets/data/provinces.geojson` | DataV `100000_full` → 同上 | `node app/tools/build-provinces.mjs` |
-| `assets/basemap/cn-z0-6.pmtiles` | Protomaps 中国区 z0–6（外部下载，非本仓库生成） | 见 2.0-development.md §7.1 |
+| `assets/basemap/cn-z0-6.pmtiles` | Protomaps 中国区 z0–6（外部下载，非本仓库生成） | 见 2.0 工程口径文档 §7.1 |
 
 前三个脚本都是**可重复运行、失败不写文件**的；中间产物落在 `app/tools/.cache` 与 `.out`（已 gitignore）。
 
@@ -183,14 +184,23 @@ cd app && ./gradlew testDebugUnitTest
 ## 签名与发版
 
 1. keystore 与口令在仓库 Secrets（`KEYSTORE_BASE64` / `KEYSTORE_PASSWORD` / `KEY_ALIAS` / `KEY_PASSWORD`），
-   离库原件在 `C:\Code\.闲置文件\签名密钥-足迹.jks`。
-2. Actions → `Build Android APK` → `Run workflow`，填 `version_name` 与 `version_code`（**必须大于线上值**）。
-   CI 会跑单测 → `assembleRelease` → 改名上传；缺 keystore 直接失败，签名没生效也会因找不到
-   `app-release.apk` 而失败（故意的，绝不把未签名包当正式包传）。
-3. **debug 包带 `.dev` 后缀**（`top.qxwkstudio.travel.dev`），可以和线上 1.x 并排装 ——
+   离库原件在 `C:\Code\.闲置文件\签名密钥-足迹.jks`。本地想验签名时把这四项按 `CF_*` 环境变量喂给
+   Gradle（`CF_KEYSTORE_FILE` / `CF_KEYSTORE_PASSWORD` / `CF_KEY_ALIAS` / `CF_KEY_PASSWORD`），
+   缺它们时 release 出的是 `*-release-unsigned.apk`（能编译、装不上）。
+2. Actions → `Build Android APK` → `Run workflow`，填 `version_name` 与 `version_code`：
+   CI 用 sed 覆盖 `app/build.gradle.kts` 的两行，所以**版本段从 20000 起**（本地默认就是
+   `20000` / `2.0.0`），必须大于线上 1.x 的最高值。CI 会跑单测 → `assembleRelease` → 改名上传；
+   缺 keystore 直接失败，签名没生效也会因找不到 `*-arm64-v8a-release.apk` 而失败（故意的，
+   绝不把未签名包当正式包传）。
+3. **按 ABI 拆包**（`splits { abi { … } }`）：产物是 `CityFootprint-<abi>-release.apk`，
+   CI 只取 **arm64-v8a**（约 22.7 MB）上传；armeabi-v7a 那份约 19.2 MB，留给 32 位设备。
+   注意 AGP 的 splits 是全局的，**debug 也会拆**：本机装包要取
+   `app/build/outputs/apk/debug/CityFootprint-arm64-v8a-debug.apk`。
+4. **debug 包带 `.dev` 后缀**（`top.qxwkstudio.travel.dev`），可以和线上 1.x 并排装 ——
    签名不同，同包名是装不上的。
-4. 2.0 正式顶替 1.x 时：`applicationId` 不变、签名与 1.x 一致、`versionCode` 取 20000+。
-   **1.x 的历史数据不会自动迁过来**（数据在后端 D1，2.0 是纯本地），迁移方案见 2.0-development.md §2/§8。
+5. 2.0 正式顶替 1.x 时：`applicationId` 不变、签名与 1.x 一致、`versionCode` ≥ 20000。
+   **1.x 的历史数据不会自动迁过来**（数据在后端 D1，2.0 是纯本地），迁移方案见
+   2.0 工程口径文档 §2/§8。
 
 ## 已知限制 / 2.1 计划
 

@@ -97,13 +97,14 @@
 │   │   └── 0001_init.sql     # 全站唯一建表文件：users（与 Qxwk-Blog 共享）/ cf_users（独占）/ cf_visits（含 adcode / transport 与 CHECK 约束）/ cf_rate_daily（限速天级计数）/ cf_app_version、cf_notices、cf_menu（App 清单，GET /api/manifest 读这三张）
 │   ├── package.json        # 只声明 ESM（"type":"module"）+ npm test，无任何依赖
 │   └── wrangler.toml       # Worker 配置（D1 绑定 + 两个限速绑定 RL_WRITE / RL_READ；静态资源段已删 —— 页面在 GitHub Pages）
-├── app/                    # 安卓 app，见 app/README.md（Kotlin + XML View/viewBinding，原生 osmdroid 地图，不用 WebView）
+├── app/                    # 安卓 app，见 app/README.md。**2.0 起是离线单机**：数据在本地 SQLite、
+│                            # 无登录；地图是 MapLibre + 打包进 APK 的离线 PMTiles；只有一个网络请求（检查更新）
 ├── scripts/                # 城市数据维护脚本（Node，本地手动跑，不参与部署）
 │   ├── complete-cities.js  # 从 DataV 补齐 docs/cities.js 缺失的地级行政区
 │   └── gen-city-codes.js   # 由 DataV 生成 docs/city-codes.js 与 backend/src/city-codes.js（城市名 → adcode，单一数据源出两份）
 ├── .github/
 │   └── workflows/
-│       └── build-android.yml  # 手动触发的安卓打包（JDK 17 + Secrets 里的签名密钥 → 签名 APK artifact）
+│       └── build-android.yml  # 手动触发的安卓打包（JDK 17 + Secrets 里的签名密钥 → 按 ABI 拆分的签名 APK artifact）
 └── README.md
 ```
 
@@ -136,15 +137,15 @@
   - **维度**：写接口按**登录用户**（本来就要求登录，userId 稳定、不受 NAT 影响），读接口按 **IP**（`CF-Connecting-IP`，Cloudflare 注入、客户端伪造不了）—— 因为 `/api/cities`、`/api/stats` 这些匿名就能访问，没有 userId 可用。每个请求只落一种 key，不是双重计数。**管理员不豁免**。
   - **顺序**：限速判定在鉴权**之后**（未登录该回 401，不该消耗配额）、在解析 body 与落库**之前**；写接口先判分钟档、过了才动 D1，否则被分钟档挡下的请求照样能让刷子每次多写一行 D1。
   - **fail open**：绑定没配（旧版 wrangler 会静默丢弃配置段）或调用抛错一律放行 —— 限速坏了不该把正常用户挡在门外；`/api/geo/:adcode` 也整条豁免（首屏按城市数逐个拉边界是正常行为，Worker 与浏览器各缓存 7 天已经不回源）。
-  - **超限响应**：`429` + 中文文案，由 `withCors` 贴头（否则浏览器只报 CORS 错、看不到文案）。两端**不需要改代码**就能显示：网页 `docs/app.js` 抛 `new Error(data.error)`、安卓 `data/ApiException.kt` 优先取报文里的 `error`，前端各自把 `err.message` 显示在表单提示位。
+  - **超限响应**：`429` + 中文文案，由 `withCors` 贴头（否则浏览器只报 CORS 错、看不到文案）。网页端 `docs/app.js` 抛 `new Error(data.error)` 直接显示后端原文。（安卓 2.0 已离线，只剩一个只读的 `/api/manifest`，不涉及写接口与限速。）
 - **本地身份按 `passport_id` 映射**：`resolveViewer()` 用通行证 `/api/me` 返回的 `userId` 认人（`cf_users.passport_id`，唯一索引 `idx_cf_users_passport`）。通行证里改昵称不会改 userId，所以改昵称不会在本站多出一条行；升级前的老行按「同昵称且 `passport_id IS NULL`」自动回填认领，保住原有足迹与管理员标志。
 - **颜色与头像都由 Account 输出**：`cf_users.color` 和用户头像 URL 都是通行证"单一事实源"，本站每次用户访问时同步覆盖。这样用户在通行证改颜色 / 改邮箱（头像 hash 变化）后，访问本站自动生效，避免两端数据漂移。
 - **私密行程接口层过滤**：`is_private` 过滤在 Worker 侧做，而不是前端，防止有人抓接口构造出别人的私密足迹。规则只写一处 —— `lib.js` 的 `visibility(viewer)`（管理员不过滤；其余放行「非私密」或「自己的」），`/api/cities`、`/api/city/:city`、`/api/stats` 共用它。凡是新增「面向他人数据」的接口，都必须套这一段，别各自手抄。
-- **成就系统**：判定逻辑只有一份，在 `backend/src/achievements.js` —— "足迹丰碑 / 巡游四方 / 城市打卡 / 极限挑战"四大类共 42 条，每条带**稳定的 `code`**（早期拿中文 name 当计数键，改文案就会静默错位）。网页与 app **都不再自带定义**，只消费接口：`GET /api/my-visits` 下发 `done`（我的成就），`GET /api/stats` 下发 `count`（达成人数），两者都把 `icon/name/desc` 一起给，所以客户端零定义也能渲染。新增成就只改这一个文件，并同步 `backend/test/achievements.test.js`。
+- **成就系统**：判定逻辑的源头是 `backend/src/achievements.js` —— "足迹丰碑 / 巡游四方 / 城市打卡 / 极限挑战"四大类共 **54 条**，每条带**稳定的 `code`**（早期拿中文 name 当计数键，改文案就会静默错位）。网页**只消费接口**：`GET /api/my-visits` 下发 `done`（我的成就）、`GET /api/stats` 下发 `count`（达成人数），两者都把 `icon/name/desc` 一起给。**安卓 2.0 因为改成离线单机，把这套定义搬进了 app**（`logic/Achievements.kt`，去掉了 emoji、判定输入改成本地打卡）—— 所以改阈值/加成就时**网页与安卓要一起改**，app 侧有单测与逐条比对。新增成就时同步 `backend/test/achievements.test.js`。
 - **地图边界与瓦片缓存**：DataV GeoAtlas 边界由 Worker `/api/geo/:adcode` 代理，三层都按 7 天缓存 —— Worker 内部 `caches.default` 的副本带 `Cache-Control: public, max-age=604800`，返回给浏览器的响应也带同一个头（浏览器 HTTP 缓存才吃得到），前端再用 IndexedDB 存 7 天：命中且未过期直接画，命中但已过期也先画上（边界几年才动一次），同时后台重下刷新缓存，只有完全没缓存时才等网络。行政边界几年才动一次（撤市设区那类），7 天很安全；三层写同一口径是为了避免前端先到期、白白多发一次往返。瓦片用高德免 Key 内网直出、Leaflet 资源自托管到 `docs/vendor/`，避免外链失效与 CORS 折腾。
-- **读接口报文缓存（会话级 1 天 + SWR）**：`docs/app.js` 的 `api()` 是所有读接口的唯一入口，GET 成功写 `sessionStorage`，写接口成功与登录 / 登出 / 401 时整体作废（`cacheInvalidate()`，与 App 端 `Store.invalidatePayloads()` 同一思路：不按 key 精细区分，几份报文一起丢）。页面侧用 `apiWatch()` 取数：命中缓存先画一版、网络回来再画一版，所以要求各页渲染幂等；需要「必须最新」的场合（增删改后重新拉地图 / 列表）仍直接调 `api()` —— 那时缓存已作废，本来也不会命中。用 `sessionStorage` 而非 `localStorage`，是因为报文可能含私密足迹，按标签页隔离、关标签即清；代价是 **F5 不会清**，失效只有换账号 / 写操作 / 24 小时过期三条路。缓存 key 按 `userId` 隔离（未登录用 `anon`），否则换账号会先画出上一个人的私密数据；`/me` 刻意不缓存 —— 缓存它会让「token 已被撤销」晚一天才被发现。边界 GeoJSON 是公共数据、与账号无关，不在这套缓存里（见上一条）。
-- **城市字典与 adcode 由后端派生**：`cf_visits.adcode` 在**写入时**由后端按城市名从字典取出（`backend/src/city-codes.js`），字典与前端 `docs/city-codes.js` **同源** —— `scripts/gen-city-codes.js` 一次生成两份，避免两端各存一份后慢慢漂移。字典未命中（用户自造的城市名）留 `NULL` 而**不拒绝请求**；读取时用 `v.adcode || 字典[city]` 兜底，加列前的老行也有值。这样 web 与 app 都不必再自带「城市名 → adcode」映射，直接拿接口给的 `adcode` 取边界。
-- **出行方式（`transport`）**：一条行程可多选（飞机 / 火车 / 高铁 / 自驾 / 大巴 / 轮船 / 骑行 / 徒步 / 其他），库里存英文 code 的 **JSON 数组**（`CHECK json_valid` 兜底）；code 白名单与固定排序都在 `worker.js` 的 `TRANSPORTS`，前端枚举在 `docs/app.js` 的 `window.TRANSPORTS`（两处必须同步）。入库前会过滤未知 code、去重并按固定顺序排，前端可以放心直接提交勾选结果。
+- **读接口报文缓存（会话级 1 天 + SWR）**：`docs/app.js` 的 `api()` 是所有读接口的唯一入口，GET 成功写 `sessionStorage`，写接口成功与登录 / 登出 / 401 时整体作废（`cacheInvalidate()`）。页面侧用 `apiWatch()` 取数：命中缓存先画一版、网络回来再画一版，所以要求各页渲染幂等；需要「必须最新」的场合（增删改后重新拉地图 / 列表）仍直接调 `api()` —— 那时缓存已作废，本来也不会命中。用 `sessionStorage` 而非 `localStorage`，是因为报文可能含私密足迹，按标签页隔离、关标签即清；代价是 **F5 不会清**，失效只有换账号 / 写操作 / 24 小时过期三条路。缓存 key 按 `userId` 隔离（未登录用 `anon`），否则换账号会先画出上一个人的私密数据；`/me` 刻意不缓存 —— 缓存它会让「token 已被撤销」晚一天才被发现。边界 GeoJSON 是公共数据、与账号无关，不在这套缓存里（见上一条）。（安卓 2.0 离线后没有报文缓存，页面靠 `DataVersion` 版本号决定要不要重读本地库。）
+- **城市字典与 adcode 由后端派生**：`cf_visits.adcode` 在**写入时**由后端按城市名从字典取出（`backend/src/city-codes.js`），字典与前端 `docs/city-codes.js` **同源** —— `scripts/gen-city-codes.js` 一次生成两份，避免两端各存一份后慢慢漂移。字典未命中（用户自造的城市名）留 `NULL` 而**不拒绝请求**；读取时用 `v.adcode || 字典[city]` 兜底，加列前的老行也有值。网页端不必再自带「城市名 → adcode」映射，直接拿接口给的 `adcode` 取边界。（安卓 2.0 离线，自带 `assets/cities.json` 与打包的城市边界，判城与取边界都在本机做 —— 城市数据改了要重跑 `node app/tools/gen-cities.mjs` 并提交生成物。）
+- **出行方式（`transport`）**：网页端一条行程可多选（飞机 / 火车 / 高铁 / 自驾 / 大巴 / 轮船 / 骑行 / 徒步 / 其他），库里存英文 code 的 **JSON 数组**（`CHECK json_valid` 兜底）；code 白名单与固定排序都在 `worker.js` 的 `TRANSPORTS`，前端枚举在 `docs/app.js` 的 `window.TRANSPORTS`（两处必须同步）。入库前会过滤未知 code、去重并按固定顺序排，前端可以放心直接提交勾选结果。（安卓 2.0 把出行方式改成了**自由文本**，挂在行程时间线的「乘坐」事件上，不再使用这套枚举。）
 - **页面链接不带 `.html`**：GitHub Pages 对 `/xxx` 会自动回落到 `xxx.html`（`travel.qxwkstudio.top/account`、`/stats` 已线上验证），所以站内导航统一写裸路径（`/account`、`/visits`…），浏览器地址栏就不露后缀。`docs/app.js` 的 401 兜底与 `docs/robots.txt` 的路径都已按裸路径对齐 —— 改导航时别把后缀加回来。
 - **响应式边距规范**：全站 6 页（index / account / visits / stats / news / setup）沿用同一套间距规范，新增页面或模块**务必遵守**，避免不同页面在手机/桌面上松紧不一。
 
