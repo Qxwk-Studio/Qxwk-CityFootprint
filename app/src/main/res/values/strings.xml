@@ -1,163 +1,174 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- 应用显示名：启动器图标下、系统「应用信息」里显示的就是它（清单的 android:label 引用的就是这条）。
-         只做英文 City Footprint，与网页端 / 通行证登记名一致，不再另设中文名。 -->
+    <!-- 应用显示名：启动器图标下与系统「应用信息」里显示的就是它 -->
     <string name="app_name">City Footprint</string>
 
-    <!-- 底部导航五个 tab 的名字（与 menu/bottom_nav.xml 一一对应）。
-         五个 tab 的正文分别对齐网页端：主页=足迹管理页、我的成就=该页成就区、地图=首页地图、全站统计=统计页、我的=个人管理 -->
+    <!-- 底部导航（与 menu/bottom_nav.xml 一一对应） -->
     <string name="tab_home">主页</string>
     <string name="tab_achievements">我的成就</string>
     <string name="tab_map">地图</string>
     <string name="tab_profile">我的</string>
 
-    <!-- 登录页 -->
-    <!-- 副标题照抄网页 account.html 的 .auth-subtitle：只说「用通行证登录」这一件事，
-         不提本 app 之外还有哪些站点（原来那句「与聊天账号共用一套通行证」就是反面教材） -->
-    <!-- 登录卡下方那行引导：文案照抄网页 account.html 的 .passport-tip（去掉「打开通行证」那个链接词）。
-         注册与找回密码都在通行证登录页里，所以这一行把两件事一起兜住（整行可点，见 LoginActivity） -->
-    <!-- 同意用户协议的勾选行。两句是「整句 + 它在整句里的片段」的关系：
-         代码拿下面那句在整句里定位，把片段做成可点链接（见 LoginActivity.bindAgreeRow），
-         所以改上面那句时，下面这句必须跟着一起改，否则链接会退化成纯文字 -->
-    <!-- 没勾协议就点登录的提示（与 401 那条同一处显示：卡片里按钮下方的 textLoginError） -->
-    <!-- 协议页在 App 内打开时的顶栏标题（见 ui/WebViewActivity） -->
-    <!-- App 内看网页的通用页（ui/WebViewActivity）：现在只给协议正文用，以后的活动页也走这里。
-         标题由调用方给 —— 网页自己的 <title> 带着站点名与后缀（「… · City Footprint - 青翔未阔工作室」），
-         塞进 48dp 的顶栏只会被省略号截掉，所以只在调用方没给时用下面这条兜底 -->
-
-    <!-- 我的足迹 -->
-    <!-- 私密徽章：列表条目与「查看」弹窗共用这一条，文案与网页 .visit-private-badge 一致（🔒 + 不公开） -->
-    <!-- 行程条目里「城市 · 时间」那段：分隔点与时间一起给出，避免在代码里拼字符串 -->
-    <!-- 行程条目右侧那两颗只有图标的按钮：文案只给无障碍朗读用（图标本身没有文字） -->
-    <!-- 点分享弹出的 Toast：分享还没做，先给个「制作中」的交代（网页那颗同文案，
-         见 docs/visits.js 的 showShareWip） -->
-
-    <!-- 「查看」弹窗（点行程条目打开，只读；列表里备注只有一行省略，完整的在这里看） -->
-
-    <!-- 主页顶部的「足迹统计」小卡（对齐网页端 docs/visits.html 的 .visit-stats：
-         首行「时间跨度」整行长卡，其余四张每行两个）。
-         上面那条横幅（visits_notice_banner）是主页独有的：网页端没有对应的东西，它只为
-         「有未读公告」这件事服务，点进公告页后就不再出现（见 ui/VisitsFragment）。 -->
-
-    <!-- 新增 / 编辑 -->
+    <!-- 表单通用 -->
     <string name="edit_city">城市</string>
-    <!-- 原先还有一条「点击选择城市」的占位文案，已删：城市栏的提示语只留 TextInputLayout 上那一条
-         —— 两层 hint 会叠成两行字，见 activity_visit_edit.xml 的说明 -->
-    <!-- 城市栏右侧那颗准心按钮（网页 docs/index.html 的同款按钮，它的 title 就是这句） -->
-    <!-- 出行方式多选（与网页端 .tp-chip 同一组 code，见 logic/Transport.kt） -->
     <string name="edit_delete">删除</string>
 
-    <!-- 城市选择 -->
+    <!-- 城市选择页 -->
     <string name="city_search_hint">搜索城市名或省份</string>
     <string name="city_empty">没有匹配的城市</string>
-    <!-- 分组态的分组标题（省份 · 这个省有几座城）与省份字段缺失时的兜底分组名 -->
     <string name="city_group_title">%1$s · %2$d 座</string>
     <string name="city_group_unknown">其他</string>
 
-    <!-- 定位（编辑页与地图页共用）。提示语对齐网页 docs/index.js：'正在定位…' / '未找到附近城市' /
-         '未获得定位权限，请允许定位'。网页的 geoErrorMsg 还分 POSITION_UNAVAILABLE / TIMEOUT 两句，
-         App 侧 [LocationManagerCompat] 拿不到位置时只能区分「没开定位」（enabled=false）与「其它」，
-         所以合成两句 —— 别为了凑齐三句去猜失败原因 -->
+    <!-- 定位（打卡页与地图页共用）。系统只回得了「没开定位」与「其它」两种情况，
+         所以失败提示合成两句，不猜具体原因。 -->
     <string name="locate_locating">正在定位…</string>
     <string name="locate_no_permission">未获得定位权限，请允许定位</string>
     <string name="locate_disabled">定位失败，请检查是否已开启定位（GPS）</string>
     <string name="locate_failed">定位失败，请重试</string>
     <string name="locate_no_city">未找到附近城市</string>
 
-    <!-- 统计（对齐网页 docs/stats.html：四张数字卡 + 城市次数排名 + 成就达成人数） -->
-    <!-- 空态与错误态照抄网页 stats.html 的两句话（不是通用 common_error）；
-         排行空态是「全站还没人记过足迹」，跟「我这页没有数据」不是一回事 -->
-
     <!-- 地图 -->
     <string name="map_empty">还没有足迹，先去「足迹」页添加</string>
-    <!-- 管理员视图提示（浮在地图右上角，对齐网页 docs/index.html 的 .adminViewNote）。
-         网页端 index 只写「👑 管理员视图」，stats 那条才补「· 正在统计全部行程（含私密）」，
-         所以这里另给一条串，别复用 stats_admin_note -->
-    <!-- 地图右上角那颗定位按钮。网页端颗「我的位置」蓝点是由添加弹窗触发的，App 两页分离，
-         得在地图页单独给个入口（见 MapFragment.locate），所以这条文案网页那边没有对应物 -->
     <string name="map_locate">定位我的位置</string>
-    <!-- 图例（按用户筛选，对齐网页 docs/index.html 的 .legend）：标题 + 全选 + 每个用户一行。
-         标题用与网页 .legend-title 同一份文案（网页「谁的足迹」），两端别各叫一个名字 -->
-    <!-- 折叠箭头：展开时是「可收起」（▾），收起时是「可展开」（▸） -->
-    <!-- 点城市后从底部浮出的明细卡（对齐网页 Leaflet popup 的内容） -->
 
-    <!-- 我的 -->
-    <!-- UID：本地用户 id，对应网页 account.js 的 `'UID：' + s.userId`（那边用等宽字体，这里同） -->
-    <!-- 管理员徽章：网页 account.html 的 #adminBadge（网页那句带 👑），显隐看 /api/me 的 is_admin。
-         这一条的 👑 **按用户要求保留**（个人页其它几行的 emoji 已去掉，唯独徽章不去） -->
-    <!-- 头像的无障碍描述（头像本身是通行证给的图，回退时是昵称首字） -->
-    <!-- 通行证中心那一行（网页 account.html 那张卡）。标题与提示照抄网页，两端别各编一套文案 -->
-    <!-- 跳外部浏览器失败（设备上没有任何能开 https 的应用）时的提示。
-         名字刻意不带 profile：通行证中心、登录页的「没有账号」引导与「检查更新 → 前往下载」三处共用这一句 -->
-    <string name="common_open_url_failed">没有可打开网页的应用</string>
-
-    <!-- 分组名。「我的」页改成手机设置那种分组列表后，组名就是网页 account.html 那几张卡片标题的去 emoji 版
-         —— 组名用素文字，emoji 只留在行标题上当图标用（行标题仍沿用网页那几条原字符串） -->
-
-    <!-- 专属地图颜色：色点右边那行字，与网页 account.html 的 .profile-color-text 同一句
-         （色点本身在代码里按通行证主题色画，见 ProfileFragment.colorDot） -->
-
-    <!-- 外观（浅色 / 深色 / 跟随系统）那一行。行标题与三选弹窗的标题是同一句，
-         下面三条既是行尾的当前值、也是弹窗里的选项。
-         （行标题原先带 emoji，与「我的」页其它几行一起按需求去掉了 —— 现在是纯文字。）
-         网页端那颗太阳/月亮按钮只有「浅色↔深色」两态（theme.js 只认 localStorage 里的 dark/light，
-         没选过时跟随系统），App 这边按用户要求做成三态，「跟随系统」这一档也就是把它缺的那一态显式摆出来 -->
-    <!-- 外观弹窗里标记当前那一档的勾。用字符而不是图标资源：全站只有这一处要枚小勾，
-         为此多一个 drawable 不值当（同 map_city_close_glyph 那颗 ✕ 的做法） -->
-
-    <!-- 清除缓存那一行（网页 account.html 那张卡）。文案照抄网页 -->
-    <!-- 清完的提示。网页是在卡片里内联一行 #cacheMsg（带绿色 .ok 样式）显示这句；
-         App 全站提示一律用 Toast，也就不必为这一处再往色板里加一档「成功色」 -->
-
-    <!-- 「关于软件」分组里的三行（对应网页 account.html 右下角那张卡的三个小节）。
-         行标题在左、内容作副标题或行尾值 —— 组标题见 profile_group_about -->
-    <!-- 开源内容三条。**第一条不能照抄网页**：网页地图走 Leaflet，App 是 osmdroid，
-         各自列各自真正用到的那一个；底图瓦片与边界数据两端同源，照抄 -->
-    <!-- 版本号（行尾那个值）。网页把 'v' 显式拼在 APP_VERSION 前面（account.js），这里照同一形态，
-         与 CI 注入的 versionName（如 1.3.0）拼出来是 "v1.3.0" -->
-    <!-- 检查更新那一行（App 特有，网页端明确不做更新检查，只留静态版本号文字）。
-         点了拉后端清单（GET /api/manifest，数据在 D1）比 version_code，三种结果各自的文案见下面三组 -->
-    <!-- 公告那一行（App 特有，网页端没有这个入口：那边看公告是 news.html 那个页面）。
-         点了进 ui/NoticeActivity，读的是同一份清单的 notices -->
+    <!-- 检查更新（2.0 唯一的网络请求：GET /api/manifest，比 version_code） -->
     <string name="profile_update_new_title">发现新版本</string>
-    <!-- 弹窗正文由三段拼起来（见 ProfileFragment.updateMessage）：版本 → 更新说明 → 问一句。
-         拆成三条而不是一句话：中间那段更新说明在清单里没写时要**整段**省掉（连小标题一起） -->
     <string name="profile_update_new_message">最新版本 v%1$s</string>
-    <!-- 更新说明的小标题，与每一条前面的点（清单里 notes 是一行一条，逐条套这个格式） -->
     <string name="profile_update_go">前往下载</string>
     <string name="profile_update_latest">已是最新版本</string>
     <string name="profile_update_failed">检查更新失败，请稍后重试</string>
-    <!-- 清单里 download_url 空着（D1 的 cf_app_version 里没填）时用：别拿空地址去 openConnection -->
     <string name="profile_update_no_url">下载地址暂不可用</string>
-
-    <!-- 公告页（ui/NoticeActivity）与主页那条未读横幅。
-         数据来自后端清单的 notices（GET /api/manifest，库表 cf_notices）；网页端 news.html 的公告区是手写的，两边互不影响 -->
-    <!-- 公告页拉不到清单时用（主页那条横幅反过来——失败就静默，不打扰用户） -->
-
-    <!-- 主页右上角三横菜单弹出的栏目浮层（见 ui/MainActivity）。
-         里面的栏目来自清单的 menu（库表 cf_menu）：一条 = 一行 = 一个网页，
-         加栏目只往库里插一行、不用发新版；所以这里只有壳的几句固定文案，栏目名不在 strings 里 -->
-    <!-- 拉不到清单时用（点按钮才弹这句 Toast，不在冷启动时打扰用户）。
-         不配重试按钮：栏目浮层不是内容主体，拉不到不该挡着用户用 App -->
-
-    <!-- 统计页排行行的文案与展开/收起（对齐网页 .rank-item / .rank-toggle） -->
-
-    <!-- 统计页「成就达成人数」（网页同名校） -->
-
-    <!-- 成就页顶部摘要行「已点亮 X / Y」（对齐网页 .achievement-summary）：
-         拆成三段是因为网页把中间那个数字加粗并染成主色（.sum-label b），
-         Android 要同样的效果就得分开两个 TextView（数字不加千分位、无需格式化串）。
-         「/ Y」写成带前导空格的格式串，拼出来就是网页的「X / Y」。 -->
-    <!-- 分类头条右侧的「X/Y」：网页 .category-progress 里斜杠两侧**没有**空格，这里照抄 -->
-    <!-- 已达成成就右侧那个勾（网页用的是同一个 "✓" 字符） -->
 
     <!-- 通用 -->
     <string name="common_confirm">确定</string>
     <string name="common_cancel">取消</string>
     <string name="common_delete">删除</string>
     <string name="common_back">返回</string>
-    <!-- 顶栏那颗三横菜单的 contentDescription（读屏用；视觉上的含义就靠这枚图标） -->
     <string name="common_menu">菜单</string>
-    <!-- 兜底文案：异常没带 message 时才用（正常情况下显示的是后端 error 原文） -->
     <string name="common_error">操作失败，请重试</string>
+    <string name="common_open_url_failed">没有可打开网页的应用</string>
+
+    <!-- ===== 2.0 新增文案（原 strings_2.xml，1.x 清理完后合并进来） ===== -->
+<!-- ===== 底部导航 ===== -->
+    <string name="tab_trips">行程</string>
+
+    <!-- ===== 主页 ===== -->
+    <string name="home_stats_title">行程统计</string>
+    <string name="home_range">时间跨度</string>
+    <string name="home_cities">打卡城市</string>
+    <string name="home_provinces">打卡省份</string>
+    <string name="home_most">次数最多</string>
+    <string name="home_cost">总花销</string>
+    <string name="home_rank">城市排名</string>
+    <string name="home_rank_count">次数</string>
+    <string name="home_rank_time">时间</string>
+    <string name="home_cost_value">¥%1$s</string>
+    <string name="home_count_value">%1$s 次</string>
+    <string name="home_empty">还没有点亮任何城市，快去添加第一条足迹吧</string>
+    <string name="home_dash">—</string>
+
+    <!-- ===== 行程页 ===== -->
+    <string name="trips_seg_checkins">打卡 (%1$d)</string>
+    <string name="trips_seg_trips">足迹 (%1$d)</string>
+    <string name="trips_empty">这里还没有记录</string>
+    <string name="trips_trip_seq">#%1$d</string>
+    <string name="trips_trip_empty_title">未命名</string>
+    <string name="trips_menu_share">分享</string>
+    <string name="trips_menu_edit">编辑</string>
+    <string name="trips_menu_delete">删除</string>
+    <string name="trips_share_wip">分享功能即将推出</string>
+    <string name="trips_delete_title">删除这条记录？</string>
+    <string name="trips_delete_message">「%1$s」将从本机删除，无法撤销。</string>
+    <string name="trips_deleted">已删除</string>
+    <string name="checkin_edit_title">编辑打卡</string>
+    <string name="checkin_delete_title">删除这条打卡？</string>
+
+    <!-- ===== 我的 ===== -->
+    <string name="mine_nickname_default">旅行者</string>
+    <string name="mine_uuid">UUID：%1$s</string>
+    <string name="mine_appearance">外观</string>
+    <string name="mine_appearance_follow_system">跟随系统</string>
+    <string name="mine_appearance_light">浅色</string>
+    <string name="mine_appearance_dark">深色</string>
+    <string name="mine_appearance_title">外观</string>
+    <string name="mine_version">版本</string>
+    <string name="mine_check_update">检查更新</string>
+    <string name="mine_group_appearance">外观与颜色</string>
+    <string name="mine_group_about">关于</string>
+    <string name="mine_theme_color">主题色</string>
+    <string name="mine_open_source">开源项目与许可</string>
+    <string name="mine_open_source_body">· MapLibre Native — BSD-2-Clause，地图渲染内核\n· OpenStreetMap 数据 — © OpenStreetMap 贡献者，ODbL，底图地理数据\n· Protomaps — ODbL，中国区 z0–6 底图切片\n· Material Icons — Apache-2.0，界面图标\n· AndroidX / Material Components — Apache-2.0\n· Kotlin / kotlinx.serialization / Room — Apache-2.0</string>
+    <string name="mine_badge_color">徽章色</string>
+
+    <!-- ===== 主页「+」菜单 ===== -->
+    <string name="menu_checkin">城市打卡</string>
+    <string name="menu_trip">添加足迹</string>
+    <string name="menu_auto_record">自动记录</string>
+    <string name="common_add">添加</string>
+
+    <!-- ===== 手动打卡页 ===== -->
+    <string name="checkin_title">城市打卡</string>
+    <string name="checkin_city">城市</string>
+    <string name="checkin_city_hint">点击选择城市</string>
+    <string name="checkin_locate">定位到当前城市</string>
+    <string name="checkin_date">到访时间</string>
+    <string name="checkin_today">今天</string>
+    <string name="checkin_forgot">记不清了</string>
+    <string name="checkin_month_year_only">仅到年份</string>
+    <string name="checkin_day_unknown">不记得日</string>
+    <string name="checkin_note">备注（可选）</string>
+    <string name="checkin_note_hint">写点什么</string>
+    <string name="checkin_counter">%1$d/233</string>
+    <string name="checkin_save">保存</string>
+    <string name="checkin_err_city">请选择城市</string>
+    <string name="checkin_saved">已保存</string>
+    <string name="checkin_year">%1$d 年</string>
+    <string name="checkin_month">%1$d 月</string>
+    <string name="checkin_day">%1$d 日</string>
+
+    <!-- ===== 行程编辑器 ===== -->
+    <string name="trip_new_title">添加足迹</string>
+    <string name="trip_edit_title">编辑足迹</string>
+    <string name="trip_title_label">标题</string>
+    <string name="trip_title_hint">给这次行程起个名字</string>
+    <string name="trip_timeline_label">时间线</string>
+    <string name="trip_add_event">添加事件</string>
+    <string name="trip_note_label">备注（可选）</string>
+    <string name="trip_note_hint">写点什么</string>
+    <string name="trip_save">保存</string>
+    <string name="trip_cancel">取消</string>
+    <string name="trip_delete">删除</string>
+    <string name="trip_event_visit">到访</string>
+    <string name="trip_event_ride">乘坐</string>
+    <string name="trip_event_activity">进行</string>
+    <string name="trip_event_goto">前往</string>
+    <string name="trip_event_city">选择城市</string>
+    <string name="trip_event_transport_hint">交通方式</string>
+    <string name="trip_event_activity_hint">做了什么</string>
+    <string name="trip_event_cost_hint">花费</string>
+    <string name="trip_event_cost_unit">元</string>
+    <string name="trip_counter">%1$d/%2$d</string>
+    <string name="trip_delete_confirm_title">删除这条足迹？</string>
+    <string name="trip_delete_confirm_message">「%1$s」及其关联打卡会一起消失，无法撤销。</string>
+    <string name="trip_saved">已保存</string>
+    <string name="trip_discard_message">有未保存的更改，确定放弃？</string>
+
+    <!-- ===== 成就页 ===== -->
+    <string name="ach_progress">%1$d/%2$d</string>
+    <string name="ach_unlocked">已解锁</string>
+    <string name="ach_unlocked_count">已解锁 %1$d / %2$d</string>
+    <string name="ach_category_percent">%1$d%%</string>
+    <string name="ach_all">全部</string>
+    <string name="ach_unlocked_at">%1$s 解锁</string>
+
+    <!-- ===== 地图页 ===== -->
+    <string name="map_city_count">%1$d 次打卡</string>
+    <string name="map_empty_city">这座城市还没有打卡记录</string>
+    <string name="map_close">关闭</string>
+    <!-- map_locate 在 1.x 的 strings.xml 里已经有了（「我的位置」），这里不再重复定义 -->
+    <string name="map_loading">正在载入地图…</string>
+    <string name="map_failed">底图载入失败（叠加的城市面仍可用）</string>
+    <string name="map_loaded_count">底图已载入 · 面 %1$d · 城市 %2$d</string>
+
+    <!-- ===== 占位页（P4 地图 / P5 成就） ===== -->
 </resources>

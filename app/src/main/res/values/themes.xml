@@ -1,19 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- 全局主题与控件样式。主题名固定 Theme.CityFootprint（清单里四个页面都指向它）。
+
+     主题色（appAccent）由「我的 → 主题色」决定：默认是 @color/accent，用户选了预设后
+     由 ThemeOverlay.App.Accent.* 覆盖（见 themes_accent.xml）。布局与代码里要跟着变的强调色
+     都引用 ?attr/appAccent，不要写死 @color/accent。 -->
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- 系统栏图标的明暗，给下面 Theme.CityFootprint 里那两条 item 用：
-         浅色（白底）→ 深色图标；深色那份在 values-night/themes.xml 里（false）。
-         布尔属性没法直接引用颜色资源，所以只能借一个 bool 资源过夜 —— 别把它挪进 colors.xml，
-         那样主题这块就得在两个类型不同的文件之间来回找。 -->
+
+    <!-- 系统栏图标明暗：浅色底配深色图标。深色那份在 values-night/themes.xml（false）。 -->
     <bool name="window_light_system_bars">true</bool>
 
-    <!-- 主题名固定为 Theme.CityFootprint（清单里五个 Activity 都指向它）。
-         父主题用 Material3 的 **DayNight**.NoActionBar：外观跟着用户在「我的 → 设置 → 外观」里选的
-         那一项走（跟随系统 / 浅色 / 深色），由 CityFootprintApp 在进程启动时用
-         AppCompatDelegate.setDefaultNightMode 落到 uiMode 上；深色那一套取 values-night/ 下的同名资源
-         （颜色见 values-night/colors.xml，那是照抄网页端深色主题来的一套，不是设计稿那支红的主色）。
-         NoActionBar：本 app 全部页面自带顶栏，不要系统那条 ActionBar。 -->
+    <!-- 父主题用 M3 DayNight：外观（跟随系统 / 浅色 / 深色）由 CityFootprintApp 落到 uiMode，
+         深色取 values-night/ 下的同名资源；NoActionBar 是因为每个页面都自带顶栏。 -->
     <style name="Theme.CityFootprint" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- 把设计稿的语义色接进 Material，让按钮 / 开关 / 输入框 / 进度自动跟着走 -->
+        <!-- 把语义色接进 Material，让按钮 / 开关 / 输入框 / 进度自动跟着走 -->
         <item name="appAccent">@color/accent</item>
         <item name="colorPrimary">?attr/appAccent</item>
         <item name="colorOnPrimary">@color/on_accent</item>
@@ -25,43 +24,28 @@
         <item name="colorSurface">@color/card</item>
         <item name="colorOnSurface">@color/fg</item>
         <item name="colorOnSurfaceVariant">@color/muted_fg</item>
-        <!-- outline 这个角色同时还喂给 MaterialSwitch 的「关闭态」滑块与轨道描边
-             （见下面 MaterialSwitch 的说明）→ 用中灰，别用输入框那种浅灰，
-             否则关闭态的圆点几乎看不见。表单的输入框描边走的是 field_stroke，不经过这里。 -->
+        <!-- outline 同时喂给开关「关闭态」的滑块与描边，用中灰才看得见 -->
         <item name="colorOutline">@color/muted_fg</item>
-        <!-- 开关「关闭态」的轨道底色。M3 用的是 colorSurfaceContainerHighest，不显式设会
-             落回基线的淡紫（在纯白卡片上就是「颜色不对」）；设成中性浅灰才是干净的白灰轨道。 -->
+        <!-- 开关关闭态的轨道底色：M3 默认是一层淡紫，设成中性浅灰才干净 -->
         <item name="colorSurfaceContainerHighest">@color/muted</item>
         <item name="colorError">@color/destructive</item>
         <item name="android:colorBackground">@color/bg</item>
 
-        <!-- 系统栏与顶栏同色（顶栏底色是设计稿的 sidebar），图标明暗跟着深浅走：
-             浅色下背景白、图标要深（true），深色下背景深、图标要浅（false）——
-             两处都由 @bool/window_light_system_bars 给，深色那份见 values-night/themes.xml。
-             statusBarColor / navigationBarColor 走 window_bg_light，颜色自己会按 night 翻。 -->
+        <!-- 系统栏与顶栏同色；图标明暗由 @bool/window_light_system_bars 给 -->
         <item name="android:statusBarColor">@color/window_bg_light</item>
         <item name="android:navigationBarColor">@color/window_bg_light</item>
         <item name="android:windowLightStatusBar">@bool/window_light_system_bars</item>
         <item name="android:windowLightNavigationBar" tools:targetApi="27">@bool/window_light_system_bars</item>
-        <!-- 不许系统再反色。深色那套是由 values-night 整套翻好的（颜色对得上网页），
-             forceDark 再叠一层只会把已经翻过的深色页算法反色一遍，颜色发灰、也对不上网页 -->
+        <!-- 不许系统再反色：深色那套是 values-night 整套翻好的，forceDark 再叠一层会发灰 -->
         <item name="android:forceDarkAllowed" tools:targetApi="29">false</item>
 
-        <!-- 默认卡片 / 按钮样式：一处定义，全 app 一致（设计稿圆角 8px、1px 描边、无阴影） -->
+        <!-- 全局默认控件样式 -->
         <item name="materialCardViewStyle">@style/Widget.App.CardView</item>
         <item name="materialButtonStyle">@style/Widget.App.Button</item>
-        <!-- 弹出式菜单（主页右上角三横菜单）的外观，见下方 Widget.App.PopupMenu -->
         <item name="popupMenuStyle">@style/Widget.App.PopupMenu</item>
     </style>
 
-    <!-- ===== 卡片：圆角 14dp + 1dp 描边 + 无阴影 =====
-         14dp 对应网页的 radius-md（docs/style.css）：网页的 .card、.stat-card、.edit-dialog
-         都是这一档，全 app 的卡片也就统一走它。
-
-         下面凡提到网页的 CSS 变量（radius-md / radius-sm / radius-pill / radius-full），
-         都**省掉了变量名前那两个连字符**：网页那边写作「两个连字符 + radius-md」，
-         而 XML 注释里不允许出现连续两个连字符（aapt / 任何 XML 解析器都会直接报错），
-         所以本仓库的注释一律按去掉前缀的写法，别再手快补回去。 -->
+    <!-- 卡片：圆角 14dp + 1dp 描边 + 无阴影 -->
     <style name="Widget.App.CardView" parent="Widget.Material3.CardView.Outlined">
         <item name="cardCornerRadius">14dp</item>
         <item name="cardElevation">0dp</item>
@@ -70,70 +54,25 @@
         <item name="strokeWidth">1dp</item>
     </style>
 
-    <!-- ===== 按钮：主按钮是胶囊，小按钮是 8dp，两档照网页来 =====
-         主按钮（登录 / 保存足迹）对网页的 .btn / .btn-primary，圆角是 radius-pill。
-         999dp 不必按每个按钮的高度各算一次：MaterialButton 会把圆角夹到 min(宽,高)/2，
-         所以多高都是真正的胶囊。
-         小一号的按钮（「添加足迹」这类，对应网页 .btn-sm / .modal-btn 的 radius-sm）
-         在各自布局里用 app:cornerRadius="8dp" 覆盖 —— 一处 style 服务两个尺寸，
-         比再拆一个样式少一层间接。 -->
+    <!-- 主按钮：胶囊（MaterialButton 会把 999dp 夹到 min(宽,高)/2） -->
     <style name="Widget.App.Button" parent="Widget.Material3.Button">
         <item name="cornerRadius">999dp</item>
     </style>
 
-    <!-- 次要按钮（排行榜展开/收起、足迹行里的分享与编辑）：圆角 8dp 这一档
-         —— 网页对应位置走的是 .btn-sm / .btn-ghost.btn-sm 的 radius-sm，不是胶囊 -->
-    <style name="Widget.App.Button.Outlined" parent="Widget.Material3.Button.OutlinedButton">
-        <item name="cornerRadius">8dp</item>
-        <item name="strokeColor">@color/border</item>
-        <item name="android:textColor">@color/fg</item>
-    </style>
-
-    <!-- 无填充的次要按钮（编辑页底部那颗「取消」）：描边 + 次要文字色 + 胶囊
-         —— 对齐网页的 .btn-ghost（透明底、1px border、次要色文字），
-         它与右边的「保存」主色胶囊成对出现（网页 .dialog-actions 里就是这一对） -->
-    <style name="Widget.App.Button.Ghost" parent="Widget.Material3.Button.OutlinedButton">
-        <item name="cornerRadius">999dp</item>
-        <item name="strokeColor">@color/border</item>
-        <item name="android:textColor">@color/text_secondary</item>
-    </style>
-
-    <!-- ===== 弹出式菜单（主页右上角三横菜单弹出的栏目浮层） =====
-         默认那套来自 AppCompat：底图是系统弹层那张**方角、无描边**的底，行高也偏紧，
-         与全站「14dp 圆角 + 1dp 描边」的卡片不是一套。这里只换这份样式表，
-         不换组件 —— 锚点、贴屏幕边缘时的避让、点外面关闭、返回键收掉，仍旧由 PopupMenu 现成地管着
-         （见 ui/MainActivity 的 showMenu）。 -->
+    <!-- 弹出层（Spinner 下拉等仍走 AppCompat 的这一套）：圆角底 + 行高 52dp + 15sp 文字 -->
     <style name="Widget.App.PopupMenu" parent="Widget.Material3.PopupMenu">
-        <!-- 底图见 bg_popup_menu.xml：外面那圈 8dp inset 是给阴影留的余量 -->
         <item name="android:popupBackground">@drawable/bg_popup_menu</item>
-        <!-- 行高取自 ?attr/dropdownListPreferredItemHeight（AppCompat 的行布局就是这么量的，
-             见 abc_popup_menu_item_layout.xml），默认那档偏紧，给到 52dp 与「外观」弹窗那三行一致。
-             **这里不能写 android: 前缀**：框架那个同名属性是 private，写 android: 会直接报
-             "style attribute is private" 编译失败；appcompat 自己另立了一个同名属性（默认值就是
-             ?attr/listPreferredItemHeightSmall），行布局读的正是它 -->
+        <!-- 不能写 android: 前缀：框架那个同名属性是 private，AppCompat 另立了一个同名属性 -->
         <item name="dropdownListPreferredItemHeight">52dp</item>
-        <!-- 行文字样式：AppCompat 的行布局里标题用的是 ?attr/textAppearanceLargePopupMenu -->
         <item name="android:textAppearanceLargePopupMenu">@style/TextAppearance.App.PopupMenuItem</item>
     </style>
 
-    <!-- 栏目名：清单的 title 里自带 emoji，行字号比正文大一档更好点 -->
     <style name="TextAppearance.App.PopupMenuItem" parent="TextAppearance.Material3.BodyLarge">
         <item name="android:textColor">@color/fg</item>
         <item name="android:textSize">15sp</item>
     </style>
 
-    <!-- ===== 头像的圆形裁剪 =====
-         「我的」页的真实头像用 ShapeableImageView（M3 自带），裁剪形状由 shapeAppearanceOverlay 决定：
-         cornerFamily=rounded（圆角那一支，cut 是切角）+ cornerSize=50% 就是正圆，
-         与旁边回退用的「首字 + 圆形底色」同一个形状。
-         样式名刻意**不带点号**：带点号时 AAPT 会把最后一段之前的部分当成父样式去解析
-         （同 Widget.App.ShellBand 那个坑，见上面那段说明）。 -->
-    <style name="AvatarCircle" parent="">
-        <item name="cornerFamily">rounded</item>
-        <item name="cornerSize">50%</item>
-    </style>
-
-    <!-- ===== 输入框：圆角 8dp + popover 底 + input 描边（设计稿的输入框形态） ===== -->
+    <!-- 输入框：圆角 8dp + 浅底 + 1dp 描边（聚焦态同宽，不变粗） -->
     <style name="Widget.App.TextInputLayout" parent="Widget.Material3.TextInputLayout.OutlinedBox">
         <item name="boxCornerRadiusTopStart">8dp</item>
         <item name="boxCornerRadiusTopEnd">8dp</item>
@@ -147,15 +86,12 @@
         <item name="android:textColorHint">@color/muted_fg</item>
     </style>
 
-    <!-- ===== 底部导航：选中项是主色药丸 + 白字（设计稿的 sidebar-primary 选中态） ===== -->
+    <!-- 底部导航：选中项的「药丸」由 MainActivity 的共享 View 画（item 自己画的做不了位移动画），
+         所以 item 背景压透明；这里关掉 M3 自带的活动指示器，免得和共享药丸叠在一起。 -->
     <style name="Widget.App.BottomNav" parent="Widget.Material3.BottomNavigationView">
         <item name="itemIconTint">@color/nav_item_tint</item>
         <item name="itemTextColor">@color/nav_item_text</item>
-        <!-- 选中药丸改由 MainActivity 的共享 View 画（见 setupNavPill：item 自己画的药丸做不了位移动画），
-             所以 item 背景压成透明 —— 别直接删掉这一行：删了 M3 默认的 ripple 会回来，按下就有涟漪，
-             等于顺手改了观感 -->
         <item name="itemBackground">@android:color/transparent</item>
-        <!-- 关掉 M3 自带的活动指示器：否则会和上面那颗共享药丸叠在一起 -->
         <item name="itemActiveIndicatorStyle">@style/Widget.App.NavIndicator</item>
         <item name="android:background">@color/sidebar</item>
         <item name="elevation">0dp</item>
@@ -166,15 +102,8 @@
         <item name="android:height">0dp</item>
     </style>
 
-    <!-- ===== 外壳的两条边栏（顶栏 / 底栏） =====
-         全 app 只有这一种外壳形态：sidebar 底色的一条横带 + 朝内容那一侧 1dp 分隔线。
-         顶栏（view_top_bar.xml）、主壳底栏（BottomNavigationView 那条）、登录页底栏共用这两个样式，
-         免得三处各写一遍底色/分隔线，哪天改色漏掉一处就在那页露出半截白边。 -->
-
-    <!-- parent="" 不能省：样式名带点号时，AAPT 会把最后一段之前的部分**当成父样式**去解析，
-         于是 Widget.App.ShellBand 会被推断成「继承 Widget.App」——而这个样式并不存在，
-         直接报 resource style/Widget.App not found、整个 processDebugResources 挂掉。
-         空 parent 就是显式声明「不继承」，其余几个同前缀的样式因为都写了真父样式才没踩到。 -->
+    <!-- 外壳（顶栏 / 底栏）：sidebar 底色 + 朝内容一侧 1dp 分隔线。
+         parent="" 不能省：样式名带点号时 AAPT 会把前缀当成父样式（Widget.App 不存在）。 -->
     <style name="Widget.App.ShellBand" parent="">
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">wrap_content</item>
@@ -186,178 +115,5 @@
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">1dp</item>
         <item name="android:background">@color/sidebar_border</item>
-    </style>
-
-    <!-- ===== 文字样式 ===== -->
-
-    <!-- 卡片 / 区块小标题（设计稿 16px semibold） -->
-    <style name="CardTitle">
-        <item name="android:layout_width">wrap_content</item>
-        <item name="android:layout_height">wrap_content</item>
-        <item name="android:textSize">16sp</item>
-        <item name="android:textStyle">bold</item>
-        <item name="android:textColor">@color/fg</item>
-    </style>
-
-    <!-- 大数字（设计稿 24px bold，等宽数字）：颜色是正文色，不是主色 -->
-    <style name="StatValue">
-        <item name="android:layout_width">wrap_content</item>
-        <item name="android:layout_height">wrap_content</item>
-        <item name="android:textSize">24sp</item>
-        <item name="android:textStyle">bold</item>
-        <item name="android:textColor">@color/fg</item>
-        <item name="android:fontFamily">monospace</item>
-    </style>
-
-    <!-- 主页「足迹统计」概览卡的数字：网页端 .visit-stats .stat b 用的是主色，
-         而统计页那四个数字是正文色 —— 所以另起一个样式，别动 StatValue 本身。 -->
-    <style name="StatValue.Primary" parent="StatValue">
-        <item name="android:textColor">@color/accent</item>
-    </style>
-
-    <!-- 数字下方的小标签（设计稿 11px muted-foreground） -->
-    <style name="StatLabel">
-        <item name="android:layout_width">wrap_content</item>
-        <item name="android:layout_height">wrap_content</item>
-        <item name="android:layout_marginTop">4dp</item>
-        <item name="android:textSize">11sp</item>
-        <item name="android:textColor">@color/muted_fg</item>
-    </style>
-
-    <!-- 主页「足迹统计」小卡的标签（对齐网页 .stat-card .label：0.82rem 粗体 次要色 居中）。
-         与上面的 StatLabel 不是同一档：那个是旧卡里 11sp 的小字，这个是网页改小卡后的 13sp 粗体 -->
-    <style name="StatCardLabel">
-        <item name="android:layout_width">match_parent</item>
-        <item name="android:layout_height">wrap_content</item>
-        <item name="android:gravity">center</item>
-        <item name="android:textSize">13sp</item>
-        <item name="android:textStyle">bold</item>
-        <item name="android:textColor">@color/text_secondary</item>
-    </style>
-
-    <!-- ===== 出行方式 =====
-         三方同一组 code（logic/Transport.kt ↔ backend worker.js ↔ docs/app.js） -->
-
-    <!-- 编辑表单里的多选 chip：Filter 芯片自带可勾选语义，选中态换底色描边（对齐网页 .tp-chip） -->
-    <style name="Widget.App.TpChip" parent="Widget.Material3.Chip.Filter">
-        <item name="chipMinHeight">32dp</item>
-        <item name="chipBackgroundColor">@color/tp_chip_bg</item>
-        <item name="chipStrokeColor">@color/tp_chip_stroke</item>
-        <item name="chipStrokeWidth">1dp</item>
-        <item name="chipCornerRadius">16dp</item>
-        <item name="android:textColor">@color/tp_chip_text</item>
-        <item name="android:textSize">13sp</item>
-        <!-- 网页端选中态只换底色/描边，不显示 Filter 芯片默认那颗前置勾 -->
-        <item name="checkedIconVisible">false</item>
-        <!-- 表单里已有 9 个 chip 排开，再给每个撑 48dp 触摸区会把这块拉得很高；
-             chip 本身 32dp 已经够点 -->
-        <item name="ensureMinTouchTargetSize">false</item>
-    </style>
-
-    <!-- 列表里那条出行方式徽章：只读、比 chip 小一号（对齐网页 .tp-badge 的小胶囊）。
-         左右内边距比网页那枚（padding: 1px 7px）再收一档：一条行程常带好几枚徽章，
-         横向省下来的地方够多塞一枚；高度不动（chipMinHeight 管的是高矮，不是长短） -->
-    <style name="Widget.App.TpBadge" parent="Widget.Material3.Chip.Assist">
-        <item name="android:clickable">false</item>
-        <item name="android:focusable">false</item>
-        <item name="android:checkable">false</item>
-        <item name="chipMinHeight">20dp</item>
-        <item name="chipBackgroundColor">@color/bg</item>
-        <item name="chipStrokeColor">@color/border</item>
-        <item name="chipStrokeWidth">1dp</item>
-        <item name="chipCornerRadius">10dp</item>
-        <item name="chipStartPadding">5dp</item>
-        <item name="chipEndPadding">5dp</item>
-        <item name="android:textColor">@color/text_secondary</item>
-        <item name="android:textSize">11sp</item>
-        <item name="ensureMinTouchTargetSize">false</item>
-    </style>
-
-    <!-- 次要说明文字（设计稿 11~12px muted-foreground） -->
-    <style name="BodyMuted">
-        <item name="android:layout_width">wrap_content</item>
-        <item name="android:layout_height">wrap_content</item>
-        <item name="android:textSize">11sp</item>
-        <item name="android:textColor">@color/muted_fg</item>
-    </style>
-
-    <!-- ===== 「我的」页的设置页形态：分组 + 行 =====
-         分组块用的底就是全站的卡片底（drawable/bg_card：14dp 圆角 + 1dp 描边 + 卡片底色），
-         与「足迹」「统计」那些页面同一套 token —— 早先这里单有自己的 bg_settings_group
-         （白底无描边），按需求统一后就撤了，别再为一个页面单开一份卡片底。
-         分组形态：组上方一行灰字组名 + 组内行之间 1dp 分隔线 + 可点行尾收一枚箭头。
-
-         行统一是「横向容器 [文字列 weight=1] [行尾元素]」，文字列内部再纵排「标题 / 副标题」——
-         只有一行的行也套这层壳，不为了省一层就改结构，复制粘贴时才不会缺斤少两。 -->
-
-    <!-- 分组容器。clipToOutline 由各分组自己加上：让行内的水波纹被圆角裁掉，
-         不然最上面那行的方角水波纹会溢到圆角外面去 -->
-    <style name="SettingsGroup">
-        <item name="android:layout_width">match_parent</item>
-        <item name="android:layout_height">wrap_content</item>
-        <item name="android:orientation">vertical</item>
-        <item name="android:background">@drawable/bg_card</item>
-    </style>
-
-    <!-- 组名（「设置」「账号」「关于软件」）：12sp 最弱色，缩进 4dp —— 分组本身有 16dp 边距，
-         合起来视觉上约等于行内文字的起始位置 -->
-    <style name="SettingsGroupTitle">
-        <item name="android:layout_width">match_parent</item>
-        <item name="android:layout_height">wrap_content</item>
-        <item name="android:layout_marginStart">4dp</item>
-        <item name="android:layout_marginTop">20dp</item>
-        <item name="android:layout_marginBottom">8dp</item>
-        <item name="android:textSize">12sp</item>
-        <item name="android:textColor">@color/text_tertiary</item>
-    </style>
-
-    <!-- 一行。minHeight + 上下 10dp 内边距：只有标题时撑到 52dp（手机设置里一行的高矮），
-         带副标题时自会长高。**不含水波纹与 clickable** —— 只读行（关于软件那几行）不该有，
-         可点行各自补上 background=selectableItemBackground + clickable + focusable -->
-    <style name="SettingsRow">
-        <item name="android:layout_width">match_parent</item>
-        <item name="android:layout_height">wrap_content</item>
-        <item name="android:minHeight">52dp</item>
-        <item name="android:gravity">center_vertical</item>
-        <item name="android:orientation">horizontal</item>
-        <item name="android:paddingStart">16dp</item>
-        <item name="android:paddingEnd">16dp</item>
-        <item name="android:paddingTop">10dp</item>
-        <item name="android:paddingBottom">10dp</item>
-    </style>
-
-    <!-- 行里的文字列（标题 + 可选的副标题）—— weight=1 把它撑开，
-         是为了让行尾的箭头 / 值贴到最右边 -->
-    <style name="SettingsRowCopy">
-        <item name="android:layout_width">0dp</item>
-        <item name="android:layout_height">wrap_content</item>
-        <item name="android:layout_weight">1</item>
-        <item name="android:orientation">vertical</item>
-    </style>
-
-    <!-- 行标题（含开头那个 emoji 图标，与网页的文案同一条字符串，不必拆成两个 View） -->
-    <style name="SettingsRowTitle">
-        <item name="android:layout_width">match_parent</item>
-        <item name="android:layout_height">wrap_content</item>
-        <item name="android:textSize">15sp</item>
-        <item name="android:textColor">@color/fg</item>
-    </style>
-
-    <!-- 行副标题（清除缓存的说明、通行证中心的用途、开源条目…） -->
-    <style name="SettingsRowSub">
-        <item name="android:layout_width">match_parent</item>
-        <item name="android:layout_height">wrap_content</item>
-        <item name="android:layout_marginTop">2dp</item>
-        <item name="android:textSize">12sp</item>
-        <item name="android:textColor">@color/muted_fg</item>
-    </style>
-
-    <!-- 行尾的值（版本号这类只读信息）：13sp 最弱色，与左边的标题留出 12dp -->
-    <style name="SettingsRowValue">
-        <item name="android:layout_width">wrap_content</item>
-        <item name="android:layout_height">wrap_content</item>
-        <item name="android:layout_marginStart">12dp</item>
-        <item name="android:textSize">13sp</item>
-        <item name="android:textColor">@color/text_tertiary</item>
     </style>
 </resources>

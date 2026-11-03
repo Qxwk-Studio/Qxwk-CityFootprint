@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 成就卡左侧的「圈」：主题色描边 + 极淡底，图标压在中间。
+     用主题属性而不是固定色 —— 用户换主题色时这一圈跟着变。 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <solid android:color="@color/popover" />
+    <stroke
+        android:width="1.5dp"
+        android:color="?attr/appAccent" />
+</shape>

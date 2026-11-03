@@ -58,5 +58,7 @@ object SettingsRepo {
 
     suspend fun setBadgeColor(db: AppDatabase, color: String) {
         db.settings().put(AppSettingEntity(KEY_BADGE_COLOR, color))
+        // 地图页拿徽章色当点亮色：改色要让已打开的页面知道要重读（版本号不涨，切回去还是旧色）
+        DataVersion.bump()
     }
 }

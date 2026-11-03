@@ -7,20 +7,15 @@
 <resources>
 
     <!-- 统计卡上的小标签（「时间跨度」「打卡城市」…） -->
-    <style name="TextHomeStatLabel">
-        <item name="android:layout_width">wrap_content</item>
-        <item name="android:layout_height">wrap_content</item>
-        <item name="android:textColor">@color/text_secondary</item>
-        <item name="android:textSize">13sp</item>
-    </style>
 
     <!-- 统计卡上的数字/短值 -->
     <style name="TextHomeStatValue">
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">wrap_content</item>
-        <item name="android:layout_marginTop">6dp</item>
+        <item name="android:layout_marginTop">8dp</item>
+        <item name="android:gravity">center</item>
         <item name="android:textColor">@color/fg</item>
-        <item name="android:textSize">18sp</item>
+        <item name="android:textSize">24sp</item>
         <item name="android:textStyle">bold</item>
     </style>
 
@@ -30,6 +25,7 @@
         <item name="android:layout_height">wrap_content</item>
         <item name="android:orientation">vertical</item>
         <item name="android:background">@drawable/bg_card</item>
+        <item name="android:gravity">center_horizontal</item>
         <item name="android:padding">16dp</item>
     </style>
 

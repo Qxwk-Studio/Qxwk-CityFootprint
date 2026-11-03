@@ -1,21 +1,15 @@
 package top.qxwkstudio.travel.ui
 
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
-import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.activity.result.PickVisualMediaRequest
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import kotlinx.coroutines.launch
 import top.qxwkstudio.travel.BuildConfig
 import top.qxwkstudio.travel.CityFootprintApp
 import top.qxwkstudio.travel.R
@@ -25,19 +19,16 @@ import top.qxwkstudio.travel.data.Store
 import top.qxwkstudio.travel.data.Update
 import top.qxwkstudio.travel.data.db.AppDatabase
 import top.qxwkstudio.travel.databinding.FragmentMineBinding
-import java.io.File
 
 /**
- * 「我的」页（2.0）：本机资料 + 外观 / 徽章色 / 检查更新 / 版本。
+ * 「我的」页（2.0）：本机资料 + 两张设置卡（外观与颜色 / 关于）。
  *
- * 2.0 没有账号，**这一页不登录、不发身份请求**：
- *  - 昵称、UUID、头像路径、徽章色都在本地库（[SettingsRepo]）；
- *  - 头像走系统照片选择器（[ActivityResultContracts.PickVisualMedia]，Android 13+ 与低版本都不需要
- *    读存储权限），拷一份缩到 512px 存进 filesDir，路径落库 —— 原图不留在应用里；
- *  - 没设头像时退回「昵称首字 + 徽章色」的圆，与 1.x 的兜底同一套观感。
+ * 2.0 没有账号，**资料不可编辑**：昵称与 UUID 由本机生成后固定，头像也不是相册图 ——
+ * 统一显示「主题色实心圆 + 白色人像」，圆心随徽章色（这也就是用户在别处看到的「我的颜色」）。
+ * 这一页不发任何身份请求；检查更新是用户点一下才发的唯一请求。
  *
- * 外观偏好这一轮仍走 1.x 的 [Store]（SharedPreferences）：`CityFootprintApp` 启动时要**同步**读它，
- * 而数据库是异步的；把它迁进 `app_settings` 要连启动流程一起改，留给「主色可自定义」那一刀（P6 后半）。
+ * 外观偏好仍走 1.x 的 [Store]（SharedPreferences）：`CityFootprintApp` 启动时要**同步**读它，
+ * 而数据库是异步的；把它迁进 `app_settings` 要连启动流程一起改，留给 2.1。
  */
 class MineFragment : Fragment() {
 
@@ -45,7 +36,7 @@ class MineFragment : Fragment() {
     private val binding get() = _binding!!
     private lateinit var store: Store
 
-    /** 徽章色预设（口径 16：一组预设，不做取色器）。名字只给弹窗用，值进库。 */
+    /** 徽章色预设（口径：一组预设，不做取色器）。名字只给弹窗用，值进库。 */
     private val badgeOptions = listOf(
         "蓝" to "#2563EB",
         "绿" to "#34A853",
@@ -57,20 +48,8 @@ class MineFragment : Fragment() {
         "灰" to "#64748B",
     )
 
-    /** 正在显示的头像路径；用来避免切 tab 回来重复解码同一张图。 */
-    private var shownAvatarPath: String? = null
-
-    private val pickAvatar = registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
-        if (uri == null) return@registerForActivityResult
-        viewLifecycleOwner.lifecycleScope.runIo({ saveAvatar(uri) }) { result ->
-            val path = result.getOrNull()
-            if (path == null) {
-                requireContext().notify(R.string.mine_avatar_failed, long = true)
-                return@runIo
-            }
-            viewLifecycleOwner.lifecycleScope.launch { persistAvatar(path) }
-        }
-    }
+    /** 当前徽章色（用于弹窗选中项与头像圆底）。 */
+    private var currentBadge: String = SettingsRepo.DEFAULT_BADGE
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentMineBinding.inflate(inflater, container, false)
@@ -81,10 +60,10 @@ class MineFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         store = Store(requireContext())
         binding.rowAppearance.setOnClickListener { chooseAppearance() }
-        binding.rowBadge.setOnClickListener { chooseBadgeColor() }
         binding.rowTheme.setOnClickListener { chooseThemeColor() }
+        binding.rowBadge.setOnClickListener { chooseBadgeColor() }
+        binding.rowOpenSource.setOnClickListener { showOpenSource() }
         binding.rowCheckUpdate.setOnClickListener { checkUpdate() }
-        binding.rowProfile.setOnClickListener { pickAvatar.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }
         binding.textVersion.text = BuildConfig.VERSION_NAME
         load()
     }
@@ -105,7 +84,6 @@ class MineFragment : Fragment() {
             Profile(
                 uuid = SettingsRepo.uuid(db),
                 nickname = SettingsRepo.nickname(db),
-                avatarPath = SettingsRepo.avatarPath(db),
                 badge = SettingsRepo.badgeColor(db),
             )
         }) { result ->
@@ -117,38 +95,19 @@ class MineFragment : Fragment() {
     private data class Profile(
         val uuid: String,
         val nickname: String?,
-        val avatarPath: String?,
         val badge: String,
     )
 
     private fun bindProfile(profile: Profile) {
         val b = binding
-        val nickname = profile.nickname ?: getString(R.string.mine_nickname_default)
-        b.textNickname.text = nickname
+        b.textNickname.text = profile.nickname ?: getString(R.string.mine_nickname_default)
         b.textUuid.text = getString(R.string.mine_uuid, profile.uuid)
+
+        // 头像：主题色圆底 + 白色人像（不提供修改入口）
+        b.iconAvatar.background = circle(profile.badge)
         b.colorDot.background = circle(profile.badge)
-        currentBadge = profile.badge
         b.colorDotTheme.background = circle(Palette.selected(requireContext()).color)
-
-        // 首字那一版每次都先画好：它是兜底，也是图片加载前的占位
-        b.textAvatar.text = nickname.firstOrNull()?.toString() ?: "?"
-        b.textAvatar.background = circle(profile.badge)
-
-        val path = profile.avatarPath
-        val bitmap = if (path != null && path != shownAvatarPath && File(path).exists()) {
-            runCatching { BitmapFactory.decodeFile(path) }.getOrNull()
-        } else {
-            null
-        }
-        if (bitmap != null) {
-            b.imageAvatar.setImageBitmap(bitmap)
-            shownAvatarPath = path
-        }
-        // 只有真的拿到图才切到图片形态；解码失败就继续显示首字，别留一个空框
-        val hasImage = bitmap != null || (path != null && path == shownAvatarPath)
-        b.imageAvatar.visibility = if (hasImage) View.VISIBLE else View.GONE
-        b.textAvatar.visibility = if (hasImage) View.GONE else View.VISIBLE
-        if (!hasImage) shownAvatarPath = null
+        currentBadge = profile.badge
         refreshLocal()
     }
 
@@ -165,38 +124,31 @@ class MineFragment : Fragment() {
     }
 
     /**
-     * 头像落盘：解码 → 缩到 512px 以内 → 存 JPEG。
-     *
-     * 不直接存原图：手机相册里的照片动辄几 MB、几千万像素，用来当 48dp 的头像既费内存也费磁盘；
-     * 只留一份够用的。
+     * 开源项目与许可：地图页原来压在左下角的 MapLibre / © OpenStreetMap 署名，
+     * 以及底图（Protomaps）与图标（Material Icons）的来源，都收在这一页。
+     * 这些是许可证要求的署名，别删。
      */
-    private fun saveAvatar(uri: Uri): String? {
-        val app = requireContext().applicationContext
-        val bitmap = app.contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it) } ?: return null
-        val longest = maxOf(bitmap.width, bitmap.height)
-        val scaled = if (longest > AVATAR_MAX_PX) {
-            val ratio = AVATAR_MAX_PX.toFloat() / longest
-            Bitmap.createScaledBitmap(
-                bitmap,
-                (bitmap.width * ratio).toInt().coerceAtLeast(1),
-                (bitmap.height * ratio).toInt().coerceAtLeast(1),
-                true,
-            )
-        } else {
-            bitmap
-        }
-        val file = File(app.filesDir, AVATAR_FILE)
-        file.outputStream().use { out -> scaled.compress(Bitmap.CompressFormat.JPEG, 90, out) }
-        if (scaled !== bitmap) scaled.recycle()
-        bitmap.recycle()
-        return file.absolutePath
+    private fun showOpenSource() {
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.mine_open_source)
+            .setMessage(R.string.mine_open_source_body)
+            .setPositiveButton(R.string.common_confirm, null)
+            .show()
     }
 
-    private suspend fun persistAvatar(path: String) {
-        val db = AppDatabase.get(requireContext())
-        SettingsRepo.setAvatarPath(db, path)
-        requireContext().notify(R.string.mine_avatar_done)
-        load()
+    private fun chooseBadgeColor() {
+        val current = badgeOptions.indexOfFirst { it.second == currentBadge }
+        val names = badgeOptions.map { it.first }.toTypedArray()
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.mine_badge_color)
+            .setSingleChoiceItems(names, current) { dialog, which ->
+                dialog.dismiss()
+                val color = badgeOptions[which].second
+                viewLifecycleOwner.lifecycleScope.runIo({
+                    SettingsRepo.setBadgeColor(AppDatabase.get(requireContext()), color)
+                }) { load() }
+            }
+            .show()
     }
 
     /**
@@ -217,24 +169,6 @@ class MineFragment : Fragment() {
             .show()
     }
 
-    private fun chooseBadgeColor() {
-        val current = badgeOptions.indexOfFirst { it.second == currentBadge }
-        val names = badgeOptions.map { it.first }.toTypedArray()
-        MaterialAlertDialogBuilder(requireContext())
-            .setTitle(R.string.mine_badge_color)
-            .setSingleChoiceItems(names, current) { dialog, which ->
-                dialog.dismiss()
-                val color = badgeOptions[which].second
-                viewLifecycleOwner.lifecycleScope.runIo({
-                    SettingsRepo.setBadgeColor(AppDatabase.get(requireContext()), color)
-                }) { load() }
-            }
-            .show()
-    }
-
-    /** 当前徽章色（用于弹窗选中项）。从最近一次绑定的色点反推，省一份状态。 */
-    private var currentBadge: String = SettingsRepo.DEFAULT_BADGE
-
     private fun chooseAppearance() {
         val options = Appearance.entries
         val labels = options.map { getString(appearanceLabel(it)) }.toTypedArray()
@@ -252,7 +186,7 @@ class MineFragment : Fragment() {
 
     /**
      * 检查更新：读后端 `GET /api/manifest`，比 `version_code`（不是版本名）。
-     * 2.0 只保留这一个网络请求（见 2.0 工程口径文档 口径 2）。
+     * 2.0 只保留这一个网络请求。
      */
     private fun checkUpdate() {
         viewLifecycleOwner.lifecycleScope.runIo({ Update.fetch() }) { result ->
@@ -290,17 +224,12 @@ class MineFragment : Fragment() {
         }
     }
 
-    /** 圆形底色（头像首字版与徽章色点共用）。坏色值退回主色，别让一行脏数据把界面搞崩。 */
+    /** 圆形底色（头像与色点共用）。坏色值退回主色，别让一行脏数据把界面搞崩。 */
     private fun circle(color: String): GradientDrawable = GradientDrawable().apply {
         shape = GradientDrawable.OVAL
-        setColor(runCatching { Color.parseColor(color) }.getOrDefault(ContextCompat.getColor(requireContext(), R.color.accent)))
-    }
-
-    companion object {
-        /** 头像最长边上限（px）。48dp 的头像用这个尺寸绰绰有余。 */
-        private const val AVATAR_MAX_PX = 512
-
-        /** 头像文件名固定：换头像直接覆盖，不攒垃圾文件。 */
-        private const val AVATAR_FILE = "avatar.jpg"
+        setColor(
+            runCatching { Color.parseColor(color) }
+                .getOrDefault(ContextCompat.getColor(requireContext(), R.color.accent)),
+        )
     }
 }

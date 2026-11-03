@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 主页（2.0）：五张统计卡 + 城市排名。
-     整页一起滚（ScrollView），统计卡不钉在顶上 —— 排名可能有几十行，钉住会吃掉半屏。
+<!-- 主页（2.0）：足迹统计五张卡 + 城市排名（卡片列表 + 滑动胶囊筛选）。
+     整页一起滚（ScrollView）—— 排名可能有几十行。
 
-     卡片按设计稿分三行：第 1 行单卡（时间跨度）、第 2/3 行各两张并列。 -->
+     两个小节都带标题行（图标 + 文字）：没有标题时五张卡和排名挤在一起，看不出是两组信息。 -->
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
@@ -16,25 +16,69 @@
         android:orientation="vertical"
         android:padding="16dp">
 
-        <!-- 第 1 行：时间跨度 -->
+        <!-- ===== 小节 1：足迹统计 ===== -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_stats_section"
+                app:tint="?attr/appAccent" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:text="@string/home_stats_title"
+                android:textColor="@color/fg"
+                android:textSize="15sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <!-- 五张卡：文字居中、标题带图标、数字放大（一眼看到数字，标签只做注解） -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
             android:background="@drawable/bg_card"
+            android:gravity="center_horizontal"
             android:orientation="vertical"
             android:padding="16dp">
 
-            <TextView
-                style="@style/TextHomeStatLabel"
-                android:text="@string/home_range" />
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <ImageView
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_span"
+                    app:tint="@color/text_secondary" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="5dp"
+                    android:text="@string/home_range"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="13sp" />
+            </LinearLayout>
 
             <TextView
                 android:id="@+id/valueRange"
                 style="@style/TextHomeStatValue"
                 android:maxLines="1"
                 android:text="@string/home_dash"
-                app:autoSizeMaxTextSize="18sp"
-                app:autoSizeMinTextSize="13sp"
+                app:autoSizeMaxTextSize="24sp"
+                app:autoSizeMinTextSize="14sp"
                 app:autoSizeTextType="uniform" />
         </LinearLayout>
 
@@ -42,16 +86,34 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
+            android:layout_marginTop="10dp"
             android:orientation="horizontal">
 
             <LinearLayout
                 style="@style/CardHomeStat"
                 android:layout_weight="1">
 
-                <TextView
-                    style="@style/TextHomeStatLabel"
-                    android:text="@string/home_cities" />
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_city"
+                        app:tint="@color/text_secondary" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="5dp"
+                        android:text="@string/home_cities"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="13sp" />
+                </LinearLayout>
 
                 <TextView
                     android:id="@+id/valueCities"
@@ -61,12 +123,30 @@
 
             <LinearLayout
                 style="@style/CardHomeStat"
-                android:layout_marginStart="12dp"
+                android:layout_marginStart="10dp"
                 android:layout_weight="1">
 
-                <TextView
-                    style="@style/TextHomeStatLabel"
-                    android:text="@string/home_provinces" />
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_map"
+                        app:tint="@color/text_secondary" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="5dp"
+                        android:text="@string/home_provinces"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="13sp" />
+                </LinearLayout>
 
                 <TextView
                     android:id="@+id/valueProvinces"
@@ -79,16 +159,34 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
+            android:layout_marginTop="10dp"
             android:orientation="horizontal">
 
             <LinearLayout
                 style="@style/CardHomeStat"
                 android:layout_weight="1">
 
-                <TextView
-                    style="@style/TextHomeStatLabel"
-                    android:text="@string/home_most" />
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_trending"
+                        app:tint="@color/text_secondary" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="5dp"
+                        android:text="@string/home_most"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="13sp" />
+                </LinearLayout>
 
                 <TextView
                     android:id="@+id/valueMost"
@@ -100,70 +198,123 @@
 
             <LinearLayout
                 style="@style/CardHomeStat"
-                android:layout_marginStart="12dp"
+                android:layout_marginStart="10dp"
                 android:layout_weight="1">
 
-                <TextView
-                    style="@style/TextHomeStatLabel"
-                    android:text="@string/home_cost" />
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_wallet"
+                        app:tint="@color/text_secondary" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="5dp"
+                        android:text="@string/home_cost"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="13sp" />
+                </LinearLayout>
 
                 <TextView
                     android:id="@+id/valueCost"
                     style="@style/TextHomeStatValue"
+                    android:ellipsize="end"
+                    android:maxLines="1"
                     android:text="@string/home_dash" />
             </LinearLayout>
         </LinearLayout>
 
-        <!-- 城市排名：标题 + 两个排序维度（次数 / 时间）。
-             刻意**没有**「花费」这一维：一笔行程可能去多座城市，把花销拆到城市
-             要么重复计入、要么靠分摊猜（见 2.0-development.md 口径 12）。 -->
+        <!-- ===== 小节 2：城市排名 =====
+             标题行右侧是「滑动胶囊」分段控件：选中态由一颗可平移的色块表示（见 HomeFragment）。
+             刻意**没有**「花费」维度：一笔行程可能去多座城市，花销拆到城市要么重复计入、要么靠猜。 -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
+            android:layout_marginTop="22dp"
             android:gravity="center_vertical"
             android:orientation="horizontal">
+
+            <ImageView
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_rank_section"
+                app:tint="?attr/appAccent" />
 
             <TextView
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
                 android:layout_weight="1"
                 android:text="@string/home_rank"
                 android:textColor="@color/fg"
                 android:textSize="15sp"
                 android:textStyle="bold" />
 
-            <TextView
-                android:id="@+id/btnRankCount"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:background="?attr/selectableItemBackground"
-                android:paddingStart="12dp"
-                android:paddingTop="6dp"
-                android:paddingEnd="12dp"
-                android:paddingBottom="6dp"
-                android:text="@string/home_rank_count"
-                android:textSize="13sp" />
+            <FrameLayout
+                android:id="@+id/segRank"
+                android:layout_width="148dp"
+                android:layout_height="34dp"
+                android:background="@drawable/bg_segmented_track"
+                android:padding="3dp">
 
-            <TextView
-                android:id="@+id/btnRankTime"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:background="?attr/selectableItemBackground"
-                android:paddingStart="12dp"
-                android:paddingTop="6dp"
-                android:paddingEnd="12dp"
-                android:paddingBottom="6dp"
-                android:text="@string/home_rank_time"
-                android:textSize="13sp" />
+                <View
+                    android:id="@+id/segPill"
+                    android:layout_width="71dp"
+                    android:layout_height="match_parent"
+                    android:background="@drawable/bg_segmented_pill" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/btnRankCount"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:gravity="center"
+                        android:text="@string/home_rank_count"
+                        android:textSize="13sp" />
+
+                    <TextView
+                        android:id="@+id/btnRankTime"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:gravity="center"
+                        android:text="@string/home_rank_time"
+                        android:textSize="13sp" />
+                </LinearLayout>
+            </FrameLayout>
         </LinearLayout>
 
+        <!-- 排名列表：整块一张卡，行与行之间用 1px 横线分隔（与 1.x 的排行卡一致） -->
         <LinearLayout
-            android:id="@+id/rankContainer"
+            android:id="@+id/rankCard"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:orientation="vertical" />
+            android:layout_marginTop="10dp"
+            android:background="@drawable/bg_card"
+            android:orientation="vertical"
+            android:paddingTop="4dp"
+            android:paddingBottom="4dp">
+
+            <LinearLayout
+                android:id="@+id/rankContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
+        </LinearLayout>
 
         <TextView
             android:id="@+id/textEmpty"

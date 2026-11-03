@@ -5,6 +5,7 @@
      用户换主题色时不该连「这是哪一类卡片」都跟着变。
      深色值在 values-night/colors_2.xml（各自提亮一档，压在深色卡片上才看得清）。 -->
 <resources>
+    <color name="badge_cost">#D97706</color>
     <color name="stripe_trip">#2563EB</color>
     <color name="stripe_manual">#34A853</color>
     <color name="stripe_derived">#94A3B8</color>

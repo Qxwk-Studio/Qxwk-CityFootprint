@@ -8,32 +8,32 @@
     android:background="@color/bg"
     android:orientation="vertical">
 
+    <!-- 分段栏：容器与页面同底（不再是一条白带），两个胶囊撑满可用宽度 -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/sidebar"
+        android:background="@color/bg"
         android:orientation="horizontal"
-        android:padding="8dp">
+        android:paddingStart="16dp"
+        android:paddingTop="12dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="4dp">
 
         <TextView
             android:id="@+id/btnSegCheckins"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="36dp"
             android:layout_marginEnd="8dp"
             android:layout_weight="1"
             android:gravity="center"
-            android:paddingTop="8dp"
-            android:paddingBottom="8dp"
             android:textSize="14sp" />
 
         <TextView
             android:id="@+id/btnSegTrips"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="36dp"
             android:layout_weight="1"
             android:gravity="center"
-            android:paddingTop="8dp"
-            android:paddingBottom="8dp"
             android:textSize="14sp" />
     </LinearLayout>
 

@@ -1,13 +1,12 @@
 package top.qxwkstudio.travel.ui
 
 import android.os.Bundle
-import android.view.Menu
 import android.view.View
 import android.view.ViewGroup
 import android.view.animation.PathInterpolator
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.widget.PopupMenu
+import androidx.core.content.ContextCompat
 import androidx.core.view.doOnLayout
 import androidx.fragment.app.Fragment
 import top.qxwkstudio.travel.R
@@ -71,36 +70,28 @@ class MainActivity : AppCompatActivity() {
     // ────────────────────────── 右上角「+」 ──────────────────────────
 
     /**
-     * 快捷菜单：城市打卡 / 添加足迹 / 自动记录。
+     * 右上角「+」的快捷菜单：城市打卡 / 添加足迹 / 自动记录（后者置灰，自动记录推到 2.1）。
      *
-     * 前两项对应的页面还没做（P3），点了先给一句「开发中」—— 主壳阶段先把入口形状定下来，
-     * 免得后面又改一次菜单结构。第三项**置灰不可点**（自动记录整块推到 2.1，见口径 8/9）。
+     * 浮层本体在 [showIconMenu]：自绘的图标 + 文字行，宽度 wrap —— 系统 PopupMenu 的宽度
+     * 按最长项 + 系统内边距算，三个中文短词会被撑成一条横带（真机上反馈「太宽」）。
      */
     private fun setupAddMenu() {
         binding.topBar.btnMenu.visibility = View.VISIBLE
-        binding.topBar.btnMenu.setOnClickListener {
-            val popup = PopupMenu(this, binding.topBar.btnMenu)
-            popup.menu.add(Menu.NONE, ID_CHECKIN, 0, R.string.menu_checkin)
-            popup.menu.add(Menu.NONE, ID_TRIP, 1, R.string.menu_trip)
-            popup.menu.add(Menu.NONE, ID_AUTO_RECORD, 2, R.string.menu_auto_record)
-                .isEnabled = false
-            popup.setOnMenuItemClickListener { item ->
-                when (item.itemId) {
-                    ID_CHECKIN -> startActivity(
-                        CheckinEditActivity.intent(this)
-                    )
-                    ID_TRIP -> startActivity(
-                        TripEditActivity.intent(this)
-                    )
-                    ID_AUTO_RECORD ->
-                        notify(R.string.menu_wip_auto_record)
-                }
-                true
-            }
-            popup.show()
+        binding.topBar.btnMenu.setOnClickListener { anchor ->
+            showIconMenu(
+                anchor,
+                listOf(
+                    MenuAction(R.drawable.ic_locate, R.string.menu_checkin) {
+                        startActivity(CheckinEditActivity.intent(this))
+                    },
+                    MenuAction(R.drawable.ic_trips, R.string.menu_trip) {
+                        startActivity(TripEditActivity.intent(this))
+                    },
+                    MenuAction(R.drawable.ic_record, R.string.menu_auto_record, enabled = false) {},
+                ),
+            )
         }
     }
-
     // ────────────────────────── tab 路由 ──────────────────────────
 
     private fun show(tag: String) {
@@ -214,8 +205,5 @@ class MainActivity : AppCompatActivity() {
         const val TAG_ACHV = "achievements"
         const val TAG_MINE = "mine"
 
-        const val ID_CHECKIN = 1
-        const val ID_TRIP = 2
-        const val ID_AUTO_RECORD = 3
     }
 }

@@ -25,7 +25,10 @@ import top.qxwkstudio.travel.data.CheckinRepo
 import top.qxwkstudio.travel.data.CityBoundaries
 import top.qxwkstudio.travel.data.CityStore
 import top.qxwkstudio.travel.data.DataVersion
+import top.qxwkstudio.travel.data.SettingsRepo
 import top.qxwkstudio.travel.data.db.AppDatabase
+import top.qxwkstudio.travel.data.db.CheckinEntity
+import top.qxwkstudio.travel.data.db.CheckinSource
 import top.qxwkstudio.travel.databinding.FragmentMap2Binding
 import top.qxwkstudio.travel.logic.CityShapes
 import top.qxwkstudio.travel.logic.Dates
@@ -55,6 +58,9 @@ class MapFragment : Fragment() {
 
     private var visited: Set<String> = emptySet()
     private var seenVersion = -1
+
+    /** 用户徽章色的 ARGB；0 表示读不到，退回主题色。 */
+    private var badgeColor: Int = 0
     private var styleLoaded = false
 
     /** 定位权限：用户在图上主动点准心时才请求（与打卡页同一套口径）。 */
@@ -130,16 +136,19 @@ class MapFragment : Fragment() {
             val db = AppDatabase.get(requireContext())
             val cities = db.checkins().distinctCities().toSet()
             val path = BasemapStore.ensure(requireContext())
+            // 点亮色 = 用户在「我的」里选的徽章色（缺失时退主题色，见 refreshVisited）
+            val badge = SettingsRepo.badgeColor(db)
             // 顺手把边界解析**放在 IO 线程**预热：4.6 MB 的 GeoJSON 解析要几百毫秒到几秒，
             // 如果在主线程（refreshVisited 里第一次取 locator）才做，首帧地图会卡住甚至 ANR。
             CityBoundaries.locator(requireContext())
-            cities to path
+            Triple(cities, path, badge)
         }) { result ->
-            val (cities, path) = result.getOrNull() ?: run {
+            val (cities, path, badge) = result.getOrNull() ?: run {
                 binding.textStatus.setText(R.string.map_failed)
                 return@runIo
             }
             visited = cities
+            badgeColor = runCatching { android.graphics.Color.parseColor(badge) }.getOrDefault(0)
             seenVersion = DataVersion.current
             if (map == null) setupMap(path) else refreshVisited()
         }
@@ -152,6 +161,9 @@ class MapFragment : Fragment() {
                 .target(LatLng(35.0, 105.0))
                 .zoom(3.2)
                 .build()
+            // 关掉 MapLibre 自带的 (i) 署名按钮：版权信息统一放在「我的 → 开源项目与许可」，
+            // 地图页本身不再压两块小字（左下角的 © OpenStreetMap 也一起移走了）。
+            mapLibre.uiSettings.isAttributionEnabled = false
             mapLibre.setStyle(Style.Builder().fromJson(styleJson(BasemapStore.url(path)))) { loaded ->
                 styleLoaded = true
                 style = loaded
@@ -180,41 +192,56 @@ class MapFragment : Fragment() {
         ),
     )
 
-    /** 把「去过的城市」灌进地图（首次建源+图层，之后只换数据）。 */
+    /**
+     * 把「去过的城市」灌进地图。
+     *
+     * **面与圆点二选一**：边界解析成功就只画面（面已经能表达「去过」，再撒一层圆点反而挡住底图）；
+     * 只有面渲染不出来（资产缺失 / 解析失败）时才退回圆点 —— 圆点只需要城市表里的经纬度，
+     * 永远画得出来，是「什么都看不见」的兜底，不是常规形态。
+     *
+     * 颜色取**用户自己设的徽章色**（我的页可选），不是软件主题色：地图上的「我」应该和头像圆底同色。
+     */
     private fun refreshVisited() {
         val loaded = style ?: return
-        val json = visitedGeoJson(visited)
-        val existing = loaded.getSourceAs<GeoJsonSource>(VISITED_SOURCE)
-        if (existing != null) {
-            existing.setGeoJson(json)
-            return
+        val color = if (badgeColor != 0) badgeColor else Palette.accent(requireContext())
+        val shapes = CityBoundaries.locator(requireContext()).shapesFor(visited)
+        if (shapes.isNotEmpty()) {
+            val json = shapesJson(shapes)
+            val existing = loaded.getSourceAs<GeoJsonSource>(VISITED_SOURCE)
+            if (existing != null) {
+                existing.setGeoJson(json)
+                return
+            }
+            loaded.addSource(GeoJsonSource(VISITED_SOURCE, json))
+            loaded.addLayer(
+                FillLayer(VISITED_FILL, VISITED_SOURCE).withProperties(
+                    org.maplibre.android.style.layers.PropertyFactory.fillColor(color),
+                    org.maplibre.android.style.layers.PropertyFactory.fillOpacity(0.35f),
+                )
+            )
+            loaded.addLayer(
+                LineLayer(VISITED_LINE, VISITED_SOURCE).withProperties(
+                    org.maplibre.android.style.layers.PropertyFactory.lineColor(color),
+                    org.maplibre.android.style.layers.PropertyFactory.lineWidth(1.5f),
+                )
+            )
+        } else {
+            val json = visitedPointsJson(visited)
+            val existing = loaded.getSourceAs<GeoJsonSource>(POINTS_SOURCE)
+            if (existing != null) {
+                existing.setGeoJson(json)
+                return
+            }
+            loaded.addSource(GeoJsonSource(POINTS_SOURCE, json))
+            loaded.addLayer(
+                CircleLayer(POINTS_SOURCE_LAYER, POINTS_SOURCE).withProperties(
+                    org.maplibre.android.style.layers.PropertyFactory.circleColor(color),
+                    org.maplibre.android.style.layers.PropertyFactory.circleRadius(4f),
+                    org.maplibre.android.style.layers.PropertyFactory.circleStrokeWidth(1.5f),
+                    org.maplibre.android.style.layers.PropertyFactory.circleStrokeColor(0xFFFFFFFF.toInt()),
+                )
+            )
         }
-        loaded.addSource(GeoJsonSource(VISITED_SOURCE, json))
-        val accent = Palette.accent(requireContext())
-        loaded.addLayer(
-            FillLayer(VISITED_FILL, VISITED_SOURCE).withProperties(
-                org.maplibre.android.style.layers.PropertyFactory.fillColor(accent),
-                org.maplibre.android.style.layers.PropertyFactory.fillOpacity(0.35f),
-            )
-        )
-        loaded.addLayer(
-            LineLayer(VISITED_LINE, VISITED_SOURCE).withProperties(
-                org.maplibre.android.style.layers.PropertyFactory.lineColor(accent),
-                org.maplibre.android.style.layers.PropertyFactory.lineWidth(1.5f),
-            )
-        )
-        // 圆点层：**不依赖边界解析**。边界文件 4.6 MB，解析失败在手机上可能是静默的（OOM 被
-        // runCatching 吞掉），那时多边形一条都画不出来、看起来就像「什么都没渲染」。
-        // 圆点只需要城市表里的经纬度，永远画得出来 —— 与 2.0 设计文档「无边界城市画圆点」也一致。
-        loaded.addSource(GeoJsonSource(POINTS_SOURCE, visitedPointsJson(visited)))
-        loaded.addLayer(
-            CircleLayer(POINTS_SOURCE_LAYER, POINTS_SOURCE).withProperties(
-                org.maplibre.android.style.layers.PropertyFactory.circleColor(accent),
-                org.maplibre.android.style.layers.PropertyFactory.circleRadius(4f),
-                org.maplibre.android.style.layers.PropertyFactory.circleStrokeWidth(1.5f),
-                org.maplibre.android.style.layers.PropertyFactory.circleStrokeColor(0xFFFFFFFF.toInt()),
-            )
-        )
 
         // 状态里带诊断数字：面数（边界解析结果）与城市数（本地库）。真机上如果没有 logcat，
         // 这一行就是唯一线索 —— 面 0 说明边界没解析出来，城市 0 说明数据没读到。
@@ -235,7 +262,6 @@ class MapFragment : Fragment() {
         _binding?.textStatus?.visibility = View.VISIBLE
         _binding?.textStatus?.postDelayed({ _binding?.textStatus?.visibility = View.GONE }, 8000)
     }
-
     /** 去过的城市的经纬度点（来自城市表，不需要解析边界）。 */
     private fun visitedPointsJson(cities: Set<String>): String {
         if (cities.isEmpty()) return EMPTY_COLLECTION
@@ -258,15 +284,13 @@ class MapFragment : Fragment() {
     }
 
     /**
-     * 只把去过的城市拼成 FeatureCollection。
+     * 把已解析好的城市面拼成 FeatureCollection。
      *
-     * 手工拼字符串而不是走 geopandas/GeoJSON 库：这里就两件事 —— 一串坐标与一层外壳，
+     * 手工拼字符串而不是走 GeoJSON 库：这里就两件事 —— 一串坐标与一层外壳，
      * 坐标为 5 位小数（约 1 米），几十万点也编得快。MultiPolygon 拆成多个同名 Feature，
      * 渲染效果一样（同一 city 的多块面都画）。
      */
-    private fun visitedGeoJson(cities: Set<String>): String {
-        if (cities.isEmpty()) return EMPTY_COLLECTION
-        val shapes = CityBoundaries.locator(requireContext()).shapesFor(cities)
+    private fun shapesJson(shapes: List<CityShapes.Shape>): String {
         val sb = StringBuilder(1 shl 18)
         sb.append("""{"type":"FeatureCollection","features":[""")
         shapes.forEachIndexed { index, shape ->
@@ -280,7 +304,6 @@ class MapFragment : Fragment() {
         sb.append("]}")
         return sb.toString()
     }
-
     private fun appendRing(sb: StringBuilder, ring: DoubleArray) {
         sb.append('[')
         var i = 0
@@ -349,14 +372,54 @@ class MapFragment : Fragment() {
                 return@runIo
             }
             checkins.forEach { checkin ->
-                b.cityList.addView(TextView(requireContext()).apply {
-                    text = Dates.ymd(checkin.checkinAt) + if (checkin.note.isNullOrBlank()) "" else "  ·  ${checkin.note}"
-                    setTextColor(ContextCompat.getColor(context, R.color.text_secondary))
-                    textSize = 12f
-                    setPadding(0, dp(3), 0, dp(3))
-                })
+                b.cityList.addView(checkinRow(checkin))
             }
         }
+    }
+
+    /**
+     * 面板里的一行：编号徽章 + 时间 + 备注。
+     *
+     * 编号与列表页一致：独立打卡用自己的序号；关联打卡显示所属行程的编号（灰色徽章）。
+     */
+    private fun checkinRow(checkin: CheckinEntity): View {
+        val ctx = requireContext()
+        val row = LinearLayout(ctx).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = android.view.Gravity.CENTER_VERTICAL
+            setPadding(0, dp(4), 0, dp(4))
+        }
+        val derived = checkin.source == CheckinSource.DERIVED
+        val badgeColorRes = if (derived) R.color.stripe_derived else R.color.stripe_manual
+        row.addView(TextView(ctx).apply {
+            text = getString(R.string.trips_trip_seq, checkin.seqNo)
+            textSize = 11f
+            typeface = android.graphics.Typeface.DEFAULT_BOLD
+            setTextColor(ContextCompat.getColor(ctx, R.color.on_accent))
+            setPadding(dp(7), dp(2), dp(7), dp(2))
+            background = android.graphics.drawable.GradientDrawable().apply {
+                cornerRadius = dp(6).toFloat()
+                setColor(ContextCompat.getColor(ctx, badgeColorRes))
+            }
+        })
+        row.addView(TextView(ctx).apply {
+            text = Dates.ymd(checkin.checkinAt)
+            textSize = 12f
+            setTextColor(ContextCompat.getColor(ctx, R.color.text_secondary))
+            setPadding(dp(8), 0, 0, 0)
+        })
+        if (!checkin.note.isNullOrBlank()) {
+            row.addView(TextView(ctx).apply {
+                text = checkin.note
+                textSize = 12f
+                setTextColor(ContextCompat.getColor(ctx, R.color.text_tertiary))
+                setPadding(dp(8), 0, 0, 0)
+                maxLines = 1
+                ellipsize = android.text.TextUtils.TruncateAt.END
+                layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+            })
+        }
+        return row
     }
 
     /** 定位：判城成功就把镜头挪过去（判不到就让用户手选，与打卡页同一套）。 */

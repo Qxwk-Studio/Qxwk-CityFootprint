@@ -1,10 +1,13 @@
 package top.qxwkstudio.travel.ui
 
+import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
+import android.text.TextUtils
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.core.content.ContextCompat
@@ -25,14 +28,15 @@ import top.qxwkstudio.travel.logic.Dates
 import top.qxwkstudio.travel.logic.Timeline
 
 /**
- * 行程页（2.0）：分段控件「打卡 (N) / 足迹 (N)」，两段各自按时间倒序。
+ * 行程页（2.0）：分段控件「打卡 (N) / 足迹 (N)」+ 卡片列表。
  *
- * 打卡那一段里**关联打卡与独立打卡是混排的**（2.0 设计文档 §2）：关联打卡底部标「来自足迹 #17」、
- * 没有编辑入口；独立打卡标「手动打卡」。两种来源共用 `city_checkins` 一张表，
- * 这里只是按 [CheckinEntity.source] 决定底部那行文案。
+ * 卡片结构（两种卡共用一套读法：左边一条类别色竖条 → 第一行是「编号徽章 + 标题 + 右侧菜单」，
+ * 第二行是「备注 / 时间」这类次要信息）：
+ *  - 打卡：编号徽章 + 城市名；第二行左备注、右时间
+ *  - 足迹：编号徽章 + 标题 + 花费徽章；第二行左备注、右「时间线数 · 时间」
  *
- * 行内容用代码铺（与主页排名同一套理由）：一屏几十行、结构固定，
- * 上 RecyclerView 要配两套 Adapter 换不到可感知的收益。等有「长按拖动排序」之类需求再换。
+ * 竖条用 `clipToOutline` 裁到卡片圆角里 —— 之前它按方角画，会从圆角处露出一点，看着像「超出卡片」。
+ * 菜单用 [showIconMenu]（自绘、带图标、宽度 wrap），与主页「+」是同一套浮层。
  */
 class TripsFragment : Fragment() {
 
@@ -45,11 +49,13 @@ class TripsFragment : Fragment() {
     private var trips: List<TripEntity> = emptyList()
     private var checkins: List<CheckinEntity> = emptyList()
 
-    /** 行程 uuid → `#编号`：关联打卡底部要写「来自足迹 #17」。 */
+    /** 行程 uuid → `#编号`（派生打卡的徽章要显示它所属的行程编号）。 */
     private var seqByUuid: Map<String, Int> = emptyMap()
 
-    /** 行程 uuid → 时间线节点数：卡片上「N 个时间线」。 */
+    /** 行程 uuid → 时间线节点数。 */
     private var timelineCountByUuid: Map<String, Int> = emptyMap()
+
+    private var seenVersion = -1
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentTripsBinding.inflate(inflater, container, false)
@@ -87,8 +93,6 @@ class TripsFragment : Fragment() {
         if (seenVersion != DataVersion.current) load()
     }
 
-    private var seenVersion = -1
-
     private fun load() {
         viewLifecycleOwner.lifecycleScope.runIo({
             val db = AppDatabase.get(requireContext())
@@ -100,7 +104,6 @@ class TripsFragment : Fragment() {
             checkins = checkinList
             seqByUuid = tripList.associate { it.uuid to it.seqNo }
             timelineCountByUuid = tripList.associate { trip ->
-                // 解析失败的时间线按 0 个节点显示，不让一行坏数据把整页拖崩
                 trip.uuid to (Timeline.decode(trip.timeline)?.events?.size ?: 0)
             }
             render()
@@ -111,7 +114,6 @@ class TripsFragment : Fragment() {
         val b = binding
         b.btnSegCheckins.text = getString(R.string.trips_seg_checkins, checkins.size)
         b.btnSegTrips.text = getString(R.string.trips_seg_trips, trips.size)
-        // 分段控件统一用胶囊（与成就页的分类筛选同一个工厂，见 ui/Chips.kt）
         Chips.styleAsPill(b.btnSegCheckins, requireContext(), segment == Segment.CHECKINS)
         Chips.styleAsPill(b.btnSegTrips, requireContext(), segment == Segment.TRIPS)
 
@@ -129,119 +131,110 @@ class TripsFragment : Fragment() {
         }
     }
 
-    /** 打卡卡片：城市名 + 日期（按精度显示）+ 来源那行。 */
-    private fun checkinRow(checkin: CheckinEntity): View {
-        val ctx = requireContext()
-        val derived = checkin.source == CheckinSource.DERIVED
-        val (root, card) = cardWithStripe(if (derived) R.color.stripe_derived else R.color.stripe_manual)
+    // ────────────────────────── 卡片 ──────────────────────────
 
-        // 第一行：城市 + 「更多」。关联打卡是派生物，菜单里只给分享（2.0 设计文档 的权限差异）
-        val header = LinearLayout(ctx).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
+    private fun checkinRow(checkin: CheckinEntity): View {
+        val derived = checkin.source == CheckinSource.DERIVED
+        val stripe = if (derived) R.color.stripe_derived else R.color.stripe_manual
+        val (root, card) = cardWithStripe(stripe)
+
+        // 第一行：编号徽章 + 城市名 + 菜单
+        val badgeSeq = if (derived) {
+            checkin.tripUuid?.let { seqByUuid[it] } ?: 0
+        } else {
+            checkin.seqNo
         }
-        header.addView(TextView(ctx).apply {
-            text = checkin.cityName
-            setTextColor(ContextCompat.getColor(ctx, R.color.fg))
-            textSize = 15f
-            setTypeface(typeface, android.graphics.Typeface.BOLD)
-            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
-        })
-        header.addView(moreButton { anchor ->
-            showMenu(
+        val header = row()
+        header.addView(numberBadge(badgeSeq, stripe))
+        header.addView(titleView(checkin.cityName))
+        header.addView(menuButton { anchor ->
+            showIconMenu(
                 anchor,
-                onEdit = if (derived) null else { { startActivity(CheckinEditActivity.intent(ctx, checkin.id)) } },
-                onDelete = if (derived) null else { { confirmDeleteCheckin(checkin) } },
+                buildList {
+                    add(MenuAction(R.drawable.ic_share, R.string.trips_menu_share) {
+                        requireContext().notify(R.string.trips_share_wip)
+                    })
+                    // 关联打卡是行程派生物：只给分享（改它等于改行程）
+                    if (!derived) {
+                        add(MenuAction(R.drawable.ic_edit, R.string.trips_menu_edit) {
+                            startActivity(CheckinEditActivity.intent(requireContext(), checkin.id))
+                        })
+                        add(MenuAction(R.drawable.ic_delete, R.string.trips_menu_delete) {
+                            confirmDeleteCheckin(checkin)
+                        })
+                    }
+                },
             )
         })
         card.addView(header)
 
-        card.addView(TextView(ctx).apply {
-            text = dateText(checkin)
-            setTextColor(ContextCompat.getColor(ctx, R.color.text_secondary))
-            textSize = 13f
-            setPadding(0, dp(4), 0, 0)
-        })
+        // 第二行：左备注、右时间
+        val meta = row(topMargin = 8)
+        val note = noteView(checkin.note)
+        if (note != null) meta.addView(note, weightParams()) else meta.addView(spacer())
+        meta.addView(iconText(R.drawable.ic_span, dateText(checkin)))
+        card.addView(meta)
 
-        // 来源行：派生打卡写它属于哪条行程，手动打卡写「手动打卡」
-        card.addView(TextView(ctx).apply {
-            text = if (derived) {
-                val seq = checkin.tripUuid?.let { seqByUuid[it] }
-                // 注意：`trips_checkin_derived` 是 %1$d，参数必须传 Int。
-                // 传 toString() 会抛 IllegalFormatConversionException —— 一点开这个 tab 就闪退。
-                if (seq != null) getString(R.string.trips_checkin_derived, seq)
-                else getString(R.string.trips_checkin_manual)
-            } else {
-                getString(R.string.trips_checkin_manual)
-            }
-            setTextColor(ContextCompat.getColor(ctx, R.color.text_tertiary))
-            textSize = 12f
-            setPadding(0, dp(6), 0, 0)
-        })
+        root.isClickable = !derived
+        if (!derived) root.setOnClickListener {
+            startActivity(CheckinEditActivity.intent(requireContext(), checkin.id))
+        }
         return root
     }
 
-    /** 行程卡片：`#编号` + 标题 / 起始日期 + 时间线节点数。 */
     private fun tripRow(trip: TripEntity): View {
-        val ctx = requireContext()
         val (root, card) = cardWithStripe(R.color.stripe_trip)
 
-        val header = LinearLayout(ctx).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-        }
-        header.addView(TextView(ctx).apply {
-            text = getString(R.string.trips_trip_seq, trip.seqNo)
-            setTextColor(ContextCompat.getColor(ctx, R.color.text_tertiary))
-            textSize = 12f
-        })
-        header.addView(TextView(ctx).apply {
-            text = trip.title.ifBlank { getString(R.string.trips_trip_empty_title) }
-            setTextColor(ContextCompat.getColor(ctx, R.color.fg))
-            textSize = 15f
-            setTypeface(typeface, android.graphics.Typeface.BOLD)
-            setPadding(dp(8), 0, dp(8), 0)
-            maxLines = 1
-            ellipsize = android.text.TextUtils.TruncateAt.END
-            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
-        })
-        header.addView(moreButton { anchor ->
-            showMenu(
+        // 第一行：编号徽章 + 标题 + 花费徽章 + 菜单
+        val header = row()
+        header.addView(numberBadge(trip.seqNo, R.color.stripe_trip))
+        header.addView(titleView(trip.title.ifBlank { getString(R.string.trips_trip_empty_title) }))
+        if (trip.totalCostCents > 0) header.addView(costBadge(trip.totalCostCents))
+        header.addView(menuButton { anchor ->
+            showIconMenu(
                 anchor,
-                onEdit = { startActivity(TripEditActivity.intent(ctx, trip.id)) },
-                onDelete = { confirmDeleteTrip(trip) },
+                listOf(
+                    MenuAction(R.drawable.ic_share, R.string.trips_menu_share) {
+                        requireContext().notify(R.string.trips_share_wip)
+                    },
+                    MenuAction(R.drawable.ic_edit, R.string.trips_menu_edit) {
+                        startActivity(TripEditActivity.intent(requireContext(), trip.id))
+                    },
+                    MenuAction(R.drawable.ic_delete, R.string.trips_menu_delete) {
+                        confirmDeleteTrip(trip)
+                    },
+                ),
             )
         })
         card.addView(header)
 
-        card.addView(TextView(ctx).apply {
-            // 同样是 %1$d：传 Int，不是 toString()
-            text = getString(
-                R.string.trips_trip_timeline,
-                timelineCountByUuid[trip.uuid] ?: 0,
-            ) + " · " + Dates.ymd(trip.startTime)
-            setTextColor(ContextCompat.getColor(ctx, R.color.text_secondary))
-            textSize = 13f
-            setPadding(0, dp(4), 0, 0)
-        })
+        // 第二行：左备注、右「时间线数 · 时间」
+        val meta = row(topMargin = 8)
+        val note = noteView(trip.note)
+        if (note != null) meta.addView(note, weightParams()) else meta.addView(spacer())
+        meta.addView(iconText(R.drawable.ic_trips, (timelineCountByUuid[trip.uuid] ?: 0).toString()))
+        meta.addView(iconText(R.drawable.ic_span, Dates.ymd(trip.startTime), marginStart = 10))
+        card.addView(meta)
 
-        // 整卡可点：进编辑器（与 `...` 菜单里的「编辑」等价，卡片比三点好点）
         root.isClickable = true
-        root.setOnClickListener { startActivity(TripEditActivity.intent(ctx, trip.id)) }
+        root.setOnClickListener {
+            startActivity(TripEditActivity.intent(requireContext(), trip.id))
+        }
         return root
     }
 
     /**
      * 卡片外壳：左侧一条贯穿竖条 + 内容区。
      *
-     * 竖条颜色按类别固定（足迹蓝 / 独立打卡绿 / 关联打卡灰，见 colors_2.xml），
-     * 左侧圆角靠 bg_card_stripe 的形状，与卡片的圆角对齐。
+     * 竖条颜色按类别固定（足迹蓝 / 独立打卡绿 / 关联打卡灰，见 colors_2.xml）。
+     * `clipToOutline` 把整张卡裁成圆角轮廓，竖条不会再从圆角处露出来。
      */
     private fun cardWithStripe(stripeRes: Int): Pair<LinearLayout, LinearLayout> {
         val ctx = requireContext()
         val root = LinearLayout(ctx).apply {
             orientation = LinearLayout.HORIZONTAL
             setBackgroundResource(R.drawable.bg_card)
+            clipToOutline = true
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT,
@@ -263,45 +256,144 @@ class TripsFragment : Fragment() {
         return root to content
     }
 
-    private fun moreButton(onClick: (View) -> Unit): View =
-        android.widget.ImageButton(requireContext()).apply {
+    // ────────────────────────── 小部件 ──────────────────────────
+
+    private fun row(topMargin: Int = 0): LinearLayout = LinearLayout(requireContext()).apply {
+        orientation = LinearLayout.HORIZONTAL
+        gravity = Gravity.CENTER_VERTICAL
+        if (topMargin > 0) setPadding(0, dp(topMargin), 0, 0)
+    }
+
+    /** 编号徽章：类别色底、白字、圆角 6dp。 */
+    private fun numberBadge(seq: Int, colorRes: Int): TextView {
+        val ctx = requireContext()
+        return TextView(ctx).apply {
+            text = getString(R.string.trips_trip_seq, seq)
+            textSize = 11f
+            setTypeface(typeface, android.graphics.Typeface.BOLD)
+            setTextColor(ContextCompat.getColor(ctx, R.color.on_accent))
+            setPadding(dp(7), dp(2), dp(7), dp(2))
+            background = GradientDrawable().apply {
+                cornerRadius = dp(6).toFloat()
+                setColor(ContextCompat.getColor(ctx, colorRes))
+            }
+        }
+    }
+
+    /** 花费徽章（金色）：只在有花销时出现，￥ 用整数分转元。 */
+    private fun costBadge(cents: Int): TextView {
+        val ctx = requireContext()
+        return TextView(ctx).apply {
+            text = getString(R.string.home_cost_value, (cents / 100).toString())
+            textSize = 11f
+            setTypeface(typeface, android.graphics.Typeface.BOLD)
+            setTextColor(ContextCompat.getColor(ctx, R.color.on_accent))
+            setPadding(dp(7), dp(2), dp(7), dp(2))
+            background = GradientDrawable().apply {
+                cornerRadius = dp(6).toFloat()
+                setColor(ContextCompat.getColor(ctx, R.color.badge_cost))
+            }
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+            ).apply { marginStart = dp(6) }
+        }
+    }
+
+    private fun titleView(text: String): TextView = TextView(requireContext()).apply {
+        this.text = text
+        textSize = 15f
+        setTypeface(typeface, android.graphics.Typeface.BOLD)
+        setTextColor(ContextCompat.getColor(context, R.color.fg))
+        maxLines = 1
+        ellipsize = TextUtils.TruncateAt.END
+        setPadding(dp(8), 0, dp(8), 0)
+        layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+    }
+
+    private fun menuButton(onClick: (View) -> Unit): View =
+        ImageView(requireContext()).apply {
             setImageResource(R.drawable.ic_more)
             background = null
-            setColorFilter(ContextCompat.getColor(requireContext(), R.color.text_tertiary))
+            imageTintList = android.content.res.ColorStateList.valueOf(
+                ContextCompat.getColor(requireContext(), R.color.text_tertiary),
+            )
             contentDescription = getString(R.string.common_menu)
-            setPadding(dp(6), dp(6), dp(6), dp(6))
-            layoutParams = android.widget.LinearLayout.LayoutParams(dp(40), dp(40))
+            setPadding(dp(8), dp(8), dp(8), dp(8))
+            layoutParams = LinearLayout.LayoutParams(dp(40), dp(40))
             setOnClickListener(onClick)
         }
 
-    /**
-     * 卡片的 `...` 菜单：分享（占位）/ 编辑 / 删除。
-     * [onEdit] 与 [onDelete] 传 null 表示这一类不给那个入口（关联打卡就只能分享）。
-     */
-    private fun showMenu(
-        anchor: View,
-        onEdit: (() -> Unit)? = null,
-        onDelete: (() -> Unit)? = null,
-    ) {
-        val popup = androidx.appcompat.widget.PopupMenu(requireContext(), anchor)
-        popup.menu.add(android.view.Menu.NONE, 1, 0, R.string.trips_menu_share)
-        if (onEdit != null) popup.menu.add(android.view.Menu.NONE, 2, 1, R.string.trips_menu_edit)
-        if (onDelete != null) popup.menu.add(android.view.Menu.NONE, 3, 2, R.string.trips_menu_delete)
-        popup.setOnMenuItemClickListener { item ->
-            when (item.itemId) {
-                1 -> requireContext().notify(R.string.trips_share_wip)
-                2 -> onEdit?.invoke()
-                3 -> onDelete?.invoke()
-            }
-            true
-        }
-        popup.show()
+    /** 备注：图标 + 单行文字（超长截断）。没有备注返回 null，调用方用 spacer 占位把右侧信息顶到最右。 */
+    private fun noteView(note: String?): View? {
+        if (note.isNullOrBlank()) return null
+        return iconText(R.drawable.ic_note, note, expandText = true)
     }
+
+    private fun spacer(): View = View(requireContext()).apply {
+        layoutParams = LinearLayout.LayoutParams(0, 1, 1f)
+    }
+
+    private fun weightParams(): LinearLayout.LayoutParams =
+        LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+
+    /**
+     * 图标 + 文字的一组次要信息（14dp 图标、12sp 次要色）。
+     *
+     * [expandText] = true 时文字拿满剩余宽度并单行截断 —— 备注那种可能很长的一段要这样处理，
+     * 否则 TextView 是 wrap_content，ellipsize 永远不触发，长备注会把右侧信息挤没。
+     */
+    private fun iconText(iconRes: Int, text: String, marginStart: Int = 0, expandText: Boolean = false): LinearLayout {
+        val ctx = requireContext()
+        return LinearLayout(ctx).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            if (marginStart > 0) setPadding(dp(marginStart), 0, 0, 0)
+            addView(ImageView(ctx).apply {
+                setImageResource(iconRes)
+                imageTintList = android.content.res.ColorStateList.valueOf(
+                    ContextCompat.getColor(ctx, R.color.text_tertiary),
+                )
+                layoutParams = LinearLayout.LayoutParams(dp(14), dp(14))
+            })
+            addView(TextView(ctx).apply {
+                this.text = text
+                textSize = 12f
+                setTextColor(ContextCompat.getColor(ctx, R.color.text_secondary))
+                setPadding(dp(4), 0, 0, 0)
+                maxLines = 1
+                ellipsize = TextUtils.TruncateAt.END
+                layoutParams = if (expandText) {
+                    LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+                } else {
+                    LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.WRAP_CONTENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT,
+                    )
+                }
+            })
+        }
+    }
+
+    /** 日期按精度显示：只记得年就只给年，不要补一个假的 1 月 1 日出去。 */
+    private fun dateText(checkin: CheckinEntity): String = when (checkin.datePrecision) {
+        DatePrecision.YEAR -> Dates.year(checkin.checkinAt)
+        DatePrecision.MONTH -> Dates.dotMonth(checkin.checkinAt)
+        DatePrecision.UNKNOWN -> Dates.year(checkin.checkinAt)
+        else -> Dates.ymd(checkin.checkinAt)
+    }
+
+    // ────────────────────────── 删除 ──────────────────────────
 
     private fun confirmDeleteTrip(trip: TripEntity) {
         MaterialAlertDialogBuilder(requireContext())
             .setTitle(R.string.trips_delete_title)
-            .setMessage(getString(R.string.trips_delete_message, trip.title.ifBlank { getString(R.string.trips_trip_empty_title) }))
+            .setMessage(
+                getString(
+                    R.string.trips_delete_message,
+                    trip.title.ifBlank { getString(R.string.trips_trip_empty_title) },
+                ),
+            )
             .setPositiveButton(R.string.common_delete) { _, _ ->
                 viewLifecycleOwner.lifecycleScope.runIo({
                     TripRepo.delete(AppDatabase.get(requireContext()), trip.id)
@@ -328,14 +420,6 @@ class TripsFragment : Fragment() {
             }
             .setNegativeButton(R.string.common_cancel, null)
             .show()
-    }
-
-    /** 日期按精度显示：只记得年就只给年，不要补一个假的 1 月 1 日出去。 */
-    private fun dateText(checkin: CheckinEntity): String = when (checkin.datePrecision) {
-        DatePrecision.YEAR -> Dates.year(checkin.checkinAt)
-        DatePrecision.MONTH -> Dates.dotMonth(checkin.checkinAt)
-        DatePrecision.UNKNOWN -> Dates.year(checkin.checkinAt)
-        else -> Dates.ymd(checkin.checkinAt)
     }
 
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()

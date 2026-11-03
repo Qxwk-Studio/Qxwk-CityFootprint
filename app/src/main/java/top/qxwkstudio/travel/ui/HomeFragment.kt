@@ -19,13 +19,13 @@ import top.qxwkstudio.travel.logic.Stats
 import top.qxwkstudio.travel.logic.Stats.RankBy
 
 /**
- * 主页（2.0）：五张统计卡 + 城市排名。
+ * 主页（2.0）：足迹统计（五张卡）+ 城市排名（一张卡的行列表 + 滑动胶囊筛选）。
  *
- * 数据全部来自本地库（[CheckinRepo] + [TripRepo]），一次读两份快照，然后在内存里算 ——
- * [Stats] 是纯函数，算这几百条数据在主线程也只是一次聚合，不值得再开线程。
+ * 数据全部来自本地库（[CheckinRepo] + [TripRepo]），一次读两份快照、在内存里算 ——
+ * [Stats] 是纯函数，几百条数据的聚合不值得再开线程。
  *
- * 排名有两个维度（次数 / 时间），切换只重排、不重查：两份快照已经拿在手上。
- * 刻意**没有**「花费」维度，理由见 [Stats] 的类注释。
+ * 排名切换只重排、不重查；筛选控件的选中块会**滑动**过去（见 [placeSegPill]），
+ * 比两个文字变色更能表达「这是一组二选一的开关」。
  */
 class HomeFragment : Fragment() {
 
@@ -35,6 +35,7 @@ class HomeFragment : Fragment() {
     private var entries: List<Stats.Entry> = emptyList()
     private var trips: List<Stats.Trip> = emptyList()
     private var rankBy = RankBy.COUNT
+    private var seenVersion = -1
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentHomeBinding.inflate(inflater, container, false)
@@ -67,17 +68,11 @@ class HomeFragment : Fragment() {
         if (!hidden) load()
     }
 
-    /**
-     * 从打卡/编辑页回来时也要重读：那一刻本页一直是 RESUMED（切页是 hide/show），
-     * 只靠 onHiddenChanged 收不到通知。用 [DataVersion] 判断有没有写过数据，
-     * 没写过就不白刷一次。
-     */
+    /** 从打卡/编辑页回来时本页没被 hide 过，靠版本号判断要不要重读（同阶段一的刷新链）。 */
     override fun onResume() {
         super.onResume()
         if (seenVersion != DataVersion.current) load()
     }
-
-    private var seenVersion = -1
 
     private fun load() {
         viewLifecycleOwner.lifecycleScope.runIo({
@@ -93,11 +88,11 @@ class HomeFragment : Fragment() {
                     cityName = it.cityName,
                     province = it.province,
                     checkinAt = it.checkinAt,
-                    // 库里的精度常量与 logic/DatePrecision 是同一组值（data 依赖 logic）
                     datePrecision = it.datePrecision,
                 )
             }
-            render()        }
+            render()
+        }
     }
 
     private fun render() {
@@ -114,31 +109,75 @@ class HomeFragment : Fragment() {
         renderRank()
     }
 
+    // ────────────────────────── 排名 ──────────────────────────
+
     private fun renderRank() {
         val b = binding
-        // 选中的维度用主色，另一个用次要色 —— 只有两种状态，不值得为它写 selector
-        Chips.styleAsPill(b.btnRankCount, requireContext(), rankBy == RankBy.COUNT)
-        Chips.styleAsPill(b.btnRankTime, requireContext(), rankBy == RankBy.TIME)
+        val onAccent = ContextCompat.getColor(requireContext(), R.color.on_accent)
+        val secondary = ContextCompat.getColor(requireContext(), R.color.text_secondary)
+        b.btnRankCount.setTextColor(if (rankBy == RankBy.COUNT) onAccent else secondary)
+        b.btnRankTime.setTextColor(if (rankBy == RankBy.TIME) onAccent else secondary)
+        placeSegPill(animate = true)
 
         b.rankContainer.removeAllViews()
         val rows = Stats.rank(entries, rankBy)
+        b.rankCard.visibility = if (rows.isEmpty()) View.GONE else View.VISIBLE
         rows.forEachIndexed { index, row ->
             b.rankContainer.addView(rankRow(index + 1, row))
+            // 行间 1px 横线（与 1.x 的排行卡一致）；最后一行的下面不加
+            if (index != rows.lastIndex) b.rankContainer.addView(divider())
         }
     }
 
     /**
-     * 名次行：名次圆 + 城市（+省份）+ 维度值。
+     * 把选中块滑到当前选项下面。
      *
-     * 行内容用代码拼而不是布局 + Adapter：排名最多几十行、结构就三个控件，
-     * 为它配一套 ViewHolder 反而多一层间接（行程页那种会随筛选变化的列表才值得上 RecyclerView）。
+     * 轨道有 3dp padding：可分配宽度是「轨道宽 - 左右 padding」，一半给「次数」、一半给「时间」。
+     * 划动用 180ms，与屏幕其它过渡同档；首次进来直接落位（不播动画），免得看见它从左边滑过去。
+     */
+    private fun placeSegPill(animate: Boolean) {
+        val b = binding
+        val track = b.segRank
+        val pill = b.segPill
+        track.post {
+            val available = track.width - track.paddingLeft - track.paddingRight
+            if (available <= 0) return@post
+            val half = available / 2
+            val lp = pill.layoutParams
+            if (lp.width != half) {
+                lp.width = half
+                pill.layoutParams = lp
+            }
+            val target = track.paddingLeft + if (rankBy == RankBy.COUNT) 0 else half
+            if (animate) {
+                pill.animate().translationX(target.toFloat()).setDuration(180L).start()
+            } else {
+                pill.animate().cancel()
+                pill.translationX = target.toFloat()
+            }
+        }
+    }
+
+    private fun divider(): View = View(requireContext()).apply {
+        setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.border))
+        layoutParams = android.widget.LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            dp(1),
+        ).apply {
+            marginStart = dp(12)
+            marginEnd = dp(12)
+        }
+    }
+
+    /**
+     * 名次行：名次圆 + 城市 + 维度值。行内容用代码拼（同前：几十行、结构固定）。
      */
     private fun rankRow(rank: Int, row: Stats.CityRow): View {
         val ctx = requireContext()
         val line = android.widget.LinearLayout(ctx).apply {
             orientation = android.widget.LinearLayout.HORIZONTAL
             gravity = android.view.Gravity.CENTER_VERTICAL
-            setPadding(0, dp(6), 0, dp(6))
+            setPadding(dp(12), dp(10), dp(12), dp(10))
         }
 
         line.addView(TextView(ctx).apply {
@@ -152,12 +191,8 @@ class HomeFragment : Fragment() {
             )
             textSize = 12f
             setBackgroundResource(R.drawable.bg_rank_circle)
-            // 前三名用主色实心圆：改 tint 而不是换 drawable —— 直接 setTint 会改到共享的那份
-            // Drawable 缓存（所有名次圆会一起变色），backgroundTintList 只作用于这个 View
             if (rank <= 3) {
-                backgroundTintList = android.content.res.ColorStateList.valueOf(
-                    Palette.accent(ctx),
-                )
+                backgroundTintList = android.content.res.ColorStateList.valueOf(Palette.accent(ctx))
             }
             layoutParams = android.widget.LinearLayout.LayoutParams(dp(24), dp(24))
         })

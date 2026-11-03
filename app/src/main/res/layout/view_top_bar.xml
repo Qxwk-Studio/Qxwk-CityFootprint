@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 全 app 唯一的顶栏。主壳 / 登录 / 编辑足迹 / 城市选择四页都用 <include> 引入，
+<!-- 全 app 唯一的顶栏。主壳 / 打卡 / 行程编辑 / 城市选择四页都用 <include> 引入，
      改高度、改配色、改返回按钮形态只动这一处（原先四个页面各抄了一份，56dp 与 48dp 还不一致）。
 
      用法：<include android:id="@+id/topBar" layout="@layout/view_top_bar" ... />
@@ -7,7 +7,7 @@
      所以调用方写 binding.topBar.title / binding.topBar.btnBack。
 
      返回按钮与三横菜单按钮**都默认隐藏**（gone）：只有用到的页面在代码里置 VISIBLE 并挂点击回调
-     （返回：编辑 / 城市选择 / 网页页；菜单：只有主页，见 MainActivity；删除：只有编辑足迹页）。
+     （返回：三个子页；菜单：只有主壳，见 MainActivity）。
      做成默认隐藏而不是默认显示，是因为「多出一个不该有的按钮」比「少一个」更容易在开发期被发现 ——
      后者只是点不动，前者会把用户带到别的页面去。
 
@@ -66,10 +66,7 @@
             android:tint="@color/sidebar_fg"
             android:visibility="gone" />
 
-        <!-- 删除（编辑足迹页右上角，见 VisitEditActivity）：低频的危险动作，
-             收成右上角一颗图标按钮，底部那排就只剩「取消 + 保存」两颗
-             （与网页 visits.html 编辑弹窗的 .dialog-actions 一致 —— 那边也只有这两颗）。
-             用 destructive 上色：红色和左侧返回的普通图标色区分开，一眼看得出是危险动作 -->
+        <!-- 删除（行程编辑器右上角）：低频的危险动作，放在主按钮之外单独一颗，点之前弹确认。 -->
         <ImageButton
             android:id="@+id/btnDelete"
             android:layout_width="36dp"

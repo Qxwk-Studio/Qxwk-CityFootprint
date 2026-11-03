@@ -1,47 +1,94 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 成就页（2.0）：顶部分类胶囊 + 摘要 + 成就卡列表。
-     分类胶囊横向可滚（四个分类加「全部」，窄屏放不下也不换行）。 -->
+<!-- 成就页（2.0）：分类滑动胶囊 + 分类进度卡 + 成就卡列表（RecyclerView）。
+
+     列表换 RecyclerView 的原因：54 张卡一次性 addView 进 LinearLayout 要在主线程建几百个 View，
+     切到这一页会明显卡一下；RecyclerView 只建可见的十来个。 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/bg"
     android:orientation="vertical">
 
+    <!-- 分类：滑动胶囊。选中块是压在文字下面的一个 View，切换时平移过去（见 AchievementsFragment） -->
     <HorizontalScrollView
+        android:id="@+id/chipScroll"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/sidebar"
+        android:background="@color/bg"
         android:scrollbars="none">
 
-        <LinearLayout
-            android:id="@+id/chipContainer"
+        <FrameLayout
+            android:id="@+id/chipWrap"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:padding="8dp" />
+            android:layout_height="wrap_content">
+
+            <View
+                android:id="@+id/chipIndicator"
+                android:layout_width="0dp"
+                android:layout_height="36dp"
+                android:layout_gravity="center_vertical"
+                android:background="@drawable/bg_segmented_pill" />
+
+            <LinearLayout
+                android:id="@+id/chipContainer"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:paddingStart="16dp"
+                android:paddingTop="10dp"
+                android:paddingEnd="16dp"
+                android:paddingBottom="4dp" />
+        </FrameLayout>
     </HorizontalScrollView>
 
-    <TextView
-        android:id="@+id/textSummary"
+    <!-- 当前分类的完成进度 -->
+    <LinearLayout
+        android:id="@+id/progressCard"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:paddingStart="16dp"
-        android:paddingTop="12dp"
-        android:paddingEnd="16dp"
-        android:textColor="@color/text_secondary"
-        android:textSize="12sp" />
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="16dp"
+        android:background="@drawable/bg_card"
+        android:orientation="vertical"
+        android:padding="14dp">
 
-    <ScrollView
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/textCategoryProgress"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textColor="@color/text_secondary"
+                android:textSize="13sp" />
+
+            <TextView
+                android:id="@+id/textCategoryPercent"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="?attr/appAccent"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <ProgressBar
+            android:id="@+id/barCategory"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="6dp"
+            android:layout_marginTop="8dp" />
+    </LinearLayout>
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/list"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:fillViewport="true">
-
-        <LinearLayout
-            android:id="@+id/container"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="16dp" />
-    </ScrollView>
+        android:clipToPadding="false"
+        android:padding="16dp" />
 </LinearLayout>

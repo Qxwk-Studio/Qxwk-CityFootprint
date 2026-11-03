@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 分段控件的「选中块」：会随选择在轨道里平移（见 HomeFragment 的 placeSegPill）。
+     颜色引用主题属性，换主题色时这块也跟着变。 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="?attr/appAccent" />
+    <corners android:radius="14dp" />
+</shape>
