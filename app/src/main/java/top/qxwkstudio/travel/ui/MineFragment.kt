@@ -14,10 +14,13 @@ import top.qxwkstudio.travel.BuildConfig
 import top.qxwkstudio.travel.CityFootprintApp
 import top.qxwkstudio.travel.R
 import top.qxwkstudio.travel.data.Appearance
+import top.qxwkstudio.travel.data.CheckinRepo
 import top.qxwkstudio.travel.data.SettingsRepo
+import top.qxwkstudio.travel.data.TripRepo
 import top.qxwkstudio.travel.data.Store
 import top.qxwkstudio.travel.data.Update
 import top.qxwkstudio.travel.data.db.AppDatabase
+import top.qxwkstudio.travel.logic.Timeline
 import top.qxwkstudio.travel.databinding.FragmentMineBinding
 
 /**
@@ -64,6 +67,7 @@ class MineFragment : Fragment() {
         binding.rowBadge.setOnClickListener { chooseBadgeColor() }
         binding.rowOpenSource.setOnClickListener { showOpenSource() }
         binding.rowCheckUpdate.setOnClickListener { checkUpdate() }
+        binding.rowCleanupPhotos.setOnClickListener { confirmCleanupPhotos() }
         binding.textVersion.text = BuildConfig.VERSION_NAME
         load()
     }
@@ -121,6 +125,46 @@ class MineFragment : Fragment() {
         Appearance.SYSTEM -> R.string.mine_appearance_follow_system
         Appearance.LIGHT -> R.string.mine_appearance_light
         Appearance.DARK -> R.string.mine_appearance_dark
+    }
+
+    /**
+     * 清理无引用照片：收集所有活着的打卡与行程时间线里引用的路径，删掉目录里剩下的文件。
+     *
+     * 删除前问一句：这是不可撤销操作，而且用户可能只是想腾空间、不想动任何在用的图。
+     */
+    private fun confirmCleanupPhotos() {
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.cleanup_confirm_title)
+            .setMessage(R.string.cleanup_confirm_message)
+            .setPositiveButton(R.string.common_confirm) { _, _ -> cleanupPhotos() }
+            .setNegativeButton(R.string.common_cancel, null)
+            .show()
+    }
+
+    private fun cleanupPhotos() {
+        viewLifecycleOwner.lifecycleScope.runIo({
+            val db = AppDatabase.get(requireContext())
+            val referenced = buildSet {
+                CheckinRepo.list(db).mapNotNullTo(this) { it.photoPath }
+                TripRepo.list(db).forEach { trip ->
+                    Timeline.decode(trip.timeline)?.segments
+                        ?.mapNotNullTo(this) { it.photoPath }
+                }
+            }
+            PhotoStore.cleanupUnreferenced(requireContext(), referenced)
+        }) { result ->
+            val (count, bytes) = result.getOrNull() ?: (0 to 0L)
+            if (count == 0) {
+                requireContext().notify(R.string.cleanup_none)
+            } else {
+                val size = when {
+                    bytes >= 1024 * 1024 -> "%.1f MB".format(bytes / 1024.0 / 1024.0)
+                    bytes >= 1024 -> "%d KB".format(bytes / 1024)
+                    else -> "$bytes B"
+                }
+                requireContext().notify(getString(R.string.cleanup_done, count, size))
+            }
+        }
     }
 
     /**

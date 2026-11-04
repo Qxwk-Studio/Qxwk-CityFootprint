@@ -1,80 +1,83 @@
 package top.qxwkstudio.travel.logic
 
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * 行程 → 派生打卡的规则（2.0 的核心口径：足迹自动派生关联打卡，打卡是地图与成就的唯一数据源）。
+ * 双层时间线 → 派生打卡。
  *
- * 纯函数测试：城市数据用假的查表函数喂进来，不需要设备也不需要数据库。
- * 这些规则算错了不会崩 —— 只会让地图少点亮一座城、或者成就永远差一条，几天后才被发现。
+ * 核心口径：每个城市段只生成一条打卡，时间是该段第一条事件；城市表里查不到的名字跳过。
  */
 class DerivedCheckinTest {
 
-    private val 北京 = City(name = "北京", province = "北京", lat = 39.904, lng = 116.407, adcode = 110000)
-    private val 上海 = City(name = "上海", province = "上海", lat = 31.23, lng = 121.474, adcode = 310000)
+    private fun event(id: String, time: Long, type: Timeline.Type = Timeline.Type.ACTIVITY) =
+        Timeline.Event(id = id, time = time, type = type, text = "x")
 
-    // 县级市：城市表里有、但没有 adcode（地图上只画标记），派生打卡照样要生成
-    private val 格尔木 = City(name = "格尔木", province = "青海", lat = 36.402, lng = 94.903, adcode = null)
+    private fun timeline(vararg segments: Timeline.Segment) = Timeline(segments.toList())
 
-    private val cities = listOf(北京, 上海, 格尔木)
-    private val lookup: (String) -> City? = { name -> cities.firstOrNull { it.name == name } }
-
-    private fun visit(id: String, time: Long, city: String) =
-        TimelineEvent(id = id, time = time, type = TimelineType.VISIT, cityName = city)
+    private val cities = mapOf(
+        "北京" to City(name = "北京", province = "北京", lat = 39.9, lng = 116.4, adcode = 110000),
+        "上海" to City(name = "上海", province = "上海", lat = 31.2, lng = 121.4, adcode = 310000),
+    )
+    private fun lookup(name: String): City? = cities[name]
 
     @Test
-    fun `每次首次到访生成一条 同城多次只取第一次`() {
-        val timeline = Timeline(
-            listOf(
-                visit("a", 100, "北京"),
-                visit("b", 200, "上海"),
-                visit("c", 300, "北京"),
-            )
+    fun `one checkin per city using its first event`() {
+        val t = timeline(
+            Timeline.Segment("北京", listOf(event("a", 300), event("b", 200))),
+            Timeline.Segment("上海", listOf(event("c", 500))),
         )
-        val derived = deriveCheckins(timeline, lookup)
-
-        assertEquals(listOf("北京", "上海"), derived.map { it.cityName })
-        // 时间取首次到访那一刻，而不是最后一次
-        assertEquals(100L, derived.first().checkinAt)
-        assertEquals("北京", derived.first().province)
-        assertEquals(110000, derived.first().cityCode)
+        val result = deriveCheckins(t, ::lookup)
+        assertEquals(2, result.size)
+        assertEquals("北京", result[0].cityName)
+        assertEquals(200L, result[0].checkinAt)   // 段内最早，不按列表顺序
+        assertEquals("北京", result[0].province)
+        assertEquals(110000, result[0].cityCode)
+        assertEquals("上海", result[1].cityName)
+        assertEquals(500L, result[1].checkinAt)
     }
 
     @Test
-    fun `非到访事件不派生打卡`() {
-        val timeline = Timeline(
-            listOf(
-                TimelineEvent("a", 100, TimelineType.RIDE, transport = "高铁"),
-                TimelineEvent("b", 200, TimelineType.ACTIVITY, activity = "看升旗"),
-                TimelineEvent("c", 300, TimelineType.GOTO, place = "天安门", lat = 39.9, lng = 116.4),
-                visit("d", 400, "北京"),
-            )
+    fun `unknown city skipped`() {
+        val t = timeline(
+            Timeline.Segment("火星", listOf(event("a", 100))),
+            Timeline.Segment("上海", listOf(event("b", 200))),
         )
-        assertEquals(listOf("北京"), deriveCheckins(timeline, lookup).map { it.cityName })
+        val result = deriveCheckins(t, ::lookup)
+        assertEquals(1, result.size)
+        assertEquals("上海", result[0].cityName)
     }
 
     @Test
-    fun `城市表里查不到的名字直接跳过 不造空省份记录`() {
-        // 「西安」「三亚」这类：名字对不上城市表（旧数据/手写差异），宁可少一条也不写脏数据
-        val timeline = Timeline(listOf(visit("a", 100, "不存在的城市"), visit("b", 200, "上海")))
-        val derived = deriveCheckins(timeline, lookup)
-        assertEquals(listOf("上海"), derived.map { it.cityName })
+    fun `ride events alone still make a checkin`() {
+        val t = timeline(
+            Timeline.Segment("北京", listOf(event("a", 100, Timeline.Type.RIDE))),
+        )
+        val result = deriveCheckins(t, ::lookup)
+        assertEquals(1, result.size)
+        assertTrue(result[0].checkinAt == 100L)
     }
 
     @Test
-    fun `没有adcode的城市也能派生 只是没有边界`() {
-        val timeline = Timeline(listOf(visit("a", 100, "格尔木")))
-        val derived = deriveCheckins(timeline, lookup).single()
-        assertEquals("格尔木", derived.cityName)
-        assertEquals("青海", derived.province)
-        assertNull(derived.cityCode)
+    fun `optional fields copied from segment`() {
+        val t = timeline(
+            Timeline.Segment(
+                "北京",
+                listOf(event("a", 100)),
+                companions = "朋友",
+                rating = 5,
+                photoPath = "/tmp/a.jpg",
+            ),
+        )
+        val result = deriveCheckins(t, ::lookup).single()
+        assertEquals("朋友", result.companions)
+        assertEquals(5, result.rating)
+        assertEquals("/tmp/a.jpg", result.photoPath)
     }
 
     @Test
-    fun `空时间线派出空列表`() {
-        assertTrue(deriveCheckins(Timeline(emptyList()), lookup).isEmpty())
+    fun `empty timeline derives nothing`() {
+        assertTrue(deriveCheckins(Timeline(), ::lookup).isEmpty())
     }
 }

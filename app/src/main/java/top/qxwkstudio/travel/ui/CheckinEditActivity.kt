@@ -2,7 +2,11 @@ package top.qxwkstudio.travel.ui
 
 import android.app.Activity
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
+import android.widget.ImageView
+import android.widget.LinearLayout
+import androidx.activity.result.PickVisualMediaRequest
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.View
@@ -21,6 +25,7 @@ import top.qxwkstudio.travel.logic.City
 import top.qxwkstudio.travel.logic.DatePrecision
 import top.qxwkstudio.travel.logic.Limits
 import java.util.Calendar
+import java.util.UUID
 
 /**
  * 手动打卡页（2.0）：城市 + 到访时间（四档精度）+ 备注。
@@ -43,6 +48,14 @@ class CheckinEditActivity : AppCompatActivity() {
     /** 选中的城市（名字 + 坐标 + adcode + 省份），由选城页或定位给出。 */
     private var city: City? = null
 
+    /** 可选信息：同行人 code / 评分 1..5 / 本地照片路径。 */
+    private var companions: String? = null
+    private var rating: Int? = null
+    private var photoPath: String? = null
+
+    /** 照片文件名：编辑时固定成 checkin_<id>（换图直接覆盖），新增时用临时 uuid。 */
+    private var photoName: String = UUID.randomUUID().toString()
+
     /** 0 = 新增；非 0 = 编辑这条打卡（从行程页的 `...` → 编辑进来）。 */
     private var editingId = 0L
     private var editingEntity: CheckinEntity? = null
@@ -61,6 +74,20 @@ class CheckinEditActivity : AppCompatActivity() {
             return@registerForActivityResult
         }
         setCity(found.copy(lat = lat, lng = lng))
+    }
+
+    private val photoPicker = registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        if (uri == null) return@registerForActivityResult
+        lifecycleScope.runIo({ PhotoStore.save(this, uri, photoName) }) { result ->
+            val path = result.getOrNull()
+            if (path == null) {
+                notify(R.string.photo_failed, long = true)
+                return@runIo
+            }
+            PhotoStore.delete(photoPath)
+            photoPath = path
+            renderPhoto()
+        }
     }
 
     private val locatePermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -88,6 +115,11 @@ class CheckinEditActivity : AppCompatActivity() {
         b.btnToday.setOnClickListener { selectToday() }
         b.switchForgot.setOnCheckedChangeListener { _, forgot -> applyForgot(forgot) }
         b.btnSave.setOnClickListener { save() }
+        b.btnPickPhoto.setOnClickListener {
+            photoPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+        }
+        buildRating()
+        renderPhoto()
 
         b.inputNote.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
@@ -226,6 +258,13 @@ class CheckinEditActivity : AppCompatActivity() {
                 )
             binding.inputCity.setText(entity.cityName)
             binding.inputNote.setText(entity.note.orEmpty())
+            binding.inputCompanions.setText(entity.companions.orEmpty())
+            companions = entity.companions
+            rating = entity.rating
+            photoPath = entity.photoPath
+            photoName = "checkin_$editingId"
+            buildRating()
+            renderPhoto()
             applyPrecision(entity)
         }
     }
@@ -269,6 +308,7 @@ class CheckinEditActivity : AppCompatActivity() {
         }
         val (at, precision) = readDate()
         val note = binding.inputNote.text?.toString()?.trim().orEmpty().take(Limits.NOTE)
+        companions = binding.inputCompanions.text?.toString()?.trim().orEmpty().ifBlank { null }
 
         binding.btnSave.isEnabled = false
         val existing = editingEntity
@@ -281,6 +321,9 @@ class CheckinEditActivity : AppCompatActivity() {
                     checkinAt = at,
                     datePrecision = precision,
                     note = note.ifBlank { null },
+                    companions = companions,
+                    rating = rating,
+                    photoPath = photoPath,
                 )
             } else {
                 // 编辑：整体替换可编辑字段，id / uuid / 编号 / 来源保持不动
@@ -293,6 +336,9 @@ class CheckinEditActivity : AppCompatActivity() {
                         checkinAt = at,
                         datePrecision = precision,
                         note = note.ifBlank { null },
+                        companions = companions,
+                        rating = rating,
+                        photoPath = photoPath,
                     ),
                 )
             }
@@ -308,6 +354,43 @@ class CheckinEditActivity : AppCompatActivity() {
             finish()
         }
     }
+
+    // ────────────────────────── 可选信息 ──────────────────────────
+
+    /** 城市评分：5 颗星，点第 n 颗 = n 星；再点同一颗清零。 */
+    private fun buildRating() {
+        val row = binding.ratingRow
+        row.removeAllViews()
+        for (star in 1..5) {
+            row.addView(ImageView(this).apply {
+                setImageResource(if ((rating ?: 0) >= star) R.drawable.ic_star else R.drawable.ic_star_outline)
+                imageTintList = android.content.res.ColorStateList.valueOf(getColor(R.color.first_visit))
+                contentDescription = getString(R.string.rating_label)
+                setPadding(dp(2), dp(2), dp(2), dp(2))
+                layoutParams = LinearLayout.LayoutParams(dp(36), dp(36))
+                setOnClickListener {
+                    rating = if (rating == star) null else star
+                    buildRating()
+                }
+            })
+        }
+    }
+
+    private fun renderPhoto() {
+        val bitmap = PhotoStore.load(photoPath, maxPx = 512)
+        if (bitmap != null) {
+            binding.imagePhoto.setImageBitmap(bitmap)
+            binding.imagePhoto.visibility = View.VISIBLE
+            binding.textPhotoEmpty.visibility = View.GONE
+            binding.btnPickPhoto.setText(R.string.photo_change)
+        } else {
+            binding.imagePhoto.visibility = View.GONE
+            binding.textPhotoEmpty.visibility = View.VISIBLE
+            binding.btnPickPhoto.setText(R.string.photo_pick)
+        }
+    }
+
+    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 
     private fun updateCounter(length: Int) {
         binding.textCounter.text = getString(R.string.checkin_counter, length)

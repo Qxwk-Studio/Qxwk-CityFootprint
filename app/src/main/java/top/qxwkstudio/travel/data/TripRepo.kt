@@ -155,6 +155,9 @@ object TripRepo {
                     checkinAt = checkin.checkinAt,
                     // 派生打卡永远精确到日：时间线节点本来就带具体时间
                     datePrecision = DatePrecision.DAY,
+                    companions = checkin.companions,
+                    rating = checkin.rating,
+                    photoPath = checkin.photoPath,
                     seqNo = 0, // 派生打卡不显示编号，编号列留给手动打卡
                     modifiedAt = now,
                 )

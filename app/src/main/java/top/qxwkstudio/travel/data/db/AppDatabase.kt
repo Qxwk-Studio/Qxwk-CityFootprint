@@ -4,6 +4,8 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 
 /**
  * 本地库。4 张表见 [TripEntity] 那一组文件。
@@ -37,9 +39,24 @@ abstract class AppDatabase : RoomDatabase() {
 
     companion object {
         /** 改表时 +1 并补迁移；发版前可以随意改（见类注释）。 */
-        const val VERSION = 1
+        const val VERSION = 2
 
         private const val DB_NAME = "city_footprint.db"
+
+        /**
+         * 1 → 2：打卡增加「同行人 / 评分 / 照片路径」三列（都可空）。
+         *
+         * 纯新增列，不重建表：`ALTER TABLE ... ADD COLUMN` 对存量行安全（默认 NULL），
+         * 也不会碰唯一索引。改表必须带迁移 —— 没有迁移的话，升级用户一开库就
+         * `Room cannot verify the data integrity` 崩溃。
+         */
+        private val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE city_checkins ADD COLUMN companions TEXT")
+                db.execSQL("ALTER TABLE city_checkins ADD COLUMN rating INTEGER")
+                db.execSQL("ALTER TABLE city_checkins ADD COLUMN photo_path TEXT")
+            }
+        }
 
         @Volatile
         private var instance: AppDatabase? = null
@@ -50,7 +67,10 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     DB_NAME,
-                ).build().also { instance = it }
+                )
+                    .addMigrations(MIGRATION_1_2)
+                    .build()
+                    .also { instance = it }
             }
     }
 }

@@ -113,6 +113,12 @@ data class CheckinEntity(
     @ColumnInfo(name = "checkin_at") val checkinAt: Long,
     @ColumnInfo(name = "date_precision") val datePrecision: Int = DatePrecision.DAY,
     val note: String? = null,
+    /** 同行人 code（[top.qxwkstudio.travel.logic.Companions.code]）；null = 没填。 */
+    val companions: String? = null,
+    /** 城市评分 1..5；null = 没评。 */
+    val rating: Int? = null,
+    /** 本地照片路径；null = 没配图。 */
+    @ColumnInfo(name = "photo_path") val photoPath: String? = null,
     @ColumnInfo(name = "seq_no") val seqNo: Int,
     @ColumnInfo(name = "modified_at") val modifiedAt: Long,
     @ColumnInfo(name = "deleted_at") val deletedAt: Long? = null,

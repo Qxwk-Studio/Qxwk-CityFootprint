@@ -34,4 +34,6 @@
 
     <!-- 系统栏兜底：与顶栏同色（themes.xml 用它当 statusBarColor / navigationBarColor） -->
     <color name="window_bg_light">#FFFFFF</color>
+    <color name="first_visit">#B45309</color>     <!-- 首访：金色文字/描边 -->
+    <color name="first_visit_bg">#FEF3C7</color>  <!-- 首访：金色浅底 -->
 </resources>

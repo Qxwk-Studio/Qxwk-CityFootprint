@@ -144,6 +144,79 @@
                 android:textColor="@color/fg"
                 android:textSize="13sp" />
 
+            <!-- 可选信息：照片 / 同行人 / 城市评分 / 首访角标 -->
+            <TextView
+                style="@style/TextFormLabel"
+                android:layout_marginTop="16dp"
+                android:text="@string/checkin_section_optional" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_card"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:padding="12dp">
+
+                <ImageView
+                    android:id="@+id/imagePhoto"
+                    android:layout_width="64dp"
+                    android:layout_height="64dp"
+                    android:background="@drawable/bg_card"
+                    android:contentDescription="@string/photo_label"
+                    android:scaleType="centerCrop"
+                    android:visibility="gone" />
+
+                <TextView
+                    android:id="@+id/textPhotoEmpty"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/photo_label"
+                    android:textColor="@color/text_tertiary"
+                    android:textSize="13sp" />
+
+                <Button
+                    android:id="@+id/btnPickPhoto"
+                    style="?attr/materialButtonOutlinedStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="36dp"
+                    android:minWidth="0dp"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp"
+                    android:text="@string/photo_pick"
+                    android:textSize="13sp" />
+            </LinearLayout>
+
+            <TextView
+                style="@style/TextFormLabel"
+                android:layout_marginTop="16dp"
+                android:text="@string/companions_label" />
+
+            <EditText
+                android:id="@+id/inputCompanions"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_card"
+                android:hint="@string/companions_hint"
+                android:inputType="text"
+                android:maxLength="23"
+                android:padding="12dp"
+                android:textColor="@color/fg"
+                android:textSize="14sp" />
+
+            <TextView
+                style="@style/TextFormLabel"
+                android:layout_marginTop="16dp"
+                android:text="@string/rating_label" />
+
+            <LinearLayout
+                android:id="@+id/ratingRow"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal" />
+
+
             <!-- 备注 -->
             <TextView
                 style="@style/TextFormLabel"

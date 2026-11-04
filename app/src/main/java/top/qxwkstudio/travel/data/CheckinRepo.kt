@@ -31,10 +31,14 @@ object CheckinRepo {
         checkinAt: Long,
         datePrecision: Int = DatePrecision.DAY,
         note: String? = null,
+        companions: String? = null,
+        rating: Int? = null,
+        photoPath: String? = null,
         now: Long = System.currentTimeMillis(),
     ): Long {
         require(note.orEmpty().length <= Limits.NOTE) { "备注不能超过 ${Limits.NOTE} 字" }
         require(datePrecision in DatePrecision.YEAR..DatePrecision.UNKNOWN) { "日期精度取值非法：$datePrecision" }
+        require(rating == null || rating in 1..5) { "评分需在 1–5 之间" }
 
         val id = db.withTransaction {
             db.checkins().insert(
@@ -48,6 +52,9 @@ object CheckinRepo {
                     checkinAt = checkinAt,
                     datePrecision = datePrecision,
                     note = note,
+                    companions = companions,
+                    rating = rating,
+                    photoPath = photoPath,
                     seqNo = db.checkins().nextManualSeqNo(),
                     modifiedAt = now,
                 )

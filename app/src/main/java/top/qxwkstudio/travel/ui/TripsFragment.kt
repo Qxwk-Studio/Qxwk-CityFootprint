@@ -52,10 +52,13 @@ class TripsFragment : Fragment() {
     /** 行程 uuid → `#编号`（派生打卡的徽章要显示它所属的行程编号）。 */
     private var seqByUuid: Map<String, Int> = emptyMap()
 
-    /** 行程 uuid → 时间线节点数。 */
-    private var timelineCountByUuid: Map<String, Int> = emptyMap()
+    /** 行程 uuid → (到访城市数, 活动数)，卡片第二行用来显示「N 城 · M 项」。 */
+    private var timelineCountByUuid: Map<String, Pair<Int, Int>> = emptyMap()
 
     private var seenVersion = -1
+
+    /** 每座城市「最早那条打卡」的 id：表格里的首访角标与金色边框按它判断。 */
+    private var firstVisitIds: Set<Long> = emptySet()
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentTripsBinding.inflate(inflater, container, false)
@@ -103,8 +106,14 @@ class TripsFragment : Fragment() {
             trips = tripList
             checkins = checkinList
             seqByUuid = tripList.associate { it.uuid to it.seqNo }
+            firstVisitIds = checkinList
+                .groupBy { it.cityName }
+                .values
+                .mapNotNull { group -> group.minWithOrNull(compareBy<CheckinEntity> { it.checkinAt }.thenBy { it.id })?.id }
+                .toSet()
             timelineCountByUuid = tripList.associate { trip ->
-                trip.uuid to (Timeline.decode(trip.timeline)?.events?.size ?: 0)
+                val timeline = Timeline.decode(trip.timeline)
+                trip.uuid to ((timeline?.cityCount ?: 0) to (timeline?.eventCount ?: 0))
             }
             render()
         }
@@ -136,7 +145,8 @@ class TripsFragment : Fragment() {
     private fun checkinRow(checkin: CheckinEntity): View {
         val derived = checkin.source == CheckinSource.DERIVED
         val stripe = if (derived) R.color.stripe_derived else R.color.stripe_manual
-        val (root, card) = cardWithStripe(stripe)
+        val first = checkin.id in firstVisitIds
+        val (root, card) = cardWithStripe(stripe, firstVisit = first)
 
         // 第一行：编号徽章 + 城市名 + 菜单
         val badgeSeq = if (derived) {
@@ -147,6 +157,7 @@ class TripsFragment : Fragment() {
         val header = row()
         header.addView(numberBadge(badgeSeq, stripe))
         header.addView(titleView(checkin.cityName))
+        if (first) header.addView(firstVisitChip())
         header.addView(menuButton { anchor ->
             showIconMenu(
                 anchor,
@@ -174,6 +185,10 @@ class TripsFragment : Fragment() {
         if (note != null) meta.addView(note, weightParams()) else meta.addView(spacer())
         meta.addView(iconText(R.drawable.ic_span, dateText(checkin)))
         card.addView(meta)
+
+        // 第三行：照片 / 同行人 / 评分（有哪项就显示哪项）
+        val extras = checkinExtras(checkin)
+        if (extras != null) card.addView(extras)
 
         root.isClickable = !derived
         if (!derived) root.setOnClickListener {
@@ -212,7 +227,8 @@ class TripsFragment : Fragment() {
         val meta = row(topMargin = 8)
         val note = noteView(trip.note)
         if (note != null) meta.addView(note, weightParams()) else meta.addView(spacer())
-        meta.addView(iconText(R.drawable.ic_trips, (timelineCountByUuid[trip.uuid] ?: 0).toString()))
+        val counts = timelineCountByUuid[trip.uuid] ?: (0 to 0)
+        meta.addView(iconText(R.drawable.ic_trips, "${counts.first} 城 · ${counts.second} 项"))
         meta.addView(iconText(R.drawable.ic_span, Dates.ymd(trip.startTime), marginStart = 10))
         card.addView(meta)
 
@@ -229,11 +245,12 @@ class TripsFragment : Fragment() {
      * 竖条颜色按类别固定（足迹蓝 / 独立打卡绿 / 关联打卡灰，见 colors_2.xml）。
      * `clipToOutline` 把整张卡裁成圆角轮廓，竖条不会再从圆角处露出来。
      */
-    private fun cardWithStripe(stripeRes: Int): Pair<LinearLayout, LinearLayout> {
+    private fun cardWithStripe(stripeRes: Int, firstVisit: Boolean = false): Pair<LinearLayout, LinearLayout> {
         val ctx = requireContext()
         val root = LinearLayout(ctx).apply {
             orientation = LinearLayout.HORIZONTAL
-            setBackgroundResource(R.drawable.bg_card)
+            // 首访卡换成金色描边（与「首访」角标同一套视觉）
+            setBackgroundResource(if (firstVisit) R.drawable.bg_card_first else R.drawable.bg_card)
             clipToOutline = true
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
@@ -328,6 +345,71 @@ class TripsFragment : Fragment() {
     private fun noteView(note: String?): View? {
         if (note.isNullOrBlank()) return null
         return iconText(R.drawable.ic_note, note, expandText = true)
+    }
+
+    /** 首访角标：金色浅底 + 金边。 */
+    private fun firstVisitChip(): TextView = TextView(requireContext()).apply {
+        setText(R.string.first_visit)
+        textSize = 11f
+        setTextColor(ContextCompat.getColor(context, R.color.first_visit))
+        setBackgroundResource(R.drawable.bg_first_visit)
+        setPadding(dp(7), dp(2), dp(7), dp(2))
+        layoutParams = LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.WRAP_CONTENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT,
+        ).apply { marginEnd = dp(4) }
+    }
+
+    /** 照片缩略图 + 同行人 + 星级；三者都没有返回 null。 */
+    private fun checkinExtras(checkin: CheckinEntity): View? {
+        val ctx = requireContext()
+        val hasPhoto = checkin.photoPath != null
+        val hasCompanions = checkin.companions != null
+        val hasRating = checkin.rating != null
+        if (!hasPhoto && !hasCompanions && !hasRating) return null
+
+        val row = LinearLayout(ctx).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(0, dp(8), 0, 0)
+        }
+        if (hasPhoto) {
+            val bitmap = PhotoStore.load(checkin.photoPath, maxPx = 256)
+            if (bitmap != null) {
+                row.addView(ImageView(ctx).apply {
+                    setImageBitmap(bitmap)
+                    scaleType = ImageView.ScaleType.CENTER_CROP
+                    layoutParams = LinearLayout.LayoutParams(dp(64), dp(64)).apply { marginEnd = dp(10) }
+                })
+            }
+        }
+        val info = LinearLayout(ctx).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+        }
+        if (hasCompanions) {
+            info.addView(TextView(ctx).apply {
+                text = checkin.companions.orEmpty().ifBlank { "—" }
+                textSize = 12f
+                setTextColor(ContextCompat.getColor(ctx, R.color.text_secondary))
+            })
+        }
+        if (hasRating) {
+            val stars = LinearLayout(ctx).apply { orientation = LinearLayout.HORIZONTAL }
+            for (star in 1..5) {
+                stars.addView(ImageView(ctx).apply {
+                    setImageResource(if ((checkin.rating ?: 0) >= star) R.drawable.ic_star else R.drawable.ic_star_outline)
+                    imageTintList = android.content.res.ColorStateList.valueOf(
+                        ContextCompat.getColor(ctx, R.color.first_visit),
+                    )
+                    layoutParams = LinearLayout.LayoutParams(dp(14), dp(14))
+                })
+            }
+            stars.setPadding(0, dp(2), 0, 0)
+            info.addView(stars)
+        }
+        row.addView(info)
+        return row
     }
 
     private fun spacer(): View = View(requireContext()).apply {
