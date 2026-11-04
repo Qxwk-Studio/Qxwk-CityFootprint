@@ -1,19 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- app 外壳（设计稿的 .app-board）：顶栏 + 内容 + 底部导航，三段纵向排布。
-     顶栏与底栏都是设计稿的 sidebar 底色（浅蓝），内容区是 background 白。
-     顶栏/底栏各有一条 1px 分隔线（都用 sidebar-border），与设计稿一致。
-     原先顶部与底部导航之间还有一条品牌页脚，已按需求移除。
-
-     顶栏右侧原先那颗「打开我的」动作按钮也已按需求移除：底部导航里本来就有「我的」，
-     右上角再放一个头像是重复入口。
-
-     ===== 顶栏右上角那颗三横菜单 =====
-     点开的是**弹出式菜单**（androidx.appcompat.widget.PopupMenu），一行 = 一个网页，
-     条目由 App 清单的 menu 渲染（见 MainActivity.setupMenu）——
-     早先是左侧抽屉，现按需求改成贴着按钮弹出的浮层，所以这一层不再需要 DrawerLayout。
-
-     edge-to-edge 的监听挂在最外这层 LinearLayout 上，一次把 inset 分给顶栏与底栏
-     （见 ui/EdgeToEdge.kt：insets 分发时先吃到的会挡住后面的，所以必须挂两条栏的共同父容器）。 -->
+<!-- app 外壳：顶栏 + 内容 + 底部导航，三段纵向排布。
+     顶栏与底栏都是设计稿的 sidebar 底色，内容区是 background。
+     edge-to-edge 的监听挂在最外这层上，一次把 inset 分给顶栏与底栏（见 ui/EdgeToEdge.kt）。 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
@@ -21,10 +9,6 @@
     android:background="@color/bg"
     android:orientation="vertical">
 
-    <!-- ===== 顶栏 =====
-         id=topBar 是给 edge-to-edge 用的：状态栏 / 刘海那截高度会加到这个容器的 paddingTop 上
-         （见 ui/EdgeToEdge.kt）。顶栏底色与状态栏底色同为 sidebar，所以不必再设 android:statusBarColor。
-         布局本体在 view_top_bar.xml（全 app 共用一份），标题文字由 MainActivity 按选中的 tab 填。 -->
     <include
         android:id="@+id/topBar"
         layout="@layout/view_top_bar"
@@ -37,37 +21,12 @@
         android:layout_height="0dp"
         android:layout_weight="1" />
 
-    <!-- ===== 底部导航 ===== -->
-    <!-- id=bottomBar 同上：手势条 / 虚拟导航栏那截高度加到 paddingBottom 上，
-         底栏的 sidebar 底色顺势铺到屏幕最下边。容器形态与顶栏共用 Widget.App.ShellBand
-         （分隔线朝上，也是 Widget.App.ShellDivider）。 -->
     <LinearLayout
         android:id="@+id/bottomBar"
         style="@style/Widget.App.ShellBand">
 
         <View style="@style/Widget.App.ShellDivider" />
 
-        <!-- 五个 tab 都在 menu/bottom_nav.xml 里定义（图标 + 文案）；
-             选中态样式见 themes.xml 的 Widget.App.BottomNav（主色药丸 + 白字）。
-             高度不需要压到最紧，但 minHeight 仍必须在这里显式写死：不写就吃 M3 主题给
-             活动指示器（那颗药丸）留的默认最小值（56dp），比下面这几个值都大 ——
-             item 内边距收得再紧，也被那个下限顶回去，白调。
-             52dp 比 Material 的触摸目标下限（48dp）多 4dp，是给「图标 + 文案」留的呼吸。
-             item 多出来的高度不会跑到图标与文案之间 —— 文案已被 MainActivity.pinBottomNavLabels
-             贴到图标底下，富余高度只会落在文案下方。
-             两个 itemPadding 是 BottomNavigationView 自己的属性（app: 命名空间），
-             不是 android:padding —— 后者会被 item 的测量逻辑忽略。
-             itemPaddingTop 取 6dp：比原来的 4dp 多出的 2dp 落在图标上方，而 item 长高的 4dp
-             里另一半落到文案下方，整块内容才在 item 里居中（图标位置由 itemPaddingTop 决定）。
-
-             activeIndicatorLabelPadding 压成 0，只是为了别让它按 M3 默认的 4dp 抬高 item 的
-             最小高度（见 NavigationBarItemView.getSuggestedMinimumHeight）。它 **不是**
-             「图标与文案之间那条缝」的解 —— 那条缝的正主是 item 比内容高：material 1.11 的
-             item 是个 FrameLayout，图标容器贴顶（topMargin = itemPaddingTop）、文案组贴底
-             （paddingBottom = itemPaddingBottom），而 item 高度被上面的 minHeight 顶住，
-             多出来的那截高度就落在两者之间。属性层面动不了它（itemPaddingBottom 同时参与
-             最小高度计算，改它只是把留白搬家），实际修法见
-             MainActivity.pinBottomNavLabels() —— 运行时把文案组平移到图标底边。 -->
         <com.google.android.material.bottomnavigation.BottomNavigationView
             android:id="@+id/bottomNav"
             style="@style/Widget.App.BottomNav"

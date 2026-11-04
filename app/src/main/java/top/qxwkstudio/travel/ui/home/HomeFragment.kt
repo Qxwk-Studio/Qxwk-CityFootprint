@@ -1,4 +1,6 @@
-package top.qxwkstudio.travel.ui
+package top.qxwkstudio.travel.ui.home
+
+import top.qxwkstudio.travel.ui.common.*
 
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -13,9 +15,11 @@ import top.qxwkstudio.travel.data.CheckinRepo
 import top.qxwkstudio.travel.data.DataVersion
 import top.qxwkstudio.travel.data.TripRepo
 import top.qxwkstudio.travel.data.db.AppDatabase
+import top.qxwkstudio.travel.data.db.CheckinSource
 import top.qxwkstudio.travel.databinding.FragmentHomeBinding
 import top.qxwkstudio.travel.logic.Dates
 import top.qxwkstudio.travel.logic.Stats
+import top.qxwkstudio.travel.logic.Timeline
 import top.qxwkstudio.travel.logic.Stats.RankBy
 
 /**
@@ -35,6 +39,9 @@ class HomeFragment : Fragment() {
     private var entries: List<Stats.Entry> = emptyList()
     private var trips: List<Stats.Trip> = emptyList()
     private var rankBy = RankBy.COUNT
+    /** 城市 → 花销（分）/ 停留天数，来自所有行程的城市段。 */
+    private var cityAmounts: Map<String, Int> = emptyMap()
+    private var cityDays: Map<String, Int> = emptyMap()
     private var seenVersion = -1
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -44,9 +51,15 @@ class HomeFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        binding.root.fadeSlideIn()
         binding.btnRankCount.setOnClickListener {
             if (rankBy == RankBy.COUNT) return@setOnClickListener
             rankBy = RankBy.COUNT
+            renderRank()
+        }
+        binding.btnRankAmount.setOnClickListener {
+            if (rankBy == RankBy.AMOUNT) return@setOnClickListener
+            rankBy = RankBy.AMOUNT
             renderRank()
         }
         binding.btnRankTime.setOnClickListener {
@@ -65,7 +78,7 @@ class HomeFragment : Fragment() {
     /** 切回本 tab 时重读：本页在别的 tab 显示时仍是 RESUMED（见 MainActivity 的 add/hide/show）。 */
     override fun onHiddenChanged(hidden: Boolean) {
         super.onHiddenChanged(hidden)
-        if (!hidden) load()
+        if (!hidden) { _binding?.root?.fadeSlideIn(); load() }
     }
 
     /** 从打卡/编辑页回来时本页没被 hide 过，靠版本号判断要不要重读（同阶段一的刷新链）。 */
@@ -81,6 +94,22 @@ class HomeFragment : Fragment() {
         }) { result ->
             val pair = result.getOrNull() ?: return@runIo
             val (tripEntities, checkins) = pair
+        // 每个城市的花销与停留天数：从行程的城市段聚合（打卡直接复用同一份数字）
+        val amounts = mutableMapOf<String, Int>()
+        val days = mutableMapOf<String, Int>()
+        tripEntities.forEach { trip ->
+            Timeline.decode(trip.timeline)?.segments?.forEach { segment ->
+                amounts[segment.city] = (amounts[segment.city] ?: 0) + Stats.segmentCost(segment)
+                days[segment.city] = (days[segment.city] ?: 0) + Stats.segmentDays(segment)
+            }
+        }
+        // 手动打卡若填了金额/天数，也计入对应城市（派生打卡已经镜像了行程，不重复加）
+        checkins.filter { it.source == CheckinSource.MANUAL }.forEach { checkin ->
+            checkin.amountCents?.let { amounts[checkin.cityName] = (amounts[checkin.cityName] ?: 0) + it }
+            checkin.stayDays?.let { days[checkin.cityName] = (days[checkin.cityName] ?: 0) + it }
+        }
+        cityAmounts = amounts
+        cityDays = days
             seenVersion = DataVersion.current
             trips = tripEntities.map { Stats.Trip(it.totalCostCents) }
             entries = checkins.map {
@@ -116,11 +145,12 @@ class HomeFragment : Fragment() {
         val onAccent = ContextCompat.getColor(requireContext(), R.color.on_accent)
         val secondary = ContextCompat.getColor(requireContext(), R.color.text_secondary)
         b.btnRankCount.setTextColor(if (rankBy == RankBy.COUNT) onAccent else secondary)
+        b.btnRankAmount.setTextColor(if (rankBy == RankBy.AMOUNT) onAccent else secondary)
         b.btnRankTime.setTextColor(if (rankBy == RankBy.TIME) onAccent else secondary)
         placeSegPill(animate = true)
 
         b.rankContainer.removeAllViews()
-        val rows = Stats.rank(entries, rankBy)
+        val rows = Stats.rank(entries, rankBy, cityAmounts, cityDays)
         b.rankCard.visibility = if (rows.isEmpty()) View.GONE else View.VISIBLE
         rows.forEachIndexed { index, row ->
             b.rankContainer.addView(rankRow(index + 1, row))
@@ -139,22 +169,32 @@ class HomeFragment : Fragment() {
         val b = binding
         val track = b.segRank
         val pill = b.segPill
-        track.post {
+        fun place() {
             val available = track.width - track.paddingLeft - track.paddingRight
-            if (available <= 0) return@post
-            val half = available / 2
+            if (available <= 0) return
+            val part = available / 3
             val lp = pill.layoutParams
-            if (lp.width != half) {
-                lp.width = half
+            if (lp.width != part) {
+                lp.width = part
                 pill.layoutParams = lp
             }
-            val target = track.paddingLeft + if (rankBy == RankBy.COUNT) 0 else half
+            // FrameLayout 的子 View 已经在 padding 内布局，translationX 只按段宽走；
+            // 再加 paddingLeft 会让左侧偏、右侧被裁掉。
+            val target = part * rankBy.ordinal
             if (animate) {
-                pill.animate().translationX(target.toFloat()).setDuration(180L).start()
+                pill.animate().translationX(target.toFloat()).setDuration(200L)
+                    .setInterpolator(android.view.animation.PathInterpolator(0.2f, 0f, 0f, 1f))
+                    .start()
             } else {
                 pill.animate().cancel()
                 pill.translationX = target.toFloat()
             }
+        }
+        // 首次进入时 width 可能还是 0（add + 布局同一帧），post 里取不到就靠这次布局回调兜住；
+        // 之后旋转/分屏改变宽度同样会重新落位。
+        track.post { place() }
+        track.addOnLayoutChangeListener { _, left, _, right, _, oldLeft, _, oldRight, _ ->
+            if (right - left != oldRight - oldLeft) place()
         }
     }
 
@@ -183,22 +223,38 @@ class HomeFragment : Fragment() {
         line.addView(TextView(ctx).apply {
             text = rank.toString()
             gravity = android.view.Gravity.CENTER
-            setTextColor(
-                ContextCompat.getColor(
-                    ctx,
-                    if (rank <= 3) R.color.on_accent else R.color.text_secondary,
-                ),
-            )
             textSize = 12f
             setBackgroundResource(R.drawable.bg_rank_circle)
-            if (rank <= 3) {
-                backgroundTintList = android.content.res.ColorStateList.valueOf(Palette.accent(ctx))
+            val medal = when (rank) {
+                1 -> R.color.rank_gold
+                2 -> R.color.rank_silver
+                3 -> R.color.rank_bronze
+                else -> 0
+            }
+            if (medal != 0) {
+                setTextColor(ContextCompat.getColor(ctx, R.color.on_accent))
+                backgroundTintList = android.content.res.ColorStateList.valueOf(ContextCompat.getColor(ctx, medal))
+            } else {
+                setTextColor(ContextCompat.getColor(ctx, R.color.text_secondary))
             }
             layoutParams = android.widget.LinearLayout.LayoutParams(dp(24), dp(24))
         })
 
+        val cityText = android.text.SpannableStringBuilder(row.city)
+        if (row.province.isNotBlank()) {
+            cityText.append(" · ").append(row.province)
+            cityText.setSpan(
+                android.text.style.ForegroundColorSpan(ContextCompat.getColor(ctx, R.color.text_tertiary)),
+                row.city.length, cityText.length, android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE,
+            )
+            // 省份不只是换色，字号也小一号（0.82 倍）
+            cityText.setSpan(
+                android.text.style.RelativeSizeSpan(0.82f),
+                row.city.length, cityText.length, android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE,
+            )
+        }
         line.addView(TextView(ctx).apply {
-            text = row.city
+            text = cityText
             setTextColor(ContextCompat.getColor(ctx, R.color.fg))
             textSize = 14f
             setPadding(dp(10), 0, 0, 0)
@@ -208,7 +264,8 @@ class HomeFragment : Fragment() {
         line.addView(TextView(ctx).apply {
             text = when (rankBy) {
                 RankBy.COUNT -> getString(R.string.home_count_value, row.count.toString())
-                RankBy.TIME -> Dates.ymd(row.lastVisitAt)
+                RankBy.AMOUNT -> getString(R.string.home_money_value, (row.amountCents / 100).toString())
+                RankBy.TIME -> getString(R.string.home_days_value, row.stayDays.toString())
             }
             setTextColor(ContextCompat.getColor(ctx, R.color.text_secondary))
             textSize = 13f

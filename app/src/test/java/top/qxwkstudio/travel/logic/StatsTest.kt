@@ -123,10 +123,16 @@ class StatsTest {
 
     @Test
     fun `按时间排序取最近一次到访`() {
-        val rows = Stats.rank(rankEntries, Stats.RankBy.TIME)
-        // 上海 900 > 苏州 600 > 北京 300
+        // 「时间」现在按**停留天数**排序（来自足迹城市段），不再按最后一次打卡时间
+        val days = mapOf("上海" to 5, "苏州" to 2, "北京" to 1)
+        val rows = Stats.rank(rankEntries, Stats.RankBy.TIME, cityDays = days)
         assertEquals(listOf("上海", "苏州", "北京"), rows.map { it.city })
-        assertEquals(900L, rows.first().lastVisitAt)
+        assertEquals(5, rows.first().stayDays)
+
+        // 「金额」按城市累计花销排序
+        val amounts = mapOf("上海" to 100, "苏州" to 300, "北京" to 200)
+        val byAmount = Stats.rank(rankEntries, Stats.RankBy.AMOUNT, cityAmounts = amounts)
+        assertEquals(listOf("苏州", "北京", "上海"), byAmount.map { it.city })
     }
 
     @Test

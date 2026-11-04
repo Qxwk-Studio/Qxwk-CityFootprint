@@ -5,12 +5,13 @@ import androidx.appcompat.app.AppCompatDelegate
 import org.maplibre.android.MapLibre
 import top.qxwkstudio.travel.data.Appearance
 import top.qxwkstudio.travel.data.CityStore
-import top.qxwkstudio.travel.data.Store
+import top.qxwkstudio.travel.data.PhotoJanitor
+import top.qxwkstudio.travel.data.Prefs
 
 /**
  * 进程入口。两件事：
  *
- * 1. 在任何一个 Activity 起来之前，把用户选的外观（浅色 / 深色 / 跟随系统，见 `Store.appearance`）
+ * 1. 在任何一个 Activity 起来之前，把用户选的外观（浅色 / 深色 / 跟随系统，见 `Prefs.appearance`）
  *    交给 AppCompat。**必须在进程最早处做**：`AppCompatDelegate.setDefaultNightMode` 是进程级静态值，
  *    晚于第一个 Activity 的 onCreate 设置，那个页面会先按系统默认（跟随系统）渲染一帧再被重建 ——
  *    有设置项的人每次冷启动都会看到一次闪烁。为什么不写在 MainActivity.onCreate（它也是 LAUNCHER）：
@@ -29,9 +30,12 @@ class CityFootprintApp : Application() {
         // 晚于任何一个 Activity 的 onCreate 都不行 —— MapView 是在布局 inflate 时构造的。
         // 这行只做进程内的原生库/上下文注册，不联网、不需要 key。
         MapLibre.getInstance(this)
-        // 读一次本机偏好（SharedPreferences 首读要落一次磁盘，就这么点开销），随后交给 AppCompat
-        applyAppearance(Store(this).appearance)
+        // 读一次本机偏好（app_settings，进程启动时读进内存），随后交给 AppCompat
+        Prefs.init(this)
+        applyAppearance(Prefs.appearance)
         preloadCities()
+        // 启动后台扫一次孤儿照片（删记录、换图、进程被杀留下的），不阻塞首帧
+        PhotoJanitor.sweepAsync(this)
     }
 
     /**

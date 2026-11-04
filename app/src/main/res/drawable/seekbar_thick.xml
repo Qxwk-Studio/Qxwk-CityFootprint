@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 加粗的评分拉条：轨道 8dp、进度同高，都是圆角。 -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@android:id/background">
+        <shape>
+            <corners android:radius="1.5dp" />
+            <size android:height="3dp" />
+            <solid android:color="@color/muted" />
+        </shape>
+    </item>
+    <item android:id="@android:id/progress">
+        <clip>
+            <shape>
+                <corners android:radius="1.5dp" />
+                <size android:height="3dp" />
+                <solid android:color="?attr/appAccent" />
+            </shape>
+        </clip>
+    </item>
+</layer-list>

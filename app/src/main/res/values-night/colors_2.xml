@@ -6,4 +6,9 @@
     <color name="stripe_trip">#60A5FA</color>
     <color name="stripe_manual">#4ADE80</color>
     <color name="stripe_derived">#CBD5E1</color>
+    <color name="map_bg">#0B1220</color>
+    <color name="map_land">#111C2E</color>
+    <color name="map_water">#16324F</color>
+    <color name="map_road">#223047</color>
+    <color name="map_province">#3B4A63</color>
 </resources>

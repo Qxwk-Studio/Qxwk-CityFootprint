@@ -1,4 +1,6 @@
-package top.qxwkstudio.travel.ui
+package top.qxwkstudio.travel.ui.mine
+
+import top.qxwkstudio.travel.ui.common.*
 
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
@@ -14,10 +16,9 @@ import top.qxwkstudio.travel.BuildConfig
 import top.qxwkstudio.travel.CityFootprintApp
 import top.qxwkstudio.travel.R
 import top.qxwkstudio.travel.data.Appearance
-import top.qxwkstudio.travel.data.CheckinRepo
+import top.qxwkstudio.travel.data.PhotoJanitor
+import top.qxwkstudio.travel.data.Prefs
 import top.qxwkstudio.travel.data.SettingsRepo
-import top.qxwkstudio.travel.data.TripRepo
-import top.qxwkstudio.travel.data.Store
 import top.qxwkstudio.travel.data.Update
 import top.qxwkstudio.travel.data.db.AppDatabase
 import top.qxwkstudio.travel.logic.Timeline
@@ -37,7 +38,6 @@ class MineFragment : Fragment() {
 
     private var _binding: FragmentMineBinding? = null
     private val binding get() = _binding!!
-    private lateinit var store: Store
 
     /** 徽章色预设（口径：一组预设，不做取色器）。名字只给弹窗用，值进库。 */
     private val badgeOptions = listOf(
@@ -54,6 +54,9 @@ class MineFragment : Fragment() {
     /** 当前徽章色（用于弹窗选中项与头像圆底）。 */
     private var currentBadge: String = SettingsRepo.DEFAULT_BADGE
 
+    /** 检查更新 / 清理照片这类耗时操作在跑时，禁用入口防重复。 */
+    private var working = false
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentMineBinding.inflate(inflater, container, false)
         return binding.root
@@ -61,20 +64,20 @@ class MineFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        store = Store(requireContext())
         binding.rowAppearance.setOnClickListener { chooseAppearance() }
         binding.rowTheme.setOnClickListener { chooseThemeColor() }
         binding.rowBadge.setOnClickListener { chooseBadgeColor() }
         binding.rowOpenSource.setOnClickListener { showOpenSource() }
         binding.rowCheckUpdate.setOnClickListener { checkUpdate() }
         binding.rowCleanupPhotos.setOnClickListener { confirmCleanupPhotos() }
+        binding.root.fadeSlideIn()
         binding.textVersion.text = BuildConfig.VERSION_NAME
         load()
     }
 
     override fun onHiddenChanged(hidden: Boolean) {
         super.onHiddenChanged(hidden)
-        if (!hidden) refreshLocal()
+        if (!hidden) { _binding?.root?.fadeSlideIn(); refreshLocal() }
     }
 
     override fun onDestroyView() {
@@ -118,7 +121,7 @@ class MineFragment : Fragment() {
     /** 外观是同步读 SharedPreferences 的，单独一个方法，切回来时不用再查库。 */
     private fun refreshLocal() {
         if (_binding == null) return
-        binding.textAppearance.setText(appearanceLabel(store.appearance))
+        binding.textAppearance.setText(appearanceLabel(Prefs.appearance))
     }
 
     private fun appearanceLabel(appearance: Appearance): Int = when (appearance) {
@@ -142,17 +145,14 @@ class MineFragment : Fragment() {
     }
 
     private fun cleanupPhotos() {
+        if (working) return
+        working = true
+        binding.rowCleanupPhotos.isEnabled = false
         viewLifecycleOwner.lifecycleScope.runIo({
-            val db = AppDatabase.get(requireContext())
-            val referenced = buildSet {
-                CheckinRepo.list(db).mapNotNullTo(this) { it.photoPath }
-                TripRepo.list(db).forEach { trip ->
-                    Timeline.decode(trip.timeline)?.segments
-                        ?.mapNotNullTo(this) { it.photoPath }
-                }
-            }
-            PhotoStore.cleanupUnreferenced(requireContext(), referenced)
+            PhotoJanitor.sweep(requireContext(), AppDatabase.get(requireContext()))
         }) { result ->
+            working = false
+            binding.rowCleanupPhotos.isEnabled = true
             val (count, bytes) = result.getOrNull() ?: (0 to 0L)
             if (count == 0) {
                 requireContext().notify(R.string.cleanup_none)
@@ -216,13 +216,13 @@ class MineFragment : Fragment() {
     private fun chooseAppearance() {
         val options = Appearance.entries
         val labels = options.map { getString(appearanceLabel(it)) }.toTypedArray()
-        val current = options.indexOf(store.appearance)
+        val current = options.indexOf(Prefs.appearance)
         MaterialAlertDialogBuilder(requireContext())
             .setTitle(R.string.mine_appearance_title)
             .setSingleChoiceItems(labels, current) { dialog, which ->
                 dialog.dismiss()
                 val picked = options[which]
-                store.saveAppearance(picked)
+                Prefs.saveAppearance(requireContext(), picked)
                 CityFootprintApp.applyAppearance(picked)
             }
             .show()
@@ -233,7 +233,12 @@ class MineFragment : Fragment() {
      * 2.0 只保留这一个网络请求。
      */
     private fun checkUpdate() {
+        if (working) return
+        working = true
+        binding.rowCheckUpdate.isEnabled = false
         viewLifecycleOwner.lifecycleScope.runIo({ Update.fetch() }) { result ->
+            working = false
+            binding.rowCheckUpdate.isEnabled = true
             val info = result.getOrNull()?.android
             if (info == null) {
                 requireContext().notify(R.string.profile_update_failed)

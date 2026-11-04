@@ -11,6 +11,12 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
+    <!-- 去过的城市名：原生 Canvas 画（中文不用字形包），见 ui/CityLabelsView -->
+    <top.qxwkstudio.travel.ui.map.CityLabelsView
+        android:id="@+id/cityLabels"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
     <!-- 载入中/失败提示：底图在真机上要几百毫秒才出来，不提示就是一片空白 -->
     <TextView
         android:id="@+id/textStatus"

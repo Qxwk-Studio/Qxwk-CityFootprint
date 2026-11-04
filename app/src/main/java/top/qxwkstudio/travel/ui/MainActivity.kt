@@ -1,5 +1,14 @@
 package top.qxwkstudio.travel.ui
 
+import top.qxwkstudio.travel.ui.common.*
+import top.qxwkstudio.travel.ui.home.HomeFragment
+import top.qxwkstudio.travel.ui.trips.TripsFragment
+import top.qxwkstudio.travel.ui.map.MapFragment
+import top.qxwkstudio.travel.ui.achievements.AchievementsFragment
+import top.qxwkstudio.travel.ui.mine.MineFragment
+import top.qxwkstudio.travel.ui.trips.CheckinEditActivity
+import top.qxwkstudio.travel.ui.trips.TripEditActivity
+
 import android.os.Bundle
 import android.view.View
 import android.view.ViewGroup
@@ -48,6 +57,8 @@ class MainActivity : AppCompatActivity() {
         setContentView(b.root)
 
         b.bottomNav.doOnLayout { pinBottomNavLabels() }
+        // 首次进入/进程恢复后也要把药丸摆好（只在用户点选时摆的话，恢复进地图等 tab 会没有滑块）
+        b.bottomNav.post { placeNavPill(b.bottomNav.selectedItemId, animate = false) }
         setupNavPill()
         setupAddMenu()
 
@@ -70,7 +81,7 @@ class MainActivity : AppCompatActivity() {
     // ────────────────────────── 右上角「+」 ──────────────────────────
 
     /**
-     * 右上角「+」的快捷菜单：城市打卡 / 添加足迹 / 自动记录（后者置灰，自动记录推到 2.1）。
+     * 右上角「+」的快捷菜单：城市打卡 / 添加足迹（自动记录整块推到 2.1，这里不再占位）。
      *
      * 浮层本体在 [showIconMenu]：自绘的图标 + 文字行，宽度 wrap —— 系统 PopupMenu 的宽度
      * 按最长项 + 系统内边距算，三个中文短词会被撑成一条横带（真机上反馈「太宽」）。
@@ -86,8 +97,7 @@ class MainActivity : AppCompatActivity() {
                     },
                     MenuAction(R.drawable.ic_trips, R.string.menu_trip) {
                         startActivity(TripEditActivity.intent(this))
-                    },
-                    MenuAction(R.drawable.ic_record, R.string.menu_auto_record, enabled = false) {},
+                    }
                 ),
             )
         }

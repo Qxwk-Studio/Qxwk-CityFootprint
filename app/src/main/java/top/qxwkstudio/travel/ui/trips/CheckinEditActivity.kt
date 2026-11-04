@@ -1,4 +1,7 @@
-package top.qxwkstudio.travel.ui
+package top.qxwkstudio.travel.ui.trips
+
+import top.qxwkstudio.travel.ui.common.*
+import top.qxwkstudio.travel.ui.picker.CityPickerActivity
 
 import android.app.Activity
 import android.content.Intent
@@ -14,6 +17,7 @@ import android.widget.ArrayAdapter
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import top.qxwkstudio.travel.R
 import top.qxwkstudio.travel.data.CheckinRepo
 import top.qxwkstudio.travel.data.CityBoundaries
@@ -51,7 +55,14 @@ class CheckinEditActivity : AppCompatActivity() {
     /** 可选信息：同行人 code / 评分 1..5 / 本地照片路径。 */
     private var companions: String? = null
     private var rating: Int? = null
+    /** 最多 3 张：存成逗号分隔的路径串，读取方只取第一张做缩略图。 */
+    private val photoPaths = mutableListOf<String>()
     private var photoPath: String? = null
+    private var amountCents: Int? = null
+    private var stayDays: Int? = null
+
+    /** 有耗时操作（保存 / 定位）在跑时，其它入口一律忽略，避免重复提交。 */
+    private var busy = false
 
     /** 照片文件名：编辑时固定成 checkin_<id>（换图直接覆盖），新增时用临时 uuid。 */
     private var photoName: String = UUID.randomUUID().toString()
@@ -78,14 +89,16 @@ class CheckinEditActivity : AppCompatActivity() {
 
     private val photoPicker = registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
         if (uri == null) return@registerForActivityResult
-        lifecycleScope.runIo({ PhotoStore.save(this, uri, photoName) }) { result ->
+        if (photoPaths.size >= 3) return@registerForActivityResult
+        lifecycleScope.runIo({ PhotoStore.save(this, uri, "${photoName}_${photoPaths.size + 1}") }) { result ->
             val path = result.getOrNull()
             if (path == null) {
                 notify(R.string.photo_failed, long = true)
                 return@runIo
             }
-            PhotoStore.delete(photoPath)
-            photoPath = path
+            if (photoPaths.size >= 3) return@runIo
+            photoPaths += path
+            photoPath = photoPaths.joinToString(",")
             renderPhoto()
         }
     }
@@ -107,20 +120,31 @@ class CheckinEditActivity : AppCompatActivity() {
         val editing = editingId != 0L
         b.topBar.title.setText(if (editing) R.string.checkin_edit_title else R.string.checkin_title)
         b.topBar.btnBack.visibility = View.VISIBLE
-        b.topBar.btnBack.setOnClickListener { finish() }
+        b.topBar.btnBack.setOnClickListener { confirmDiscard() }
 
         setupDateSpinners()
         b.inputCity.setOnClickListener { picker.launch(Intent(this, CityPickerActivity::class.java)) }
         b.btnLocate.setOnClickListener { locateIntoCity() }
-        b.btnToday.setOnClickListener { selectToday() }
-        b.switchForgot.setOnCheckedChangeListener { _, forgot -> applyForgot(forgot) }
         b.btnSave.setOnClickListener { save() }
+        b.btnDaysMinus.setOnClickListener { stepDays(-1) }
+        b.btnDaysPlus.setOnClickListener { stepDays(1) }
+        b.btnAmountMinus.setOnClickListener { stepAmount(-100) }
+        b.btnAmountPlus.setOnClickListener { stepAmount(100) }
+        b.imagePhoto.setOnClickListener { showPhotoDialog(this, photoPaths.firstOrNull()) }
         b.btnPickPhoto.setOnClickListener {
             photoPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
         }
-        buildRating()
+        setupRating()
         renderPhoto()
 
+        b.inputCompanions.addTextChangedListener(object : android.text.TextWatcher {
+            override fun afterTextChanged(s: android.text.Editable?) {
+                updateCompanionsCounter(s?.length ?: 0)
+            }
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = Unit
+        })
+        updateCompanionsCounter(0)
         b.inputNote.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = Unit
@@ -128,7 +152,11 @@ class CheckinEditActivity : AppCompatActivity() {
         })
         updateCounter(0)
 
-        if (editing) loadForEdit()
+        onBackPressedDispatcher.addCallback(this, object : androidx.activity.OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() = confirmDiscard()
+        })
+
+        if (editing) loadForEdit() else markClean()
     }
 
     // ────────────────────────── 日期 ──────────────────────────
@@ -140,8 +168,8 @@ class CheckinEditActivity : AppCompatActivity() {
         b.spinYear.adapter = ArrayAdapter(
             this, R.layout.item_spinner, years.map { getString(R.string.checkin_year, it) },
         )
-        // 月份第 0 项就是「仅到年份」：选了它等于这一档只到年。
-        // 不另放一个「空」项，是因为「有没有日期」已经由「记不清了」开关表达。
+        // 月份第 0 项 = 仅到年份；日第 0 项 = 仅到月份。精度完全由这两项决定，
+        // 不再有「记不清了」开关。
         b.spinMonth.adapter = ArrayAdapter(
             this, R.layout.item_spinner,
             listOf(getString(R.string.checkin_month_year_only)) + (1..12).map { getString(R.string.checkin_month, it) },
@@ -150,47 +178,25 @@ class CheckinEditActivity : AppCompatActivity() {
             this, R.layout.item_spinner,
             listOf(getString(R.string.checkin_day_unknown)) + (1..31).map { getString(R.string.checkin_day, it) },
         )
-        selectToday()
-    }
-
-    private fun selectToday() {
         val now = Calendar.getInstance()
-        binding.spinYear.setSelection(years.indexOf(now.get(Calendar.YEAR)).coerceAtLeast(0), false)
-        binding.spinMonth.setSelection(now.get(Calendar.MONTH) + 1, false) // 第 0 项是「仅到年份」
-        binding.spinDay.setSelection(now.get(Calendar.DAY_OF_MONTH), false) // 第 0 项是「不记得日」
-    }
-
-    /** 勾上「记不清了」就把三个下拉清空并置灰：与 1.x toggleDate 同口径，别留看着还选着的值。 */
-    private fun applyForgot(forgot: Boolean) {
-        val b = binding
-        listOf(b.spinYear, b.spinMonth, b.spinDay).forEach { it.isEnabled = !forgot }
-        b.btnToday.isEnabled = !forgot
-        if (forgot) {
-            b.spinYear.setSelection(0, false)
-            b.spinMonth.setSelection(0, false)
-            b.spinDay.setSelection(0, false)
-        }
+        b.spinYear.setSelection(years.indexOf(now.get(Calendar.YEAR)).coerceAtLeast(0), false)
+        b.spinMonth.setSelection(now.get(Calendar.MONTH) + 1, false)
+        b.spinDay.setSelection(now.get(Calendar.DAY_OF_MONTH), false)
     }
 
     /**
-     * 下拉 → (UTC 毫秒, 精度)。
-     *
-     * 补位规则：年 → 1 月 1 日；年月 → 当月 1 日；记不清 → 当年 1 月 1 日。
-     * 这些占位值只影响排序，展示由精度决定（见 TripsFragment.dateText）。
+     * 下拉 → (UTC 毫秒, 精度)：年 → 1 月 1 日；年月 → 当月 1 日；完整日期 → 当天。
+     * 占位值只影响排序，展示由精度决定（见 TripsFragment.dateText）。
      */
     private fun readDate(): Pair<Long, Int> {
         val b = binding
         val year = years[b.spinYear.selectedItemPosition]
-        if (b.switchForgot.isChecked) {
-            return placeholder(year, month = 1, day = 1) to DatePrecision.UNKNOWN
-        }
         val monthPos = b.spinMonth.selectedItemPosition
         if (monthPos == 0) return placeholder(year, 1, 1) to DatePrecision.YEAR
         val dayPos = b.spinDay.selectedItemPosition
         if (dayPos == 0) return placeholder(year, monthPos, 1) to DatePrecision.MONTH
         return placeholder(year, monthPos, dayPos) to DatePrecision.DAY
     }
-
     private fun placeholder(year: Int, month: Int, day: Int): Long =
         Calendar.getInstance().apply {
             clear()
@@ -210,12 +216,20 @@ class CheckinEditActivity : AppCompatActivity() {
      * 判不到就让用户手选，不猜。
      */
     private fun locateIntoCity() {
+        if (busy) return
         if (!Locate.granted(this)) {
             locatePermission.launch(Locate.PERMISSION)
             return
         }
+        busy = true
+        binding.btnLocate.isEnabled = false
+        fun done() {
+            busy = false
+            binding.btnLocate.isEnabled = true
+        }
         notify(R.string.locate_locating)
         Locate.current(this) { loc ->
+            done()
             if (loc == null) {
                 notify(if (Locate.enabled(this)) R.string.locate_failed else R.string.locate_disabled, long = true)
                 return@current
@@ -261,27 +275,30 @@ class CheckinEditActivity : AppCompatActivity() {
             binding.inputCompanions.setText(entity.companions.orEmpty())
             companions = entity.companions
             rating = entity.rating
+            photoPaths.clear()
+            entity.photoPath?.split(",")?.filter { it.isNotBlank() }?.forEach { photoPaths += it }
             photoPath = entity.photoPath
+            amountCents = entity.amountCents
+            stayDays = entity.stayDays
+            binding.inputAmount.setText(entity.amountCents?.let { (it / 100.0).toString() } ?: "")
+            binding.inputDays.setText(entity.stayDays?.toString() ?: "")
             photoName = "checkin_$editingId"
-            buildRating()
+            setupRating()
             renderPhoto()
             applyPrecision(entity)
+            // 所有载入动作做完才记「干净状态」：否则一进页面就被算成已修改
+            markClean()
         }
     }
 
-    /** 把库里存的精度还原成三个下拉 + 「记不清了」开关的形态。 */
+    /** 把库里存的精度还原成三个下拉的形态（老的「记不清了」按仅到年份展示）。 */
     private fun applyPrecision(entity: CheckinEntity) {
         val c = Calendar.getInstance().apply { timeInMillis = entity.checkinAt }
         val yearIndex = years.indexOf(c.get(Calendar.YEAR))
         if (yearIndex >= 0) binding.spinYear.setSelection(yearIndex, false)
 
         when (entity.datePrecision) {
-            DatePrecision.UNKNOWN -> {
-                binding.switchForgot.isChecked = true
-                applyForgot(true)
-            }
-
-            DatePrecision.YEAR -> {
+            DatePrecision.YEAR, DatePrecision.UNKNOWN -> {
                 binding.spinMonth.setSelection(0, false)
                 binding.spinDay.setSelection(0, false)
             }
@@ -297,21 +314,85 @@ class CheckinEditActivity : AppCompatActivity() {
             }
         }
     }
+    /** 停留天数步进：最少 1 天。 */
+    private fun stepDays(delta: Int) {
+        val current = binding.inputDays.text?.toString()?.toIntOrNull() ?: 1
+        val next = (current + delta).coerceAtLeast(1)
+        binding.inputDays.setText(next.toString())
+        binding.inputDays.setSelection(binding.inputDays.text?.length ?: 0)
+    }
+
+    /** 金额步进：±1 元，最小 0。 */
+    private fun stepAmount(deltaCents: Int) {
+        val current = binding.inputAmount.text?.toString()?.toDoubleOrNull() ?: 0.0
+        val next = (current + deltaCents / 100.0).coerceAtLeast(0.0)
+        binding.inputAmount.setText(
+            if (next == next.toInt().toDouble()) next.toInt().toString()
+            else String.format(java.util.Locale.US, "%.2f", next),
+        )
+        binding.inputAmount.setSelection(binding.inputAmount.text?.length ?: 0)
+    }
+
+    private fun updateCounter(length: Int) {
+        binding.textCounter.text = getString(R.string.char_counter, length, 233)
+    }
+
+    private fun updateCompanionsCounter(length: Int) {
+        binding.textCompanionsCounter.text = getString(R.string.char_counter, length, 23)
+    }
 
     // ────────────────────────── 保存 ──────────────────────────
 
+    // ────────────────────────── 未保存确认 ──────────────────────────
+
+    private var initialSnapshot: String = ""
+
+    private fun markClean() { initialSnapshot = snapshot() }
+
+    private fun snapshot(): String = buildString {
+        append(binding.inputCity.text).append('|')
+        append(binding.spinYear.selectedItemPosition).append('|')
+        append(binding.spinMonth.selectedItemPosition).append('|')
+        append(binding.spinDay.selectedItemPosition).append('|')
+        append(binding.inputNote.text).append('|')
+        append(binding.inputCompanions.text).append('|')
+        append(rating).append('|')
+        append(photoPaths.joinToString(",")).append('|')
+        append(binding.inputAmount.text).append('|')
+        append(binding.inputDays.text)
+    }
+
+    private fun isDirty(): Boolean = initialSnapshot.isNotEmpty() && snapshot() != initialSnapshot
+
+    private fun confirmDiscard() {
+        if (!isDirty()) { finish(); return }
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.discard_title)
+            .setMessage(R.string.discard_message)
+            .setPositiveButton(R.string.discard_positive) { _, _ -> finish() }
+            .setNegativeButton(R.string.discard_negative, null)
+            .show()
+    }
+
     private fun save() {
+        if (busy) return
         val picked = city
         if (picked == null) {
             showError(getString(R.string.checkin_err_city))
             return
         }
         val (at, precision) = readDate()
+        val photos = photoPaths.joinToString(",").ifBlank { null }
         val note = binding.inputNote.text?.toString()?.trim().orEmpty().take(Limits.NOTE)
+        val amountText = binding.inputAmount.text?.toString()?.trim().orEmpty()
+        amountCents = if (amountText.isEmpty()) null else (amountText.toDoubleOrNull()?.times(100))?.toInt()
+        stayDays = binding.inputDays.text?.toString()?.trim()?.toIntOrNull()
         companions = binding.inputCompanions.text?.toString()?.trim().orEmpty().ifBlank { null }
 
         binding.btnSave.isEnabled = false
         val existing = editingEntity
+        busy = true
+        binding.btnSave.isEnabled = false
         lifecycleScope.runIo({
             val db = AppDatabase.get(this)
             if (existing == null) {
@@ -323,7 +404,9 @@ class CheckinEditActivity : AppCompatActivity() {
                     note = note.ifBlank { null },
                     companions = companions,
                     rating = rating,
-                    photoPath = photoPath,
+                    photoPath = photos,
+                    amountCents = amountCents,
+                    stayDays = stayDays,
                 )
             } else {
                 // 编辑：整体替换可编辑字段，id / uuid / 编号 / 来源保持不动
@@ -338,11 +421,14 @@ class CheckinEditActivity : AppCompatActivity() {
                         note = note.ifBlank { null },
                         companions = companions,
                         rating = rating,
-                        photoPath = photoPath,
+                        photoPath = photos,
+                        amountCents = amountCents,
+                        stayDays = stayDays,
                     ),
                 )
             }
         }) { result ->
+            busy = false
             binding.btnSave.isEnabled = true
             val error = result.exceptionOrNull()
             if (error != null) {
@@ -358,44 +444,41 @@ class CheckinEditActivity : AppCompatActivity() {
     // ────────────────────────── 可选信息 ──────────────────────────
 
     /** 城市评分：5 颗星，点第 n 颗 = n 星；再点同一颗清零。 */
-    private fun buildRating() {
-        val row = binding.ratingRow
-        row.removeAllViews()
-        for (star in 1..5) {
-            row.addView(ImageView(this).apply {
-                setImageResource(if ((rating ?: 0) >= star) R.drawable.ic_star else R.drawable.ic_star_outline)
-                imageTintList = android.content.res.ColorStateList.valueOf(getColor(R.color.first_visit))
-                contentDescription = getString(R.string.rating_label)
-                setPadding(dp(2), dp(2), dp(2), dp(2))
-                layoutParams = LinearLayout.LayoutParams(dp(36), dp(36))
-                setOnClickListener {
-                    rating = if (rating == star) null else star
-                    buildRating()
-                }
-            })
-        }
-    }
+    /** 城市评分：1~10 的拉条，未评分时显示「未评分」。 */
+    private fun setupRating() {
+        val b = binding
+        b.ratingSeek.max = 9
+        b.ratingSeek.progress = (rating ?: 1) - 1
+        b.textRatingValue.text = rating?.let { getString(R.string.rating_value, it) }
+            ?: getString(R.string.rating_unrated)
+        b.ratingSeek.setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: android.widget.SeekBar?, progress: Int, fromUser: Boolean) {
+                if (!fromUser) return
+                rating = progress + 1
+                b.textRatingValue.text = getString(R.string.rating_value, progress + 1)
+            }
 
+            override fun onStartTrackingTouch(seekBar: android.widget.SeekBar?) = Unit
+            override fun onStopTrackingTouch(seekBar: android.widget.SeekBar?) = Unit
+        })
+    }
     private fun renderPhoto() {
-        val bitmap = PhotoStore.load(photoPath, maxPx = 512)
+        val first = photoPaths.firstOrNull()
+        val bitmap = PhotoStore.load(first, maxPx = 512)
         if (bitmap != null) {
             binding.imagePhoto.setImageBitmap(bitmap)
             binding.imagePhoto.visibility = View.VISIBLE
             binding.textPhotoEmpty.visibility = View.GONE
-            binding.btnPickPhoto.setText(R.string.photo_change)
+            binding.textPhotoEmpty.text = getString(R.string.photo_count_selected, photoPaths.size)
+            binding.btnPickPhoto.setText(if (photoPaths.size >= 3) R.string.photo_pick else R.string.photo_change)
         } else {
             binding.imagePhoto.visibility = View.GONE
             binding.textPhotoEmpty.visibility = View.VISIBLE
+            binding.textPhotoEmpty.setText(R.string.photo_count_hint)
             binding.btnPickPhoto.setText(R.string.photo_pick)
         }
+        binding.btnPickPhoto.isEnabled = photoPaths.size < 3
     }
-
-    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
-
-    private fun updateCounter(length: Int) {
-        binding.textCounter.text = getString(R.string.checkin_counter, length)
-    }
-
     /** 所有错误提示统一走 Toast（见 ui/Notify.kt），不再往表单里塞内联红字。 */
     private fun showError(message: String) {
         notify(message, long = true)

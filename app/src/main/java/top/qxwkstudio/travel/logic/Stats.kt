@@ -47,10 +47,36 @@ object Stats {
         val province: String,
         val count: Int,
         val lastVisitAt: Long,
+        /** 该城市累计花销（来自足迹城市段的事件金额之和；没有足迹就是 0）。 */
+        val amountCents: Int = 0,
+        /** 该城市累计停留天数（来自足迹城市段的起止日期，含首尾；没有足迹就是 0）。 */
+        val stayDays: Int = 0,
     )
 
     /** 排名维度。界面上的下拉框就这两个选项。 */
-    enum class RankBy { COUNT, TIME }
+    enum class RankBy { COUNT, AMOUNT, TIME }
+
+    /** 城市段的累计花销（所有事件金额之和）。 */
+    fun segmentCost(segment: Timeline.Segment): Int = segment.events.sumOf { it.costCents ?: 0 }
+
+    /**
+     * 城市段的停留天数（含首尾）：取段内最早与最晚事件，按本地日期差 +1。
+     * 只有一个事件时是 1 天；跨城市的时间不重复计入 —— 每段只算自己。
+     */
+    fun segmentDays(segment: Timeline.Segment): Int {
+        if (segment.events.isEmpty()) return 0
+        val first = java.util.Calendar.getInstance().apply {
+            timeInMillis = segment.events.minOf { it.time }
+            set(java.util.Calendar.HOUR_OF_DAY, 0); set(java.util.Calendar.MINUTE, 0)
+            set(java.util.Calendar.SECOND, 0); set(java.util.Calendar.MILLISECOND, 0)
+        }.timeInMillis
+        val last = java.util.Calendar.getInstance().apply {
+            timeInMillis = segment.events.maxOf { it.time }
+            set(java.util.Calendar.HOUR_OF_DAY, 0); set(java.util.Calendar.MINUTE, 0)
+            set(java.util.Calendar.SECOND, 0); set(java.util.Calendar.MILLISECOND, 0)
+        }.timeInMillis
+        return ((last - first) / 86_400_000L).toInt() + 1
+    }
 
     fun overview(entries: List<Entry>, trips: List<Trip>): Overview {
         val exact = entries.filter { DatePrecision.countsForRange(it.datePrecision) }
@@ -74,7 +100,12 @@ object Stats {
     }
 
     /** 城市排名。同一座城市按打卡条数计次、按最近一条打卡取「最近到访」。 */
-    fun rank(entries: List<Entry>, by: RankBy): List<CityRow> {
+    fun rank(
+        entries: List<Entry>,
+        by: RankBy,
+        cityAmounts: Map<String, Int> = emptyMap(),
+        cityDays: Map<String, Int> = emptyMap(),
+    ): List<CityRow> {
         if (entries.isEmpty()) return emptyList()
 
         val rows = entries
@@ -86,13 +117,16 @@ object Stats {
                     province = list.first().province,
                     count = list.size,
                     lastVisitAt = list.maxOf { it.checkinAt },
+                    amountCents = cityAmounts[city] ?: 0,
+                    stayDays = cityDays[city] ?: 0,
                 )
             }
 
         // 两个维度都用同一套 tie-break（城市名字典序），保证同一份数据每次渲染顺序一致
         return when (by) {
             RankBy.COUNT -> rows.sortedWith(compareByDescending<CityRow> { it.count }.thenBy { it.city })
-            RankBy.TIME -> rows.sortedWith(compareByDescending<CityRow> { it.lastVisitAt }.thenBy { it.city })
+            RankBy.AMOUNT -> rows.sortedWith(compareByDescending<CityRow> { it.amountCents }.thenBy { it.city })
+            RankBy.TIME -> rows.sortedWith(compareByDescending<CityRow> { it.stayDays }.thenBy { it.city })
         }
     }
 }

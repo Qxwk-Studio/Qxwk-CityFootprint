@@ -1,4 +1,7 @@
-package top.qxwkstudio.travel.ui
+package top.qxwkstudio.travel.ui.trips
+
+import top.qxwkstudio.travel.ui.common.*
+import top.qxwkstudio.travel.ui.picker.CityPickerActivity
 
 import android.app.Activity
 import android.app.DatePickerDialog
@@ -22,6 +25,7 @@ import androidx.lifecycle.lifecycleScope
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import top.qxwkstudio.travel.R
 import top.qxwkstudio.travel.data.CityStore
+import top.qxwkstudio.travel.data.PhotoJanitor
 import top.qxwkstudio.travel.data.TripInput
 import top.qxwkstudio.travel.data.TripRepo
 import top.qxwkstudio.travel.data.db.AppDatabase
@@ -65,6 +69,8 @@ class TripEditActivity : AppCompatActivity() {
         var companions: String? = null,
         var rating: Int? = null,
         var photoPath: String? = null,
+        var transport: String? = null,
+        var note: String? = null,
         val photoName: String = UUID.randomUUID().toString(),
     )
 
@@ -82,6 +88,10 @@ class TripEditActivity : AppCompatActivity() {
 
     /** 照片要落到哪一段（-1 = 没有待处理的目标）。 */
     private var photoSegment = -1
+
+    /** 选城 / 选照片进行中：防止连点开出多个选择器。 */
+    private var picking = false
+    private var photoPicking = false
 
     private val picker = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         val target = pickingSegment
@@ -197,6 +207,8 @@ class TripEditActivity : AppCompatActivity() {
                     companions = segment.companions,
                     rating = segment.rating,
                     photoPath = segment.photoPath,
+                    transport = segment.transport,
+                    note = segment.note,
                     events = segment.events.map { event ->
                         DraftEvent(
                             id = event.id,
@@ -217,6 +229,8 @@ class TripEditActivity : AppCompatActivity() {
     // ────────────────────────── 编辑器 ──────────────────────────
 
     private fun startPickCity(segmentIndex: Int) {
+        if (picking) return
+        picking = true
         pickingSegment = segmentIndex
         picker.launch(Intent(this, CityPickerActivity::class.java))
     }
@@ -336,6 +350,34 @@ class TripEditActivity : AppCompatActivity() {
         }
 
         box.addView(EditText(this).apply {
+            hint = getString(R.string.trip_transport_hint)
+            setText(segment.transport.orEmpty())
+            textSize = 14f
+            maxLines = 1
+            setPadding(0, dp(6), 0, 0)
+            addTextChangedListener(object : TextWatcher {
+                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
+                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = Unit
+                override fun afterTextChanged(s: Editable) {
+                    segment.transport = s.toString().trim().ifBlank { null }
+                }
+            })
+        })
+        box.addView(EditText(this).apply {
+            hint = getString(R.string.trip_segment_note_hint)
+            setText(segment.note.orEmpty())
+            textSize = 13f
+            maxLines = 2
+            setPadding(0, dp(6), 0, 0)
+            addTextChangedListener(object : TextWatcher {
+                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
+                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = Unit
+                override fun afterTextChanged(s: Editable) {
+                    segment.note = s.toString().trim().ifBlank { null }
+                }
+            })
+        })
+        box.addView(EditText(this).apply {
             hint = getString(R.string.companions_hint)
             setText(segment.companions.orEmpty())
             textSize = 14f
@@ -382,6 +424,8 @@ class TripEditActivity : AppCompatActivity() {
             })
         }
         photoRow.addView(addAction(getString(if (thumb == null) R.string.photo_pick else R.string.photo_change)) {
+            if (photoPicking) return@addAction
+            photoPicking = true
             photoSegment = index
             photoPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
         })
@@ -601,10 +645,14 @@ class TripEditActivity : AppCompatActivity() {
             segments = segments.map { segment ->
                 Timeline.Segment(
                     city = segment.city.name,
+                    cityCode = segment.city.adcode,
+                    province = segment.city.province,
                     events = segment.events.map { it.toEvent() },
                     companions = segment.companions,
                     rating = segment.rating,
                     photoPath = segment.photoPath,
+                    transport = segment.transport,
+                    note = segment.note,
                 )
             },
         )
@@ -633,6 +681,7 @@ class TripEditActivity : AppCompatActivity() {
                 return@runIo
             }
             notify(R.string.trip_saved)
+            PhotoJanitor.sweepAsync(this)
             setResult(Activity.RESULT_OK)
             finish()
         }
@@ -642,22 +691,26 @@ class TripEditActivity : AppCompatActivity() {
         if (editingId == 0L) return
         val title = binding.inputTitle.text?.toString().orEmpty()
         MaterialAlertDialogBuilder(this)
-            .setTitle(R.string.trip_delete_confirm_title)
-            .setMessage(getString(R.string.trip_delete_confirm_message, title))
+            .setTitle(R.string.delete_title)
+            .setMessage(getString(R.string.delete_message, title))
             .setPositiveButton(R.string.common_delete) { _, _ -> delete() }
             .setNegativeButton(R.string.common_cancel, null)
             .show()
     }
 
     private fun delete() {
+        if (!binding.topBar.btnDelete.isEnabled) return
+        binding.topBar.btnDelete.isEnabled = false
         val id = editingId
         binding.btnSave.isEnabled = false
         lifecycleScope.runIo({ TripRepo.delete(AppDatabase.get(this), id) }) { result ->
             binding.btnSave.isEnabled = true
             if (result.isFailure) {
+                binding.topBar.btnDelete.isEnabled = true
                 showError(result.exceptionOrNull()?.message ?: getString(R.string.common_error))
                 return@runIo
             }
+            PhotoJanitor.sweepAsync(this)
             setResult(Activity.RESULT_OK)
             finish()
         }
@@ -670,10 +723,10 @@ class TripEditActivity : AppCompatActivity() {
             return
         }
         MaterialAlertDialogBuilder(this)
-            .setTitle(R.string.trip_cancel)
-            .setMessage(R.string.trip_discard_message)
-            .setPositiveButton(R.string.common_confirm) { _, _ -> finish() }
-            .setNegativeButton(R.string.common_cancel, null)
+            .setTitle(R.string.discard_title)
+            .setMessage(R.string.discard_message)
+            .setPositiveButton(R.string.discard_positive) { _, _ -> finish() }
+            .setNegativeButton(R.string.discard_negative, null)
             .show()
     }
 
@@ -686,7 +739,7 @@ class TripEditActivity : AppCompatActivity() {
     private fun snapshot(): String =
         binding.inputTitle.text.toString() + "|" + binding.inputNote.text.toString() + "|" +
             segments.joinToString(";") { segment ->
-                segment.city.name + "|" + segment.companions + "|" + segment.rating + "|" +
+                segment.city.name + "|" + segment.companions + "|" + segment.note + "|" + segment.rating + "|" +
                     segment.events.joinToString(",") { "${it.id}:${it.time}:${it.type}:${it.note}" }
             }
 

@@ -36,4 +36,7 @@
     <color name="window_bg_light">#FFFFFF</color>
     <color name="first_visit">#B45309</color>     <!-- 首访：金色文字/描边 -->
     <color name="first_visit_bg">#FEF3C7</color>  <!-- 首访：金色浅底 -->
+    <color name="rank_gold">#B8860B</color>   <!-- 排名第 1：金 -->
+    <color name="rank_silver">#8C99A8</color> <!-- 排名第 2：银 -->
+    <color name="rank_bronze">#A9663B</color> <!-- 排名第 3：铜 -->
 </resources>

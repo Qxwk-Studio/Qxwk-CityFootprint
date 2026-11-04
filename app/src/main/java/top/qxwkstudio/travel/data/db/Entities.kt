@@ -97,7 +97,7 @@ data class TripEntity(
 @Entity(
     tableName = "city_checkins",
     indices = [
-        Index(value = ["trip_uuid", "city_name", "source"], unique = true),
+        Index(value = ["trip_uuid", "segment_index", "source"], unique = true),
         Index(value = ["city_name"]),
         Index(value = ["checkin_at"]),
     ],
@@ -119,6 +119,12 @@ data class CheckinEntity(
     val rating: Int? = null,
     /** 本地照片路径；null = 没配图。 */
     @ColumnInfo(name = "photo_path") val photoPath: String? = null,
+    /** 派生打卡对应行程里的第几个城市段；手动打卡为 0。 */
+    @ColumnInfo(name = "segment_index") val segmentIndex: Int = 0,
+    /** 该城市的金额（分）：手动可填，派生打卡由足迹城市段复制。 */
+    @ColumnInfo(name = "amount_cents") val amountCents: Int? = null,
+    /** 该城市的停留天数（含首尾）：手动可填，派生打卡由足迹城市段复制。 */
+    @ColumnInfo(name = "stay_days") val stayDays: Int? = null,
     @ColumnInfo(name = "seq_no") val seqNo: Int,
     @ColumnInfo(name = "modified_at") val modifiedAt: Long,
     @ColumnInfo(name = "deleted_at") val deletedAt: Long? = null,

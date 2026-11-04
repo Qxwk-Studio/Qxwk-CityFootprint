@@ -1,19 +1,18 @@
-package top.qxwkstudio.travel.ui
+package top.qxwkstudio.travel.ui.common
 
 import android.content.Context
 import android.graphics.Color
 import androidx.core.content.ContextCompat
 import top.qxwkstudio.travel.R
-import top.qxwkstudio.travel.data.Store
+import top.qxwkstudio.travel.data.Prefs
 
 /**
  * 「主题色」预设（口径 16）：一个色值同时喂给两处 ——
  *  1. [overlayRes]：Activity 主题叠加，让按钮/开关/底栏选中态这些**系统控件**跟着换色；
  *  2. [accent]：代码里自己画的强调色（名次圆、进度条、chip、地图城市面）。
  *
- * 为什么存在 SharedPreferences 而不是 `app_settings` 表：Activity 在 setContentView **之前**
- * 就要应用主题叠层，那一刻只能同步读；数据库是异步的。等外观偏好一起迁库时（P6 后半 / 2.1），
- * 这里换成「启动时把值预读进内存」即可，调用方不用改。
+ * 为什么还要一层内存缓存：Activity 在 setContentView **之前**就要应用主题叠层，
+ * 只能同步拿值 —— 进程启动时从 `app_settings` 读进内存（见 data/Prefs）。
  *
  * 默认值 [DEFAULT] 与基础主题里的 appAccent 保持一致（@color/accent）。
  */
@@ -35,7 +34,7 @@ object Palette {
 
     /** 当前预设。认不出的值（换版本/手改）退回默认，别让界面卡成一片。 */
     fun selected(context: Context): Preset {
-        val key = Store(context.applicationContext).accentKey
+        val key = Prefs.accentKey
         return presets.firstOrNull { it.key == key } ?: presets.first()
     }
 
@@ -47,6 +46,6 @@ object Palette {
     }
 
     fun save(context: Context, key: String) {
-        Store(context.applicationContext).saveAccentKey(key)
+        Prefs.saveAccentKey(context.applicationContext, key)
     }
 }

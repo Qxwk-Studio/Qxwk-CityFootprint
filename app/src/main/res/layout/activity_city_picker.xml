@@ -2,6 +2,7 @@
 <!-- 城市选择页的外壳：与其余三页共用同一份顶栏（view_top_bar.xml）。
      这一页设计稿里没有，所以不给它加底栏 —— 整页就是一个搜索结果列表，空间留给列表更实在。 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/bg"
@@ -14,24 +15,23 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content" />
 
-    <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/searchLayout"
-        style="@style/Widget.App.TextInputLayout"
+    <!-- 搜索框：直接一个输入框（提示语在框内），与其它表单同圆角 -->
+    <EditText
+        android:id="@+id/inputSearch"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginStart="16dp"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="12dp"
         android:layout_marginEnd="16dp"
-        android:hint="@string/city_search_hint">
-
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/inputSearch"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:imeOptions="actionSearch"
-            android:inputType="text"
-            android:maxLines="1" />
-    </com.google.android.material.textfield.TextInputLayout>
+        android:background="@drawable/bg_card"
+        android:hint="@string/city_search_hint"
+        android:imeOptions="actionSearch"
+        android:inputType="text"
+        android:maxLines="1"
+        android:padding="12dp"
+        android:textColor="@color/fg"
+        android:textColorHint="@color/text_tertiary"
+        android:textSize="14sp" />
 
     <!-- id=content 是给 edge-to-edge 用的：导航栏那截高度加到它的 paddingBottom 上，
          列表最后几行不会被手势条盖住（见 ui/EdgeToEdge.kt） -->

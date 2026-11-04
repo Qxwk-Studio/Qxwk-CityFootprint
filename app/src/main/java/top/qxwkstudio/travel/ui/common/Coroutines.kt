@@ -1,4 +1,4 @@
-package top.qxwkstudio.travel.ui
+package top.qxwkstudio.travel.ui.common
 
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope

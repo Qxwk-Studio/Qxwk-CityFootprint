@@ -71,12 +71,24 @@ interface CheckinDao {
     @Query("SELECT * FROM city_checkins WHERE id = :id AND deleted_at IS NULL")
     suspend fun byId(id: Long): CheckinEntity?
 
-    @Query("SELECT * FROM city_checkins WHERE trip_uuid = :tripUuid AND deleted_at IS NULL")
+    /**
+     * 未来的同步只取**手动打卡**：派生打卡是行程的产物，每台设备本地重算即可，
+     * 同步它只会在两台设备上各算出一套重复数据。
+     */
+    @Query("SELECT * FROM city_checkins WHERE source = ${CheckinSource.MANUAL} AND deleted_at IS NULL")
+    suspend fun syncableCheckins(): List<CheckinEntity>
+    /**
+     * 该行程的全部派生打卡，**含已软删的墓碑**（重算时按城市段序号复用行，避免与唯一索引冲突）。
+     */
+    @Query("SELECT * FROM city_checkins WHERE trip_uuid = :tripUuid AND source = ${CheckinSource.DERIVED}")
     suspend fun derivedForTrip(tripUuid: String): List<CheckinEntity>
 
-    /** 重算前的清场：**物理删除**该行程的全部派生打卡（理由见类注释）。 */
-    @Query("DELETE FROM city_checkins WHERE trip_uuid = :tripUuid AND source = ${CheckinSource.DERIVED}")
-    suspend fun deleteDerivedForTrip(tripUuid: String)
+    /**
+     * 重算前把旧派生打卡打成墓碑（不再物理删除）：同步功能需要「删除」也能传播，
+     * 物理删掉的话别的设备永远不知道这条被删了。
+     */
+    @Query("UPDATE city_checkins SET deleted_at = :at, modified_at = :at WHERE trip_uuid = :tripUuid AND source = ${CheckinSource.DERIVED}")
+    suspend fun softDeleteDerivedForTrip(tripUuid: String, at: Long)
 
     /** 全部活着的打卡，按时间倒序（行程页的「打卡」分段用）。 */
     @Query("SELECT * FROM city_checkins WHERE deleted_at IS NULL ORDER BY checkin_at DESC, id DESC")

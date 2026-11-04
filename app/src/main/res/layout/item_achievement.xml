@@ -89,7 +89,8 @@
                 style="?android:attr/progressBarStyleHorizontal"
                 android:layout_width="0dp"
                 android:layout_height="6dp"
-                android:layout_weight="1" />
+                android:layout_weight="1"
+                android:progressDrawable="@drawable/progress_rounded" />
 
             <TextView
                 android:id="@+id/textProgress"

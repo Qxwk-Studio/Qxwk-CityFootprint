@@ -14,12 +14,13 @@
     <style name="Theme.CityFootprint" parent="Theme.Material3.DayNight.NoActionBar">
         <!-- 把语义色接进 Material，让按钮 / 开关 / 输入框 / 进度自动跟着走 -->
         <item name="appAccent">@color/accent</item>
+        <item name="appAccentLight">@color/accent_light</item>
         <item name="colorPrimary">?attr/appAccent</item>
         <item name="colorOnPrimary">@color/on_accent</item>
-        <item name="colorPrimaryContainer">@color/accent_light</item>
+        <item name="colorPrimaryContainer">?attr/appAccentLight</item>
         <item name="colorOnPrimaryContainer">@color/accent_soft_fg</item>
         <item name="colorSecondary">?attr/appAccent</item>
-        <item name="colorSecondaryContainer">@color/accent_light</item>
+        <item name="colorSecondaryContainer">?attr/appAccentLight</item>
         <item name="colorOnSecondaryContainer">@color/accent_soft_fg</item>
         <item name="colorSurface">@color/card</item>
         <item name="colorOnSurface">@color/fg</item>
@@ -70,20 +71,6 @@
     <style name="TextAppearance.App.PopupMenuItem" parent="TextAppearance.Material3.BodyLarge">
         <item name="android:textColor">@color/fg</item>
         <item name="android:textSize">15sp</item>
-    </style>
-
-    <!-- 输入框：圆角 8dp + 浅底 + 1dp 描边（聚焦态同宽，不变粗） -->
-    <style name="Widget.App.TextInputLayout" parent="Widget.Material3.TextInputLayout.OutlinedBox">
-        <item name="boxCornerRadiusTopStart">8dp</item>
-        <item name="boxCornerRadiusTopEnd">8dp</item>
-        <item name="boxCornerRadiusBottomStart">8dp</item>
-        <item name="boxCornerRadiusBottomEnd">8dp</item>
-        <item name="boxStrokeColor">@color/field_stroke</item>
-        <item name="boxStrokeWidth">1dp</item>
-        <item name="boxStrokeWidthFocused">1dp</item>
-        <item name="boxBackgroundColor">@color/popover</item>
-        <item name="hintTextColor">@color/muted_fg</item>
-        <item name="android:textColorHint">@color/muted_fg</item>
     </style>
 
     <!-- 底部导航：选中项的「药丸」由 MainActivity 的共享 View 画（item 自己画的做不了位移动画），

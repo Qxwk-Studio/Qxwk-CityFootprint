@@ -6,4 +6,5 @@
      用户选的预设由 ThemeOverlay.App.Accent.* 覆盖（见 themes_accent.xml）。 -->
 <resources>
     <attr name="appAccent" format="color" />
+    <attr name="appAccentLight" format="color" />
 </resources>

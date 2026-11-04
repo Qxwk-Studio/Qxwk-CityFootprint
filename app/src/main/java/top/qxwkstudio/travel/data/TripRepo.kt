@@ -106,14 +106,14 @@ object TripRepo {
     /**
      * 删除一条行程：软删行程本身（留痕），但**物理删**它的派生打卡。
      *
-     * 理由与 CheckinDao.deleteDerivedForTrip 相同：派生打卡挂着唯一索引，软删的行会一直占着键；
+     * 理由与 CheckinDao.softDeleteDerivedForTrip 相同：派生打卡挂着唯一索引，软删的行会一直占着键；
      * 而且它随时能从时间线重算，没有留痕价值。手动打卡不受影响 —— 它们与行程没有归属关系。
      */
     suspend fun delete(db: AppDatabase, id: Long, now: Long = System.currentTimeMillis()) {
         db.withTransaction {
             val existing = db.trips().byId(id) ?: return@withTransaction
             db.trips().softDelete(id, now)
-            db.checkins().deleteDerivedForTrip(existing.uuid)
+            db.checkins().softDeleteDerivedForTrip(existing.uuid, now)
         }
         DataVersion.bump()
     }
@@ -129,9 +129,12 @@ object TripRepo {
     }
 
     /**
-     * 重算派生打卡：先物理删掉这条行程的旧派生行，再按时间线重新插。
+     * 重算派生打卡：把旧派生行打成墓碑，再按时间线更新/插入。
      *
-     * 只动 `source = 派生` 的行；用户手动打卡与行程没有归属关系，绝不能被这里带走。
+     * 两个为「未来同步」做的决定：
+     *  1. 不再物理删除 —— 删除要能通过墓碑传播到别的设备；
+     *  2. uuid 由 (行程 uuid, 城市段序号) 确定性生成 —— 同一段在任何设备/任何一次重算
+     *     都是同一个身份，不会每次同步都变成「新记录」。v3（MD5）足够，不需要随机。
      */
     private suspend fun recomputeDerived(
         db: AppDatabase,
@@ -139,32 +142,64 @@ object TripRepo {
         lookup: CityLookup,
         now: Long,
     ) {
-        db.checkins().deleteDerivedForTrip(trip.uuid)
+        // 先按城市段序号记下旧行（含墓碑），再全部打成墓碑
+        val existing = db.checkins().derivedForTrip(trip.uuid).associateBy { it.segmentIndex }
+        db.checkins().softDeleteDerivedForTrip(trip.uuid, now)
+
         val timeline = Timeline.decode(trip.timeline) ?: return
         val derived = deriveCheckins(timeline, lookup)
-        if (derived.isEmpty()) return
-        db.checkins().insertAll(
-            derived.map { checkin ->
-                CheckinEntity(
-                    uuid = UUID.randomUUID().toString(),
-                    cityName = checkin.cityName,
-                    cityCode = checkin.cityCode,
-                    province = checkin.province,
-                    source = CheckinSource.DERIVED,
-                    tripUuid = trip.uuid,
-                    checkinAt = checkin.checkinAt,
-                    // 派生打卡永远精确到日：时间线节点本来就带具体时间
-                    datePrecision = DatePrecision.DAY,
-                    companions = checkin.companions,
-                    rating = checkin.rating,
-                    photoPath = checkin.photoPath,
-                    seqNo = 0, // 派生打卡不显示编号，编号列留给手动打卡
-                    modifiedAt = now,
+        derived.forEach { checkin ->
+            val uuid = derivedUuid(trip.uuid, checkin.segmentIndex)
+            val old = existing[checkin.segmentIndex]
+            if (old != null) {
+                db.checkins().update(
+                    old.copy(
+                        uuid = uuid,
+                        cityName = checkin.cityName,
+                        cityCode = checkin.cityCode,
+                        province = checkin.province,
+                        checkinAt = checkin.checkinAt,
+                        datePrecision = DatePrecision.DAY,
+                        companions = checkin.companions,
+                        rating = checkin.rating,
+                        photoPath = checkin.photoPath,
+                        note = checkin.note,
+                        amountCents = checkin.amountCents,
+                        stayDays = checkin.stayDays,
+                        seqNo = 0,
+                        modifiedAt = now,
+                        deletedAt = null,
+                    ),
+                )
+            } else {
+                db.checkins().insert(
+                    CheckinEntity(
+                        uuid = uuid,
+                        cityName = checkin.cityName,
+                        cityCode = checkin.cityCode,
+                        province = checkin.province,
+                        source = CheckinSource.DERIVED,
+                        tripUuid = trip.uuid,
+                        checkinAt = checkin.checkinAt,
+                        datePrecision = DatePrecision.DAY,
+                        companions = checkin.companions,
+                        rating = checkin.rating,
+                        photoPath = checkin.photoPath,
+                        note = checkin.note,
+                        segmentIndex = checkin.segmentIndex,
+                        amountCents = checkin.amountCents,
+                        stayDays = checkin.stayDays,
+                        seqNo = 0,
+                        modifiedAt = now,
+                    ),
                 )
             }
-        )
+        }
     }
 
+    /** 派生打卡的稳定身份：同一行程的同一城市段永远得到同一个 uuid。 */
+    private fun derivedUuid(tripUuid: String, segmentIndex: Int): String =
+        UUID.nameUUIDFromBytes("derived:$tripUuid:$segmentIndex".toByteArray()).toString()
     /** 与表单同一套校验，再补上标题（时间线管不到它）。 */
     private fun validate(input: TripInput): String? {
         if (input.title.isBlank()) return "请输入标题"

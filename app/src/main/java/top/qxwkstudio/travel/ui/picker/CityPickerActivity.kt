@@ -1,4 +1,6 @@
-package top.qxwkstudio.travel.ui
+package top.qxwkstudio.travel.ui.picker
+
+import top.qxwkstudio.travel.ui.common.*
 
 import android.app.Activity
 import android.content.Context
@@ -21,8 +23,6 @@ import top.qxwkstudio.travel.databinding.ItemCityBinding
 import top.qxwkstudio.travel.databinding.ItemCityGroupBinding
 import top.qxwkstudio.travel.logic.City
 import top.qxwkstudio.travel.logic.CitySearch
-import java.text.Collator
-import java.util.Locale
 
 /**
  * 城市选择页：从 assets/cities.json（由 app/tools/gen-cities.mjs 从 docs/ 生成）里搜索，
@@ -58,7 +58,7 @@ class CityPickerActivity : AppCompatActivity() {
         setContentView(b.root)
 
         // 顶栏（view_top_bar.xml）不自带文案，返回按钮也默认隐藏：这一页两样都要自己填
-        b.topBar.title.setText(R.string.edit_city)
+        b.topBar.title.setText(R.string.city_picker_title)
         b.topBar.btnBack.visibility = View.VISIBLE
         b.topBar.btnBack.setOnClickListener { finish() }
 
@@ -98,36 +98,35 @@ class CityPickerActivity : AppCompatActivity() {
     }
 
     /**
-     * 按「国家 + 省份」分组：两级都按**拼音**排序（Collator + Locale.CHINA）——
-     * 「安徽 → 北京 → 重庆 …」才是人顺着往下找的顺序，直接比字符串得到的是码点序，读着乱七八糟。
-     * 城市表里没有拼音字段，所以排序交给 Collator，检索仍按名称/省份包含匹配（见 CitySearch）。
-     *
-     * 分组键带上国家（现在清一色「中国」）：以后加国外城市时，重名的省份（好几个国家都有「中央省」
-     * 这类）不会被并进同一组，排序也自然按国家聚成一堆。标题只在非中国城市上显示国家前缀 ——
-     * 否则每个标题都挂着「中国 ·」，白占地方。
-     *
-     * 省份为空的城市归到一个「其他」组里，而不是丢掉：少一座城市比多一个奇怪的分组更难查。
+     * 按「国家 + 省份」分组，**按身份证地区码（adcode）排序**：
+     *  - 省份：取该省城市 adcode 的最小值 / 10000（11 北京、31 上海 …），缺 adcode 的排最后；
+     *  - 城市：按自身 adcode 升序，相同/缺失时再按名字兜底。
+     * 这比拼音更符合「按行政区找城市」的直觉，也和官方区划码一致。
      */
     private fun groupRows(cities: List<City>): List<CityRow> {
-        val collator = Collator.getInstance(Locale.CHINA)
+        fun provinceOrder(group: List<City>): Int =
+            group.mapNotNull { it.adcode }.minOrNull()?.div(10000) ?: Int.MAX_VALUE
+
         return cities
             .groupBy { it.country to it.province.ifBlank { getString(R.string.city_group_unknown) } }
             .entries
-            .sortedWith { a, b ->
-                collator.compare(a.key.first, b.key.first).takeIf { it != 0 }
-                    ?: collator.compare(a.key.second, b.key.second)
-            }
+            .sortedWith(
+                compareBy<Map.Entry<Pair<String, String>, List<City>>>(
+                    { provinceOrder(it.value) },
+                    { it.key.second },
+                ),
+            )
             .flatMap { (key, inGroup) ->
                 val (country, province) = key
                 val title = if (country == City.DEFAULT_COUNTRY) province else "$country · $province"
                 buildList {
                     add(CityRow.Header(getString(R.string.city_group_title, title, inGroup.size)))
-                    inGroup.sortedWith { a, b -> collator.compare(a.name, b.name) }
-                        .forEach { add(CityRow.Entry(it)) }
+                    inGroup.sortedWith(
+                        compareBy<City>({ it.adcode ?: Int.MAX_VALUE }, { it.name }),
+                    ).forEach { add(CityRow.Entry(it)) }
                 }
             }
     }
-
     private fun pick(city: City) {
         setResult(
             Activity.RESULT_OK,

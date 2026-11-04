@@ -11,6 +11,6 @@
     android:paddingTop="10dp"
     android:paddingEnd="16dp"
     android:paddingBottom="6dp"
-    android:textColor="@color/muted_fg"
-    android:textSize="12sp"
+    android:textColor="@color/fg"
+    android:textSize="15sp"
     android:textStyle="bold" />

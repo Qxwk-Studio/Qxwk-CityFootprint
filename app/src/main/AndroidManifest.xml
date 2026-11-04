@@ -42,21 +42,32 @@
         <!-- 城市选择页：从 assets/cities.json 里搜城市，把城市名与坐标回传给调用方
              （手动打卡页 / 行程编辑器）。 -->
         <activity
-            android:name=".ui.CityPickerActivity"
+            android:name=".ui.picker.CityPickerActivity"
             android:exported="false"
             android:parentActivityName=".ui.MainActivity"
             android:windowSoftInputMode="adjustResize" />
 
         <!-- 手动打卡页：城市 + 四档日期精度 + 备注 -->
         <activity
-            android:name=".ui.CheckinEditActivity"
+            android:name=".ui.trips.CheckinEditActivity"
             android:exported="false"
             android:parentActivityName=".ui.MainActivity"
             android:windowSoftInputMode="adjustResize" />
 
+        <!-- 只读详情页：列表点击先进这里，右上角「编辑」再进编辑器 -->
+        <activity
+            android:name=".ui.trips.TripDetailActivity"
+            android:exported="false"
+            android:parentActivityName=".ui.MainActivity" />
+
+        <activity
+            android:name=".ui.trips.CheckinDetailActivity"
+            android:exported="false"
+            android:parentActivityName=".ui.MainActivity" />
+
         <!-- 行程编辑器：标题 + 时间线事件列表 + 备注；保存时自动派生关联打卡 -->
         <activity
-            android:name=".ui.TripEditActivity"
+            android:name=".ui.trips.TripEditActivity"
             android:exported="false"
             android:parentActivityName=".ui.MainActivity"
             android:windowSoftInputMode="adjustResize" />

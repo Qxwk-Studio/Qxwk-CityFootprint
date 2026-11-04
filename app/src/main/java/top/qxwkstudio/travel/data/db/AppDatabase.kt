@@ -39,7 +39,7 @@ abstract class AppDatabase : RoomDatabase() {
 
     companion object {
         /** 改表时 +1 并补迁移；发版前可以随意改（见类注释）。 */
-        const val VERSION = 2
+        const val VERSION = 5
 
         private const val DB_NAME = "city_footprint.db"
 
@@ -50,6 +50,62 @@ abstract class AppDatabase : RoomDatabase() {
          * 也不会碰唯一索引。改表必须带迁移 —— 没有迁移的话，升级用户一开库就
          * `Room cannot verify the data integrity` 崩溃。
          */
+        /** 2 → 3：打卡增加「金额 / 停留天数」两列（可空，手动打卡可填、派生打卡从城市段复制）。 */
+        /** 3 → 4：同一座城市允许出现多段（一段一条派生打卡），唯一索引改按城市段序号。 */
+        /**
+         * 4 → 5：修复 3→4 的迁移缺陷（老库同一行程多城派生打卡在建唯一索引时冲突、迁移回滚）。
+         *
+         * 顺带兜底「数据库已记成 v4、但索引没建上」的情况：重算段序号并重建索引，幂等。
+         */
+        private val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "UPDATE city_checkins SET segment_index = (" +
+                        "SELECT COUNT(*) FROM city_checkins c2 " +
+                        "WHERE c2.trip_uuid = city_checkins.trip_uuid " +
+                        "AND c2.source = city_checkins.source " +
+                        "AND c2.id < city_checkins.id" +
+                        ") WHERE trip_uuid IS NOT NULL",
+                )
+                db.execSQL("DROP INDEX IF EXISTS index_city_checkins_trip_uuid_segment_index_source")
+                db.execSQL("DROP INDEX IF EXISTS index_city_checkins_trip_uuid_city_name_source")
+                db.execSQL(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS index_city_checkins_trip_uuid_segment_index_source " +
+                        "ON city_checkins(trip_uuid, segment_index, source)",
+                )
+            }
+        }
+
+        private val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE city_checkins ADD COLUMN segment_index INTEGER NOT NULL DEFAULT 0")
+                // 关键：老库里同一行程的多条派生打卡（每城一条）都只能先落成 0，
+                // 直接建新唯一索引会冲突、整个迁移回滚（症状：页面读库全失败、像数据丢了）。
+                // 先按 id 顺序给派生打卡编号，再建索引。手动打卡 trip_uuid 为 NULL，一律保持 0。
+                db.execSQL(
+                    "UPDATE city_checkins SET segment_index = (" +
+                        "SELECT COUNT(*) FROM city_checkins c2 " +
+                        "WHERE c2.trip_uuid = city_checkins.trip_uuid " +
+                        "AND c2.source = city_checkins.source " +
+                        "AND c2.id < city_checkins.id" +
+                        ") WHERE trip_uuid IS NOT NULL",
+                )
+                db.execSQL("DROP INDEX IF EXISTS index_city_checkins_trip_uuid_city_name_source")
+                db.execSQL("DROP INDEX IF EXISTS index_city_checkins_trip_uuid_segment_index_source")
+                db.execSQL(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS index_city_checkins_trip_uuid_segment_index_source " +
+                        "ON city_checkins(trip_uuid, segment_index, source)",
+                )
+            }
+        }
+
+        private val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE city_checkins ADD COLUMN amount_cents INTEGER")
+                db.execSQL("ALTER TABLE city_checkins ADD COLUMN stay_days INTEGER")
+            }
+        }
+
         private val MIGRATION_1_2 = object : Migration(1, 2) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE city_checkins ADD COLUMN companions TEXT")
@@ -68,7 +124,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     DB_NAME,
                 )
-                    .addMigrations(MIGRATION_1_2)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
                     .build()
                     .also { instance = it }
             }

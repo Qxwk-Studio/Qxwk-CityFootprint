@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 圆角进度条：轨道与进度都用 3dp 圆角的 shape，进度用 clip 裁出来。 -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@android:id/background">
+        <shape>
+            <corners android:radius="3dp" />
+            <solid android:color="@color/muted" />
+        </shape>
+    </item>
+    <item android:id="@android:id/progress">
+        <clip>
+            <shape>
+                <corners android:radius="3dp" />
+                <solid android:color="?attr/appAccent" />
+            </shape>
+        </clip>
+    </item>
+</layer-list>

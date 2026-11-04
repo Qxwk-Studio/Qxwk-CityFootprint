@@ -1,4 +1,10 @@
-package top.qxwkstudio.travel.ui
+package top.qxwkstudio.travel.ui.trips
+
+import top.qxwkstudio.travel.ui.common.*
+import android.view.animation.PathInterpolator
+import top.qxwkstudio.travel.ui.common.Palette
+import top.qxwkstudio.travel.logic.Provinces
+import android.widget.FrameLayout
 
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
@@ -17,6 +23,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import top.qxwkstudio.travel.R
 import top.qxwkstudio.travel.data.CheckinRepo
 import top.qxwkstudio.travel.data.DataVersion
+import top.qxwkstudio.travel.data.PhotoJanitor
 import top.qxwkstudio.travel.data.TripRepo
 import top.qxwkstudio.travel.data.db.AppDatabase
 import top.qxwkstudio.travel.data.db.CheckinEntity
@@ -67,17 +74,21 @@ class TripsFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        binding.root.fadeSlideIn()
         binding.btnSegCheckins.setOnClickListener {
             if (segment == Segment.CHECKINS) return@setOnClickListener
             segment = Segment.CHECKINS
             render()
+            binding.segTrack.post { moveIndicator(animate = true) }
         }
         binding.btnSegTrips.setOnClickListener {
             if (segment == Segment.TRIPS) return@setOnClickListener
             segment = Segment.TRIPS
             render()
+            binding.segTrack.post { moveIndicator(animate = true) }
         }
         load()
+        binding.segTrack.post { moveIndicator(animate = false) }
     }
 
     override fun onDestroyView() {
@@ -87,13 +98,17 @@ class TripsFragment : Fragment() {
 
     override fun onHiddenChanged(hidden: Boolean) {
         super.onHiddenChanged(hidden)
-        if (!hidden) load()
+        if (!hidden) { _binding?.root?.fadeSlideIn(); load() }
     }
 
     /** 从打卡页回来时本页没被 hide 过，靠版本号判断要不要重读（同 HomeFragment）。 */
+    /**
+     * 从详情页 / 编辑器回来一律重读：卡片内容（标题、备注、城市数）改完要立刻可见。
+     * 本地两次查询很便宜，不值得为省它去赌版本号的时序。
+     */
     override fun onResume() {
         super.onResume()
-        if (seenVersion != DataVersion.current) load()
+        load()
     }
 
     private fun load() {
@@ -102,10 +117,10 @@ class TripsFragment : Fragment() {
             TripRepo.list(db) to CheckinRepo.list(db)
         }) { result ->
             val (tripList, checkinList) = result.getOrNull() ?: return@runIo
-            seenVersion = DataVersion.current
             trips = tripList
             checkins = checkinList
             seqByUuid = tripList.associate { it.uuid to it.seqNo }
+            seenVersion = DataVersion.current
             firstVisitIds = checkinList
                 .groupBy { it.cityName }
                 .values
@@ -123,8 +138,7 @@ class TripsFragment : Fragment() {
         val b = binding
         b.btnSegCheckins.text = getString(R.string.trips_seg_checkins, checkins.size)
         b.btnSegTrips.text = getString(R.string.trips_seg_trips, trips.size)
-        Chips.styleAsPill(b.btnSegCheckins, requireContext(), segment == Segment.CHECKINS)
-        Chips.styleAsPill(b.btnSegTrips, requireContext(), segment == Segment.TRIPS)
+        updateSegColors()
 
         b.listContainer.removeAllViews()
         val empty = when (segment) {
@@ -140,23 +154,49 @@ class TripsFragment : Fragment() {
         }
     }
 
+    private fun updateSegColors() {
+        val on = ContextCompat.getColor(requireContext(), R.color.on_accent)
+        val off = ContextCompat.getColor(requireContext(), R.color.text_secondary)
+        binding.btnSegCheckins.setTextColor(if (segment == Segment.CHECKINS) on else off)
+        binding.btnSegTrips.setTextColor(if (segment == Segment.TRIPS) on else off)
+    }
+
+    /** 两等分滑块：宽度取容器一半，按当前分段平移。 */
+    private fun moveIndicator(animate: Boolean) {
+        val indicator = binding.chipIndicator
+        val half = binding.chipContainer.width / 2
+        if (half <= 0) return
+        indicator.layoutParams = (indicator.layoutParams as FrameLayout.LayoutParams).apply { width = half }
+        indicator.requestLayout()
+        val target = if (segment == Segment.CHECKINS) 0f else half.toFloat()
+        if (animate) {
+            indicator.animate().translationX(target)
+                .setDuration(200)
+                .setInterpolator(PathInterpolator(0.2f, 0f, 0f, 1f))
+                .start()
+        } else {
+            indicator.translationX = target
+        }
+    }
     // ────────────────────────── 卡片 ──────────────────────────
 
     private fun checkinRow(checkin: CheckinEntity): View {
         val derived = checkin.source == CheckinSource.DERIVED
         val stripe = if (derived) R.color.stripe_derived else R.color.stripe_manual
         val first = checkin.id in firstVisitIds
-        val (root, card) = cardWithStripe(stripe, firstVisit = first)
+        val (root, card) = cardWithStripe(stripe, province = checkin.province)
 
-        // 第一行：编号徽章 + 城市名 + 菜单
-        val badgeSeq = if (derived) {
-            checkin.tripUuid?.let { seqByUuid[it] } ?: 0
-        } else {
-            checkin.seqNo
-        }
+        // 第一行：左 编号 + 城市 · 省份 + 金额；右 首访 + 菜单
         val header = row()
+        val badgeSeq = if (derived) checkin.tripUuid?.let { seqByUuid[it] } ?: 0 else checkin.seqNo
         header.addView(numberBadge(badgeSeq, stripe))
-        header.addView(titleView(checkin.cityName))
+        header.addView(titleViewWrap(checkin.cityName))
+        if (!checkin.province.isNullOrBlank()) {
+            header.addView(dotView())
+            header.addView(provinceView(checkin.province))
+        }
+        checkin.amountCents?.takeIf { it > 0 }?.let { header.addView(costBadge(it)) }
+        header.addView(spacer())
         if (first) header.addView(firstVisitChip())
         header.addView(menuButton { anchor ->
             showIconMenu(
@@ -165,7 +205,6 @@ class TripsFragment : Fragment() {
                     add(MenuAction(R.drawable.ic_share, R.string.trips_menu_share) {
                         requireContext().notify(R.string.trips_share_wip)
                     })
-                    // 关联打卡是行程派生物：只给分享（改它等于改行程）
                     if (!derived) {
                         add(MenuAction(R.drawable.ic_edit, R.string.trips_menu_edit) {
                             startActivity(CheckinEditActivity.intent(requireContext(), checkin.id))
@@ -179,24 +218,75 @@ class TripsFragment : Fragment() {
         })
         card.addView(header)
 
-        // 第二行：左备注、右时间
-        val meta = row(topMargin = 8)
-        val note = noteView(checkin.note)
-        if (note != null) meta.addView(note, weightParams()) else meta.addView(spacer())
-        meta.addView(iconText(R.drawable.ic_span, dateText(checkin)))
-        card.addView(meta)
+        // 第二行：左 同行人；右 评分 · 时长 · 到访时间（评分在右组左一）
+        val second = row(topMargin = 10)
+        val left = LinearLayout(requireContext()).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+        }
+        checkin.companions?.takeIf { it.isNotBlank() }?.let { companions ->
+            val view = iconText(R.drawable.ic_person, companions, expandText = true)
+            view.layoutParams = LinearLayout.LayoutParams(
+                0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f,
+            )
+            left.addView(view)
+        }
+        second.addView(left)
+        second.addView(View(requireContext()).apply {
+            layoutParams = LinearLayout.LayoutParams(dp(12), 1)
+        })
 
-        // 第三行：照片 / 同行人 / 评分（有哪项就显示哪项）
-        val extras = checkinExtras(checkin)
-        if (extras != null) card.addView(extras)
+        val rightItems = mutableListOf<View>()
+        checkin.rating?.let { rightItems.add(iconText(R.drawable.ic_star, getString(R.string.rating_value, it))) }
+        checkin.stayDays?.let { rightItems.add(iconText(R.drawable.ic_trips, getString(R.string.home_days_value, it.toString()))) }
+        rightItems.add(iconText(R.drawable.ic_span, dateText(checkin)))
+        val right = LinearLayout(requireContext()).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        rightItems.forEachIndexed { index, item ->
+            if (index > 0) right.addView(dotView())
+            right.addView(item)
+        }
+        second.addView(right)
+        card.addView(second)
 
-        root.isClickable = !derived
-        if (!derived) root.setOnClickListener {
-            startActivity(CheckinEditActivity.intent(requireContext(), checkin.id))
+        root.isClickable = true
+        root.setOnClickListener {
+            startActivity(CheckinDetailActivity.intent(requireContext(), checkin.id))
         }
         return root
     }
 
+    /** 非徽章信息之间的「·」分隔。 */
+    private fun dotView(): TextView = TextView(requireContext()).apply {
+        text = "·"
+        textSize = 12f
+        setTextColor(ContextCompat.getColor(context, R.color.text_tertiary))
+        setPadding(dp(3), 0, dp(3), 0)
+        gravity = Gravity.CENTER_VERTICAL
+    }
+    /** 省份小灰字。 */
+    private fun provinceView(province: String): TextView = TextView(requireContext()).apply {
+        text = province
+        textSize = 11f
+        setTextColor(ContextCompat.getColor(context, R.color.text_tertiary))
+        maxLines = 1
+        ellipsize = TextUtils.TruncateAt.END
+        setPadding(dp(2), 0, 0, 0)
+    }
+
+    /** 标题（不占满宽度，留给右边的省/金额/菜单）。 */
+    private fun titleViewWrap(text: String): TextView = TextView(requireContext()).apply {
+        this.text = text
+        textSize = 15f
+        setTypeface(typeface, android.graphics.Typeface.BOLD)
+        setTextColor(ContextCompat.getColor(context, R.color.fg))
+        maxLines = 1
+        ellipsize = TextUtils.TruncateAt.END
+        setPadding(dp(8), 0, 0, 0)
+    }
     private fun tripRow(trip: TripEntity): View {
         val (root, card) = cardWithStripe(R.color.stripe_trip)
 
@@ -234,7 +324,7 @@ class TripsFragment : Fragment() {
 
         root.isClickable = true
         root.setOnClickListener {
-            startActivity(TripEditActivity.intent(requireContext(), trip.id))
+            startActivity(TripDetailActivity.intent(requireContext(), trip.id))
         }
         return root
     }
@@ -245,12 +335,12 @@ class TripsFragment : Fragment() {
      * 竖条颜色按类别固定（足迹蓝 / 独立打卡绿 / 关联打卡灰，见 colors_2.xml）。
      * `clipToOutline` 把整张卡裁成圆角轮廓，竖条不会再从圆角处露出来。
      */
-    private fun cardWithStripe(stripeRes: Int, firstVisit: Boolean = false): Pair<LinearLayout, LinearLayout> {
+    private fun cardWithStripe(stripeRes: Int, province: String? = null): Pair<LinearLayout, LinearLayout> {
         val ctx = requireContext()
         val root = LinearLayout(ctx).apply {
             orientation = LinearLayout.HORIZONTAL
-            // 首访卡换成金色描边（与「首访」角标同一套视觉）
-            setBackgroundResource(if (firstVisit) R.drawable.bg_card_first else R.drawable.bg_card)
+            setBackgroundResource(R.drawable.bg_card)
+            // 水印可以比卡片大，溢出的部分按卡片轮廓裁掉
             clipToOutline = true
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
@@ -264,12 +354,20 @@ class TripsFragment : Fragment() {
             )
             layoutParams = LinearLayout.LayoutParams(dp(5), ViewGroup.LayoutParams.MATCH_PARENT)
         })
+
+        // 卡片内容区：水印在底层，文字在上面
+        val frame = WatermarkLayout(ctx).apply {
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+            watermarkText = Provinces.abbr(province)
+            watermarkSizeSp = 90f
+            setWatermarkColor(ContextCompat.getColor(ctx, stripeRes))
+        }
         val content = LinearLayout(ctx).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(12), dp(12), dp(12), dp(12))
-            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+            setPadding(dp(12), dp(8), dp(12), dp(12))
         }
-        root.addView(content)
+        frame.addView(content)
+        root.addView(frame)
         return root to content
     }
 
@@ -313,7 +411,7 @@ class TripsFragment : Fragment() {
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT,
-            ).apply { marginStart = dp(6) }
+            ).apply { marginStart = dp(12) }
         }
     }
 
@@ -380,6 +478,7 @@ class TripsFragment : Fragment() {
                     setImageBitmap(bitmap)
                     scaleType = ImageView.ScaleType.CENTER_CROP
                     layoutParams = LinearLayout.LayoutParams(dp(64), dp(64)).apply { marginEnd = dp(10) }
+                    setOnClickListener { showPhotoDialog(ctx, checkin.photoPath) }
                 })
             }
         }
@@ -469,10 +568,10 @@ class TripsFragment : Fragment() {
 
     private fun confirmDeleteTrip(trip: TripEntity) {
         MaterialAlertDialogBuilder(requireContext())
-            .setTitle(R.string.trips_delete_title)
+            .setTitle(R.string.delete_title)
             .setMessage(
                 getString(
-                    R.string.trips_delete_message,
+                    R.string.delete_message,
                     trip.title.ifBlank { getString(R.string.trips_trip_empty_title) },
                 ),
             )
@@ -480,8 +579,10 @@ class TripsFragment : Fragment() {
                 viewLifecycleOwner.lifecycleScope.runIo({
                     TripRepo.delete(AppDatabase.get(requireContext()), trip.id)
                 }) { result ->
-                    if (result.isSuccess) requireContext().notify(R.string.trips_deleted)
-                    else requireContext().notify(R.string.common_error, long = true)
+                    if (result.isSuccess) {
+                        requireContext().notify(R.string.trips_deleted)
+                        PhotoJanitor.sweepAsync(requireContext())
+                    } else requireContext().notify(R.string.common_error, long = true)
                 }
             }
             .setNegativeButton(R.string.common_cancel, null)
@@ -490,8 +591,8 @@ class TripsFragment : Fragment() {
 
     private fun confirmDeleteCheckin(checkin: CheckinEntity) {
         MaterialAlertDialogBuilder(requireContext())
-            .setTitle(R.string.checkin_delete_title)
-            .setMessage(getString(R.string.trips_delete_message, checkin.cityName))
+            .setTitle(R.string.delete_title)
+            .setMessage(getString(R.string.delete_message, checkin.cityName))
             .setPositiveButton(R.string.common_delete) { _, _ ->
                 viewLifecycleOwner.lifecycleScope.runIo({
                     CheckinRepo.delete(AppDatabase.get(requireContext()), checkin.id)

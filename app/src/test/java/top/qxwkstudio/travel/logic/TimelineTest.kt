@@ -41,9 +41,15 @@ class TimelineTest {
     }
 
     @Test
-    fun `same city twice rejected`() {
-        val error = timeline(segment("北京", event()), segment("北京", event(time = 10))).validate()
-        assertTrue(error!!.contains("出现了两次"))
+    fun `same city in two segments allowed`() {
+        // 允许「北京 → 上海 → 北京」：每段是一次独立到访，时间只要不倒序
+        val ok = timeline(
+            segment("北京", event("a", 100)),
+            segment("上海", event("b", 200)),
+            segment("北京", event("c", 300)),
+        )
+        assertNull(ok.validate())
+        assertEquals(3, ok.cityCount)
     }
 
     @Test
@@ -88,11 +94,12 @@ class TimelineTest {
     }
 
     @Test
-    fun `rating outside one to five rejected`() {
+    fun `rating outside one to ten rejected`() {
         val low = timeline(Timeline.Segment("北京", listOf(event()), rating = 0))
-        val high = timeline(Timeline.Segment("北京", listOf(event()), rating = 6))
+        val high = timeline(Timeline.Segment("北京", listOf(event()), rating = 11))
         assertTrue(low.validate()!!.contains("评分"))
         assertTrue(high.validate()!!.contains("评分"))
+        assertNull(timeline(Timeline.Segment("北京", listOf(event()), rating = 10)).validate())
     }
 
     @Test

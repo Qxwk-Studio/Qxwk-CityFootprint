@@ -1,4 +1,4 @@
-package top.qxwkstudio.travel.ui
+package top.qxwkstudio.travel.ui.common
 
 import android.content.Context
 import android.widget.Toast

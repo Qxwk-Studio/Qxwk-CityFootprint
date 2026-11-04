@@ -45,6 +45,14 @@ data class Timeline(
         val rating: Int? = null,
         /** 本地照片路径（应用私有目录）；null = 没配图。 */
         val photoPath: String? = null,
+        /** 到达这座城市的方式（城市之间的交通，如「高铁」「自驾」）；null = 没填。 */
+        val transport: String? = null,
+        /** 这座城市段的备注（≤ [Limits.NOTE]）；派生打卡会直接用它当备注。 */
+        val note: String? = null,
+        /** 城市 adcode（来自城市表）；null = 老数据/未选城，派生时按名字回查。 */
+        val cityCode: Int? = null,
+        /** 省份（来自城市表）；null = 老数据，派生时按名字回查。 */
+        val province: String? = null,
     )
 
     /**
@@ -114,10 +122,15 @@ data class Timeline(
             val no = si + 1
             if (segment.city.isBlank()) return "第 $no 段：请选择到访城市"
             if (segment.city.length > Limits.SHORT) return "第 $no 段：城市名超过 ${Limits.SHORT} 字"
-            if (!seenCities.add(segment.city)) return "「${segment.city}」出现了两次（同一座城市只保留一段）"
-            if (segment.rating != null && segment.rating !in 1..5) return "「${segment.city}」评分需在 1–5 之间"
+            if (segment.rating != null && segment.rating !in 1..10) return "「${segment.city}」评分需在 1–5 之间"
             if (segment.companions.orEmpty().length > Limits.SHORT) {
                 return "「${segment.city}」同行人超过 ${Limits.SHORT} 字"
+            }
+            if (segment.transport.orEmpty().length > Limits.SHORT) {
+                return "「${segment.city}」到达方式超过 ${Limits.SHORT} 字"
+            }
+            if (segment.note.orEmpty().length > Limits.NOTE) {
+                return "「${segment.city}」备注超过 ${Limits.NOTE} 字"
             }
             if (segment.events.isEmpty()) return "「${segment.city}」还没有添加活动或交通"
             segment.events.forEachIndexed { ei, event ->

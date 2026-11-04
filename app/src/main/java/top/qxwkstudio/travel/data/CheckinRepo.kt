@@ -34,11 +34,15 @@ object CheckinRepo {
         companions: String? = null,
         rating: Int? = null,
         photoPath: String? = null,
+        amountCents: Int? = null,
+        stayDays: Int? = null,
         now: Long = System.currentTimeMillis(),
     ): Long {
         require(note.orEmpty().length <= Limits.NOTE) { "备注不能超过 ${Limits.NOTE} 字" }
         require(datePrecision in DatePrecision.YEAR..DatePrecision.UNKNOWN) { "日期精度取值非法：$datePrecision" }
-        require(rating == null || rating in 1..5) { "评分需在 1–5 之间" }
+        require(rating == null || rating in 1..10) { "评分需在 1–5 之间" }
+        require(amountCents == null || amountCents >= 0) { "金额不能为负" }
+        require(stayDays == null || stayDays >= 1) { "停留天数至少 1 天" }
 
         val id = db.withTransaction {
             db.checkins().insert(
@@ -55,6 +59,8 @@ object CheckinRepo {
                     companions = companions,
                     rating = rating,
                     photoPath = photoPath,
+                    amountCents = amountCents,
+                    stayDays = stayDays,
                     seqNo = db.checkins().nextManualSeqNo(),
                     modifiedAt = now,
                 )

@@ -1,4 +1,4 @@
-package top.qxwkstudio.travel.ui
+package top.qxwkstudio.travel.ui.common
 
 import android.app.Activity
 import android.view.View

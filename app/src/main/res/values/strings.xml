@@ -5,15 +5,16 @@
 
     <!-- 底部导航（与 menu/bottom_nav.xml 一一对应） -->
     <string name="tab_home">主页</string>
-    <string name="tab_achievements">我的成就</string>
+    <string name="tab_achievements">成就</string>
     <string name="tab_map">地图</string>
     <string name="tab_profile">我的</string>
 
     <!-- 表单通用 -->
-    <string name="edit_city">城市</string>
     <string name="edit_delete">删除</string>
 
     <!-- 城市选择页 -->
+    <!-- 选城页的顶栏标题（与表单里的「城市」字段分开，那条是 edit_city） -->
+    <string name="city_picker_title">选择城市</string>
     <string name="city_search_hint">搜索城市名或省份</string>
     <string name="city_empty">没有匹配的城市</string>
     <string name="city_group_title">%1$s · %2$d 座</string>
@@ -40,6 +41,21 @@
     <string name="profile_update_no_url">下载地址暂不可用</string>
 
     <!-- 通用 -->
+    <!-- 统一的确认弹窗文案：所有表单共用 -->
+    <string name="discard_title">放弃未保存的修改？</string>
+    <string name="discard_message">当前填写的内容不会被保存。</string>
+    <string name="discard_positive">放弃</string>
+    <string name="discard_negative">继续编辑</string>
+    <string name="delete_title">删除这条记录？</string>
+    <string name="delete_message">「%1$s」删除后无法恢复。</string>
+    <string name="checkin_detail_title">打卡详情</string>
+    <string name="trip_detail_title">足迹详情</string>
+    <string name="detail_edit">编辑</string>
+    <string name="detail_city_section">到访城市</string>
+    <string name="detail_no_note">没有备注</string>
+    <string name="detail_uuid">UUID：%1$s</string>
+    <string name="detail_own_id">编号 #%1$d</string>
+    <string name="detail_from_trip">来自足迹 #%1$d</string>
     <string name="common_confirm">确定</string>
     <string name="common_cancel">取消</string>
     <string name="common_delete">删除</string>
@@ -61,7 +77,10 @@
     <string name="home_cost">总花销</string>
     <string name="home_rank">城市排名</string>
     <string name="home_rank_count">次数</string>
-    <string name="home_rank_time">时间</string>
+    <string name="home_rank_amount">金额</string>
+    <string name="home_rank_time">时长</string>
+    <string name="home_money_value">¥%1$s</string>
+    <string name="home_days_value">%1$s 天</string>
     <string name="home_cost_value">¥%1$s</string>
     <string name="home_count_value">%1$s 次</string>
     <string name="home_empty">还没有点亮任何城市，快去添加第一条足迹吧</string>
@@ -77,11 +96,8 @@
     <string name="trips_menu_edit">编辑</string>
     <string name="trips_menu_delete">删除</string>
     <string name="trips_share_wip">分享功能即将推出</string>
-    <string name="trips_delete_title">删除这条记录？</string>
-    <string name="trips_delete_message">「%1$s」将从本机删除，无法撤销。</string>
     <string name="trips_deleted">已删除</string>
     <string name="checkin_edit_title">编辑打卡</string>
-    <string name="checkin_delete_title">删除这条打卡？</string>
 
     <!-- ===== 我的 ===== -->
     <string name="mine_nickname_default">旅行者</string>
@@ -108,21 +124,19 @@
     <!-- ===== 主页「+」菜单 ===== -->
     <string name="menu_checkin">城市打卡</string>
     <string name="menu_trip">添加足迹</string>
-    <string name="menu_auto_record">自动记录</string>
     <string name="common_add">添加</string>
 
     <!-- ===== 手动打卡页 ===== -->
-    <string name="checkin_title">城市打卡</string>
+    <string name="checkin_title">新建打卡</string>
     <string name="checkin_city">城市</string>
     <string name="checkin_city_hint">点击选择城市</string>
     <string name="checkin_locate">定位到当前城市</string>
     <string name="checkin_date">到访时间</string>
-    <string name="checkin_today">今天</string>
-    <string name="checkin_forgot">记不清了</string>
     <string name="checkin_month_year_only">仅到年份</string>
-    <string name="checkin_day_unknown">不记得日</string>
+    <string name="checkin_day_unknown">仅到月份</string>
     <string name="checkin_note">备注（可选）</string>
     <string name="checkin_note_hint">写点什么</string>
+    <string name="char_counter">%1$d/%2$d</string>
     <string name="checkin_counter">%1$d/233</string>
     <string name="checkin_save">保存</string>
     <string name="checkin_err_city">请选择城市</string>
@@ -132,21 +146,35 @@
     <string name="checkin_day">%1$d 日</string>
 
     <!-- ===== 行程编辑器 ===== -->
-    <string name="trip_new_title">添加足迹</string>
+    <string name="trip_new_title">新建足迹</string>
     <string name="trip_edit_title">编辑足迹</string>
     <string name="trip_title_label">标题</string>
     <string name="trip_title_hint">给这次行程起个名字</string>
     <!-- 打卡/城市段的可选项目（2.0） -->
+    <string name="photo_count_hint">1~3 张</string>
+    <string name="photo_count_selected">已选 %1$d 张（最多 3 张）</string>
+    <string name="rating_unrated">未评分</string>
+    <string name="rating_value">%1$d 分</string>
     <string name="photo_label">照片</string>
     <string name="photo_pick">选择照片</string>
     <string name="photo_change">更换照片</string>
     <string name="photo_failed">照片读取失败</string>
     <string name="companions_label">同行人</string>
     <string name="companions_hint">独自 / 朋友 / 情侣 / 家人…</string>
+    <string name="checkin_city_label">到访城市</string>
+    <string name="checkin_days_label">停留天数</string>
+    <string name="checkin_amount_label">总花费</string>
+    <string name="checkin_money_hint">金额（元）</string>
+    <string name="checkin_days_hint">停留天数</string>
+    <string name="detail_amount">金额 ¥%1$s</string>
+    <string name="detail_days">停留 %1$d 天</string>
+    <string name="trip_segment_note_hint">这座城市段的备注（可选）</string>
+    <string name="trip_transport_hint">到达方式（可选），如 高铁 / 自驾</string>
     <string name="rating_label">城市评分</string>
     <string name="first_visit">首访</string>
     <string name="trip_event_note_hint">备注（可选）</string>
-    <string name="checkin_section_optional">可选信息</string>
+    <string name="checkin_section_basic">基本信息</string>
+    <string name="checkin_section_optional">可选项</string>
     <string name="trip_timeline_label">到访城市与活动</string>
     <string name="trip_add_city">添加城市</string>
     <string name="trip_add_city_hint">还没有到访城市，点下面的「添加城市」开始</string>
@@ -160,23 +188,19 @@
     <string name="trip_note_hint">写点什么</string>
     <string name="trip_save">保存</string>
     <string name="trip_cancel">取消</string>
-    <string name="trip_delete">删除</string>
     <string name="trip_event_transport_hint">交通方式</string>
     <string name="trip_event_activity_hint">做了什么</string>
     <string name="trip_event_cost_hint">花费</string>
     <string name="trip_event_cost_unit">元</string>
     <string name="trip_counter">%1$d/%2$d</string>
-    <string name="trip_delete_confirm_title">删除这条足迹？</string>
-    <string name="trip_delete_confirm_message">「%1$s」及其关联打卡会一起消失，无法撤销。</string>
     <string name="trip_saved">已保存</string>
-    <string name="trip_discard_message">有未保存的更改，确定放弃？</string>
 
     <!-- ===== 成就页 ===== -->
     <string name="ach_progress">%1$d/%2$d</string>
     <string name="ach_unlocked">已解锁</string>
     <string name="ach_unlocked_count">已解锁 %1$d / %2$d</string>
     <string name="ach_category_percent">%1$d%%</string>
-    <string name="ach_all">全部</string>
+    <string name="ach_empty">还没有任何成就。先去记一条打卡或足迹，这里会亮起来。</string>
     <string name="ach_unlocked_at">%1$s 解锁</string>
 
     <!-- ===== 地图页 ===== -->

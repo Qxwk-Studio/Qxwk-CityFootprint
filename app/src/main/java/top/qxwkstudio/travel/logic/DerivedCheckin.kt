@@ -16,6 +16,14 @@ data class DerivedCheckin(
     val companions: String? = null,
     val rating: Int? = null,
     val photoPath: String? = null,
+    /** 城市段备注：派生打卡直接沿用。 */
+    val note: String? = null,
+    /** 这是行程里第几个城市段（从 0 开始）：同一座城出现多段时用来区分。 */
+    val segmentIndex: Int = 0,
+    /** 城市段累计花销（分）。 */
+    val amountCents: Int = 0,
+    /** 城市段停留天数（含首尾）。 */
+    val stayDays: Int = 0,
 )
 
 /**
@@ -30,15 +38,20 @@ data class DerivedCheckin(
  * 纯函数（城市数据由调用方以 [lookup] 传入），能在 JVM 单测里直接跑。
  */
 fun deriveCheckins(timeline: Timeline, lookup: (String) -> City?): List<DerivedCheckin> =
-    timeline.firstEventByCity().mapNotNull { (name, event) ->
-        val city = lookup(name) ?: return@mapNotNull null
+    timeline.segments.mapIndexedNotNull { index, segment ->
+        val city = lookup(segment.city) ?: return@mapIndexedNotNull null
+        val first = segment.events.minByOrNull { it.time } ?: return@mapIndexedNotNull null
         DerivedCheckin(
-            cityName = city.name,
-            cityCode = city.adcode,
-            province = city.province,
-            checkinAt = event.time,
-            companions = timeline.segments.firstOrNull { it.city == name }?.companions,
-            rating = timeline.segments.firstOrNull { it.city == name }?.rating,
-            photoPath = timeline.segments.firstOrNull { it.city == name }?.photoPath,
+            cityName = segment.city,
+            cityCode = segment.cityCode ?: city.adcode,
+            province = segment.province ?: city.province,
+            checkinAt = first.time,
+            companions = segment.companions,
+            rating = segment.rating,
+            photoPath = segment.photoPath,
+            note = segment.note,
+            segmentIndex = index,
+            amountCents = Stats.segmentCost(segment),
+            stayDays = Stats.segmentDays(segment),
         )
     }

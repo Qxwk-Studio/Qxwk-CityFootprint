@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 手动打卡页（2.0）：城市 + 到访时间（四档精度）+ 备注。
-     与 1.x 的编辑页共用同一套「顶栏 include + 表单纵向排布」形态，但字段完全不同：
-     1.x 是「城市 + 年月 + 备注 + 出行方式」，2.0 把出行方式移到了行程的时间线里。 -->
+<!-- 打卡编辑：标题在卡片外，两张卡片（基本信息 / 可选项）。
+     下拉框带右侧下箭头、文字左对齐；数值字段右侧上下两个步进箭头；评分用细轨道。 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/bg"
@@ -25,232 +25,701 @@
             android:orientation="vertical"
             android:padding="16dp">
 
-            <!-- 城市：不可手输，点一行选城，右侧准心按定位判城 -->
-            <TextView
-                style="@style/TextFormLabel"
-                android:text="@string/checkin_city" />
-
+            <!-- 卡片外标题：基本信息 -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:background="@drawable/bg_card"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
-                android:paddingStart="12dp"
-                android:paddingEnd="4dp">
+                android:paddingStart="4dp"
+                android:paddingBottom="8dp">
 
-                <EditText
-                    android:id="@+id/inputCity"
-                    android:layout_width="0dp"
-                    android:layout_height="48dp"
-                    android:layout_weight="1"
-                    android:background="@null"
-                    android:clickable="false"
-                    android:focusable="false"
-                    android:hint="@string/checkin_city_hint"
-                    android:inputType="none"
+                <ImageView
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_city"
+                    app:tint="?attr/appAccent" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:text="@string/checkin_section_basic"
                     android:textColor="@color/fg"
-                    android:textSize="15sp" />
-
-                <ImageButton
-                    android:id="@+id/btnLocate"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="@string/checkin_locate"
-                    android:padding="8dp"
-                    android:src="@drawable/ic_locate"
-                    android:tint="?attr/appAccent" />
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
             </LinearLayout>
 
-            <TextView
-                android:id="@+id/textCityError"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:textColor="@color/destructive"
-                android:textSize="12sp"
-                android:visibility="gone" />
-
-            <!-- 到访时间：年 / 月 / 日三个下拉 + 今天 + 记不清了（四档精度，见 logic/DatePrecision） -->
-            <TextView
-                style="@style/TextFormLabel"
-                android:layout_marginTop="16dp"
-                android:text="@string/checkin_date" />
-
-            <!-- 三个下拉分两行摆：一行三个会把「仅到年份」「不记得日」这种长选项挤成省略号
-                 （第一版就是那样，用户反馈排版有问题）。年/月一行、日 + 「今天」一行，
-                 每行至多两个控件，选项文字能完整显示。 -->
+            <!-- ===== 卡片 1：基本信息 ===== -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:background="@drawable/bg_card"
                 android:orientation="vertical"
-                android:paddingStart="8dp"
-                android:paddingTop="4dp"
-                android:paddingEnd="8dp"
-                android:paddingBottom="4dp">
+                android:paddingTop="8dp"
+                android:paddingBottom="20dp">
 
+                <!-- 到访城市 -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center_vertical"
-                    android:orientation="horizontal">
+                    android:orientation="horizontal"
+                    android:paddingStart="16dp"
+                    android:paddingTop="16dp"
+                    android:paddingEnd="16dp">
 
-                    <Spinner
-                        android:id="@+id/spinYear"
-                        android:layout_width="0dp"
-                        android:layout_height="44dp"
-                        android:layout_weight="1" />
+                    <ImageView
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_city"
+                        app:tint="?attr/appAccent" />
 
-                    <Spinner
-                        android:id="@+id/spinMonth"
-                        android:layout_width="0dp"
-                        android:layout_height="44dp"
-                        android:layout_weight="1" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="6dp"
+                        android:text="@string/checkin_city_label"
+                        android:textColor="@color/fg"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
                 </LinearLayout>
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginTop="10dp"
+                    android:layout_marginEnd="16dp"
+                    android:background="@drawable/bg_input_box"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="4dp">
+
+                    <EditText
+                        android:id="@+id/inputCity"
+                        android:layout_width="0dp"
+                        android:layout_height="48dp"
+                        android:layout_weight="1"
+                        android:background="@null"
+                        android:clickable="false"
+                        android:focusable="false"
+                        android:hint="@string/checkin_city_hint"
+                        android:inputType="none"
+                        android:textColor="@color/fg"
+                        android:textSize="15sp" />
+
+                    <ImageButton
+                        android:id="@+id/btnLocate"
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="@string/checkin_locate"
+                        android:padding="8dp"
+                        android:src="@drawable/ic_locate"
+                        android:tint="?attr/appAccent" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/textCityError"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginTop="4dp"
+                    android:layout_marginEnd="16dp"
+                    android:textColor="@color/destructive"
+                    android:textSize="12sp"
+                    android:visibility="gone" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginTop="20dp"
+                    android:layout_marginEnd="16dp"
+                    android:background="@color/border" />
+
+                <!-- 到访时间 -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingStart="16dp"
+                    android:paddingTop="20dp"
+                    android:paddingEnd="16dp">
+
+                    <ImageView
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_span"
+                        app:tint="?attr/appAccent" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="6dp"
+                        android:text="@string/checkin_date"
+                        android:textColor="@color/fg"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginTop="10dp"
+                    android:layout_marginEnd="16dp"
+                    android:orientation="horizontal">
+
+                    <FrameLayout
+                        android:layout_width="0dp"
+                        android:layout_height="44dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/bg_input_box">
+
+                        <Spinner
+                            android:id="@+id/spinYear"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:background="@null"
+                            android:paddingStart="10dp"
+                            android:paddingEnd="26dp" />
+
+                        <ImageView
+                            android:layout_width="14dp"
+                            android:layout_height="14dp"
+                            android:layout_gravity="end|center_vertical"
+                            android:layout_marginEnd="8dp"
+                            android:contentDescription="@null"
+                            android:src="@drawable/ic_arrow_down"
+                            app:tint="@color/text_secondary" />
+                    </FrameLayout>
+
+                    <FrameLayout
+                        android:layout_width="0dp"
+                        android:layout_height="44dp"
+                        android:layout_marginStart="8dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/bg_input_box">
+
+                        <Spinner
+                            android:id="@+id/spinMonth"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:background="@null"
+                            android:paddingStart="10dp"
+                            android:paddingEnd="26dp" />
+
+                        <ImageView
+                            android:layout_width="14dp"
+                            android:layout_height="14dp"
+                            android:layout_gravity="end|center_vertical"
+                            android:layout_marginEnd="8dp"
+                            android:contentDescription="@null"
+                            android:src="@drawable/ic_arrow_down"
+                            app:tint="@color/text_secondary" />
+                    </FrameLayout>
+
+                    <FrameLayout
+                        android:layout_width="0dp"
+                        android:layout_height="44dp"
+                        android:layout_marginStart="8dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/bg_input_box">
+
+                        <Spinner
+                            android:id="@+id/spinDay"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:background="@null"
+                            android:paddingStart="10dp"
+                            android:paddingEnd="26dp" />
+
+                        <ImageView
+                            android:layout_width="14dp"
+                            android:layout_height="14dp"
+                            android:layout_gravity="end|center_vertical"
+                            android:layout_marginEnd="8dp"
+                            android:contentDescription="@null"
+                            android:src="@drawable/ic_arrow_down"
+                            app:tint="@color/text_secondary" />
+                    </FrameLayout>
+                </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginTop="20dp"
+                    android:layout_marginEnd="16dp"
+                    android:background="@color/border" />
+
+                <!-- 停留天数 -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingStart="16dp"
+                    android:paddingTop="20dp"
+                    android:paddingEnd="16dp">
+
+                    <ImageView
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_trips"
+                        app:tint="?attr/appAccent" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="6dp"
+                        android:text="@string/checkin_days_label"
+                        android:textColor="@color/fg"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginTop="10dp"
+                    android:layout_marginEnd="16dp"
+                    android:background="@drawable/bg_input_box"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="4dp">
+
+                    <EditText
+                        android:id="@+id/inputDays"
+                        android:layout_width="0dp"
+                        android:layout_height="48dp"
+                        android:layout_weight="1"
+                        android:background="@null"
+                        android:hint="@string/checkin_days_hint"
+                        android:inputType="number"
+                        android:textColor="@color/fg"
+                        android:textSize="14sp" />
+
+                    <LinearLayout
+                        android:layout_width="36dp"
+                        android:layout_height="48dp"
+                        android:gravity="center_vertical"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/btnDaysPlus"
+                            android:layout_width="match_parent"
+                            android:layout_height="20dp"
+                            android:gravity="center"
+                            android:text="+"
+                            android:textColor="?attr/appAccent"
+                            android:textSize="14sp" />
+
+                        <TextView
+                            android:id="@+id/btnDaysMinus"
+                            android:layout_width="match_parent"
+                            android:layout_height="20dp"
+                            android:gravity="center"
+                            android:text="-"
+                            android:textColor="?attr/appAccent"
+                            android:textSize="14sp" />
+                    </LinearLayout>
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- 卡片外标题：可选项 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="4dp"
+                android:paddingBottom="8dp">
+
+                <ImageView
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_star"
+                    app:tint="?attr/appAccent" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:text="@string/checkin_section_optional"
+                    android:textColor="@color/fg"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <!-- ===== 卡片 2：可选项 ===== -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_card"
+                android:orientation="vertical"
+                android:paddingTop="8dp"
+                android:paddingBottom="8dp">
+
+                <!-- 同行人 -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingStart="16dp"
+                    android:paddingTop="16dp"
+                    android:paddingEnd="16dp">
+
+                    <ImageView
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_person"
+                        app:tint="?attr/appAccent" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="6dp"
+                        android:text="@string/companions_label"
+                        android:textColor="@color/fg"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <EditText
+                    android:id="@+id/inputCompanions"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginTop="10dp"
+                    android:layout_marginEnd="16dp"
+                    android:background="@drawable/bg_input_box"
+                    android:hint="@string/companions_hint"
+                    android:inputType="text"
+                    android:maxLength="23"
+                    android:padding="12dp"
+                    android:textColor="@color/fg"
+                    android:textSize="14sp" />
+
+                <TextView
+                    android:id="@+id/textCompanionsCounter"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginTop="4dp"
+                    android:layout_marginEnd="16dp"
+                    android:gravity="end"
+                    android:textColor="@color/text_tertiary"
+                    android:textSize="12sp" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginTop="20dp"
+                    android:layout_marginEnd="16dp"
+                    android:background="@color/border" />
+
+                <!-- 总花费 -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingStart="16dp"
+                    android:paddingTop="20dp"
+                    android:paddingEnd="16dp">
+
+                    <ImageView
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_wallet"
+                        app:tint="?attr/appAccent" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="6dp"
+                        android:text="@string/checkin_amount_label"
+                        android:textColor="@color/fg"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginTop="10dp"
+                    android:layout_marginEnd="16dp"
+                    android:background="@drawable/bg_input_box"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="4dp">
+
+                    <EditText
+                        android:id="@+id/inputAmount"
+                        android:layout_width="0dp"
+                        android:layout_height="48dp"
+                        android:layout_weight="1"
+                        android:background="@null"
+                        android:hint="@string/checkin_money_hint"
+                        android:inputType="numberDecimal"
+                        android:textColor="@color/fg"
+                        android:textSize="14sp" />
+
+                    <LinearLayout
+                        android:layout_width="36dp"
+                        android:layout_height="48dp"
+                        android:gravity="center_vertical"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/btnAmountPlus"
+                            android:layout_width="match_parent"
+                            android:layout_height="20dp"
+                            android:gravity="center"
+                            android:text="+"
+                            android:textColor="?attr/appAccent"
+                            android:textSize="14sp" />
+
+                        <TextView
+                            android:id="@+id/btnAmountMinus"
+                            android:layout_width="match_parent"
+                            android:layout_height="20dp"
+                            android:gravity="center"
+                            android:text="-"
+                            android:textColor="?attr/appAccent"
+                            android:textSize="14sp" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginTop="20dp"
+                    android:layout_marginEnd="16dp"
+                    android:background="@color/border" />
+
+                <!-- 精彩照片 -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingStart="16dp"
+                    android:paddingTop="20dp"
+                    android:paddingEnd="16dp">
+
+                    <ImageView
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_camera"
+                        app:tint="?attr/appAccent" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="6dp"
+                        android:text="@string/photo_label"
+                        android:textColor="@color/fg"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginTop="10dp"
+                    android:layout_marginEnd="16dp"
                     android:gravity="center_vertical"
                     android:orientation="horizontal">
 
-                    <Spinner
-                        android:id="@+id/spinDay"
+                    <ImageView
+                        android:id="@+id/imagePhoto"
+                        android:layout_width="64dp"
+                        android:layout_height="64dp"
+                        android:background="@drawable/bg_card"
+                        android:contentDescription="@string/photo_label"
+                        android:scaleType="centerCrop"
+                        android:visibility="gone" />
+
+                    <TextView
+                        android:id="@+id/textPhotoEmpty"
                         android:layout_width="0dp"
-                        android:layout_height="44dp"
-                        android:layout_weight="1" />
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:layout_weight="1"
+                        android:text="@string/photo_count_hint"
+                        android:textColor="@color/text_tertiary"
+                        android:textSize="13sp" />
 
                     <Button
-                        android:id="@+id/btnToday"
+                        android:id="@+id/btnPickPhoto"
                         style="?attr/materialButtonOutlinedStyle"
                         android:layout_width="wrap_content"
                         android:layout_height="36dp"
                         android:minWidth="0dp"
                         android:paddingStart="16dp"
                         android:paddingEnd="16dp"
-                        android:text="@string/checkin_today"
+                        android:text="@string/photo_pick"
                         android:textSize="13sp" />
                 </LinearLayout>
-            </LinearLayout>
 
-            <CheckBox
-                android:id="@+id/switchForgot"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:text="@string/checkin_forgot"
-                android:textColor="@color/fg"
-                android:textSize="13sp" />
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginTop="20dp"
+                    android:layout_marginEnd="16dp"
+                    android:background="@color/border" />
 
-            <!-- 可选信息：照片 / 同行人 / 城市评分 / 首访角标 -->
-            <TextView
-                style="@style/TextFormLabel"
-                android:layout_marginTop="16dp"
-                android:text="@string/checkin_section_optional" />
+                <!-- 城市评分 -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingStart="16dp"
+                    android:paddingTop="20dp"
+                    android:paddingEnd="16dp">
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="@drawable/bg_card"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:padding="12dp">
+                    <ImageView
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_star"
+                        app:tint="?attr/appAccent" />
 
-                <ImageView
-                    android:id="@+id/imagePhoto"
-                    android:layout_width="64dp"
-                    android:layout_height="64dp"
-                    android:background="@drawable/bg_card"
-                    android:contentDescription="@string/photo_label"
-                    android:scaleType="centerCrop"
-                    android:visibility="gone" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="6dp"
+                        android:text="@string/rating_label"
+                        android:textColor="@color/fg"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/ratingRow"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginTop="10dp"
+                    android:layout_marginEnd="16dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <SeekBar
+                        android:id="@+id/ratingSeek"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:max="9"
+                        android:maxHeight="3dp"
+                        android:minHeight="3dp"
+                        android:progress="0"
+                        android:progressDrawable="@drawable/seekbar_thick"
+                        android:thumbTint="?attr/appAccent" />
+
+                    <TextView
+                        android:id="@+id/textRatingValue"
+                        android:layout_width="52dp"
+                        android:layout_height="wrap_content"
+                        android:gravity="end"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="13sp" />
+                </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginTop="20dp"
+                    android:layout_marginEnd="16dp"
+                    android:background="@color/border" />
+
+                <!-- 备注 -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingStart="16dp"
+                    android:paddingTop="20dp"
+                    android:paddingEnd="16dp">
+
+                    <ImageView
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_note"
+                        app:tint="?attr/appAccent" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="6dp"
+                        android:text="@string/checkin_note"
+                        android:textColor="@color/fg"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <EditText
+                    android:id="@+id/inputNote"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginTop="10dp"
+                    android:layout_marginEnd="16dp"
+                    android:background="@drawable/bg_input_box"
+                    android:gravity="top"
+                    android:hint="@string/checkin_note_hint"
+                    android:inputType="textMultiLine"
+                    android:maxLength="233"
+                    android:minLines="3"
+                    android:padding="12dp"
+                    android:textColor="@color/fg"
+                    android:textSize="14sp" />
 
                 <TextView
-                    android:id="@+id/textPhotoEmpty"
-                    android:layout_width="0dp"
+                    android:id="@+id/textCounter"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="@string/photo_label"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginTop="4dp"
+                    android:layout_marginEnd="16dp"
+                    android:gravity="end"
                     android:textColor="@color/text_tertiary"
-                    android:textSize="13sp" />
-
-                <Button
-                    android:id="@+id/btnPickPhoto"
-                    style="?attr/materialButtonOutlinedStyle"
-                    android:layout_width="wrap_content"
-                    android:layout_height="36dp"
-                    android:minWidth="0dp"
-                    android:paddingStart="16dp"
-                    android:paddingEnd="16dp"
-                    android:text="@string/photo_pick"
-                    android:textSize="13sp" />
+                    android:textSize="12sp" />
             </LinearLayout>
-
-            <TextView
-                style="@style/TextFormLabel"
-                android:layout_marginTop="16dp"
-                android:text="@string/companions_label" />
-
-            <EditText
-                android:id="@+id/inputCompanions"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="@drawable/bg_card"
-                android:hint="@string/companions_hint"
-                android:inputType="text"
-                android:maxLength="23"
-                android:padding="12dp"
-                android:textColor="@color/fg"
-                android:textSize="14sp" />
-
-            <TextView
-                style="@style/TextFormLabel"
-                android:layout_marginTop="16dp"
-                android:text="@string/rating_label" />
-
-            <LinearLayout
-                android:id="@+id/ratingRow"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal" />
-
-
-            <!-- 备注 -->
-            <TextView
-                style="@style/TextFormLabel"
-                android:layout_marginTop="16dp"
-                android:text="@string/checkin_note" />
-
-            <EditText
-                android:id="@+id/inputNote"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="@drawable/bg_card"
-                android:gravity="top"
-                android:hint="@string/checkin_note_hint"
-                android:inputType="textMultiLine"
-                android:maxLength="233"
-                android:minLines="3"
-                android:padding="12dp"
-                android:textColor="@color/fg"
-                android:textSize="14sp" />
-
-            <TextView
-                android:id="@+id/textCounter"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:gravity="end"
-                android:textColor="@color/text_tertiary"
-                android:textSize="12sp" />
 
             <Button
                 android:id="@+id/btnSave"
                 android:layout_width="match_parent"
                 android:layout_height="48dp"
-                android:layout_marginTop="20dp"
+                android:layout_marginTop="24dp"
                 android:text="@string/checkin_save" />
         </LinearLayout>
     </ScrollView>

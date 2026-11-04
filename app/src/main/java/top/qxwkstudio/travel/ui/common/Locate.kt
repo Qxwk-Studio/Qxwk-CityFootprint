@@ -1,4 +1,4 @@
-package top.qxwkstudio.travel.ui
+package top.qxwkstudio.travel.ui.common
 
 import android.Manifest
 import android.content.Context

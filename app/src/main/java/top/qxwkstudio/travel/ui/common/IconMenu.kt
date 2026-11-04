@@ -1,4 +1,4 @@
-package top.qxwkstudio.travel.ui
+package top.qxwkstudio.travel.ui.common
 
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
@@ -36,7 +36,7 @@ internal fun showIconMenu(anchor: View, actions: List<MenuAction>) {
 
     val content = LinearLayout(context).apply {
         orientation = LinearLayout.VERTICAL
-        setPadding(dp(6), dp(6), dp(6), dp(6))
+        setPadding(dp(4), dp(4), dp(4), dp(4))
         setBackgroundResource(R.drawable.bg_popup_menu)
     }
     var popup: PopupWindow? = null
@@ -78,11 +78,25 @@ internal fun showIconMenu(anchor: View, actions: List<MenuAction>) {
         View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
         View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
     )
-    val width = content.measuredWidth
+    val width = content.measuredWidth.coerceAtLeast(dp(150))
+
+    // 分隔线在量完宽度之后插：它的宽度是 MATCH_PARENT，先插会把 WRAP_CONTENT 的
+    // 弹窗撑成整屏宽（上一版菜单「非常长」就是这么来的）。
+    var index = 1
+    while (index < content.childCount) {
+        content.addView(
+            android.view.View(context).apply {
+                setBackgroundColor(ContextCompat.getColor(context, R.color.border))
+            },
+            index,
+            LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(1)),
+        )
+        index += 2
+    }
 
     popup = PopupWindow(
         content,
-        ViewGroup.LayoutParams.WRAP_CONTENT,
+        width,
         ViewGroup.LayoutParams.WRAP_CONTENT,
         true,
     ).apply {
@@ -90,5 +104,17 @@ internal fun showIconMenu(anchor: View, actions: List<MenuAction>) {
         elevation = dp(8).toFloat()
         setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
     }
-    popup.showAsDropDown(anchor, anchor.width - width, dp(4))
+    // 右边缘对齐到锚点、下方留 4dp：菜单右上两侧的留白一致，不会一边宽一边贴边
+    // 右对齐**屏幕边缘**（不是锚点），上方与右侧都留 6dp
+    val gap = dp(2)
+    val location = IntArray(2)
+    anchor.getLocationOnScreen(location)
+    val screenWidth = anchor.resources.displayMetrics.widthPixels
+    val anchorLeft = location[0]
+    // 右缘对齐三点按钮本身（不是屏幕边缘），左边至少留 6dp
+    val xoff = (anchor.width - width)
+        .coerceAtMost(screenWidth - gap - anchorLeft - width)
+        .coerceAtLeast(gap - anchorLeft)
+    // 向上贴近三点按钮（按钮本身有 8dp padding，菜单顶边对齐图标底边）
+    popup.showAsDropDown(anchor, xoff, -dp(8))
 }

@@ -61,7 +61,7 @@
                     android:layout_height="16dp"
                     android:contentDescription="@null"
                     android:src="@drawable/ic_span"
-                    app:tint="@color/text_secondary" />
+                    app:tint="?attr/appAccent" />
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -104,7 +104,7 @@
                         android:layout_height="16dp"
                         android:contentDescription="@null"
                         android:src="@drawable/ic_city"
-                        app:tint="@color/text_secondary" />
+                        app:tint="?attr/appAccent" />
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -137,7 +137,7 @@
                         android:layout_height="16dp"
                         android:contentDescription="@null"
                         android:src="@drawable/ic_map"
-                        app:tint="@color/text_secondary" />
+                        app:tint="?attr/appAccent" />
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -177,7 +177,7 @@
                         android:layout_height="16dp"
                         android:contentDescription="@null"
                         android:src="@drawable/ic_trending"
-                        app:tint="@color/text_secondary" />
+                        app:tint="?attr/appAccent" />
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -212,7 +212,7 @@
                         android:layout_height="16dp"
                         android:contentDescription="@null"
                         android:src="@drawable/ic_wallet"
-                        app:tint="@color/text_secondary" />
+                        app:tint="?attr/appAccent" />
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -261,10 +261,10 @@
 
             <FrameLayout
                 android:id="@+id/segRank"
-                android:layout_width="148dp"
-                android:layout_height="34dp"
+                android:layout_width="168dp"
+                android:layout_height="30dp"
                 android:background="@drawable/bg_segmented_track"
-                android:padding="3dp">
+                android:padding="2dp">
 
                 <View
                     android:id="@+id/segPill"
@@ -284,7 +284,16 @@
                         android:layout_weight="1"
                         android:gravity="center"
                         android:text="@string/home_rank_count"
-                        android:textSize="13sp" />
+                        android:textSize="12sp" />
+
+                    <TextView
+                        android:id="@+id/btnRankAmount"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:gravity="center"
+                        android:text="@string/home_rank_amount"
+                        android:textSize="12sp" />
 
                     <TextView
                         android:id="@+id/btnRankTime"
@@ -293,7 +302,7 @@
                         android:layout_weight="1"
                         android:gravity="center"
                         android:text="@string/home_rank_time"
-                        android:textSize="13sp" />
+                        android:textSize="12sp" />
                 </LinearLayout>
             </FrameLayout>
         </LinearLayout>
