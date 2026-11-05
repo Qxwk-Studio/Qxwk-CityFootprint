@@ -102,7 +102,8 @@ internal fun showIconMenu(anchor: View, actions: List<MenuAction>) {
     ).apply {
         isOutsideTouchable = true
         elevation = dp(8).toFloat()
-        setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+        // 透明背景时 elevation 阴影不绘制；换成卡片底，阴影围绕圆角弹层
+        setBackgroundDrawable(ContextCompat.getDrawable(context, R.drawable.bg_popup_menu))
     }
     // 右边缘对齐到锚点、下方留 4dp：菜单右上两侧的留白一致，不会一边宽一边贴边
     // 右对齐**屏幕边缘**（不是锚点），上方与右侧都留 6dp

@@ -277,14 +277,8 @@ class MapFragment : Fragment() {
         // 面渲染不出来时不画圆点：城市名（ui/CityLabelsView）就是唯一标识，
         // 文字与边界解析无关，永远画得出来。
 
-        // 状态里带诊断数字：面数（边界解析结果）与城市数（本地库）。真机上如果没有 logcat，
-        // 这一行就是唯一线索 —— 面 0 说明边界没解析出来，城市 0 说明数据没读到。
+        // 诊断数字只在失败时用：面为 0 说明边界没解析出来
         val shapeCount = CityBoundaries.locator(requireContext()).shapeCount
-        _binding?.textStatus?.text = getString(
-            R.string.map_loaded_count,
-            shapeCount,
-            visited.size,
-        )
         // 面为 0 时把失败原因弹出来：解析失败是静默降级，没有 logcat 时这是唯一线索
         if (shapeCount == 0) {
             // 资产读取失败时优先报那条：解析错误只说得出「资产为空」，看不出根本原因
@@ -299,8 +293,6 @@ class MapFragment : Fragment() {
                 .filter { it.name in visited }
                 .map { it.name to LatLng(it.lat, it.lng) },
         )
-        _binding?.textStatus?.visibility = View.VISIBLE
-        _binding?.textStatus?.postDelayed({ _binding?.textStatus?.visibility = View.GONE }, 8000)
     }
     /**
      * 把已解析好的城市面拼成 FeatureCollection。

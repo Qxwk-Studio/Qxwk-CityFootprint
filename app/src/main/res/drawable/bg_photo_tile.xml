@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 照片缩略图底：圆角矩形，图片按轮廓裁切。 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@color/muted" />
+    <corners android:radius="10dp" />
+</shape>

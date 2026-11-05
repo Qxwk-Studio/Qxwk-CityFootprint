@@ -137,7 +137,16 @@ class TripEditActivity : AppCompatActivity() {
         theme.applyStyle(Palette.selected(this).overlay, true)
         binding = ActivityTripEditBinding.inflate(layoutInflater)
         val b = binding
-        applyEdgeToEdge(b.topBar.root, null)
+        applyEdgeToEdge(b.topBar.root, b.scroll) {
+            // 等这次 padding 布局生效后再滚，否则算出来的目标位置还是键盘弹出前的
+            val focused = currentFocus ?: return@applyEdgeToEdge
+            b.scroll.post {
+                focused.requestRectangleOnScreen(
+                    android.graphics.Rect(0, 0, focused.width, focused.height),
+                    true,
+                )
+            }
+        }
         setContentView(b.root)
 
         editingId = intent.getLongExtra(EXTRA_ID, 0L)

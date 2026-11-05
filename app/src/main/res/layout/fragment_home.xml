@@ -82,7 +82,7 @@
                 app:autoSizeTextType="uniform" />
         </LinearLayout>
 
-        <!-- 第 2 行：打卡城市 / 打卡省份 -->
+        <!-- 第 2 行：打卡城市/省 + 次数最多 -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -110,7 +110,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="5dp"
-                        android:text="@string/home_cities"
+                        android:text="@string/home_cities_provinces_label"
                         android:textColor="@color/text_secondary"
                         android:textSize="13sp" />
                 </LinearLayout>
@@ -118,53 +118,14 @@
                 <TextView
                     android:id="@+id/valueCities"
                     style="@style/TextHomeStatValue"
+                    android:ellipsize="end"
+                    android:maxLines="1"
                     android:text="@string/home_dash" />
             </LinearLayout>
 
             <LinearLayout
                 style="@style/CardHomeStat"
-                android:layout_marginStart="10dp"
-                android:layout_weight="1">
-
-                <LinearLayout
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
-
-                    <ImageView
-                        android:layout_width="16dp"
-                        android:layout_height="16dp"
-                        android:contentDescription="@null"
-                        android:src="@drawable/ic_map"
-                        app:tint="?attr/appAccent" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="5dp"
-                        android:text="@string/home_provinces"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="13sp" />
-                </LinearLayout>
-
-                <TextView
-                    android:id="@+id/valueProvinces"
-                    style="@style/TextHomeStatValue"
-                    android:text="@string/home_dash" />
-            </LinearLayout>
-        </LinearLayout>
-
-        <!-- 第 3 行：次数最多 / 总花销 -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:orientation="horizontal">
-
-            <LinearLayout
-                style="@style/CardHomeStat"
-                android:layout_weight="1">
+                android:layout_weight="1" android:layout_marginStart="10dp">
 
                 <LinearLayout
                     android:layout_width="wrap_content"
@@ -196,10 +157,52 @@
                     android:text="@string/home_dash" />
             </LinearLayout>
 
+        </LinearLayout>
+
+        <!-- 第 3 行：总时长 + 总花销 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:orientation="horizontal">
+
             <LinearLayout
                 style="@style/CardHomeStat"
-                android:layout_marginStart="10dp"
                 android:layout_weight="1">
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_trips"
+                        app:tint="?attr/appAccent" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="5dp"
+                        android:text="@string/home_days"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="13sp" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/valueDays"
+                    style="@style/TextHomeStatValue"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:text="@string/home_dash" />
+            </LinearLayout>
+
+            <LinearLayout
+                style="@style/CardHomeStat"
+                android:layout_weight="1" android:layout_marginStart="10dp">
 
                 <LinearLayout
                     android:layout_width="wrap_content"
@@ -230,8 +233,8 @@
                     android:maxLines="1"
                     android:text="@string/home_dash" />
             </LinearLayout>
-        </LinearLayout>
 
+        </LinearLayout>
         <!-- ===== 小节 2：城市排名 =====
              标题行右侧是「滑动胶囊」分段控件：选中态由一颗可平移的色块表示（见 HomeFragment）。
              刻意**没有**「花费」维度：一笔行程可能去多座城市，花销拆到城市要么重复计入、要么靠猜。 -->
@@ -261,14 +264,14 @@
 
             <FrameLayout
                 android:id="@+id/segRank"
-                android:layout_width="168dp"
+                android:layout_width="220dp"
                 android:layout_height="30dp"
                 android:background="@drawable/bg_segmented_track"
                 android:padding="2dp">
 
                 <View
                     android:id="@+id/segPill"
-                    android:layout_width="71dp"
+                    android:layout_width="0dp"
                     android:layout_height="match_parent"
                     android:background="@drawable/bg_segmented_pill" />
 
@@ -302,6 +305,15 @@
                         android:layout_weight="1"
                         android:gravity="center"
                         android:text="@string/home_rank_time"
+                        android:textSize="12sp" />
+
+                    <TextView
+                        android:id="@+id/btnRankRating"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:gravity="center"
+                        android:text="@string/home_rank_rating"
                         android:textSize="12sp" />
                 </LinearLayout>
             </FrameLayout>

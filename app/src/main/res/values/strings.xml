@@ -151,6 +151,10 @@
     <string name="trip_title_label">标题</string>
     <string name="trip_title_hint">给这次行程起个名字</string>
     <!-- 打卡/城市段的可选项目（2.0） -->
+    <string name="photo_add">添加照片</string>
+    <string name="photo_count_reorder">已选 %1$d/3 张 · 长按拖动排序</string>
+    <string name="photo_remove">移除照片</string>
+    <string name="photo_set_cover">已设为封面（第一张）</string>
     <string name="photo_count_hint">1~3 张</string>
     <string name="photo_count_selected">已选 %1$d 张（最多 3 张）</string>
     <string name="rating_unrated">未评分</string>
@@ -210,7 +214,12 @@
     <!-- map_locate 在 1.x 的 strings.xml 里已经有了（「我的位置」），这里不再重复定义 -->
     <string name="map_loading">正在载入地图…</string>
     <string name="map_failed">底图载入失败（叠加的城市面仍可用）</string>
-    <string name="map_loaded_count">底图已载入 · 面 %1$d · 城市 %2$d</string>
 
     <!-- ===== 占位页（P4 地图 / P5 成就） ===== -->
+    <string name="home_cities_provinces_label">打卡城市/省</string>
+    <string name="home_cities_provinces">%1$d / %2$d</string>
+    <string name="home_days">总时长</string>
+    <string name="home_rank_rating">评分</string>
+    <string name="home_rating_value">%1$s 分</string>
+    <string name="checkin_err_days">请填写停留天数</string>
 </resources>

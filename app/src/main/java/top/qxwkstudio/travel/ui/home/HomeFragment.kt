@@ -13,13 +13,11 @@ import androidx.lifecycle.lifecycleScope
 import top.qxwkstudio.travel.R
 import top.qxwkstudio.travel.data.CheckinRepo
 import top.qxwkstudio.travel.data.DataVersion
-import top.qxwkstudio.travel.data.TripRepo
 import top.qxwkstudio.travel.data.db.AppDatabase
 import top.qxwkstudio.travel.data.db.CheckinSource
 import top.qxwkstudio.travel.databinding.FragmentHomeBinding
 import top.qxwkstudio.travel.logic.Dates
 import top.qxwkstudio.travel.logic.Stats
-import top.qxwkstudio.travel.logic.Timeline
 import top.qxwkstudio.travel.logic.Stats.RankBy
 
 /**
@@ -37,11 +35,15 @@ class HomeFragment : Fragment() {
     private val binding get() = _binding!!
 
     private var entries: List<Stats.Entry> = emptyList()
-    private var trips: List<Stats.Trip> = emptyList()
     private var rankBy = RankBy.COUNT
     /** 城市 → 花销（分）/ 停留天数，来自所有行程的城市段。 */
     private var cityAmounts: Map<String, Int> = emptyMap()
+
+    /** 主页「总花销」：所有打卡的金额合计（派生打卡已镜像行程金额）。 */
+    private var checkinCostCents: Int = 0
     private var cityDays: Map<String, Int> = emptyMap()
+    private var cityRatings: Map<String, Float> = emptyMap()
+    private var totalDays: Int = 0
     private var seenVersion = -1
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -67,6 +69,11 @@ class HomeFragment : Fragment() {
             rankBy = RankBy.TIME
             renderRank()
         }
+        binding.btnRankRating.setOnClickListener {
+            if (rankBy == RankBy.RATING) return@setOnClickListener
+            rankBy = RankBy.RATING
+            renderRank()
+        }
         load()
     }
 
@@ -90,28 +97,25 @@ class HomeFragment : Fragment() {
     private fun load() {
         viewLifecycleOwner.lifecycleScope.runIo({
             val db = AppDatabase.get(requireContext())
-            TripRepo.list(db) to CheckinRepo.list(db)
+            CheckinRepo.list(db)
         }) { result ->
-            val pair = result.getOrNull() ?: return@runIo
-            val (tripEntities, checkins) = pair
-        // 每个城市的花销与停留天数：从行程的城市段聚合（打卡直接复用同一份数字）
+            val checkins = result.getOrNull() ?: return@runIo
+        // 每个城市的花销与停留天数：全部来自打卡（手动 + 派生）。
+        // 派生打卡已经镜像了行程段，所以不需要再读行程时间线，口径也就只有一套。
         val amounts = mutableMapOf<String, Int>()
         val days = mutableMapOf<String, Int>()
-        tripEntities.forEach { trip ->
-            Timeline.decode(trip.timeline)?.segments?.forEach { segment ->
-                amounts[segment.city] = (amounts[segment.city] ?: 0) + Stats.segmentCost(segment)
-                days[segment.city] = (days[segment.city] ?: 0) + Stats.segmentDays(segment)
-            }
-        }
-        // 手动打卡若填了金额/天数，也计入对应城市（派生打卡已经镜像了行程，不重复加）
-        checkins.filter { it.source == CheckinSource.MANUAL }.forEach { checkin ->
+        checkins.forEach { checkin ->
             checkin.amountCents?.let { amounts[checkin.cityName] = (amounts[checkin.cityName] ?: 0) + it }
             checkin.stayDays?.let { days[checkin.cityName] = (days[checkin.cityName] ?: 0) + it }
         }
         cityAmounts = amounts
         cityDays = days
+        totalDays = days.values.sum()
+        cityRatings = checkins
+            .filter { it.rating != null }
+            .groupBy { it.cityName }
+            .mapValues { (_, list) -> list.sumOf { it.rating ?: 0 }.toFloat() / list.size }
             seenVersion = DataVersion.current
-            trips = tripEntities.map { Stats.Trip(it.totalCostCents) }
             entries = checkins.map {
                 Stats.Entry(
                     cityName = it.cityName,
@@ -125,14 +129,14 @@ class HomeFragment : Fragment() {
     }
 
     private fun render() {
-        val overview = Stats.overview(entries, trips)
+        val overview = Stats.overview(entries)
         val b = binding
 
         b.valueRange.text = Dates.range(overview.rangeStart, overview.rangeEnd) ?: getString(R.string.home_dash)
-        b.valueCities.text = overview.cities.toString()
-        b.valueProvinces.text = overview.provinces.toString()
+        b.valueCities.text = getString(R.string.home_cities_provinces, overview.cities, overview.provinces)
         b.valueMost.text = overview.mostVisitedCity ?: getString(R.string.home_dash)
-        b.valueCost.text = getString(R.string.home_cost_value, (overview.totalCostCents / 100).toString())
+        b.valueDays.text = getString(R.string.home_days_value, totalDays.toString())
+        b.valueCost.text = getString(R.string.home_cost_value, (checkinCostCents / 100).toString())
 
         b.textEmpty.visibility = if (entries.isEmpty()) View.VISIBLE else View.GONE
         renderRank()
@@ -147,10 +151,11 @@ class HomeFragment : Fragment() {
         b.btnRankCount.setTextColor(if (rankBy == RankBy.COUNT) onAccent else secondary)
         b.btnRankAmount.setTextColor(if (rankBy == RankBy.AMOUNT) onAccent else secondary)
         b.btnRankTime.setTextColor(if (rankBy == RankBy.TIME) onAccent else secondary)
+        b.btnRankRating.setTextColor(if (rankBy == RankBy.RATING) onAccent else secondary)
         placeSegPill(animate = true)
 
         b.rankContainer.removeAllViews()
-        val rows = Stats.rank(entries, rankBy, cityAmounts, cityDays)
+        val rows = Stats.rank(entries, rankBy, cityAmounts, cityDays, cityRatings)
         b.rankCard.visibility = if (rows.isEmpty()) View.GONE else View.VISIBLE
         rows.forEachIndexed { index, row ->
             b.rankContainer.addView(rankRow(index + 1, row))
@@ -172,7 +177,7 @@ class HomeFragment : Fragment() {
         fun place() {
             val available = track.width - track.paddingLeft - track.paddingRight
             if (available <= 0) return
-            val part = available / 3
+            val part = available / 4
             val lp = pill.layoutParams
             if (lp.width != part) {
                 lp.width = part
@@ -266,6 +271,7 @@ class HomeFragment : Fragment() {
                 RankBy.COUNT -> getString(R.string.home_count_value, row.count.toString())
                 RankBy.AMOUNT -> getString(R.string.home_money_value, (row.amountCents / 100).toString())
                 RankBy.TIME -> getString(R.string.home_days_value, row.stayDays.toString())
+                RankBy.RATING -> getString(R.string.home_rating_value, String.format(java.util.Locale.US, "%.1f", row.rating))
             }
             setTextColor(ContextCompat.getColor(ctx, R.color.text_secondary))
             textSize = 13f

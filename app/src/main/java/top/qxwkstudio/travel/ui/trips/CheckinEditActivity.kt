@@ -8,6 +8,8 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.widget.ImageView
+import android.widget.TextView
+import android.view.ViewGroup
 import android.widget.LinearLayout
 import androidx.activity.result.PickVisualMediaRequest
 import android.text.Editable
@@ -87,22 +89,27 @@ class CheckinEditActivity : AppCompatActivity() {
         setCity(found.copy(lat = lat, lng = lng))
     }
 
-    private val photoPicker = registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
-        if (uri == null) return@registerForActivityResult
-        if (photoPaths.size >= 3) return@registerForActivityResult
-        lifecycleScope.runIo({ PhotoStore.save(this, uri, "${photoName}_${photoPaths.size + 1}") }) { result ->
-            val path = result.getOrNull()
-            if (path == null) {
+    /** 系统相册多选：一次可补到 3 张。 */
+    private val photoPicker = registerForActivityResult(ActivityResultContracts.GetMultipleContents()) { uris ->
+        if (uris.isNullOrEmpty()) return@registerForActivityResult
+        val remain = 3 - photoPaths.size
+        if (remain <= 0) return@registerForActivityResult
+        val picked = uris.take(remain)
+        lifecycleScope.runIo({
+            picked.mapIndexedNotNull { index, uri ->
+                PhotoStore.save(this, uri, "${photoName}_${photoPaths.size + index + 1}")
+            }
+        }) { result ->
+            val saved = result.getOrNull().orEmpty()
+            if (saved.isEmpty()) {
                 notify(R.string.photo_failed, long = true)
                 return@runIo
             }
-            if (photoPaths.size >= 3) return@runIo
-            photoPaths += path
-            photoPath = photoPaths.joinToString(",")
+            photoPaths += saved
+            syncPhotoPath()
             renderPhoto()
         }
     }
-
     private val locatePermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (granted) locateIntoCity() else notify(R.string.locate_no_permission, long = true)
     }
@@ -113,7 +120,16 @@ class CheckinEditActivity : AppCompatActivity() {
         theme.applyStyle(Palette.selected(this).overlay, true)
         binding = ActivityCheckinEditBinding.inflate(layoutInflater)
         val b = binding
-        applyEdgeToEdge(b.topBar.root, null)
+        applyEdgeToEdge(b.topBar.root, b.scroll) {
+            // 等这次 padding 布局生效后再滚，否则算出来的目标位置还是键盘弹出前的
+            val focused = currentFocus ?: return@applyEdgeToEdge
+            b.scroll.post {
+                focused.requestRectangleOnScreen(
+                    android.graphics.Rect(0, 0, focused.width, focused.height),
+                    true,
+                )
+            }
+        }
         setContentView(b.root)
 
         editingId = intent.getLongExtra(EXTRA_ID, 0L)
@@ -129,11 +145,7 @@ class CheckinEditActivity : AppCompatActivity() {
         b.btnDaysMinus.setOnClickListener { stepDays(-1) }
         b.btnDaysPlus.setOnClickListener { stepDays(1) }
         b.btnAmountMinus.setOnClickListener { stepAmount(-100) }
-        b.btnAmountPlus.setOnClickListener { stepAmount(100) }
-        b.imagePhoto.setOnClickListener { showPhotoDialog(this, photoPaths.firstOrNull()) }
-        b.btnPickPhoto.setOnClickListener {
-            photoPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-        }
+        b.btnAmountPlus.setOnClickListener { stepAmount(100) }
         setupRating()
         renderPhoto()
 
@@ -462,24 +474,105 @@ class CheckinEditActivity : AppCompatActivity() {
             override fun onStopTrackingTouch(seekBar: android.widget.SeekBar?) = Unit
         })
     }
+    /** 照片瓦片：最多 3 张，等分一行；长按拖动排序，右上角 × 删除。 */
     private fun renderPhoto() {
-        val first = photoPaths.firstOrNull()
-        val bitmap = PhotoStore.load(first, maxPx = 512)
-        if (bitmap != null) {
-            binding.imagePhoto.setImageBitmap(bitmap)
-            binding.imagePhoto.visibility = View.VISIBLE
-            binding.textPhotoEmpty.visibility = View.GONE
-            binding.textPhotoEmpty.text = getString(R.string.photo_count_selected, photoPaths.size)
-            binding.btnPickPhoto.setText(if (photoPaths.size >= 3) R.string.photo_pick else R.string.photo_change)
-        } else {
-            binding.imagePhoto.visibility = View.GONE
-            binding.textPhotoEmpty.visibility = View.VISIBLE
-            binding.textPhotoEmpty.setText(R.string.photo_count_hint)
-            binding.btnPickPhoto.setText(R.string.photo_pick)
+        val row = binding.photoRow
+        row.removeAllViews()
+        val tileCount = photoPaths.size + if (photoPaths.size < 3) 1 else 0
+        photoPaths.forEachIndexed { index, path ->
+            val tile = android.widget.FrameLayout(this).apply {
+                layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f).apply {
+                    marginEnd = if (index < tileCount - 1) dp(8) else 0
+                }
+                setBackgroundResource(R.drawable.bg_photo_tile)
+                clipToOutline = true
+            }
+            tile.addView(android.widget.ImageView(this).apply {
+                setImageBitmap(PhotoStore.load(path, maxPx = 256))
+                scaleType = android.widget.ImageView.ScaleType.CENTER_CROP
+                layoutParams = android.widget.FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                )
+                setOnClickListener { showPhotoDialog(this@CheckinEditActivity, path) }
+            })
+            tile.addView(TextView(this).apply {
+                text = "×"
+                textSize = 13f
+                gravity = android.view.Gravity.CENTER
+                setTextColor(android.graphics.Color.WHITE)
+                background = android.graphics.drawable.GradientDrawable().apply {
+                    shape = android.graphics.drawable.GradientDrawable.OVAL
+                    setColor(0x99000000.toInt())
+                }
+                contentDescription = getString(R.string.photo_remove)
+                layoutParams = android.widget.FrameLayout.LayoutParams(dp(20), dp(20), android.view.Gravity.TOP or android.view.Gravity.END)
+                    .apply { topMargin = dp(4); marginEnd = dp(4) }
+                setOnClickListener {
+                    photoPaths.removeAt(index)
+                    syncPhotoPath()
+                    renderPhoto()
+                }
+            })
+            // 拖动排序：长按拿起，拖到另一张上放下
+            tile.setOnLongClickListener { v ->
+                v.startDragAndDrop(
+                    android.content.ClipData.newPlainText("", ""),
+                    android.view.View.DragShadowBuilder(v),
+                    index,
+                    0,
+                )
+                true
+            }
+            tile.setOnDragListener { v, event ->
+                when (event.action) {
+                    android.view.DragEvent.ACTION_DRAG_ENTERED -> v.alpha = 0.6f
+                    android.view.DragEvent.ACTION_DRAG_EXITED,
+                    android.view.DragEvent.ACTION_DRAG_ENDED, -> v.alpha = 1f
+                    android.view.DragEvent.ACTION_DROP -> {
+                        val from = event.localState as? Int
+                        if (from != null && from != index) {
+                            val item = photoPaths.removeAt(from)
+                            photoPaths.add(index, item)
+                            syncPhotoPath()
+                            renderPhoto()
+                        }
+                        v.alpha = 1f
+                    }
+                }
+                true
+            }
+            row.addView(tile)
         }
-        binding.btnPickPhoto.isEnabled = photoPaths.size < 3
+        if (photoPaths.size < 3) {
+            row.addView(android.widget.FrameLayout(this).apply {
+                layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f)
+                setBackgroundResource(R.drawable.bg_photo_add)
+                contentDescription = getString(R.string.photo_add)
+                setOnClickListener { photoPicker.launch("image/*") }
+                addView(TextView(this@CheckinEditActivity).apply {
+                    text = "+"
+                    textSize = 28f
+                    gravity = android.view.Gravity.CENTER
+                    setTextColor(androidx.core.content.ContextCompat.getColor(this@CheckinEditActivity, R.color.text_tertiary))
+                    layoutParams = android.widget.FrameLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                    )
+                })
+            })
+        }
+        binding.textPhotoEmpty.text = if (photoPaths.isEmpty()) {
+            getString(R.string.photo_count_hint)
+        } else {
+            getString(R.string.photo_count_reorder, photoPaths.size)
+        }
     }
-    /** 所有错误提示统一走 Toast（见 ui/Notify.kt），不再往表单里塞内联红字。 */
+    private fun dp(v: Int): Int = (v * resources.displayMetrics.density).toInt()
+
+    private fun syncPhotoPath() {
+        photoPath = photoPaths.joinToString(",").ifBlank { null }
+    }
     private fun showError(message: String) {
         notify(message, long = true)
     }

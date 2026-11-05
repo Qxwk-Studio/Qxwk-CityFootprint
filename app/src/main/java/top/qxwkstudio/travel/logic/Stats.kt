@@ -27,9 +27,6 @@ object Stats {
         val datePrecision: Int,
     )
 
-    /** 一条行程的统计输入。目前只用到花销。 */
-    data class Trip(val totalCostCents: Int)
-
     /** 主页那几张卡要的数字。[rangeStart] / [rangeEnd] 为 null 表示一条完整日期的打卡都没有。 */
     data class Overview(
         val cities: Int,
@@ -38,7 +35,6 @@ object Stats {
         val rangeStart: Long?,
         val rangeEnd: Long?,
         val mostVisitedCity: String?,
-        val totalCostCents: Int,
     )
 
     /** 城市排名的一行。两个排序维度共用同一行结构。 */
@@ -51,10 +47,12 @@ object Stats {
         val amountCents: Int = 0,
         /** 该城市累计停留天数（来自足迹城市段的起止日期，含首尾；没有足迹就是 0）。 */
         val stayDays: Int = 0,
+        /** 该城市平均评分（1~10）；没评过就是 0。 */
+        val rating: Float = 0f,
     )
 
     /** 排名维度。界面上的下拉框就这两个选项。 */
-    enum class RankBy { COUNT, AMOUNT, TIME }
+    enum class RankBy { COUNT, AMOUNT, TIME, RATING }
 
     /** 城市段的累计花销（所有事件金额之和）。 */
     fun segmentCost(segment: Timeline.Segment): Int = segment.events.sumOf { it.costCents ?: 0 }
@@ -78,7 +76,7 @@ object Stats {
         return ((last - first) / 86_400_000L).toInt() + 1
     }
 
-    fun overview(entries: List<Entry>, trips: List<Trip>): Overview {
+    fun overview(entries: List<Entry>): Overview {
         val exact = entries.filter { DatePrecision.countsForRange(it.datePrecision) }
         val provinces = entries.mapNotNull { it.province.takeIf { p -> p.isNotBlank() } }.toSet()
 
@@ -95,7 +93,6 @@ object Stats {
             rangeStart = exact.minOfOrNull { it.checkinAt },
             rangeEnd = exact.maxOfOrNull { it.checkinAt },
             mostVisitedCity = mostVisited,
-            totalCostCents = trips.sumOf { it.totalCostCents },
         )
     }
 
@@ -105,6 +102,7 @@ object Stats {
         by: RankBy,
         cityAmounts: Map<String, Int> = emptyMap(),
         cityDays: Map<String, Int> = emptyMap(),
+        cityRatings: Map<String, Float> = emptyMap(),
     ): List<CityRow> {
         if (entries.isEmpty()) return emptyList()
 
@@ -119,6 +117,7 @@ object Stats {
                     lastVisitAt = list.maxOf { it.checkinAt },
                     amountCents = cityAmounts[city] ?: 0,
                     stayDays = cityDays[city] ?: 0,
+                    rating = cityRatings[city] ?: 0f,
                 )
             }
 
@@ -127,6 +126,9 @@ object Stats {
             RankBy.COUNT -> rows.sortedWith(compareByDescending<CityRow> { it.count }.thenBy { it.city })
             RankBy.AMOUNT -> rows.sortedWith(compareByDescending<CityRow> { it.amountCents }.thenBy { it.city })
             RankBy.TIME -> rows.sortedWith(compareByDescending<CityRow> { it.stayDays }.thenBy { it.city })
+            RankBy.RATING -> rows.sortedWith(
+                compareByDescending<CityRow> { it.rating }.thenByDescending { it.count }.thenBy { it.city },
+            )
         }
     }
 }

@@ -53,6 +53,9 @@ class TripsFragment : Fragment() {
     private enum class Segment { CHECKINS, TRIPS }
 
     private var segment = Segment.CHECKINS
+
+    /** 胶囊容器上次的宽度：主题/配色重建后要重新摆滑块。 */
+    private var segWidth = 0
     private var trips: List<TripEntity> = emptyList()
     private var checkins: List<CheckinEntity> = emptyList()
 
@@ -88,6 +91,14 @@ class TripsFragment : Fragment() {
             binding.segTrack.post { moveIndicator(animate = true) }
         }
         load()
+        // 主题/深浅色切换会重建页面：宽度可能还是 0，等真正布局完再摆滑块
+        binding.chipContainer.addOnLayoutChangeListener { _, l, t, r, b, ol, ot, or, ob ->
+            val w = r - l
+            if (w > 0 && w != segWidth) {
+                segWidth = w
+                moveIndicator(animate = false)
+            }
+        }
         binding.segTrack.post { moveIndicator(animate = false) }
     }
 
@@ -165,6 +176,7 @@ class TripsFragment : Fragment() {
     private fun moveIndicator(animate: Boolean) {
         val indicator = binding.chipIndicator
         val half = binding.chipContainer.width / 2
+        // 还没布局完：等 chipContainer 的布局回调来摆，别把宽度写成 0
         if (half <= 0) return
         indicator.layoutParams = (indicator.layoutParams as FrameLayout.LayoutParams).apply { width = half }
         indicator.requestLayout()

@@ -19,8 +19,6 @@ class StatsTest {
         precision: Int = DatePrecision.DAY,
     ) = Stats.Entry(city, province, at, precision)
 
-    private fun trip(cost: Int) = Stats.Trip(cost)
-
     private val 北京 = entry("北京", "北京", 100)
     private val 上海 = entry("上海", "上海", 200)
     private val 苏州 = entry("苏州", "江苏", 300)
@@ -30,14 +28,13 @@ class StatsTest {
 
     @Test
     fun `空数据显示全是0 且没有跨度`() {
-        val o = Stats.overview(emptyList(), emptyList())
+        val o = Stats.overview(emptyList())
         assertEquals(0, o.cities)
         assertEquals(0, o.provinces)
         assertEquals(0, o.visits)
         assertNull(o.rangeStart)
         assertNull(o.rangeEnd)
         assertNull(o.mostVisitedCity)
-        assertEquals(0, o.totalCostCents)
     }
 
     @Test
@@ -47,7 +44,7 @@ class StatsTest {
             上海,
             苏州, 南京, // 同属江苏
         )
-        val o = Stats.overview(entries, emptyList())
+        val o = Stats.overview(entries)
         assertEquals(4, o.cities)      // 北京 / 上海 / 苏州 / 南京（北京的第二次不算新城市）
         assertEquals(3, o.provinces)   // 北京 / 上海 / 江苏（苏州与南京同省）
         assertEquals(5, o.visits)      // 打卡条数照实算，不去重
@@ -61,7 +58,7 @@ class StatsTest {
             entry("苏州", "江苏", 900, DatePrecision.UNKNOWN),
             entry("南京", "江苏", 300, DatePrecision.DAY),
         )
-        val o = Stats.overview(entries, emptyList())
+        val o = Stats.overview(entries)
         // 只取两条 DAY：300 与 500，其余两档的日期是补出来的占位值
         assertEquals(300L, o.rangeStart)
         assertEquals(500L, o.rangeEnd)
@@ -73,7 +70,7 @@ class StatsTest {
             entry("北京", "北京", 100, DatePrecision.YEAR),
             entry("上海", "上海", 200, DatePrecision.MONTH),
         )
-        val o = Stats.overview(entries, emptyList())
+        val o = Stats.overview(entries)
         assertNull(o.rangeStart)
         assertNull(o.rangeEnd)
         assertEquals(2, o.cities)
@@ -87,20 +84,14 @@ class StatsTest {
             entry("苏州", "江苏", 5),
         )
         // 上海 2 次、北京 2 次：并列时取字典序靠前的「上海」
-        assertEquals("上海", Stats.overview(entries, emptyList()).mostVisitedCity)
+        assertEquals("上海", Stats.overview(entries).mostVisitedCity)
 
         // 次数不同时按次数
         val more = entries + entry("上海", "上海", 6)
-        assertEquals("上海", Stats.overview(more, emptyList()).mostVisitedCity)
+        assertEquals("上海", Stats.overview(more).mostVisitedCity)
 
         val beijingMore = entries + entry("北京", "北京", 7) + entry("北京", "北京", 8)
-        assertEquals("北京", Stats.overview(beijingMore, emptyList()).mostVisitedCity)
-    }
-
-    @Test
-    fun `总花销是各行程花销之和 与打卡数无关`() {
-        val o = Stats.overview(listOf(北京), listOf(trip(1200), trip(3400)))
-        assertEquals(4600, o.totalCostCents)
+        assertEquals("北京", Stats.overview(beijingMore).mostVisitedCity)
     }
 
     // ── 排名 ──
@@ -153,7 +144,7 @@ class StatsTest {
     @Test
     fun `省份为空的打卡仍计入城市数 但不计入省份数`() {
         val entries = listOf(entry("某地", "", 100), 北京)
-        val o = Stats.overview(entries, emptyList())
+        val o = Stats.overview(entries)
         assertEquals(2, o.cities)
         assertEquals(1, o.provinces) // 只有北京的「北京」
     }
