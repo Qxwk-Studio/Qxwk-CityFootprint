@@ -36,7 +36,7 @@ import top.qxwkstudio.travel.logic.Dates
 class AchievementsFragment : Fragment() {
 
     private var _binding: FragmentAchievementsBinding? = null
-    private val binding get() = _binding!!
+    private val binding get() = requireNotNull(_binding) { "binding 在视图生命周期外被访问" }
 
     private var selectedCategory: Int = 0
 

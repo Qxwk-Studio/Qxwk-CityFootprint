@@ -19,7 +19,14 @@ object PhotoFiles {
 
     private const val DIR = "photos"
 
+    @Volatile private var rootPath: String? = null
+
     private fun dir(context: Context): File = File(context.filesDir, DIR)
+
+    /** Application 启动时调用一次：记录照片目录，load 时校验路径不越界。 */
+    fun init(context: Context) {
+        rootPath = runCatching { dir(context).canonicalPath }.getOrNull()
+    }
 
     /** 从相册 URI 拷一张到私有目录，返回绝对路径；失败返回 null。 */
     fun save(context: Context, uri: Uri, name: String): String? {
@@ -48,24 +55,28 @@ object PhotoFiles {
     }
 
     /** 读回图片；[maxPx] > 0 时按最长边限尺寸解码（列表缩略图用）。 */
-    fun load(path: String?, maxPx: Int = 0): Bitmap? {
-        // 打卡可能存「逗号分隔的多张」：缩略图/详情只取第一张
-        val path = path?.split(",")?.firstOrNull()?.takeIf { it.isNotBlank() } ?: return null
-        return runCatching {
-            if (maxPx <= 0) return@runCatching BitmapFactory.decodeFile(path)
-            val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-            BitmapFactory.decodeFile(path, bounds)
-            var sample = 1
-            while (maxOf(bounds.outWidth, bounds.outHeight) / (sample * 2) >= maxPx) sample *= 2
-            BitmapFactory.decodeFile(path, BitmapFactory.Options().apply { inSampleSize = sample })
-        }.getOrNull()
+    private val cache = object : android.util.LruCache<String, Bitmap>(16 * 1024) {
+        override fun sizeOf(key: String, value: Bitmap) = value.byteCount / 1024
     }
 
-    /** 删掉一张旧图（换图时用），失败无所谓。 */
-    fun delete(path: String?) {
-        if (path.isNullOrBlank()) return
-        runCatching { File(path).delete() }
+    fun load(path: String?, maxPx: Int = 0): Bitmap? {
+        // 打卡可能存「逗号分隔的多张」：缩略图/详情只取第一张
+        val first = path?.split(",")?.firstOrNull()?.takeIf { it.isNotBlank() } ?: return null
+        // 只允许读应用自己的照片目录，避免 DB 里出现任意路径
+        val root = rootPath
+        if (root != null && !File(first).canonicalPath.startsWith(root + File.separator)) return null
+        val key = first + "@" + maxPx
+        cache.get(key)?.let { return it }
+        return runCatching {
+            if (maxPx <= 0) return@runCatching BitmapFactory.decodeFile(first)
+            val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            BitmapFactory.decodeFile(first, bounds)
+            var sample = 1
+            while (maxOf(bounds.outWidth, bounds.outHeight) / (sample * 2) >= maxPx) sample *= 2
+            BitmapFactory.decodeFile(first, BitmapFactory.Options().apply { inSampleSize = sample })
+        }.getOrNull()?.also { cache.put(key, it) }
     }
+
 
     /** 目录里所有照片文件的绝对路径。 */
     fun list(context: Context): List<String> =

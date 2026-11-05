@@ -45,11 +45,14 @@ object Prefs {
                 val dao = AppDatabase.get(app).settings()
                 val savedAppearance = runBlocking { dao.get(KEY_APPEARANCE) }
                 val savedAccent = runBlocking { dao.get(KEY_ACCENT) }
-                if (savedAppearance != null) {
+                // SP 是最近一次写入的同步副本：以它为准，并把库里的旧值纠正过来，
+                // 避免「刚切完外观、下次启动又被旧 DB 值覆盖」。
+                val spAppearance = sp.getString(SP_APPEARANCE, null)
+                if (spAppearance == null && savedAppearance != null) {
                     appearanceValue = Appearance.entries.firstOrNull { it.value == savedAppearance }
                         ?: Appearance.SYSTEM
                     sp.edit().putString(SP_APPEARANCE, savedAppearance).apply()
-                } else {
+                } else if (savedAppearance != appearanceValue.value) {
                     runBlocking { dao.put(AppSettingEntity(KEY_APPEARANCE, appearanceValue.value)) }
                 }
                 if (savedAccent != null) {
@@ -81,8 +84,8 @@ object Prefs {
     private fun write(context: Context, key: String, value: String) {
         val app = context.applicationContext
         val sp = app.getSharedPreferences(SP_NAME, Context.MODE_PRIVATE)
-        if (key == KEY_APPEARANCE) sp.edit().putString(SP_APPEARANCE, value).apply()
-        if (key == KEY_ACCENT) sp.edit().putString(SP_ACCENT, value).apply()
+        if (key == KEY_APPEARANCE) sp.edit().putString(SP_APPEARANCE, value).commit()
+        if (key == KEY_ACCENT) sp.edit().putString(SP_ACCENT, value).commit()
 
         Thread {
             runCatching {

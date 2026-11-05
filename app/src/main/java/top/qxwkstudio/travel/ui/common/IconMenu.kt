@@ -37,7 +37,6 @@ internal fun showIconMenu(anchor: View, actions: List<MenuAction>) {
     val content = LinearLayout(context).apply {
         orientation = LinearLayout.VERTICAL
         setPadding(dp(4), dp(4), dp(4), dp(4))
-        setBackgroundResource(R.drawable.bg_popup_menu)
     }
     var popup: PopupWindow? = null
 

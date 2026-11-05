@@ -66,6 +66,18 @@
             android:tint="@color/sidebar_fg"
             android:visibility="gone" />
 
+        <ImageButton
+            android:id="@+id/btnSaveIcon"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_marginStart="10dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/top_save"
+            android:padding="6dp"
+            android:src="@drawable/ic_floppy"
+            android:tint="@color/sidebar_fg"
+            android:visibility="gone" />
+
         <!-- 删除（行程编辑器右上角）：低频的危险动作，放在主按钮之外单独一颗，点之前弹确认。 -->
         <ImageButton
             android:id="@+id/btnDelete"

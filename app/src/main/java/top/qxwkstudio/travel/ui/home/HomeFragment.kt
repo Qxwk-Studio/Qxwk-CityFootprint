@@ -32,7 +32,7 @@ import top.qxwkstudio.travel.logic.Stats.RankBy
 class HomeFragment : Fragment() {
 
     private var _binding: FragmentHomeBinding? = null
-    private val binding get() = _binding!!
+    private val binding get() = requireNotNull(_binding) { "binding 在视图生命周期外被访问" }
 
     private var entries: List<Stats.Entry> = emptyList()
     private var rankBy = RankBy.COUNT
@@ -110,6 +110,7 @@ class HomeFragment : Fragment() {
         }
         cityAmounts = amounts
         cityDays = days
+        checkinCostCents = checkins.sumOf { it.amountCents ?: 0 }
         totalDays = days.values.sum()
         cityRatings = checkins
             .filter { it.rating != null }

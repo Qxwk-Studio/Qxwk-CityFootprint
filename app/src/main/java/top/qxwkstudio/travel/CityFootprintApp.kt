@@ -6,6 +6,7 @@ import org.maplibre.android.MapLibre
 import top.qxwkstudio.travel.data.Appearance
 import top.qxwkstudio.travel.data.CityStore
 import top.qxwkstudio.travel.data.PhotoJanitor
+import top.qxwkstudio.travel.data.PhotoFiles
 import top.qxwkstudio.travel.data.Prefs
 
 /**
@@ -32,6 +33,7 @@ class CityFootprintApp : Application() {
         MapLibre.getInstance(this)
         // 读一次本机偏好（app_settings，进程启动时读进内存），随后交给 AppCompat
         Prefs.init(this)
+        PhotoFiles.init(this)
         applyAppearance(Prefs.appearance)
         preloadCities()
         // 启动后台扫一次孤儿照片（删记录、换图、进程被杀留下的），不阻塞首帧

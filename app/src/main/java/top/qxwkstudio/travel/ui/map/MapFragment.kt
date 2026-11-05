@@ -54,7 +54,7 @@ import top.qxwkstudio.travel.logic.MapStyle
 class MapFragment : Fragment() {
 
     private var _binding: FragmentMapBinding? = null
-    private val binding get() = _binding!!
+    private val binding get() = requireNotNull(_binding) { "binding 在视图生命周期外被访问" }
 
     private lateinit var mapView: MapView
     private var map: MapLibreMap? = null
@@ -293,6 +293,8 @@ class MapFragment : Fragment() {
                 .filter { it.name in visited }
                 .map { it.name to LatLng(it.lat, it.lng) },
         )
+        // 加载完成：收掉布局里默认那行「正在载入地图」
+        _binding?.textStatus?.visibility = View.GONE
     }
     /**
      * 把已解析好的城市面拼成 FeatureCollection。
@@ -369,7 +371,7 @@ class MapFragment : Fragment() {
         val mapLibre = map ?: return false
         val point = mapLibre.projection.toScreenLocation(latLng)
         val features = mapLibre.queryRenderedFeatures(point, VISITED_FILL)
-        val name = features?.firstOrNull()?.getStringProperty("name")
+        val name = features.firstOrNull()?.getStringProperty("name")
         if (name.isNullOrBlank()) {
             binding.cityCard.visibility = View.GONE
             return false
@@ -500,7 +502,7 @@ class MapFragment : Fragment() {
                 val stars = LinearLayout(ctx).apply { orientation = LinearLayout.HORIZONTAL }
                 for (star in 1..5) {
                     stars.addView(ImageView(ctx).apply {
-                        setImageResource(if ((checkin.rating ?: 0) >= star) R.drawable.ic_star else R.drawable.ic_star_outline)
+                        setImageResource(if (checkin.rating >= star) R.drawable.ic_star else R.drawable.ic_star_outline)
                         imageTintList = android.content.res.ColorStateList.valueOf(
                             ContextCompat.getColor(ctx, R.color.first_visit),
                         )

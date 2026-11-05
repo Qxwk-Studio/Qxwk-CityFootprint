@@ -40,10 +40,10 @@
     </style>
 
     <style name="ThemeOverlay.App.Accent.Rose" parent="">
-        <item name="appAccent">#DB2777</item>
-        <item name="appAccentLight">#1ADB2777</item>
-        <item name="colorPrimary">#DB2777</item>
-        <item name="colorSecondary">#DB2777</item>
+        <item name="appAccent">#DC2626</item>
+        <item name="appAccentLight">#1ADC2626</item>
+        <item name="colorPrimary">#DC2626</item>
+        <item name="colorSecondary">#DC2626</item>
     </style>
 
     <style name="ThemeOverlay.App.Accent.Teal" parent="">

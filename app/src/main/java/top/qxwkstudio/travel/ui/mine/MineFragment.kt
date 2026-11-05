@@ -25,9 +25,9 @@ import top.qxwkstudio.travel.logic.Timeline
 import top.qxwkstudio.travel.databinding.FragmentMineBinding
 
 /**
- * 「我的」页（2.0）：本机资料 + 两张设置卡（外观与颜色 / 关于）。
+ * 「我的」页：本机资料 + 个性化 / 软件设置 / 关于软件三张卡片。
  *
- * 2.0 没有账号，**资料不可编辑**：昵称与 UUID 由本机生成后固定，头像也不是相册图 ——
+ * 没有账号体系：UUID 本机生成后固定，昵称与徽章色可在「个性化」里改，头像不是相册图 ——
  * 统一显示「主题色实心圆 + 白色人像」，圆心随徽章色（这也就是用户在别处看到的「我的颜色」）。
  * 这一页不发任何身份请求；检查更新是用户点一下才发的唯一请求。
  *
@@ -37,16 +37,16 @@ import top.qxwkstudio.travel.databinding.FragmentMineBinding
 class MineFragment : Fragment() {
 
     private var _binding: FragmentMineBinding? = null
-    private val binding get() = _binding!!
+    private val binding get() = requireNotNull(_binding) { "binding 在视图生命周期外被访问" }
 
     /** 徽章色预设（口径：一组预设，不做取色器）。名字只给弹窗用，值进库。 */
     private val badgeOptions = listOf(
-        "蓝" to "#2563EB",
-        "绿" to "#34A853",
-        "橙" to "#F59E0B",
-        "紫" to "#7C3AED",
         "红" to "#DC2626",
+        "橙" to "#F59E0B",
+        "绿" to "#34A853",
         "青" to "#0891B2",
+        "蓝" to "#2563EB",
+        "紫" to "#7C3AED",
         "粉" to "#DB2777",
         "灰" to "#64748B",
     )
@@ -64,6 +64,7 @@ class MineFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        binding.rowName.setOnClickListener { chooseName() }
         binding.rowAppearance.setOnClickListener { chooseAppearance() }
         binding.rowTheme.setOnClickListener { chooseThemeColor() }
         binding.rowBadge.setOnClickListener { chooseBadgeColor() }
@@ -108,12 +109,13 @@ class MineFragment : Fragment() {
     private fun bindProfile(profile: Profile) {
         val b = binding
         b.textNickname.text = profile.nickname ?: getString(R.string.mine_nickname_default)
+        b.textNameValue.text = profile.nickname ?: getString(R.string.mine_nickname_default)
         b.textUuid.text = getString(R.string.mine_uuid, profile.uuid)
 
         // 头像：主题色圆底 + 白色人像（不提供修改入口）
         b.iconAvatar.background = circle(profile.badge)
         b.colorDot.background = circle(profile.badge)
-        b.colorDotTheme.background = circle(Palette.selected(requireContext()).color)
+        b.colorDotTheme.background = circle(Palette.selected().color)
         currentBadge = profile.badge
         refreshLocal()
     }
@@ -201,7 +203,7 @@ class MineFragment : Fragment() {
      */
     private fun chooseThemeColor() {
         val presets = Palette.presets
-        val current = presets.indexOfFirst { it.key == Palette.selected(requireContext()).key }
+        val current = presets.indexOfFirst { it.key == Palette.selected().key }
         val labels = presets.map { it.label }.toTypedArray()
         MaterialAlertDialogBuilder(requireContext())
             .setTitle(R.string.mine_theme_color)
@@ -209,6 +211,22 @@ class MineFragment : Fragment() {
                 dialog.dismiss()
                 Palette.save(requireContext(), presets[which].key)
                 requireActivity().recreate()
+            }
+            .show()
+    }
+
+    /** 名称：从预制选项里选一个，写入本机设置。 */
+    private fun chooseName() {
+        val presets = resources.getStringArray(R.array.mine_name_presets)
+        val current = binding.textNameValue.text?.toString().orEmpty()
+        val checked = presets.indexOfFirst { it == current }
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.mine_name)
+            .setSingleChoiceItems(presets, checked) { dialog, which ->
+                dialog.dismiss()
+                viewLifecycleOwner.lifecycleScope.runIo({
+                    SettingsRepo.setNickname(AppDatabase.get(requireContext()), presets[which])
+                }) { load() }
             }
             .show()
     }
@@ -222,8 +240,10 @@ class MineFragment : Fragment() {
             .setSingleChoiceItems(labels, current) { dialog, which ->
                 dialog.dismiss()
                 val picked = options[which]
+                val previous = Prefs.appearance
                 Prefs.saveAppearance(requireContext(), picked)
-                CityFootprintApp.applyAppearance(picked)
+                refreshLocal()
+                if (picked != previous) CityFootprintApp.applyAppearance(picked)
             }
             .show()
     }
@@ -253,14 +273,15 @@ class MineFragment : Fragment() {
                 .setMessage(getString(R.string.profile_update_new_message, info.versionName))
                 .setPositiveButton(R.string.profile_update_go) { _, _ ->
                     val url = info.downloadUrl
-                    if (url.isBlank()) {
+                    val safeUri = android.net.Uri.parse(url.ifBlank { "" })
+                    if (url.isBlank() || safeUri.scheme !in setOf("https", "http")) {
                         requireContext().notify(R.string.profile_update_no_url, long = true)
                     } else {
                         runCatching {
                             startActivity(
                                 android.content.Intent(
                                     android.content.Intent.ACTION_VIEW,
-                                    android.net.Uri.parse(url),
+                                    safeUri,
                                 )
                             )
                         }.onFailure {

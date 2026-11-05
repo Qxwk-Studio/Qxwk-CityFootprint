@@ -39,4 +39,15 @@
     <color name="rank_gold">#B8860B</color>   <!-- 排名第 1：金 -->
     <color name="rank_silver">#8C99A8</color> <!-- 排名第 2：银 -->
     <color name="rank_bronze">#A9663B</color> <!-- 排名第 3：铜 -->
+
+    <color name="badge_cost">#D97706</color>
+    <color name="stripe_trip">#2563EB</color>
+    <color name="stripe_manual">#34A853</color>
+    <color name="stripe_derived">#94A3B8</color>
+    <!-- 地图专用色：不复用界面 token，单独调一档，保证陆/水/路与底色拉得开 -->
+    <color name="map_bg">#EEF2F6</color>
+    <color name="map_land">#E2E8F0</color>
+    <color name="map_water">#BFDBFE</color>
+    <color name="map_road">#CBD5E1</color>
+    <color name="map_province">#94A3B8</color>
 </resources>

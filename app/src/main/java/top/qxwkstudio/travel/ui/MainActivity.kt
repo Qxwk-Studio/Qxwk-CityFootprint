@@ -27,13 +27,13 @@ import top.qxwkstudio.travel.databinding.ActivityMainBinding
  * 与 1.x 的区别：
  *  - **没有登录入口、没有启动时的 /api/me**：2.0 是离线单机，数据全在本地库；
  *  - 「全站统计」页删掉了（单机没有全站），统计搬进主页；「我的成就」收成「成就」；
- *  - 右上角那颗按钮从「栏目菜单（一行一个网页）」变成「**+ 快捷菜单**」（打卡 / 足迹 / 自动记录）。
+ *  - 右上角那颗按钮从「栏目菜单（一行一个网页）」变成「**+ 快捷菜单**」（打卡 / 足迹）。
  *
  * Fragment 仍用 **add + hide/show** 而不是 replace：地图页 replace 一次就要重建整个 MapView、
  * 统计页也会重新跑一遍聚合。代价是隐藏的 Fragment 仍是 RESUMED，所以各页感知「被切回来」
  * 用 `onHiddenChanged` 而不是 `onResume`（主页与行程页都这么写）。
  *
- * 五个页面都是各自独立的实现；2.1 会把「自动记录」接进「+」菜单的第三项。
+ * 五个页面都是各自独立的实现。
  */
 class MainActivity : AppCompatActivity() {
 
@@ -48,7 +48,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // 主题色叠层：必须在 setContentView 之前应用，Material 控件（按钮/开关/输入框）的颜色取自主题
-        theme.applyStyle(Palette.selected(this).overlay, true)
+        Palette.apply(this)
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         val b = binding
@@ -81,7 +81,7 @@ class MainActivity : AppCompatActivity() {
     // ────────────────────────── 右上角「+」 ──────────────────────────
 
     /**
-     * 右上角「+」的快捷菜单：城市打卡 / 添加足迹（自动记录整块推到 2.1，这里不再占位）。
+     * 右上角「+」的快捷菜单：城市打卡 / 添加足迹。
      *
      * 浮层本体在 [showIconMenu]：自绘的图标 + 文字行，宽度 wrap —— 系统 PopupMenu 的宽度
      * 按最长项 + 系统内边距算，三个中文短词会被撑成一条横带（真机上反馈「太宽」）。

@@ -202,7 +202,7 @@ object TripRepo {
         UUID.nameUUIDFromBytes("derived:$tripUuid:$segmentIndex".toByteArray()).toString()
     /** 与表单同一套校验，再补上标题（时间线管不到它）。 */
     private fun validate(input: TripInput): String? {
-        if (input.title.isBlank()) return "请输入标题"
+        if (input.title.isBlank()) return "请填写标题"
         if (input.title.length > Limits.SHORT) return "标题不能超过 ${Limits.SHORT} 字"
         val note = input.note.orEmpty()
         if (note.length > Limits.NOTE) return "备注不能超过 ${Limits.NOTE} 字"

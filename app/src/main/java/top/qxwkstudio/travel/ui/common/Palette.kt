@@ -22,27 +22,61 @@ object Palette {
     data class Preset(val key: String, val label: String, val color: String, val overlay: Int)
 
     val presets: List<Preset> = listOf(
-        Preset("blue", "蓝", "#2563EB", R.style.ThemeOverlay_App_Accent_Blue),
-        Preset("green", "绿", "#16A34A", R.style.ThemeOverlay_App_Accent_Green),
-        Preset("purple", "紫", "#7C3AED", R.style.ThemeOverlay_App_Accent_Purple),
+        Preset("system", "跟随系统", "", 0),
+        Preset("rose", "红", "#DC2626", R.style.ThemeOverlay_App_Accent_Rose),
         Preset("orange", "橙", "#EA580C", R.style.ThemeOverlay_App_Accent_Orange),
-        Preset("rose", "玫瑰", "#DB2777", R.style.ThemeOverlay_App_Accent_Rose),
+        Preset("green", "绿", "#16A34A", R.style.ThemeOverlay_App_Accent_Green),
         Preset("teal", "青", "#0891B2", R.style.ThemeOverlay_App_Accent_Teal),
+        Preset("blue", "蓝", "#2563EB", R.style.ThemeOverlay_App_Accent_Blue),
+        Preset("purple", "紫", "#7C3AED", R.style.ThemeOverlay_App_Accent_Purple),
     )
 
     const val DEFAULT = "blue"
 
     /** 当前预设。认不出的值（换版本/手改）退回默认，别让界面卡成一片。 */
-    fun selected(context: Context): Preset {
+    fun selected(): Preset {
         val key = Prefs.accentKey
         return presets.firstOrNull { it.key == key } ?: presets.first()
     }
 
     /** 代码里画强调色时用这个（与主题叠加同一个色值）。 */
     fun accent(context: Context): Int {
-        val preset = selected(context)
+        val preset = selected()
+        if (preset.key == "system") {
+            val teal = runCatching { Color.parseColor("#0891B2") }
+                .getOrDefault(ContextCompat.getColor(context, R.color.accent))
+            val dynamic = runCatching {
+                com.google.android.material.color.DynamicColors.isDynamicColorAvailable()
+            }.getOrDefault(false)
+            if (!dynamic) return teal
+            return runCatching {
+                com.google.android.material.color.MaterialColors.getColor(
+                    context,
+                    com.google.android.material.R.attr.colorPrimary,
+                    teal,
+                )
+            }.getOrDefault(teal)
+        }
         return runCatching { Color.parseColor(preset.color) }
             .getOrDefault(ContextCompat.getColor(context, R.color.accent))
+    }
+
+    /** 在 setContentView 之前把主题叠层应用好；「跟随系统」走 Android 12+ 壁纸取色。 */
+    fun apply(activity: android.app.Activity) {
+        if (selected().key == "system") {
+            val dynamic = runCatching {
+                com.google.android.material.color.DynamicColors.isDynamicColorAvailable()
+            }.getOrDefault(false)
+            val ok = dynamic && runCatching {
+                com.google.android.material.color.DynamicColors.applyToActivityIfAvailable(activity)
+            }.isSuccess
+            if (!ok) {
+                // 壁纸取色不可用（低版本 / 厂商裁剪）时回退青色
+                activity.theme.applyStyle(R.style.ThemeOverlay_App_Accent_Teal, true)
+            }
+        } else {
+            activity.theme.applyStyle(selected().overlay, true)
+        }
     }
 
     fun save(context: Context, key: String) {

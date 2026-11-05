@@ -16,8 +16,6 @@ internal object PhotoStore {
 
     fun load(path: String?, maxPx: Int = 0): Bitmap? = PhotoFiles.load(path, maxPx)
 
-    fun delete(path: String?) = PhotoFiles.delete(path)
-
     fun cleanupUnreferenced(context: Context, referenced: Set<String>): Pair<Int, Long> =
         PhotoFiles.cleanupUnreferenced(context, referenced)
 }

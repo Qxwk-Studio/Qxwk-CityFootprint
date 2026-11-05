@@ -30,16 +30,17 @@ import top.qxwkstudio.travel.databinding.ActivityCheckinEditBinding
 import top.qxwkstudio.travel.logic.City
 import top.qxwkstudio.travel.logic.DatePrecision
 import top.qxwkstudio.travel.logic.Limits
+import top.qxwkstudio.travel.logic.Sanitize
 import java.util.Calendar
 import java.util.UUID
 
 /**
- * 手动打卡页（2.0）：城市 + 到访时间（四档精度）+ 备注。
+ * 手动打卡页：城市 + 到访时间 + 停留天数 + 可选项（同行人/照片/评分/备注）。
  *
  * 城市与坐标**不是手输**：点一下进现有的选城页（分组浏览 + 搜索，见 CityPickerActivity），
  * 或者点准心让它按定位判城（[CityBoundaries] + logic/CityLocator）。
  *
- * 日期四档（见 logic/DatePrecision）：
+ * 日期精度（见 logic/DatePrecision）：
  *  - 年 / 月 / 日都选 → 完整日期；
  *  - 月选「仅到年份」→ 只记得年；
  *  - 日选「不记得日」→ 只记得年月；
@@ -106,7 +107,6 @@ class CheckinEditActivity : AppCompatActivity() {
                 return@runIo
             }
             photoPaths += saved
-            syncPhotoPath()
             renderPhoto()
         }
     }
@@ -117,7 +117,7 @@ class CheckinEditActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // 主题色叠层：必须在 setContentView 之前应用，Material 控件（按钮/开关/输入框）的颜色取自主题
-        theme.applyStyle(Palette.selected(this).overlay, true)
+        Palette.apply(this)
         binding = ActivityCheckinEditBinding.inflate(layoutInflater)
         val b = binding
         applyEdgeToEdge(b.topBar.root, b.scroll) {
@@ -142,6 +142,8 @@ class CheckinEditActivity : AppCompatActivity() {
         b.inputCity.setOnClickListener { picker.launch(Intent(this, CityPickerActivity::class.java)) }
         b.btnLocate.setOnClickListener { locateIntoCity() }
         b.btnSave.setOnClickListener { save() }
+        b.topBar.btnSaveIcon.visibility = View.VISIBLE
+        b.topBar.btnSaveIcon.setOnClickListener { save() }
         b.btnDaysMinus.setOnClickListener { stepDays(-1) }
         b.btnDaysPlus.setOnClickListener { stepDays(1) }
         b.btnAmountMinus.setOnClickListener { stepAmount(-100) }
@@ -178,16 +180,16 @@ class CheckinEditActivity : AppCompatActivity() {
     private fun setupDateSpinners() {
         val b = binding
         b.spinYear.adapter = ArrayAdapter(
-            this, R.layout.item_spinner, years.map { getString(R.string.checkin_year, it) },
+            this, R.layout.item_spinner_date, years.map { getString(R.string.checkin_year, it) },
         )
         // 月份第 0 项 = 仅到年份；日第 0 项 = 仅到月份。精度完全由这两项决定，
         // 不再有「记不清了」开关。
         b.spinMonth.adapter = ArrayAdapter(
-            this, R.layout.item_spinner,
+            this, R.layout.item_spinner_date,
             listOf(getString(R.string.checkin_month_year_only)) + (1..12).map { getString(R.string.checkin_month, it) },
         )
         b.spinDay.adapter = ArrayAdapter(
-            this, R.layout.item_spinner,
+            this, R.layout.item_spinner_date,
             listOf(getString(R.string.checkin_day_unknown)) + (1..31).map { getString(R.string.checkin_day, it) },
         )
         val now = Calendar.getInstance()
@@ -258,7 +260,7 @@ class CheckinEditActivity : AppCompatActivity() {
     // ────────────────────────── 编辑已有打卡 ──────────────────────────
 
     /**
-     * 载入一条已有打卡：城市、四档日期、备注。
+     * 载入一条已有打卡：城市、日期、可选项。
      *
      * 城市表里查不到名字时（旧数据/搬迁）仍然允许编辑其余字段：城市用「名字 + 空 province」兜着，
      * 用户重新点一次选城就能补全 —— 但不能因为查不到就整页不可用。
@@ -395,16 +397,28 @@ class CheckinEditActivity : AppCompatActivity() {
         }
         val (at, precision) = readDate()
         val photos = photoPaths.joinToString(",").ifBlank { null }
-        val note = binding.inputNote.text?.toString()?.trim().orEmpty().take(Limits.NOTE)
+        val note = Sanitize.text(binding.inputNote.text?.toString(), Limits.NOTE)
         val amountText = binding.inputAmount.text?.toString()?.trim().orEmpty()
-        amountCents = if (amountText.isEmpty()) null else (amountText.toDoubleOrNull()?.times(100))?.toInt()
+        amountCents = if (amountText.isEmpty()) {
+            null
+        } else {
+            val yuan = amountText.toDoubleOrNull() ?: 0.0
+            (yuan.coerceIn(0.0, 20_000_000.0) * 100).toInt()
+        }
         stayDays = binding.inputDays.text?.toString()?.trim()?.toIntOrNull()
-        companions = binding.inputCompanions.text?.toString()?.trim().orEmpty().ifBlank { null }
+        if (stayDays == null || stayDays!! <= 0) {
+            showError(getString(R.string.checkin_err_days))
+            binding.inputDays.requestFocus()
+            return
+        }
+        companions = Sanitize.line(binding.inputCompanions.text?.toString(), Limits.SHORT).ifBlank { null }
 
         binding.btnSave.isEnabled = false
+        binding.topBar.btnSaveIcon.isEnabled = false
         val existing = editingEntity
         busy = true
         binding.btnSave.isEnabled = false
+        binding.topBar.btnSaveIcon.isEnabled = false
         lifecycleScope.runIo({
             val db = AppDatabase.get(this)
             if (existing == null) {
@@ -442,6 +456,7 @@ class CheckinEditActivity : AppCompatActivity() {
         }) { result ->
             busy = false
             binding.btnSave.isEnabled = true
+            binding.topBar.btnSaveIcon.isEnabled = true
             val error = result.exceptionOrNull()
             if (error != null) {
                 showError(error.message ?: getString(R.string.common_error))
@@ -475,19 +490,19 @@ class CheckinEditActivity : AppCompatActivity() {
         })
     }
     /** 照片瓦片：最多 3 张，等分一行；长按拖动排序，右上角 × 删除。 */
+    /** 照片瓦片：固定宽度、最多 3 张；长按拖动排序，右上角 × 删除。 */
     private fun renderPhoto() {
         val row = binding.photoRow
         row.removeAllViews()
-        val tileCount = photoPaths.size + if (photoPaths.size < 3) 1 else 0
         photoPaths.forEachIndexed { index, path ->
             val tile = android.widget.FrameLayout(this).apply {
-                layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f).apply {
-                    marginEnd = if (index < tileCount - 1) dp(8) else 0
+                layoutParams = LinearLayout.LayoutParams(dp(96), ViewGroup.LayoutParams.MATCH_PARENT).apply {
+                    marginEnd = dp(8)
                 }
                 setBackgroundResource(R.drawable.bg_photo_tile)
                 clipToOutline = true
             }
-            tile.addView(android.widget.ImageView(this).apply {
+            val image = android.widget.ImageView(this).apply {
                 setImageBitmap(PhotoStore.load(path, maxPx = 256))
                 scaleType = android.widget.ImageView.ScaleType.CENTER_CROP
                 layoutParams = android.widget.FrameLayout.LayoutParams(
@@ -495,7 +510,18 @@ class CheckinEditActivity : AppCompatActivity() {
                     ViewGroup.LayoutParams.MATCH_PARENT,
                 )
                 setOnClickListener { showPhotoDialog(this@CheckinEditActivity, path) }
-            })
+                setOnLongClickListener { v ->
+                    dragHandled = false
+                    v.startDragAndDrop(
+                        android.content.ClipData.newPlainText("", ""),
+                        android.view.View.DragShadowBuilder(v),
+                        index,
+                        0,
+                    )
+                    true
+                }
+            }
+            tile.addView(image)
             tile.addView(TextView(this).apply {
                 text = "×"
                 textSize = 13f
@@ -510,43 +536,35 @@ class CheckinEditActivity : AppCompatActivity() {
                     .apply { topMargin = dp(4); marginEnd = dp(4) }
                 setOnClickListener {
                     photoPaths.removeAt(index)
-                    syncPhotoPath()
                     renderPhoto()
                 }
             })
-            // 拖动排序：长按拿起，拖到另一张上放下
-            tile.setOnLongClickListener { v ->
-                v.startDragAndDrop(
-                    android.content.ClipData.newPlainText("", ""),
-                    android.view.View.DragShadowBuilder(v),
-                    index,
-                    0,
-                )
-                true
-            }
-            tile.setOnDragListener { v, event ->
+            // 拖动排序：图片和瓦片都要挂监听——手指按在图片上时事件不会冒泡到外层
+            val dragListener = android.view.View.OnDragListener { _, event ->
                 when (event.action) {
-                    android.view.DragEvent.ACTION_DRAG_ENTERED -> v.alpha = 0.6f
+                    android.view.DragEvent.ACTION_DRAG_ENTERED -> tile.alpha = 0.6f
                     android.view.DragEvent.ACTION_DRAG_EXITED,
-                    android.view.DragEvent.ACTION_DRAG_ENDED, -> v.alpha = 1f
+                    android.view.DragEvent.ACTION_DRAG_ENDED, -> tile.alpha = 1f
                     android.view.DragEvent.ACTION_DROP -> {
+                        tile.alpha = 1f
                         val from = event.localState as? Int
-                        if (from != null && from != index) {
+                        if (!dragHandled && from != null && from != index) {
+                            dragHandled = true
                             val item = photoPaths.removeAt(from)
                             photoPaths.add(index, item)
-                            syncPhotoPath()
                             renderPhoto()
                         }
-                        v.alpha = 1f
                     }
                 }
                 true
             }
+            tile.setOnDragListener(dragListener)
+            image.setOnDragListener(dragListener)
             row.addView(tile)
         }
         if (photoPaths.size < 3) {
             row.addView(android.widget.FrameLayout(this).apply {
-                layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f)
+                layoutParams = LinearLayout.LayoutParams(dp(96), ViewGroup.LayoutParams.MATCH_PARENT)
                 setBackgroundResource(R.drawable.bg_photo_add)
                 contentDescription = getString(R.string.photo_add)
                 setOnClickListener { photoPicker.launch("image/*") }
@@ -568,11 +586,10 @@ class CheckinEditActivity : AppCompatActivity() {
             getString(R.string.photo_count_reorder, photoPaths.size)
         }
     }
+
+    private var dragHandled = false
     private fun dp(v: Int): Int = (v * resources.displayMetrics.density).toInt()
 
-    private fun syncPhotoPath() {
-        photoPath = photoPaths.joinToString(",").ifBlank { null }
-    }
     private fun showError(message: String) {
         notify(message, long = true)
     }

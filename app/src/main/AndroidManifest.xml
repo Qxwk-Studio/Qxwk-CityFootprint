@@ -15,6 +15,10 @@
     <!-- android:name 指向 CityFootprintApp：它做三件事 —— 初始化 MapLibre、把用户选的
          外观交给 AppCompat、后台预热城市表。删掉这一行这三件事都不再发生
          （地图会在 inflate MapView 时直接崩）。 -->
+        <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28" />
+
     <application
         android:name=".CityFootprintApp"
         android:allowBackup="false"

@@ -85,6 +85,10 @@ data class Timeline(
         /** 交通：怎么到 / 怎么走（自由文本，≤ [Limits.SHORT]）。 */
         @SerialName("ride")
         RIDE,
+
+        /** 到访：去了哪里（自由文本，≤ [Limits.SHORT]）。 */
+        @SerialName("visit")
+        VISIT,
     }
 
     /** 按城市段顺序摊平的所有事件（派生与展示用）。 */
@@ -117,32 +121,31 @@ data class Timeline(
      */
     fun validate(requireSegments: Boolean = true): String? {
         if (segments.isEmpty()) return if (requireSegments) "至少添加一座到访城市" else null
-        val seenCities = HashSet<String>()
         segments.forEachIndexed { si, segment ->
             val no = si + 1
             if (segment.city.isBlank()) return "第 $no 段：请选择到访城市"
-            if (segment.city.length > Limits.SHORT) return "第 $no 段：城市名超过 ${Limits.SHORT} 字"
-            if (segment.rating != null && segment.rating !in 1..10) return "「${segment.city}」评分需在 1–5 之间"
+            if (segment.city.length > Limits.SHORT) return "第 $no 段：城市名不能超过 ${Limits.SHORT} 字"
+            if (segment.rating != null && segment.rating !in 1..10) return "「${segment.city}」评分需在 1–10 之间"
             if (segment.companions.orEmpty().length > Limits.SHORT) {
-                return "「${segment.city}」同行人超过 ${Limits.SHORT} 字"
+                return "「${segment.city}」同行人不能超过 ${Limits.SHORT} 字"
             }
             if (segment.transport.orEmpty().length > Limits.SHORT) {
-                return "「${segment.city}」到达方式超过 ${Limits.SHORT} 字"
+                return "「${segment.city}」到达方式不能超过 ${Limits.SHORT} 字"
             }
             if (segment.note.orEmpty().length > Limits.NOTE) {
-                return "「${segment.city}」备注超过 ${Limits.NOTE} 字"
+                return "「${segment.city}」备注不能超过 ${Limits.NOTE} 字"
             }
-            if (segment.events.isEmpty()) return "「${segment.city}」还没有添加活动或交通"
+            if (segment.events.isEmpty()) return "「${segment.city}」请至少添加一条活动或交通"
             segment.events.forEachIndexed { ei, event ->
                 val eventNo = ei + 1
                 if (event.text.isBlank()) {
-                    return "「${segment.city}」第 $eventNo 条：请填写${if (event.type == Type.RIDE) "交通方式" else "活动内容"}"
+                    return "「${segment.city}」第 $eventNo 条：请填写${when (event.type) { Type.RIDE -> "交通方式"; Type.VISIT -> "地点"; else -> "活动内容" }}"
                 }
                 if (event.text.length > Limits.SHORT) {
-                    return "「${segment.city}」第 $eventNo 条：内容超过 ${Limits.SHORT} 字"
+                    return "「${segment.city}」第 $eventNo 条：内容不能超过 ${Limits.SHORT} 字"
                 }
                 if (event.note.orEmpty().length > Limits.NOTE) {
-                    return "「${segment.city}」第 $eventNo 条：备注超过 ${Limits.NOTE} 字"
+                    return "「${segment.city}」第 $eventNo 条：备注不能超过 ${Limits.NOTE} 字"
                 }
             }
         }
@@ -153,10 +156,10 @@ data class Timeline(
             var previousInCity = Long.MIN_VALUE
             segment.events.forEachIndexed { ei, event ->
                 if (previousInCity != Long.MIN_VALUE && event.time < previousInCity) {
-                    return "「${segment.city}」第 ${ei + 1} 条：时间早于上一条"
+                    return "「${segment.city}」第 ${ei + 1} 条：时间不能早于上一条"
                 }
                 if (event.time < previousAcrossCities) {
-                    return "「${segment.city}」第 ${ei + 1} 条：时间早于上一座城市的事件"
+                    return "「${segment.city}」第 ${ei + 1} 条：时间不能早于上一座城市的事件"
                 }
                 previousInCity = event.time
                 previousAcrossCities = event.time

@@ -1,9 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 「我的」页（2.0）：资料区（居中竖排，不可编辑）+ 两张设置卡。
-     2.0 没有账号体系：昵称、UUID、徽章色都来自本机，页面本身不发请求（检查更新是点了才发）。
-
-     资料区**不套卡片**：夹在一堆卡片之间的「我自己」反而该是一片留白，头像居中、UUID 与昵称依次往下。
-     头像不能用相册图（2.0 不提供修改入口），统一是「主题色实心圆 + 白色人像」，圆心随徽章色。 -->
+<!-- 「我的」页：资料区（头像/UUID/名称）+ 个性化卡（名称/徽章色/外观/主题色）+ 关于卡。
+     两个小节的图标与标题都在卡片外，与打卡/足迹编辑页同一套层级。 -->
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
@@ -17,7 +14,7 @@
         android:orientation="vertical"
         android:padding="16dp">
 
-        <!-- 资料区：头像 → UUID → 名称，全部居中 -->
+        <!-- 资料区：头像 → UUID → 名称 -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -53,40 +50,89 @@
                 android:textStyle="bold" />
         </LinearLayout>
 
-        <!-- ===== 设置卡 1：外观与颜色 ===== -->
+        <!-- 小节标题：个性化（卡片外） -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="4dp"
+            android:paddingBottom="8dp">
+
+            <ImageView
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_palette"
+                app:tint="?attr/appAccent" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:text="@string/mine_group_personal"
+                android:textColor="@color/fg"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
             android:background="@drawable/bg_card"
             android:orientation="vertical"
             android:paddingBottom="4dp">
 
             <LinearLayout
+                android:id="@+id/rowName"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="52dp"
+                android:background="?attr/selectableItemBackground"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
                 android:paddingStart="16dp"
-                android:paddingTop="14dp"
-                android:paddingEnd="16dp"
-                android:paddingBottom="4dp">
-
-                <ImageView
-                    android:layout_width="16dp"
-                    android:layout_height="16dp"
-                    android:contentDescription="@null"
-                    android:src="@drawable/ic_palette"
-                    app:tint="?attr/appAccent" />
+                android:paddingEnd="16dp">
 
                 <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/mine_name"
+                    android:textColor="@color/fg"
+                    android:textSize="15sp" />
+
+                <TextView
+                    android:id="@+id/textNameValue"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="6dp"
-                    android:text="@string/mine_group_appearance"
                     android:textColor="@color/text_secondary"
-                    android:textSize="13sp"
-                    android:textStyle="bold" />
+                    android:textSize="13sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/rowBadge"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:background="?attr/selectableItemBackground"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/mine_badge_color"
+                    android:textColor="@color/fg"
+                    android:textSize="15sp" />
+
+                <View
+                    android:id="@+id/colorDot"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:background="@drawable/bg_avatar" />
             </LinearLayout>
 
             <LinearLayout
@@ -139,9 +185,46 @@
                     android:layout_height="20dp"
                     android:background="@drawable/bg_avatar" />
             </LinearLayout>
+        </LinearLayout>
+
+        <!-- 小节标题：软件设置（卡片外） -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="4dp"
+            android:paddingBottom="8dp">
+
+            <ImageView
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_tune"
+                app:tint="?attr/appAccent" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:text="@string/mine_group_software"
+                android:textColor="@color/fg"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_card"
+            android:orientation="vertical"
+            android:paddingBottom="4dp">
+
+
 
             <LinearLayout
-                android:id="@+id/rowBadge"
+                android:id="@+id/rowCleanupPhotos"
                 android:layout_width="match_parent"
                 android:layout_height="52dp"
                 android:background="?attr/selectableItemBackground"
@@ -154,53 +237,52 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="@string/mine_badge_color"
+                    android:text="@string/mine_cleanup_photos"
                     android:textColor="@color/fg"
                     android:textSize="15sp" />
-
-                <View
-                    android:id="@+id/colorDot"
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
-                    android:background="@drawable/bg_avatar" />
-            </LinearLayout>
-        </LinearLayout>
-
-        <!-- ===== 设置卡 2：关于 ===== -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:background="@drawable/bg_card"
-            android:orientation="vertical"
-            android:paddingBottom="4dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:paddingStart="16dp"
-                android:paddingTop="14dp"
-                android:paddingEnd="16dp"
-                android:paddingBottom="4dp">
 
                 <ImageView
                     android:layout_width="16dp"
                     android:layout_height="16dp"
                     android:contentDescription="@null"
-                    android:src="@drawable/ic_info"
-                    app:tint="?attr/appAccent" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="6dp"
-                    android:text="@string/mine_group_about"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="13sp"
-                    android:textStyle="bold" />
+                    android:src="@drawable/ic_arrow_right"
+                    app:tint="@color/text_tertiary" />
             </LinearLayout>
+        </LinearLayout>
+
+        <!-- 小节标题：关于软件（卡片外） -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="4dp"
+            android:paddingBottom="8dp">
+
+            <ImageView
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_info"
+                app:tint="?attr/appAccent" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:text="@string/mine_group_about"
+                android:textColor="@color/fg"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_card"
+            android:orientation="vertical"
+            android:paddingBottom="4dp">
 
             <LinearLayout
                 android:id="@+id/rowOpenSource"
@@ -243,32 +325,6 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="@string/mine_check_update"
-                    android:textColor="@color/fg"
-                    android:textSize="15sp" />
-
-                <ImageView
-                    android:layout_width="16dp"
-                    android:layout_height="16dp"
-                    android:contentDescription="@null"
-                    android:src="@drawable/ic_arrow_right"
-                    app:tint="@color/text_tertiary" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:id="@+id/rowCleanupPhotos"
-                android:layout_width="match_parent"
-                android:layout_height="52dp"
-                android:background="?attr/selectableItemBackground"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:paddingStart="16dp"
-                android:paddingEnd="16dp">
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="@string/mine_cleanup_photos"
                     android:textColor="@color/fg"
                     android:textSize="15sp" />
 

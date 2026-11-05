@@ -19,6 +19,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import top.qxwkstudio.travel.R
@@ -27,7 +28,7 @@ import top.qxwkstudio.travel.data.TripRepo
 import top.qxwkstudio.travel.data.db.AppDatabase
 import top.qxwkstudio.travel.data.db.CheckinEntity
 import top.qxwkstudio.travel.data.db.CheckinSource
-import top.qxwkstudio.travel.databinding.ActivityRecordDetailBinding
+import top.qxwkstudio.travel.databinding.ActivityDetailBinding
 import top.qxwkstudio.travel.logic.DatePrecision
 import top.qxwkstudio.travel.logic.Dates
 
@@ -36,15 +37,18 @@ import top.qxwkstudio.travel.logic.Dates
  */
 class CheckinDetailActivity : AppCompatActivity() {
 
-    private lateinit var binding: ActivityRecordDetailBinding
+    private lateinit var binding: ActivityDetailBinding
     private var checkinId = 0L
+
+    /** 删除确认弹窗里显示的城市名。 */
+    private var currentCity: String? = null
 
     private val editor = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { load() }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        theme.applyStyle(Palette.selected(this).overlay, true)
-        binding = ActivityRecordDetailBinding.inflate(layoutInflater)
+        Palette.apply(this)
+        binding = ActivityDetailBinding.inflate(layoutInflater)
         applyEdgeToEdge(binding.topBar.root, null)
         setContentView(binding.root)
 
@@ -53,6 +57,25 @@ class CheckinDetailActivity : AppCompatActivity() {
         binding.topBar.btnBack.visibility = View.VISIBLE
         binding.topBar.btnBack.setOnClickListener { finish() }
         load()
+    }
+
+    private fun confirmDelete() {
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.delete_title)
+            .setMessage(getString(R.string.delete_message, currentCity ?: getString(R.string.checkin_title)))
+            .setPositiveButton(R.string.common_delete) { _, _ ->
+                lifecycleScope.runIo({ CheckinRepo.delete(AppDatabase.get(this), checkinId) }) { result ->
+                    if (result.isFailure) {
+                        notify(result.exceptionOrNull()?.message ?: getString(R.string.common_error), long = true)
+                        return@runIo
+                    }
+                    setResult(Activity.RESULT_OK)
+                    notify(R.string.trips_deleted)
+                    finish()
+                }
+            }
+            .setNegativeButton(R.string.common_cancel, null)
+            .show()
     }
 
     private fun load() {
@@ -69,6 +92,7 @@ class CheckinDetailActivity : AppCompatActivity() {
         }) { result ->
             val (entity, first, tripSeq) = result.getOrNull() ?: return@runIo
             if (entity == null) { finish(); return@runIo }
+            currentCity = entity.cityName
             render(entity, first, tripSeq)
         }
     }
@@ -81,6 +105,8 @@ class CheckinDetailActivity : AppCompatActivity() {
         binding.topBar.btnMenu.setOnClickListener {
             editor.launch(CheckinEditActivity.intent(this, checkinId))
         }
+        binding.topBar.btnDelete.visibility = if (derived) View.GONE else View.VISIBLE
+        binding.topBar.btnDelete.setOnClickListener { confirmDelete() }
 
         val content = binding.content
         content.removeAllViews()
@@ -104,13 +130,13 @@ class CheckinDetailActivity : AppCompatActivity() {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(14), dp(12), dp(14), dp(12))
         }
-        val row = LinearLayout(this).apply {
+        val headerRow = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
         }
         val badgeSeq = if (derived) (tripSeq ?: 0) else entity.seqNo
-        row.addView(seqBadge(badgeSeq, if (derived) R.color.stripe_derived else R.color.stripe_manual))
-        row.addView(TextView(this).apply {
+        headerRow.addView(seqBadge(badgeSeq, if (derived) R.color.stripe_derived else R.color.stripe_manual))
+        headerRow.addView(TextView(this).apply {
             text = entity.cityName
             textSize = 18f
             typeface = Typeface.DEFAULT_BOLD
@@ -119,7 +145,7 @@ class CheckinDetailActivity : AppCompatActivity() {
             layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
         })
         if (firstVisit) {
-            row.addView(TextView(this).apply {
+            headerRow.addView(TextView(this).apply {
                 text = getString(R.string.first_visit)
                 textSize = 11f
                 setTextColor(getColor(R.color.first_visit))
@@ -127,7 +153,7 @@ class CheckinDetailActivity : AppCompatActivity() {
                 setPadding(dp(7), dp(2), dp(7), dp(2))
             })
         }
-        header.addView(row)
+        header.addView(headerRow)
         header.addView(TextView(this).apply {
             text = if (derived) getString(R.string.detail_from_trip, badgeSeq)
             else getString(R.string.detail_own_id, entity.seqNo)
@@ -166,20 +192,42 @@ class CheckinDetailActivity : AppCompatActivity() {
                 entity.amountCents?.let { getString(R.string.home_cost_value, (it / 100.0).toString()) } ?: "-",
             ),
         )
-        // 照片卡：没照片也显示，值用 -
+        // 照片卡：最多 3 张并排、圆角裁切；没有照片显示 -
         val photoCard = newCard()
         photoCard.addView(fieldLabel(R.drawable.ic_camera, getString(R.string.photo_label)))
-        val bitmap = PhotoStore.load(entity.photoPath, maxPx = 800)
-        if (bitmap != null) {
-            photoCard.addView(ImageView(this).apply {
-                setImageBitmap(bitmap)
-                scaleType = ImageView.ScaleType.CENTER_CROP
-                layoutParams = LinearLayout.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    dp(200),
-                ).apply { topMargin = dp(10); marginStart = dp(12) }
-                setOnClickListener { showPhotoDialog(this@CheckinDetailActivity, entity.photoPath) }
-            })
+        val paths = entity.photoPath?.split(",")?.filter { it.isNotBlank() }.orEmpty()
+        if (paths.isNotEmpty()) {
+            val row = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                setPadding(dp(12), dp(10), dp(12), 0)
+            }
+            // 固定三个槽位：1 张也占 1/3，不会把一张图拉满整行
+            for (slot in 0 until 3) {
+                val path = paths.getOrNull(slot)
+                val lp = LinearLayout.LayoutParams(0, dp(110), 1f).apply {
+                    if (slot < 2) marginEnd = dp(8)
+                }
+                if (path == null) {
+                    row.addView(View(this).apply { layoutParams = lp })
+                    continue
+                }
+                val tile = android.widget.FrameLayout(this).apply {
+                    layoutParams = lp
+                    setBackgroundResource(R.drawable.bg_photo_tile)
+                    clipToOutline = true
+                }
+                tile.addView(ImageView(this).apply {
+                    setImageBitmap(PhotoStore.load(path, maxPx = 512))
+                    scaleType = ImageView.ScaleType.CENTER_CROP
+                    layoutParams = android.widget.FrameLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                    )
+                    setOnClickListener { showPhotoDialog(this@CheckinDetailActivity, path) }
+                })
+                row.addView(tile)
+            }
+            photoCard.addView(row)
         } else {
             photoCard.addView(TextView(this).apply {
                 text = "-"

@@ -48,7 +48,7 @@ import top.qxwkstudio.travel.logic.Timeline
 class TripsFragment : Fragment() {
 
     private var _binding: FragmentTripsBinding? = null
-    private val binding get() = _binding!!
+    private val binding get() = requireNotNull(_binding) { "binding 在视图生命周期外被访问" }
 
     private enum class Segment { CHECKINS, TRIPS }
 
@@ -92,7 +92,7 @@ class TripsFragment : Fragment() {
         }
         load()
         // 主题/深浅色切换会重建页面：宽度可能还是 0，等真正布局完再摆滑块
-        binding.chipContainer.addOnLayoutChangeListener { _, l, t, r, b, ol, ot, or, ob ->
+        binding.chipContainer.addOnLayoutChangeListener { _, l, _, r, _, _, _, _, _ ->
             val w = r - l
             if (w > 0 && w != segWidth) {
                 segWidth = w
@@ -119,7 +119,7 @@ class TripsFragment : Fragment() {
      */
     override fun onResume() {
         super.onResume()
-        load()
+        if (seenVersion != DataVersion.current) load()
     }
 
     private fun load() {

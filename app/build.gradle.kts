@@ -26,8 +26,8 @@ android {
         //
         // 2.0 的首发版本号刻意取 **20000 起跳**（不是 1）：1.x 线上最高是 103xx，
         // 覆盖安装要求 versionCode 严格大于线上值；直接从 20000 起跳也顺手给 2.0 划了版本段。
-        versionCode = 20101
-        versionName = "2.1.1"
+        versionCode = 20102
+        versionName = "2.1.2"
 
         // MapLibre 的原生库四个 ABI 各 12 MB 左右，全打进去 APK 会从 8 MB 涨到 50 MB。
         // ABI 的取舍写在下面的 `splits { abi { include(...) } }` 里 —— 那里已经限定了

@@ -77,7 +77,16 @@ object Locate {
         // 而且它内部也就是这一套「先给上次位置、再等一次回调、带超时」。
         lm.getLastKnownLocation(provider)?.let { deliver(it) }
         if (delivered.get()) return
-        lm.requestSingleUpdate(provider, listener, main)
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+            lm.getCurrentLocation(
+                provider,
+                null,
+                androidx.core.content.ContextCompat.getMainExecutor(context),
+            ) { deliver(it) }
+        } else {
+            @Suppress("DEPRECATION")
+            lm.requestSingleUpdate(provider, listener, main)
+        }
         // 超时兜底：10 秒还没结果就当拿不到，别让按钮一直没反应
         android.os.Handler(main).postDelayed({ deliver(null) }, LOCATE_TIMEOUT_MS)
     }

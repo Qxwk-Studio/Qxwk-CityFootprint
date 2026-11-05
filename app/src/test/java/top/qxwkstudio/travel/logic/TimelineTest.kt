@@ -55,7 +55,7 @@ class TimelineTest {
     @Test
     fun `city without events rejected`() {
         val error = timeline(segment("北京")).validate()
-        assertTrue(error!!.contains("还没有添加活动或交通"))
+        assertTrue(error!!.contains("请至少添加一条活动或交通"))
     }
 
     @Test
@@ -76,7 +76,7 @@ class TimelineTest {
     @Test
     fun `reversed inside one city rejected`() {
         val error = timeline(segment("北京", event("a", 200), event("b", 100))).validate()
-        assertTrue(error!!.contains("时间早于上一条"))
+        assertTrue(error!!.contains("时间不能早于上一条"))
     }
 
     @Test
@@ -105,13 +105,13 @@ class TimelineTest {
     @Test
     fun `too long companions rejected`() {
         val t = timeline(Timeline.Segment("北京", listOf(event()), companions = "字".repeat(Limits.SHORT + 1)))
-        assertTrue(t.validate()!!.contains("同行人超过"))
+        assertTrue(t.validate()!!.contains("同行人不能超过"))
     }
 
     @Test
     fun `too long event note rejected`() {
         val t = timeline(Timeline.Segment("北京", listOf(event().copy(note = "字".repeat(Limits.NOTE + 1)))))
-        assertTrue(t.validate()!!.contains("备注超过"))
+        assertTrue(t.validate()!!.contains("备注不能超过"))
     }
 
     // ── 派生 ──
