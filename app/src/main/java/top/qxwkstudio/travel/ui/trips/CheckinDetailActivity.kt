@@ -134,8 +134,12 @@ class CheckinDetailActivity : AppCompatActivity() {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
         }
-        val badgeSeq = if (derived) (tripSeq ?: 0) else entity.seqNo
-        headerRow.addView(seqBadge(badgeSeq, if (derived) R.color.stripe_derived else R.color.stripe_manual))
+        val badgeText = if (derived) {
+            getString(R.string.trips_derived_seq, tripSeq ?: 0, entity.segmentIndex + 1)
+        } else {
+            getString(R.string.trips_trip_seq, entity.seqNo)
+        }
+        headerRow.addView(seqBadgeText(badgeText, if (derived) R.color.stripe_derived else R.color.stripe_manual))
         headerRow.addView(TextView(this).apply {
             text = entity.cityName
             textSize = 18f
@@ -155,7 +159,7 @@ class CheckinDetailActivity : AppCompatActivity() {
         }
         header.addView(headerRow)
         header.addView(TextView(this).apply {
-            text = if (derived) getString(R.string.detail_from_trip, badgeSeq)
+            text = if (derived) getString(R.string.detail_from_trip_seq, tripSeq ?: 0, entity.segmentIndex + 1)
             else getString(R.string.detail_own_id, entity.seqNo)
             textSize = 13f
             setTextColor(getColor(R.color.text_secondary))
@@ -170,10 +174,10 @@ class CheckinDetailActivity : AppCompatActivity() {
         headerFrame.addView(header)
         content.addView(headerFrame)
         // 以下与编辑页顺序一致：时间 → 停留天数 → 同行人 → 总花费 → 照片 → 评分 → 备注
-        content.addView(fieldCard(R.drawable.ic_span, getString(R.string.checkin_date), dateText(entity)))
+        content.addView(fieldCard(R.drawable.ic_calendar, getString(R.string.checkin_date), dateText(entity)))
         content.addView(
             fieldCard(
-                R.drawable.ic_trips,
+                R.drawable.ic_calendar,
                 getString(R.string.checkin_days_label),
                 entity.stayDays?.let { getString(R.string.home_days_value, it.toString()) } ?: "-",
             ),
@@ -192,6 +196,33 @@ class CheckinDetailActivity : AppCompatActivity() {
                 entity.amountCents?.let { getString(R.string.home_cost_value, (it / 100.0).toString()) } ?: "-",
             ),
         )
+        // 评分卡：未评分也显示 -
+        val ratingCard = newCard()
+        ratingCard.addView(fieldLabel(R.drawable.ic_star, getString(R.string.rating_label)))
+        if (entity.rating != null) {
+            val starsRow = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.START or Gravity.CENTER_VERTICAL
+                setPadding(dp(12), dp(6), 0, 0)
+            }
+            starsRow.addView(stars(entity.rating))
+            starsRow.addView(TextView(this).apply {
+                text = getString(R.string.rating_value, entity.rating)
+                textSize = 14f
+                setTextColor(getColor(R.color.text_secondary))
+                setPadding(dp(10), 0, 0, 0)
+            })
+            ratingCard.addView(starsRow)
+        } else {
+            ratingCard.addView(TextView(this).apply {
+                text = "-"
+                textSize = 15f
+                setTextColor(getColor(R.color.text_tertiary))
+                setPadding(dp(12), dp(6), 0, 0)
+            })
+        }
+        content.addView(ratingCard)
+
         // 照片卡：最多 3 张并排、圆角裁切；没有照片显示 -
         val photoCard = newCard()
         photoCard.addView(fieldLabel(R.drawable.ic_camera, getString(R.string.photo_label)))
@@ -238,32 +269,6 @@ class CheckinDetailActivity : AppCompatActivity() {
         }
         content.addView(photoCard)
 
-        // 评分卡：未评分也显示 -
-        val ratingCard = newCard()
-        ratingCard.addView(fieldLabel(R.drawable.ic_star, getString(R.string.rating_label)))
-        if (entity.rating != null) {
-            val starsRow = LinearLayout(this).apply {
-                orientation = LinearLayout.HORIZONTAL
-                gravity = Gravity.START or Gravity.CENTER_VERTICAL
-                setPadding(dp(12), dp(6), 0, 0)
-            }
-            starsRow.addView(stars(entity.rating))
-            starsRow.addView(TextView(this).apply {
-                text = getString(R.string.rating_value, entity.rating)
-                textSize = 14f
-                setTextColor(getColor(R.color.text_secondary))
-                setPadding(dp(10), 0, 0, 0)
-            })
-            ratingCard.addView(starsRow)
-        } else {
-            ratingCard.addView(TextView(this).apply {
-                text = "-"
-                textSize = 15f
-                setTextColor(getColor(R.color.text_tertiary))
-                setPadding(dp(12), dp(6), 0, 0)
-            })
-        }
-        content.addView(ratingCard)
 
         content.addView(
             fieldCard(
@@ -323,8 +328,11 @@ class CheckinDetailActivity : AppCompatActivity() {
         else -> Dates.ymd(entity.checkinAt)
     }
 
-    private fun seqBadge(seq: Int, colorRes: Int): TextView = TextView(this).apply {
-        text = getString(R.string.trips_trip_seq, seq)
+    private fun seqBadge(seq: Int, colorRes: Int): TextView =
+        seqBadgeText(getString(R.string.trips_trip_seq, seq), colorRes)
+
+    private fun seqBadgeText(badge: String, colorRes: Int): TextView = TextView(this).apply {
+        text = badge
         textSize = 11f
         typeface = Typeface.DEFAULT_BOLD
         setTextColor(ContextCompat.getColor(context, R.color.on_accent))

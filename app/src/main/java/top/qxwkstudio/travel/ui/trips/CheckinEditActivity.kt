@@ -141,6 +141,9 @@ class CheckinEditActivity : AppCompatActivity() {
         setupDateSpinners()
         b.inputCity.setOnClickListener { picker.launch(Intent(this, CityPickerActivity::class.java)) }
         b.btnLocate.setOnClickListener { locateIntoCity() }
+        b.btnAddPhoto.setOnClickListener {
+            if (photoPaths.size < 3) photoPicker.launch("image/*")
+        }
         b.btnSave.setOnClickListener { save() }
         b.topBar.btnSaveIcon.visibility = View.VISIBLE
         b.topBar.btnSaveIcon.setOnClickListener { save() }
@@ -405,12 +408,14 @@ class CheckinEditActivity : AppCompatActivity() {
             val yuan = amountText.toDoubleOrNull() ?: 0.0
             (yuan.coerceIn(0.0, 20_000_000.0) * 100).toInt()
         }
-        stayDays = binding.inputDays.text?.toString()?.trim()?.toIntOrNull()
-        if (stayDays == null || stayDays!! <= 0) {
-            showError(getString(R.string.checkin_err_days))
+        val days = binding.inputDays.text?.toString()?.trim()?.toIntOrNull()
+        if (days != null && days !in 1..3650) {
+            showError(getString(R.string.checkin_err_days_range))
             binding.inputDays.requestFocus()
             return
         }
+        stayDays = days
+
         companions = Sanitize.line(binding.inputCompanions.text?.toString(), Limits.SHORT).ifBlank { null }
 
         binding.btnSave.isEnabled = false
@@ -493,6 +498,8 @@ class CheckinEditActivity : AppCompatActivity() {
     /** 照片瓦片：固定宽度、最多 3 张；长按拖动排序，右上角 × 删除。 */
     private fun renderPhoto() {
         val row = binding.photoRow
+        row.visibility = if (photoPaths.isEmpty()) View.GONE else View.VISIBLE
+        binding.btnAddPhoto.visibility = if (photoPaths.size >= 3) View.GONE else View.VISIBLE
         row.removeAllViews()
         photoPaths.forEachIndexed { index, path ->
             val tile = android.widget.FrameLayout(this).apply {
@@ -561,24 +568,6 @@ class CheckinEditActivity : AppCompatActivity() {
             tile.setOnDragListener(dragListener)
             image.setOnDragListener(dragListener)
             row.addView(tile)
-        }
-        if (photoPaths.size < 3) {
-            row.addView(android.widget.FrameLayout(this).apply {
-                layoutParams = LinearLayout.LayoutParams(dp(96), ViewGroup.LayoutParams.MATCH_PARENT)
-                setBackgroundResource(R.drawable.bg_photo_add)
-                contentDescription = getString(R.string.photo_add)
-                setOnClickListener { photoPicker.launch("image/*") }
-                addView(TextView(this@CheckinEditActivity).apply {
-                    text = "+"
-                    textSize = 28f
-                    gravity = android.view.Gravity.CENTER
-                    setTextColor(androidx.core.content.ContextCompat.getColor(this@CheckinEditActivity, R.color.text_tertiary))
-                    layoutParams = android.widget.FrameLayout.LayoutParams(
-                        ViewGroup.LayoutParams.MATCH_PARENT,
-                        ViewGroup.LayoutParams.MATCH_PARENT,
-                    )
-                })
-            })
         }
         binding.textPhotoEmpty.text = if (photoPaths.isEmpty()) {
             getString(R.string.photo_count_hint)

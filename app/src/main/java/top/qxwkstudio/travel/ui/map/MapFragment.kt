@@ -26,6 +26,7 @@ import org.maplibre.android.style.sources.GeoJsonSource
 import top.qxwkstudio.travel.R
 import top.qxwkstudio.travel.data.BasemapStore
 import top.qxwkstudio.travel.data.CheckinRepo
+import top.qxwkstudio.travel.data.TripRepo
 import top.qxwkstudio.travel.data.CityBoundaries
 import top.qxwkstudio.travel.data.CityStore
 import top.qxwkstudio.travel.data.DataVersion
@@ -88,6 +89,10 @@ class MapFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         mapView = binding.mapView
+        // 夜间样式加载前 MapLibre 会先露出自己的浅色底；先铺主题底色并隐藏，
+        // 等 style 回调再淡入，避免夜间模式闪一下米黄。
+        mapView.setBackgroundColor(androidx.core.content.ContextCompat.getColor(requireContext(), R.color.map_bg))
+        mapView.alpha = 0f
         mapView.onCreate(savedInstanceState)
         binding.btnClose.setOnClickListener { binding.cityCard.visibility = View.GONE }
         binding.btnLocate.setOnClickListener { locate() }
@@ -213,6 +218,7 @@ class MapFragment : Fragment() {
                 )
                 binding.cityLabels.attach(mapLibre)
                 mapLibre.addOnCameraMoveListener { binding.cityLabels.invalidate() }
+                mapView.animate().alpha(1f).setDuration(180L).start()
                 refreshVisited()
                 mapLibre.addOnMapClickListener { latLng -> onClickMap(latLng) }
             }
@@ -388,9 +394,10 @@ class MapFragment : Fragment() {
         b.cityList.removeAllViews()
 
         viewLifecycleOwner.lifecycleScope.runIo({
-            CheckinRepo.listForCity(AppDatabase.get(requireContext()), city)
+            val db = AppDatabase.get(requireContext())
+            CheckinRepo.listForCity(db, city) to TripRepo.list(db).associate { it.uuid to it.seqNo }
         }) { result ->
-            val checkins = result.getOrNull() ?: return@runIo
+            val (checkins, tripSeqs) = result.getOrNull() ?: return@runIo
             // 面板可能已经被关掉、或点去了别的城市：对不上就不填
             if (b.cityCard.visibility != View.VISIBLE || b.textCity.text.toString() != city) return@runIo
             b.textCount.text = getString(R.string.map_city_count, checkins.size)
@@ -406,7 +413,7 @@ class MapFragment : Fragment() {
                 return@runIo
             }
             checkins.forEach { checkin ->
-                b.cityList.addView(checkinRow(checkin, checkin.id == firstId))
+                b.cityList.addView(checkinRow(checkin, checkin.id == firstId, tripSeqs))
             }
         }
     }
@@ -414,7 +421,7 @@ class MapFragment : Fragment() {
     /**
      * 面板里的一行：编号徽章 + 时间 + 备注，下面再跟一行「首访 / 照片 / 同行人 / 星级」。
      */
-    private fun checkinRow(checkin: CheckinEntity, firstVisit: Boolean): View {
+    private fun checkinRow(checkin: CheckinEntity, firstVisit: Boolean, tripSeqs: Map<String, Int>): View {
         val ctx = requireContext()
         val column = LinearLayout(ctx).apply {
             orientation = LinearLayout.VERTICAL
@@ -426,8 +433,17 @@ class MapFragment : Fragment() {
         }
         val derived = checkin.source == CheckinSource.DERIVED
         val badgeColorRes = if (derived) R.color.stripe_derived else R.color.stripe_manual
+        val badgeText = if (derived) {
+            getString(
+                R.string.trips_derived_seq,
+                checkin.tripUuid?.let { tripSeqs[it] } ?: 0,
+                checkin.segmentIndex + 1,
+            )
+        } else {
+            getString(R.string.trips_trip_seq, checkin.seqNo)
+        }
         row.addView(TextView(ctx).apply {
-            text = getString(R.string.trips_trip_seq, checkin.seqNo)
+            text = badgeText
             textSize = 11f
             typeface = android.graphics.Typeface.DEFAULT_BOLD
             setTextColor(ContextCompat.getColor(ctx, R.color.on_accent))

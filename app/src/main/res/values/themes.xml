@@ -3,7 +3,7 @@
 
      主题色（appAccent）由「我的 → 主题色」决定：默认是 @color/accent，用户选了预设后
      由 ThemeOverlay.App.Accent.* 覆盖（见 themes_accent.xml）。布局与代码里要跟着变的强调色
-     都引用 ?attr/appAccent，不要写死 @color/accent。 -->
+     都引用 ?attr/colorPrimary，不要写死 @color/accent。 -->
 <resources xmlns:tools="http://schemas.android.com/tools">
 
     <!-- 系统栏图标明暗：浅色底配深色图标。深色那份在 values-night/themes.xml（false）。 -->
@@ -15,11 +15,11 @@
         <!-- 把语义色接进 Material，让按钮 / 开关 / 输入框 / 进度自动跟着走 -->
         <item name="appAccent">@color/accent</item>
         <item name="appAccentLight">@color/accent_light</item>
-        <item name="colorPrimary">?attr/appAccent</item>
+        <item name="colorPrimary">?attr/colorPrimary</item>
         <item name="colorOnPrimary">@color/on_accent</item>
         <item name="colorPrimaryContainer">?attr/appAccentLight</item>
         <item name="colorOnPrimaryContainer">@color/accent_soft_fg</item>
-        <item name="colorSecondary">?attr/appAccent</item>
+        <item name="colorSecondary">?attr/colorPrimary</item>
         <item name="colorSecondaryContainer">?attr/appAccentLight</item>
         <item name="colorOnSecondaryContainer">@color/accent_soft_fg</item>
         <item name="colorSurface">@color/card</item>

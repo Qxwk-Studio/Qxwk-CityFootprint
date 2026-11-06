@@ -23,7 +23,10 @@ object PhotoJanitor {
         }
         db.trips().list().forEach { trip ->
             Timeline.decode(trip.timeline)?.segments?.forEach { segment ->
-                segment.photoPath?.let(::add)
+                segment.photoPath?.split(",")?.filter { it.isNotBlank() }?.forEach(::add)
+                segment.events.forEach { event ->
+                    event.photoPath?.split(",")?.filter { it.isNotBlank() }?.forEach(::add)
+                }
             }
         }
     }

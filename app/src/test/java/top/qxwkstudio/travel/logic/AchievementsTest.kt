@@ -10,16 +10,16 @@ import org.junit.Test
  * 成就定义与判定。
  *
  * 重点钉三件事：
- *  1. **54 条、code 不重复** —— code 进数据库当主键，重复就等于两条成就互相覆盖；
+ *  1. **88 条、code 不重复** —— code 进数据库当主键，重复就等于两条成就互相覆盖；
  *  2. **回溯解锁日期** —— 重装/导入后重算，日期必须是当初那条打卡的时间，不是「现在」；
  *  3. **进度与目标** —— 进度条的分母来自规则本身，不能出现 200/100 这种读数。
  */
 class AchievementsTest {
 
     @Test
-    fun `定义共54条 分4类 且 code 唯一`() {
+    fun `定义共88条 分4类 且 code 唯一`() {
         val all = Achievements.all()
-        assertEquals(54, all.size)
+        assertEquals(88, all.size)
         assertEquals(4, Achievements.categories.size)
         assertEquals(all.size, all.map { it.code }.toSet().size)
         // 分类标题不带 emoji（口径 6/7）。注意只能判 emoji 区段：
@@ -30,7 +30,7 @@ class AchievementsTest {
     @Test
     fun `没有打卡时全部未达成`() {
         val states = Achievements.evaluate(emptyList())
-        assertEquals(54, states.size)
+        assertEquals(88, states.size)
         assertTrue(states.values.none { it.done })
         assertTrue(states.values.all { it.unlockedAt == null })
         assertTrue(states.values.all { it.progress == 0 })
@@ -130,12 +130,37 @@ class AchievementsTest {
     }
 
     @Test
+    fun `打卡次数与足迹次数按第 N 次解锁`() {
+        val samples = (1..10).map { Achievements.Sample("北京", it.toLong()) }
+        val trips = listOf(10L, 20L, 30L)
+        val states = Achievements.evaluate(samples, trips)
+
+        val c10 = states.getValue("checkin_10")
+        assertTrue(c10.done)
+        assertEquals(10, c10.progress)
+        assertEquals(10L, c10.unlockedAt)
+
+        val c50 = states.getValue("checkin_50")
+        assertFalse(c50.done)
+        assertEquals(10, c50.progress)
+        assertEquals(50, c50.target)
+
+        val t1 = states.getValue("trip_10")
+        assertFalse(t1.done)
+        assertEquals(3, t1.progress)
+
+        val tripFirst = states.getValue("trip_1")
+        assertTrue(tripFirst.done)
+        assertEquals(10L, tripFirst.unlockedAt)
+    }
+
+    @Test
     fun `进度不会超过目标`() {
-        // 384 城全去：走遍全国的进度必须是 384/384，而不是城市数再涨
+        // 384 城全去：全境巡礼的进度封顶在 293/293
         val samples = (1..384).map { Achievements.Sample("城市$it", it.toLong()) }
-        val all = Achievements.evaluate(samples).getValue("all_regions")
+        val all = Achievements.evaluate(samples).getValue("grand_tour")
         assertTrue(all.done)
-        assertEquals(384, all.progress)
-        assertEquals(384, all.target)
+        assertEquals(293, all.progress)
+        assertEquals(293, all.target)
     }
 }

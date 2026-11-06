@@ -95,7 +95,7 @@ class MainActivity : AppCompatActivity() {
                     MenuAction(R.drawable.ic_locate, R.string.menu_checkin) {
                         startActivity(CheckinEditActivity.intent(this))
                     },
-                    MenuAction(R.drawable.ic_trips, R.string.menu_trip) {
+                    MenuAction(R.drawable.ic_luggage, R.string.menu_trip) {
                         startActivity(TripEditActivity.intent(this))
                     }
                 ),

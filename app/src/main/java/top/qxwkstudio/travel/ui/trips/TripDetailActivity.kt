@@ -20,10 +20,12 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import top.qxwkstudio.travel.R
+import top.qxwkstudio.travel.data.CheckinRepo
 import top.qxwkstudio.travel.data.TripRepo
 import top.qxwkstudio.travel.data.db.AppDatabase
 import top.qxwkstudio.travel.databinding.ActivityDetailBinding
 import top.qxwkstudio.travel.logic.Dates
+import top.qxwkstudio.travel.logic.Provinces
 import top.qxwkstudio.travel.logic.Timeline
 
 /**
@@ -91,18 +93,36 @@ class TripDetailActivity : AppCompatActivity() {
     }
 
     private fun load() {
-        lifecycleScope.runIo({ TripRepo.byId(AppDatabase.get(this), tripId) }) { result ->
-            val (entity, timeline) = result.getOrNull() ?: run {
+        lifecycleScope.runIo({
+            val db = AppDatabase.get(this)
+            val trip = TripRepo.byId(db, tripId)
+            val checkins = CheckinRepo.list(db)
+            Triple(trip, checkins, db)
+        }) { result ->
+            val (trip, checkins, _) = result.getOrNull() ?: run {
                 notify(R.string.common_error, long = true)
                 finish()
                 return@runIo
             }
+            val (entity, timeline) = trip ?: run {
+                notify(R.string.common_error, long = true)
+                finish()
+                return@runIo
+            }
+            // 每座城市最早的一条打卡若属于本行程，城市卡显示「首访」
+            val firstVisitCities = checkins
+                .groupBy { it.cityName }
+                .mapNotNull { (city, list) ->
+                    val earliest = list.minWithOrNull(compareBy<top.qxwkstudio.travel.data.db.CheckinEntity> { it.checkinAt }.thenBy { it.id })
+                    if (earliest?.tripUuid == entity.uuid) city else null
+                }
+                .toSet()
             currentTitle = entity.title
-            render(entity.title, entity.seqNo, entity.uuid, entity.note, timeline)
+            render(entity.title, entity.seqNo, entity.uuid, entity.note, timeline, firstVisitCities)
         }
     }
 
-    private fun render(title: String, seq: Int, uuid: String, note: String?, timeline: Timeline) {
+    private fun render(title: String, seq: Int, uuid: String, note: String?, timeline: Timeline, firstVisitCities: Set<String>) {
         val content = binding.content
         content.removeAllViews()
 
@@ -139,19 +159,19 @@ class TripDetailActivity : AppCompatActivity() {
         // 基本信息逐项卡片
         content.addView(
             fieldCard(
-                R.drawable.ic_span,
+                R.drawable.ic_calendar,
                 getString(R.string.trip_range_label),
                 Dates.ymd(timeline.startTime) + " — " + Dates.ymd(timeline.endTime),
             ),
         )
         content.addView(
             fieldCard(
-                R.drawable.ic_trips,
+                R.drawable.ic_luggage,
                 getString(R.string.trip_stats_label),
                 getString(R.string.trip_stats_value, timeline.cityCount, timeline.eventCount),
             ),
         )
-        val totalCost = timeline.segments.sumOf { segment -> segment.events.sumOf { it.costCents ?: 0 } }
+        val totalCost = timeline.totalCostCents
         content.addView(
             fieldCard(
                 R.drawable.ic_wallet,
@@ -167,176 +187,317 @@ class TripDetailActivity : AppCompatActivity() {
             ),
         )
 
-        // 到访城市：每个城市段一张卡
-        content.addView(sectionTitle(R.drawable.ic_city, getString(R.string.detail_city_section)))
-        timeline.segments.forEach { segment ->
-            val segmentCard = card()
-            // 1 城市
-            val segmentRow = LinearLayout(this).apply {
-                orientation = LinearLayout.HORIZONTAL
-                gravity = Gravity.CENTER_VERTICAL
-            }
-            segmentRow.addView(ImageView(this).apply {
-                setImageResource(R.drawable.ic_city)
-                imageTintList = android.content.res.ColorStateList.valueOf(Palette.accent(this@TripDetailActivity))
-                layoutParams = LinearLayout.LayoutParams(dp(16), dp(16))
-            })
-            segmentRow.addView(TextView(this).apply {
-                text = segment.city
-                textSize = 16f
-                typeface = Typeface.DEFAULT_BOLD
-                setTextColor(getColor(R.color.fg))
-                setPadding(dp(8), 0, 0, 0)
-            })
-            segmentCard.addView(segmentRow)
+        // 打卡城市：按城市段生成与打卡列表一致的紧凑卡片
+        content.addView(sectionTitle(R.drawable.ic_city, getString(R.string.detail_checkin_cities)))
+        val cityItems = timeline.items.filter { it.type == Timeline.Type.VISIT }
+        val cityColors = CityColors.assign(cityItems.map { it.id })
+        val segmentCities = cityItems
+        timeline.segments.forEachIndexed { index, segment ->
+            val color = segmentCities.getOrNull(index)?.let { cityColors[it.id] }
+                ?: getColor(R.color.stripe_derived)
+            content.addView(cityCheckinCard(seq, index + 1, segment, segment.city in firstVisitCities, color))
+        }
 
-            // 2 同行人（左） / 城市评分（右）
-            val row2 = LinearLayout(this).apply {
-                orientation = LinearLayout.HORIZONTAL
-                gravity = Gravity.CENTER_VERTICAL
-                setPadding(0, dp(8), 0, 0)
-            }
-            row2.addView(labeledValue(R.drawable.ic_person, getString(R.string.companions_label), segment.companions ?: "-"), LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
-            row2.addView(labeledValue(R.drawable.ic_star, getString(R.string.rating_label), segment.rating?.let { getString(R.string.rating_value, it) } ?: "-"))
-            segmentCard.addView(row2)
-
-            // 3 备注
-            segmentCard.addView(labeledValue(R.drawable.ic_note, getString(R.string.checkin_note), segment.note ?: "-", topMargin = 8))
-
-            // 4 照片标题
-            segmentCard.addView(labeledValue(R.drawable.ic_camera, getString(R.string.photo_label), "", topMargin = 12))
-
-            // 5 照片：最多 3 张，固定三槽
-            val paths = segment.photoPath?.split(",")?.filter { it.isNotBlank() }.orEmpty()
-            val photoRow = LinearLayout(this).apply {
-                orientation = LinearLayout.HORIZONTAL
-                setPadding(0, dp(6), 0, 0)
-            }
-            if (paths.isEmpty()) {
-                photoRow.addView(TextView(this).apply {
-                    text = "-"
-                    textSize = 14f
-                    setTextColor(getColor(R.color.text_tertiary))
-                    setPadding(dp(12), 0, 0, 0)
-                })
+        // 时间线：剔除城市项，只显示活动/交通
+        content.addView(sectionTitle(R.drawable.ic_luggage, getString(R.string.trip_timeline_label)))
+        var currentColor = getColor(R.color.text_tertiary)
+        timeline.items.forEach { item ->
+            if (item.type == Timeline.Type.VISIT) {
+                currentColor = cityColors[item.id] ?: currentColor
             } else {
-                for (slot in 0 until 3) {
-                    val path = paths.getOrNull(slot)
-                    val lp = LinearLayout.LayoutParams(0, dp(96), 1f).apply {
-                        if (slot < 2) marginEnd = dp(8)
-                    }
-                    if (path == null) {
-                        photoRow.addView(View(this).apply { layoutParams = lp })
-                        continue
-                    }
-                    val tile = android.widget.FrameLayout(this).apply {
-                        layoutParams = lp
-                        setBackgroundResource(R.drawable.bg_photo_tile)
-                        clipToOutline = true
-                    }
-                    tile.addView(ImageView(this).apply {
-                        setImageBitmap(PhotoStore.load(path, maxPx = 512))
-                        scaleType = ImageView.ScaleType.CENTER_CROP
-                        layoutParams = android.widget.FrameLayout.LayoutParams(
-                            ViewGroup.LayoutParams.MATCH_PARENT,
-                            ViewGroup.LayoutParams.MATCH_PARENT,
-                        )
-                        setOnClickListener { showPhotoDialog(this@TripDetailActivity, path) }
-                    })
-                    photoRow.addView(tile)
-                }
+                content.addView(eventTimelineRow(item, currentColor))
             }
-            segmentCard.addView(photoRow)
-
-            // 6 时间线
-            segmentCard.addView(labeledValue(R.drawable.ic_span, getString(R.string.trip_segment_timeline_label), "", topMargin = 12))
-            if (segment.events.isEmpty()) {
-                segmentCard.addView(labeledValue(R.drawable.ic_span, getString(R.string.trip_event_label), "-", topMargin = 6))
-            } else {
-                segment.events.forEach { event ->
-                    val bullet = android.widget.FrameLayout(this).apply {
-                        layoutParams = LinearLayout.LayoutParams(dp(28), ViewGroup.LayoutParams.MATCH_PARENT)
-                        addView(View(this@TripDetailActivity).apply {
-                            setBackgroundColor(getColor(R.color.border))
-                            layoutParams = android.widget.FrameLayout.LayoutParams(dp(1), ViewGroup.LayoutParams.MATCH_PARENT, Gravity.TOP or Gravity.CENTER_HORIZONTAL)
-                        })
-                        addView(View(this@TripDetailActivity).apply {
-                            background = android.graphics.drawable.GradientDrawable().apply {
-                                shape = android.graphics.drawable.GradientDrawable.OVAL
-                                setColor(Palette.accent(this@TripDetailActivity))
-                            }
-                            layoutParams = android.widget.FrameLayout.LayoutParams(dp(12), dp(12), Gravity.TOP or Gravity.CENTER_HORIZONTAL)
-                                .apply { topMargin = dp(18) }
-                        })
-                    }
-                    val box = LinearLayout(this).apply {
-                        orientation = LinearLayout.VERTICAL
-                        setPadding(0, dp(10), 0, dp(10))
-                        layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
-                    }
-                    val top = LinearLayout(this).apply {
-                        orientation = LinearLayout.HORIZONTAL
-                        gravity = Gravity.CENTER_VERTICAL
-                    }
-                    top.addView(Chips.tag(this, Dates.ymd(event.time)))
-                    top.addView(Chips.tag(this, hm(event.time)).apply {
-                        layoutParams = LinearLayout.LayoutParams(
-                            ViewGroup.LayoutParams.WRAP_CONTENT,
-                            ViewGroup.LayoutParams.WRAP_CONTENT,
-                        ).apply { marginStart = dp(6) }
-                    })
-                    top.addView(Chips.tag(this, typeLabel(event.type)).apply {
-                        layoutParams = LinearLayout.LayoutParams(
-                            ViewGroup.LayoutParams.WRAP_CONTENT,
-                            ViewGroup.LayoutParams.WRAP_CONTENT,
-                        ).apply { marginStart = dp(6) }
-                    })
-                    box.addView(top)
-                    val titleRow = LinearLayout(this).apply {
-                        orientation = LinearLayout.HORIZONTAL
-                        gravity = Gravity.CENTER_VERTICAL
-                        setPadding(0, dp(6), 0, 0)
-                    }
-                    titleRow.addView(TextView(this).apply {
-                        text = event.text
-                        textSize = 14f
-                        setTextColor(getColor(R.color.fg))
-                    })
-                    if ((event.costCents ?: 0) > 0) {
-                        titleRow.addView(TextView(this).apply {
-                            text = getString(R.string.home_cost_value, ((event.costCents ?: 0) / 100).toString())
-                            textSize = 11f
-                            setTextColor(getColor(R.color.on_accent))
-                            setPadding(dp(7), dp(2), dp(7), dp(2))
-                            background = android.graphics.drawable.GradientDrawable().apply {
-                                cornerRadius = dp(6).toFloat()
-                                setColor(getColor(R.color.badge_cost))
-                            }
-                            layoutParams = LinearLayout.LayoutParams(
-                                ViewGroup.LayoutParams.WRAP_CONTENT,
-                                ViewGroup.LayoutParams.WRAP_CONTENT,
-                            ).apply { marginStart = dp(6) }
-                        })
-                    }
-                    box.addView(titleRow)
-                    if (!event.note.isNullOrBlank()) {
-                        box.addView(TextView(this).apply {
-                            text = event.note
-                            textSize = 12f
-                            setTextColor(getColor(R.color.text_tertiary))
-                            setPadding(0, dp(4), 0, 0)
-                        })
-                    }
-                    segmentCard.addView(LinearLayout(this).apply {
-                        orientation = LinearLayout.HORIZONTAL
-                        addView(bullet)
-                        addView(box)
-                    })
-                }
-            }
-            content.addView(segmentCard)
         }
     }
+
+    /** 打卡城市卡：竖条 + 编号 + 城市/省份 + 金额；第二行同行人 / 评分·天数·日期。 */
+    private fun cityCheckinCard(seq: Int, segmentOrdinal: Int, segment: Timeline.Segment, firstVisit: Boolean, color: Int): View {
+        val root = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            setBackgroundResource(R.drawable.bg_card)
+            clipToOutline = true
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+            ).apply { bottomMargin = dp(10) }
+        }
+        root.addView(View(this).apply {
+            setBackgroundResource(R.drawable.bg_card_stripe)
+            backgroundTintList = android.content.res.ColorStateList.valueOf(color)
+            layoutParams = LinearLayout.LayoutParams(dp(5), ViewGroup.LayoutParams.MATCH_PARENT)
+        })
+        val frame = WatermarkLayout(this).apply {
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+            watermarkText = Provinces.abbr(segment.province)
+            watermarkSizeSp = 90f
+            setWatermarkColor(color)
+        }
+        val cardContent = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(12), dp(8), dp(12), dp(12))
+        }
+        frame.addView(cardContent)
+        root.addView(frame)
+
+        val header = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        header.addView(seqBadgeText(getString(R.string.trips_derived_seq, seq, segmentOrdinal), color))
+        header.addView(TextView(this).apply {
+            text = segment.city
+            textSize = 15f
+            typeface = Typeface.DEFAULT_BOLD
+            setTextColor(getColor(R.color.fg))
+            setPadding(dp(8), 0, 0, 0)
+        })
+        if (!segment.province.isNullOrBlank()) {
+            header.addView(TextView(this).apply {
+                text = "·"
+                textSize = 12f
+                setTextColor(getColor(R.color.text_tertiary))
+                setPadding(dp(4), 0, dp(4), 0)
+            })
+            header.addView(TextView(this).apply {
+                text = segment.province
+                textSize = 11f
+                setTextColor(getColor(R.color.text_tertiary))
+            })
+        }
+        val cost = segment.events.sumOf { it.costCents ?: 0 }
+        if (cost > 0) header.addView(costBadge(cost))
+        header.addView(View(this).apply { layoutParams = LinearLayout.LayoutParams(0, 1, 1f) })
+        // 40dp 尾部：保持与打卡列表卡片同高，首访徽章靠右
+        header.addView(android.widget.FrameLayout(this).apply {
+            layoutParams = LinearLayout.LayoutParams(dp(44), dp(40))
+            if (firstVisit) addView(firstVisitChip(), android.widget.FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                Gravity.END or Gravity.CENTER_VERTICAL,
+            ))
+        })
+        cardContent.addView(header)
+
+        val second = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(0, dp(10), 0, 0)
+        }
+        second.addView(iconText(R.drawable.ic_person, segment.companions?.takeIf { it.isNotBlank() } ?: "-").apply {
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+        })
+        val right = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        val rightItems = mutableListOf<View>()
+        rightItems.add(iconText(R.drawable.ic_star, segment.rating?.let { getString(R.string.rating_value, it) } ?: "-"))
+        val days = segmentDays(segment.events)
+        rightItems.add(iconText(R.drawable.ic_calendar, if (days > 0) getString(R.string.home_days_value, days.toString()) else "-"))
+        rightItems.add(iconText(R.drawable.ic_calendar, segment.events.minByOrNull { it.time }?.let { Dates.ymd(it.time) } ?: "-"))
+        rightItems.forEachIndexed { index, item ->
+            if (index > 0) right.addView(dotView())
+            right.addView(item)
+        }
+        second.addView(right)
+        cardContent.addView(second)
+        return root
+    }
+
+    /** 平板时间线的一行：日期/时间/类型 + 内容、花费、备注、照片。 */
+    private fun eventTimelineRow(item: Timeline.Item, dotColor: Int): View {
+        val rail = android.widget.FrameLayout(this).apply {
+            layoutParams = LinearLayout.LayoutParams(dp(28), ViewGroup.LayoutParams.MATCH_PARENT)
+            addView(View(this@TripDetailActivity).apply {
+                setBackgroundColor(getColor(R.color.border))
+                layoutParams = android.widget.FrameLayout.LayoutParams(
+                    dp(1), ViewGroup.LayoutParams.MATCH_PARENT, Gravity.TOP or Gravity.CENTER_HORIZONTAL,
+                )
+            })
+            addView(View(this@TripDetailActivity).apply {
+                background = android.graphics.drawable.GradientDrawable().apply {
+                    shape = android.graphics.drawable.GradientDrawable.OVAL
+                    setColor(dotColor)
+                }
+                layoutParams = android.widget.FrameLayout.LayoutParams(
+                    dp(12), dp(12), Gravity.TOP or Gravity.CENTER_HORIZONTAL,
+                ).apply { topMargin = dp(18) }
+            })
+        }
+        val card = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setBackgroundResource(R.drawable.bg_card)
+            setPadding(dp(12), dp(10), dp(12), dp(10))
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+                .apply { bottomMargin = dp(10); marginStart = dp(8) }
+        }
+
+        // 第一行：日期 · 时间，右侧项目类型（图标 + 四字）
+        val header = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        header.addView(ImageView(this).apply {
+            setImageResource(R.drawable.ic_calendar)
+            imageTintList = android.content.res.ColorStateList.valueOf(getColor(R.color.text_tertiary))
+            layoutParams = LinearLayout.LayoutParams(dp(13), dp(13))
+        })
+        header.addView(TextView(this).apply {
+            text = Dates.ymd(item.time)
+            textSize = 12f
+            setTextColor(getColor(R.color.text_secondary))
+            setPadding(dp(4), 0, 0, 0)
+        })
+        header.addView(ImageView(this).apply {
+            setImageResource(R.drawable.ic_clock)
+            imageTintList = android.content.res.ColorStateList.valueOf(getColor(R.color.text_tertiary))
+            layoutParams = LinearLayout.LayoutParams(dp(13), dp(13)).apply { marginStart = dp(8) }
+        })
+        header.addView(TextView(this).apply {
+            text = hm(item.time)
+            textSize = 12f
+            setTextColor(getColor(R.color.text_secondary))
+            setPadding(dp(4), 0, 0, 0)
+        })
+        header.addView(View(this).apply { layoutParams = LinearLayout.LayoutParams(0, 1, 1f) })
+        header.addView(ImageView(this).apply {
+            setImageResource(if (item.type == Timeline.Type.RIDE) R.drawable.ic_car else R.drawable.ic_flag)
+            imageTintList = android.content.res.ColorStateList.valueOf(getColor(R.color.text_tertiary))
+            layoutParams = LinearLayout.LayoutParams(dp(13), dp(13))
+        })
+        header.addView(TextView(this).apply {
+            text = typeTitle(item.type)
+            textSize = 12f
+            setTextColor(getColor(R.color.text_tertiary))
+            setPadding(dp(4), 0, 0, 0)
+        })
+        card.addView(header)
+
+        // 第二行：标题（标题字体）+ 金额徽章
+        val titleRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(0, dp(6), 0, 0)
+        }
+        titleRow.addView(TextView(this).apply {
+            text = item.text
+            textSize = 16f
+            typeface = Typeface.DEFAULT_BOLD
+            setTextColor(getColor(R.color.fg))
+        })
+        if ((item.costCents ?: 0) > 0) titleRow.addView(costBadge(item.costCents ?: 0))
+        card.addView(titleRow)
+
+        // 第三行：照片（没有则整行隐藏）
+        val photos = item.photoPath?.split(",")?.filter { it.isNotBlank() }.orEmpty()
+        if (photos.isNotEmpty()) {
+            val photoRow = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                setPadding(0, dp(8), 0, 0)
+            }
+            photos.take(3).forEach { path ->
+                val tile = android.widget.FrameLayout(this).apply {
+                    layoutParams = LinearLayout.LayoutParams(0, dp(84), 1f).apply { marginEnd = dp(6) }
+                    setBackgroundResource(R.drawable.bg_photo_tile)
+                    clipToOutline = true
+                }
+                tile.addView(ImageView(this).apply {
+                    setImageBitmap(PhotoStore.load(path, maxPx = 512))
+                    scaleType = ImageView.ScaleType.CENTER_CROP
+                    layoutParams = android.widget.FrameLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                    )
+                    setOnClickListener { showPhotoDialog(this@TripDetailActivity, path) }
+                })
+                photoRow.addView(tile)
+            }
+            card.addView(photoRow)
+        }
+
+        // 第四行：图标 + 备注（空则 -）
+        val noteRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(0, dp(6), 0, 0)
+        }
+        noteRow.addView(ImageView(this).apply {
+            setImageResource(R.drawable.ic_note)
+            imageTintList = android.content.res.ColorStateList.valueOf(getColor(R.color.text_tertiary))
+            layoutParams = LinearLayout.LayoutParams(dp(13), dp(13))
+        })
+        noteRow.addView(TextView(this).apply {
+            text = item.note?.takeIf { it.isNotBlank() } ?: "-"
+            textSize = 12f
+            setTextColor(getColor(R.color.text_secondary))
+            setPadding(dp(4), 0, 0, 0)
+        })
+        card.addView(noteRow)
+
+        return LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            addView(rail)
+            addView(card)
+        }
+    }
+
+    /** 小号花费徽章。 */
+    /** 首访角标：金色浅底 + 金边，和打卡列表一致。 */
+    private fun firstVisitChip(): TextView = TextView(this).apply {
+        setText(R.string.first_visit)
+        textSize = 11f
+        setTextColor(getColor(R.color.first_visit))
+        setBackgroundResource(R.drawable.bg_first_visit)
+        setPadding(dp(7), dp(2), dp(7), dp(2))
+    }
+
+    private fun costBadge(cents: Int): TextView = TextView(this).apply {
+        text = getString(R.string.home_cost_value, (cents / 100).toString())
+        textSize = 11f
+        typeface = Typeface.DEFAULT_BOLD
+        setTextColor(getColor(R.color.on_accent))
+        setPadding(dp(7), dp(2), dp(7), dp(2))
+        background = android.graphics.drawable.GradientDrawable().apply {
+            cornerRadius = dp(6).toFloat()
+            setColor(getColor(R.color.badge_cost))
+        }
+        layoutParams = LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.WRAP_CONTENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT,
+        ).apply { marginStart = dp(12) }
+    }
+
+    /** 图标 + 文字的小信息。 */
+    private fun iconText(icon: Int, text: String): LinearLayout = LinearLayout(this).apply {
+        orientation = LinearLayout.HORIZONTAL
+        gravity = Gravity.CENTER_VERTICAL
+        addView(ImageView(this@TripDetailActivity).apply {
+            setImageResource(icon)
+            imageTintList = android.content.res.ColorStateList.valueOf(getColor(R.color.text_tertiary))
+            layoutParams = LinearLayout.LayoutParams(dp(13), dp(13))
+        })
+        addView(TextView(this@TripDetailActivity).apply {
+            this.text = text
+            textSize = 12f
+            setTextColor(getColor(R.color.text_secondary))
+            setPadding(dp(4), 0, 0, 0)
+        })
+    }
+
+    private fun dotView(): TextView = TextView(this).apply {
+        text = "·"
+        textSize = 12f
+        setTextColor(getColor(R.color.text_tertiary))
+        setPadding(dp(3), 0, dp(3), 0)
+    }
+
+    private fun typeTitle(type: Timeline.Type): String = getString(
+        when (type) {
+            Timeline.Type.RIDE -> R.string.trip_type_ride_label
+            Timeline.Type.ACTIVITY -> R.string.trip_type_activity_label
+            else -> R.string.trip_type_visit_label
+        },
+    )
     // ── 小部件 ──
 
     private fun card(): LinearLayout = LinearLayout(this).apply {
@@ -462,6 +623,18 @@ class TripDetailActivity : AppCompatActivity() {
             setTextColor(getColor(R.color.fg))
             setPadding(dp(6), 0, 0, 0)
         })
+    }
+
+    private fun seqBadgeText(badge: String, color: Int): TextView = TextView(this).apply {
+        text = badge
+        textSize = 11f
+        typeface = Typeface.DEFAULT_BOLD
+        setTextColor(getColor(R.color.on_accent))
+        setPadding(dp(7), dp(2), dp(7), dp(2))
+        background = GradientDrawable().apply {
+            cornerRadius = dp(6).toFloat()
+            setColor(color)
+        }
     }
 
     private fun seqBadge(seq: Int, colorRes: Int): TextView = TextView(this).apply {

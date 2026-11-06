@@ -64,6 +64,7 @@ class TripsFragment : Fragment() {
 
     /** 行程 uuid → (到访城市数, 活动数)，卡片第二行用来显示「N 城 · M 项」。 */
     private var timelineCountByUuid: Map<String, Pair<Int, Int>> = emptyMap()
+    private var citiesByUuid: Map<String, List<String>> = emptyMap()
 
     private var seenVersion = -1
 
@@ -141,6 +142,12 @@ class TripsFragment : Fragment() {
                 val timeline = Timeline.decode(trip.timeline)
                 trip.uuid to ((timeline?.cityCount ?: 0) to (timeline?.eventCount ?: 0))
             }
+            citiesByUuid = tripList.associate { trip ->
+                val timeline = Timeline.decode(trip.timeline)
+                trip.uuid to timeline?.items.orEmpty()
+                    .filter { it.type == Timeline.Type.VISIT }
+                    .map { it.text }
+            }
             render()
         }
     }
@@ -200,8 +207,16 @@ class TripsFragment : Fragment() {
 
         // 第一行：左 编号 + 城市 · 省份 + 金额；右 首访 + 菜单
         val header = row()
-        val badgeSeq = if (derived) checkin.tripUuid?.let { seqByUuid[it] } ?: 0 else checkin.seqNo
-        header.addView(numberBadge(badgeSeq, stripe))
+        val badgeText = if (derived) {
+            getString(
+                R.string.trips_derived_seq,
+                checkin.tripUuid?.let { seqByUuid[it] } ?: 0,
+                checkin.segmentIndex + 1,
+            )
+        } else {
+            getString(R.string.trips_trip_seq, checkin.seqNo)
+        }
+        header.addView(numberBadgeText(badgeText, stripe))
         header.addView(titleViewWrap(checkin.cityName))
         if (!checkin.province.isNullOrBlank()) {
             header.addView(dotView())
@@ -237,22 +252,21 @@ class TripsFragment : Fragment() {
             gravity = Gravity.CENTER_VERTICAL
             layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
         }
-        checkin.companions?.takeIf { it.isNotBlank() }?.let { companions ->
-            val view = iconText(R.drawable.ic_person, companions, expandText = true)
-            view.layoutParams = LinearLayout.LayoutParams(
-                0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f,
-            )
-            left.addView(view)
-        }
+        val companionText = checkin.companions?.takeIf { it.isNotBlank() } ?: "-"
+        val companionView = iconText(R.drawable.ic_person, companionText, expandText = true)
+        companionView.layoutParams = LinearLayout.LayoutParams(
+            0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f,
+        )
+        left.addView(companionView)
         second.addView(left)
         second.addView(View(requireContext()).apply {
             layoutParams = LinearLayout.LayoutParams(dp(12), 1)
         })
 
         val rightItems = mutableListOf<View>()
-        checkin.rating?.let { rightItems.add(iconText(R.drawable.ic_star, getString(R.string.rating_value, it))) }
-        checkin.stayDays?.let { rightItems.add(iconText(R.drawable.ic_trips, getString(R.string.home_days_value, it.toString()))) }
-        rightItems.add(iconText(R.drawable.ic_span, dateText(checkin)))
+        rightItems.add(iconText(R.drawable.ic_star, checkin.rating?.let { getString(R.string.rating_value, it) } ?: "-"))
+        rightItems.add(iconText(R.drawable.ic_calendar, checkin.stayDays?.let { getString(R.string.home_days_value, it.toString()) } ?: "-"))
+        rightItems.add(iconText(R.drawable.ic_calendar, dateText(checkin)))
         val right = LinearLayout(requireContext()).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
@@ -305,8 +319,9 @@ class TripsFragment : Fragment() {
         // 第一行：编号徽章 + 标题 + 花费徽章 + 菜单
         val header = row()
         header.addView(numberBadge(trip.seqNo, R.color.stripe_trip))
-        header.addView(titleView(trip.title.ifBlank { getString(R.string.trips_trip_empty_title) }))
+        header.addView(titleViewWrap(trip.title.ifBlank { getString(R.string.trips_trip_empty_title) }))
         if (trip.totalCostCents > 0) header.addView(costBadge(trip.totalCostCents))
+        header.addView(spacer())
         header.addView(menuButton { anchor ->
             showIconMenu(
                 anchor,
@@ -325,13 +340,18 @@ class TripsFragment : Fragment() {
         })
         card.addView(header)
 
-        // 第二行：左备注、右「时间线数 · 时间」
+        // 第二行：左「城市串」、右「时间线数 · 时间」
         val meta = row(topMargin = 8)
-        val note = noteView(trip.note)
-        if (note != null) meta.addView(note, weightParams()) else meta.addView(spacer())
+        val cities = citiesByUuid[trip.uuid].orEmpty()
+        val cityText = cities.joinToString(" · ").ifBlank { "-" }
+        val cityView = iconText(R.drawable.ic_city, cityText, expandText = true)
+        cityView.layoutParams = weightParams()
+        meta.addView(cityView)
+        // 左右两组之间留空隙
+        meta.addView(View(requireContext()).apply { layoutParams = LinearLayout.LayoutParams(dp(12), 1) })
         val counts = timelineCountByUuid[trip.uuid] ?: (0 to 0)
-        meta.addView(iconText(R.drawable.ic_trips, "${counts.first} 城 · ${counts.second} 项"))
-        meta.addView(iconText(R.drawable.ic_span, Dates.ymd(trip.startTime), marginStart = 10))
+        meta.addView(iconText(R.drawable.ic_luggage, "${counts.first} 城 · ${counts.second} 项"))
+        meta.addView(iconText(R.drawable.ic_calendar, Dates.ymd(trip.startTime), marginStart = 10))
         card.addView(meta)
 
         root.isClickable = true
@@ -392,10 +412,13 @@ class TripsFragment : Fragment() {
     }
 
     /** 编号徽章：类别色底、白字、圆角 6dp。 */
-    private fun numberBadge(seq: Int, colorRes: Int): TextView {
+    private fun numberBadge(seq: Int, colorRes: Int): TextView =
+        numberBadgeText(getString(R.string.trips_trip_seq, seq), colorRes)
+
+    private fun numberBadgeText(badge: String, colorRes: Int): TextView {
         val ctx = requireContext()
         return TextView(ctx).apply {
-            text = getString(R.string.trips_trip_seq, seq)
+            text = badge
             textSize = 11f
             setTypeface(typeface, android.graphics.Typeface.BOLD)
             setTextColor(ContextCompat.getColor(ctx, R.color.on_accent))

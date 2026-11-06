@@ -3,6 +3,6 @@
      颜色引用主题属性，换主题色时这块也跟着变。 -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="rectangle">
-    <solid android:color="?attr/appAccent" />
+    <solid android:color="?attr/colorPrimary" />
     <corners android:radius="14dp" />
 </shape>

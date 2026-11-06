@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 成就图标：工厂 / 工业（手绘简化路径）。 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M2,21V9l6,3V9l6,3V9l6,3v9H2zM5,15h2v3H5zM10,15h2v3h-2zM15,15h2v3h-2z" />
+</vector>

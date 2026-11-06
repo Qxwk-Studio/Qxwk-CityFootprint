@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- ic_trips：Material Icons（Apache-2.0），路径取自 google/material-design-icons 的
+<!-- ic_timeline：Material Icons（Apache-2.0），路径取自 google/material-design-icons 的
      action/timeline/materialicons/24px.svg，未改动手绘路径。 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"

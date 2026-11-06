@@ -28,7 +28,7 @@
                 android:layout_height="18dp"
                 android:contentDescription="@null"
                 android:src="@drawable/ic_stats_section"
-                app:tint="?attr/appAccent" />
+                app:tint="?attr/colorPrimary" />
 
             <TextView
                 android:layout_width="wrap_content"
@@ -60,8 +60,8 @@
                     android:layout_width="16dp"
                     android:layout_height="16dp"
                     android:contentDescription="@null"
-                    android:src="@drawable/ic_span"
-                    app:tint="?attr/appAccent" />
+                    android:src="@drawable/ic_calendar"
+                    app:tint="?attr/colorPrimary" />
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -104,7 +104,7 @@
                         android:layout_height="16dp"
                         android:contentDescription="@null"
                         android:src="@drawable/ic_city"
-                        app:tint="?attr/appAccent" />
+                        app:tint="?attr/colorPrimary" />
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -138,7 +138,7 @@
                         android:layout_height="16dp"
                         android:contentDescription="@null"
                         android:src="@drawable/ic_trending"
-                        app:tint="?attr/appAccent" />
+                        app:tint="?attr/colorPrimary" />
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -180,8 +180,8 @@
                         android:layout_width="16dp"
                         android:layout_height="16dp"
                         android:contentDescription="@null"
-                        android:src="@drawable/ic_trips"
-                        app:tint="?attr/appAccent" />
+                        android:src="@drawable/ic_calendar"
+                        app:tint="?attr/colorPrimary" />
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -215,7 +215,7 @@
                         android:layout_height="16dp"
                         android:contentDescription="@null"
                         android:src="@drawable/ic_wallet"
-                        app:tint="?attr/appAccent" />
+                        app:tint="?attr/colorPrimary" />
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -250,7 +250,7 @@
                 android:layout_height="18dp"
                 android:contentDescription="@null"
                 android:src="@drawable/ic_rank_section"
-                app:tint="?attr/appAccent" />
+                app:tint="?attr/colorPrimary" />
 
             <TextView
                 android:layout_width="0dp"

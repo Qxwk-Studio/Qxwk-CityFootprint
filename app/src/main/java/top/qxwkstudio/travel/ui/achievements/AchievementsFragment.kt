@@ -17,6 +17,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import top.qxwkstudio.travel.R
 import top.qxwkstudio.travel.data.CheckinRepo
+import top.qxwkstudio.travel.data.TripRepo
 import top.qxwkstudio.travel.data.DataVersion
 import top.qxwkstudio.travel.data.db.AchievementStateEntity
 import top.qxwkstudio.travel.data.db.AppDatabase
@@ -82,7 +83,8 @@ class AchievementsFragment : Fragment() {
             val samples = CheckinRepo.listChronological(db).map {
                 Achievements.Sample(it.cityName, it.checkinAt)
             }
-            val evaluated = Achievements.evaluate(samples)
+            val tripTimes = TripRepo.list(db).map { it.startTime }
+            val evaluated = Achievements.evaluate(samples, tripTimes)
 
             val existing = db.achievements().list().associateBy { it.code }
             db.achievements().upsertAll(
@@ -185,10 +187,10 @@ class AchievementsFragment : Fragment() {
 
     // ────────────────────────── 列表 ──────────────────────────
 
+    /** 新用户也要看到全部未解锁成就，不因「0 进度」把列表藏起来。 */
     private fun refreshEmptyState() {
-        val empty = states.values.none { it.progress > 0 || it.done }
-        binding.textEmpty.visibility = if (empty) View.VISIBLE else View.GONE
-        binding.list.visibility = if (empty) View.GONE else View.VISIBLE
+        binding.textEmpty.visibility = View.GONE
+        binding.list.visibility = View.VISIBLE
     }
 
     private sealed interface Row {
@@ -311,7 +313,21 @@ class AchievementsFragment : Fragment() {
             val b = holder.binding
             val state = row.state
             b.root.alpha = if (state.done) 1f else 0.55f
-            b.icon.setImageResource(iconFor(row.category))
+            val milestone = when (val rule = row.def.rule) {
+                is Achievements.Rule.CityCount -> rule.min
+                is Achievements.Rule.CheckinCount -> rule.min
+                is Achievements.Rule.TripCount -> rule.min
+                else -> null
+            }
+            if (row.category == 0 && milestone != null) {
+                b.icon.visibility = View.GONE
+                b.textMilestone.visibility = View.VISIBLE
+                b.textMilestone.text = milestone.toString()
+            } else {
+                b.icon.visibility = View.VISIBLE
+                b.textMilestone.visibility = View.GONE
+                b.icon.setImageResource(iconFor(row.def.code, row.category))
+            }
             b.textName.text = row.def.name
             b.textDesc.text = row.def.desc
 
@@ -344,11 +360,93 @@ class AchievementsFragment : Fragment() {
 
     private class CardHolder(val binding: ItemAchievementBinding) : RecyclerView.ViewHolder(binding.root)
 
+    /** 逐条成就图标：按主题分组，允许同类共用，不再整类同一张图。 */
+    private val achievementIcons = mapOf(
+        // 城市打卡
+        "city_beijing" to R.drawable.ic_palace,
+        "city_shijiazhuang" to R.drawable.ic_food,
+        "city_handan" to R.drawable.ic_flag,
+        "city_dalian" to R.drawable.ic_waves,
+        "city_dandong" to R.drawable.ic_waves,
+        "city_harbin" to R.drawable.ic_snow,
+        "city_shanghai" to R.drawable.ic_city,
+        "city_suzhou" to R.drawable.ic_palace,
+        "city_xuzhou" to R.drawable.ic_flag,
+        "city_hangzhou" to R.drawable.ic_waves,
+        "city_huangshan" to R.drawable.ic_mountain,
+        "city_xiamen" to R.drawable.ic_waves,
+        "city_nanchang" to R.drawable.ic_palace,
+        "city_jingdezhen" to R.drawable.ic_palette,
+        "city_qingdao" to R.drawable.ic_waves,
+        "city_weifang" to R.drawable.ic_wind,
+        "city_luoyang" to R.drawable.ic_palace,
+        "city_kaifeng" to R.drawable.ic_palace,
+        "city_xinxiang" to R.drawable.ic_city,
+        "city_wuhan" to R.drawable.ic_palace,
+        "city_yichang" to R.drawable.ic_waves,
+        "city_changsha" to R.drawable.ic_food,
+        "city_zhangjiajie" to R.drawable.ic_mountain,
+        "city_yueyang" to R.drawable.ic_palace,
+        "city_chaozhou" to R.drawable.ic_food,
+        "city_foshan" to R.drawable.ic_factory,
+        "city_guilin" to R.drawable.ic_mountain,
+        "city_liuzhou" to R.drawable.ic_food,
+        "city_sanya" to R.drawable.ic_waves,
+        "city_chongqing" to R.drawable.ic_mountain,
+        "city_chengdu" to R.drawable.ic_food,
+        "city_kunming" to R.drawable.ic_sun,
+        "city_dali" to R.drawable.ic_mountain,
+        "city_lijiang" to R.drawable.ic_palace,
+        "city_lhasa" to R.drawable.ic_sun,
+        "city_xian" to R.drawable.ic_palace,
+        "city_yanan" to R.drawable.ic_redstar,
+        "city_urumqi" to R.drawable.ic_food,
+        "city_kashi" to R.drawable.ic_temple,
+        // 巡游四方
+        "coastal_city" to R.drawable.ic_waves,
+        "special_zone" to R.drawable.ic_city,
+        "grand_canal" to R.drawable.ic_waves,
+        "jiangnan_all" to R.drawable.ic_waves,
+        "great_wall" to R.drawable.ic_wall,
+        "silk_road" to R.drawable.ic_compass,
+        "space_launch" to R.drawable.ic_rocket,
+        "island_city" to R.drawable.ic_waves,
+        "plateau_city" to R.drawable.ic_mountain,
+        "metro_all" to R.drawable.ic_city,
+        "municipality_all" to R.drawable.ic_city,
+        "prov_capitals_all" to R.drawable.ic_palace,
+        "hk_macau" to R.drawable.ic_city,
+        "ancient_capitals" to R.drawable.ic_palace,
+        "northeast_all" to R.drawable.ic_snow,
+        "five_mountains" to R.drawable.ic_mountain,
+        "four_grottoes" to R.drawable.ic_temple,
+        "buddhist_mountains" to R.drawable.ic_temple,
+        "red_sites" to R.drawable.ic_redstar,
+        "rehe_province" to R.drawable.ic_tree,
+        // 极限挑战
+        "east_end_jiamusi" to R.drawable.ic_compass,
+        "south_end_sansha" to R.drawable.ic_compass,
+        "west_end_kezilesu" to R.drawable.ic_compass,
+        "north_end_daxinganling" to R.drawable.ic_compass,
+        "arid_turpan" to R.drawable.ic_desert,
+        "rainiest_yaan" to R.drawable.ic_rain,
+        "sunny_baotou" to R.drawable.ic_sun,
+        "hottest_turpan" to R.drawable.ic_sun,
+        "coldest_hulunbuir" to R.drawable.ic_snow,
+        "highest_naqu" to R.drawable.ic_mountain,
+        "lowest_turpan" to R.drawable.ic_mountain,
+        "windy_alashankou" to R.drawable.ic_wind,
+        "dusty_akesu" to R.drawable.ic_desert,
+    )
+
+    private fun iconFor(code: String, category: Int): Int =
+        achievementIcons[code] ?: iconFor(category)
+
     private fun iconFor(category: Int): Int = when (category) {
-        0 -> R.drawable.ic_map
-        1 -> R.drawable.ic_trips
-        2 -> R.drawable.ic_locate
-        else -> R.drawable.ic_achievement
+        0 -> R.drawable.ic_achievement
+        1 -> R.drawable.ic_stamp
+        2 -> R.drawable.ic_compass
+        else -> R.drawable.ic_peak
     }
 
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()

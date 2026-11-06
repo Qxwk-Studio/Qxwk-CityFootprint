@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 打卡编辑：标题在卡片外，两张卡片（基本信息 / 可选项）。
-     下拉框带右侧下箭头、文字左对齐；数值字段右侧上下两个步进箭头；评分用细轨道。 -->
+<!-- 打卡编辑：基本信息（城市 / 到访时间）+ 可选项（停留天数 / 同行人 / 总花费 / 照片 / 评分 / 备注）。 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
@@ -26,33 +25,7 @@
             android:orientation="vertical"
             android:padding="16dp">
 
-            <!-- 卡片外标题：基本信息 -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:paddingStart="4dp"
-                android:paddingBottom="8dp">
-
-                <ImageView
-                    android:layout_width="18dp"
-                    android:layout_height="18dp"
-                    android:contentDescription="@null"
-                    android:src="@drawable/ic_city"
-                    app:tint="?attr/appAccent" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="6dp"
-                    android:text="@string/checkin_section_basic"
-                    android:textColor="@color/fg"
-                    android:textSize="16sp"
-                    android:textStyle="bold" />
-            </LinearLayout>
-
-            <!-- ===== 卡片 1：基本信息 ===== -->
+            <!-- ===== 基本信息 ===== -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -61,7 +34,7 @@
                 android:paddingTop="8dp"
                 android:paddingBottom="20dp">
 
-                <!-- 到访城市 -->
+                <!-- 到访城市标题 -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -76,7 +49,7 @@
                         android:layout_height="16dp"
                         android:contentDescription="@null"
                         android:src="@drawable/ic_city"
-                        app:tint="?attr/appAccent" />
+                        app:tint="?attr/colorPrimary" />
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -86,8 +59,18 @@
                         android:textColor="@color/fg"
                         android:textSize="15sp"
                         android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="2dp"
+                        android:text="*"
+                        android:textColor="@color/destructive"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
                 </LinearLayout>
 
+                <!-- 城市输入框 + 定位 -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -121,7 +104,7 @@
                         android:contentDescription="@string/checkin_locate"
                         android:padding="8dp"
                         android:src="@drawable/ic_locate"
-                        android:tint="?attr/appAccent" />
+                        android:tint="?attr/colorPrimary" />
                 </LinearLayout>
 
                 <TextView
@@ -143,7 +126,7 @@
                     android:layout_marginEnd="16dp"
                     android:background="@color/border" />
 
-                <!-- 到访时间 -->
+                <!-- 到访时间标题 -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -157,8 +140,8 @@
                         android:layout_width="16dp"
                         android:layout_height="16dp"
                         android:contentDescription="@null"
-                        android:src="@drawable/ic_span"
-                        app:tint="?attr/appAccent" />
+                        android:src="@drawable/ic_calendar"
+                        app:tint="?attr/colorPrimary" />
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -167,6 +150,15 @@
                         android:text="@string/checkin_date"
                         android:textColor="@color/fg"
                         android:textSize="15sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="2dp"
+                        android:text="*"
+                        android:textColor="@color/destructive"
+                        android:textSize="12sp"
                         android:textStyle="bold" />
                 </LinearLayout>
 
@@ -189,8 +181,8 @@
                             android:layout_width="match_parent"
                             android:layout_height="match_parent"
                             android:background="@null"
-                            android:paddingStart="4dp"
-                            android:paddingEnd="18dp" />
+                            android:paddingStart="10dp"
+                            android:paddingEnd="26dp" />
 
                         <ImageView
                             android:layout_width="14dp"
@@ -214,8 +206,8 @@
                             android:layout_width="match_parent"
                             android:layout_height="match_parent"
                             android:background="@null"
-                            android:paddingStart="4dp"
-                            android:paddingEnd="18dp" />
+                            android:paddingStart="10dp"
+                            android:paddingEnd="26dp" />
 
                         <ImageView
                             android:layout_width="14dp"
@@ -239,8 +231,8 @@
                             android:layout_width="match_parent"
                             android:layout_height="match_parent"
                             android:background="@null"
-                            android:paddingStart="4dp"
-                            android:paddingEnd="18dp" />
+                            android:paddingStart="10dp"
+                            android:paddingEnd="26dp" />
 
                         <ImageView
                             android:layout_width="14dp"
@@ -252,31 +244,60 @@
                             app:tint="@color/text_secondary" />
                     </FrameLayout>
                 </LinearLayout>
+            </LinearLayout>
 
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:layout_marginStart="16dp"
-                    android:layout_marginTop="20dp"
-                    android:layout_marginEnd="16dp"
-                    android:background="@color/border" />
+            <!-- 可选项标题 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="4dp"
+                android:paddingBottom="8dp">
 
-                <!-- 停留天数 -->
+                <ImageView
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_star"
+                    app:tint="?attr/colorPrimary" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:text="@string/checkin_section_optional"
+                    android:textColor="@color/fg"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <!-- ===== 可选项 ===== -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_card"
+                android:orientation="vertical"
+                android:paddingTop="8dp"
+                android:paddingBottom="8dp">
+
+                <!-- 停留天数（可选） -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center_vertical"
                     android:orientation="horizontal"
                     android:paddingStart="16dp"
-                    android:paddingTop="20dp"
+                    android:paddingTop="16dp"
                     android:paddingEnd="16dp">
 
                     <ImageView
                         android:layout_width="16dp"
                         android:layout_height="16dp"
                         android:contentDescription="@null"
-                        android:src="@drawable/ic_trips"
-                        app:tint="?attr/appAccent" />
+                        android:src="@drawable/ic_calendar"
+                        app:tint="?attr/colorPrimary" />
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -323,7 +344,7 @@
                             android:layout_height="20dp"
                             android:gravity="center"
                             android:text="+"
-                            android:textColor="?attr/appAccent"
+                            android:textColor="?attr/colorPrimary"
                             android:textSize="14sp" />
 
                         <TextView
@@ -332,47 +353,18 @@
                             android:layout_height="20dp"
                             android:gravity="center"
                             android:text="-"
-                            android:textColor="?attr/appAccent"
+                            android:textColor="?attr/colorPrimary"
                             android:textSize="14sp" />
                     </LinearLayout>
                 </LinearLayout>
-            </LinearLayout>
 
-            <!-- 卡片外标题：可选项 -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:paddingStart="4dp"
-                android:paddingBottom="8dp">
-
-                <ImageView
-                    android:layout_width="18dp"
-                    android:layout_height="18dp"
-                    android:contentDescription="@null"
-                    android:src="@drawable/ic_star"
-                    app:tint="?attr/appAccent" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="6dp"
-                    android:text="@string/checkin_section_optional"
-                    android:textColor="@color/fg"
-                    android:textSize="16sp"
-                    android:textStyle="bold" />
-            </LinearLayout>
-
-            <!-- ===== 卡片 2：可选项 ===== -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="@drawable/bg_card"
-                android:orientation="vertical"
-                android:paddingTop="8dp"
-                android:paddingBottom="8dp">
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginTop="20dp"
+                    android:layout_marginEnd="16dp"
+                    android:background="@color/border" />
 
                 <!-- 同行人 -->
                 <LinearLayout
@@ -381,7 +373,7 @@
                     android:gravity="center_vertical"
                     android:orientation="horizontal"
                     android:paddingStart="16dp"
-                    android:paddingTop="16dp"
+                    android:paddingTop="20dp"
                     android:paddingEnd="16dp">
 
                     <ImageView
@@ -389,7 +381,7 @@
                         android:layout_height="16dp"
                         android:contentDescription="@null"
                         android:src="@drawable/ic_person"
-                        app:tint="?attr/appAccent" />
+                        app:tint="?attr/colorPrimary" />
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -450,7 +442,7 @@
                         android:layout_height="16dp"
                         android:contentDescription="@null"
                         android:src="@drawable/ic_wallet"
-                        app:tint="?attr/appAccent" />
+                        app:tint="?attr/colorPrimary" />
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -485,86 +477,24 @@
                         android:textColor="@color/fg"
                         android:textSize="14sp" />
 
-                    <LinearLayout
-                        android:layout_width="36dp"
-                        android:layout_height="48dp"
-                        android:gravity="center_vertical"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:id="@+id/btnAmountPlus"
-                            android:layout_width="match_parent"
-                            android:layout_height="20dp"
-                            android:gravity="center"
-                            android:text="+"
-                            android:textColor="?attr/appAccent"
-                            android:textSize="14sp" />
-
-                        <TextView
-                            android:id="@+id/btnAmountMinus"
-                            android:layout_width="match_parent"
-                            android:layout_height="20dp"
-                            android:gravity="center"
-                            android:text="-"
-                            android:textColor="?attr/appAccent"
-                            android:textSize="14sp" />
-                    </LinearLayout>
-                </LinearLayout>
-
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:layout_marginStart="16dp"
-                    android:layout_marginTop="20dp"
-                    android:layout_marginEnd="16dp"
-                    android:background="@color/border" />
-
-                <!-- 精彩照片 -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:paddingStart="16dp"
-                    android:paddingTop="20dp"
-                    android:paddingEnd="16dp">
-
-                    <ImageView
-                        android:layout_width="16dp"
-                        android:layout_height="16dp"
-                        android:contentDescription="@null"
-                        android:src="@drawable/ic_camera"
-                        app:tint="?attr/appAccent" />
+                    <TextView
+                        android:id="@+id/btnAmountMinus"
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:gravity="center"
+                        android:text="-"
+                        android:textColor="?attr/colorPrimary"
+                        android:textSize="20sp" />
 
                     <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="6dp"
-                        android:text="@string/photo_label"
-                        android:textColor="@color/fg"
-                        android:textSize="15sp"
-                        android:textStyle="bold" />
+                        android:id="@+id/btnAmountPlus"
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:gravity="center"
+                        android:text="+"
+                        android:textColor="?attr/colorPrimary"
+                        android:textSize="20sp" />
                 </LinearLayout>
-
-                <LinearLayout
-                    android:id="@+id/photoRow"
-                    android:layout_width="match_parent"
-                    android:layout_height="86dp"
-                    android:layout_marginStart="16dp"
-                    android:layout_marginTop="10dp"
-                    android:layout_marginEnd="16dp"
-                    android:orientation="horizontal" />
-
-                <TextView
-                    android:id="@+id/textPhotoEmpty"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="16dp"
-                    android:layout_marginTop="6dp"
-                    android:layout_marginEnd="16dp"
-                    android:text="@string/photo_count_hint"
-                    android:textColor="@color/text_tertiary"
-                    android:textSize="12sp" />
 
                 <View
                     android:layout_width="match_parent"
@@ -589,7 +519,7 @@
                         android:layout_height="16dp"
                         android:contentDescription="@null"
                         android:src="@drawable/ic_star"
-                        app:tint="?attr/appAccent" />
+                        app:tint="?attr/colorPrimary" />
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -621,7 +551,7 @@
                         android:minHeight="3dp"
                         android:progress="0"
                         android:progressDrawable="@drawable/seekbar_thick"
-                        android:thumbTint="?attr/appAccent" />
+                        android:thumbTint="?attr/colorPrimary" />
 
                     <TextView
                         android:id="@+id/textRatingValue"
@@ -631,6 +561,84 @@
                         android:textColor="@color/text_secondary"
                         android:textSize="13sp" />
                 </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginTop="20dp"
+                    android:layout_marginEnd="16dp"
+                    android:background="@color/border" />
+
+                <!-- 精彩照片 -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingStart="16dp"
+                    android:paddingTop="20dp"
+                    android:paddingEnd="16dp">
+
+                    <ImageView
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_camera"
+                        app:tint="?attr/colorPrimary" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="6dp"
+                        android:text="@string/photo_label"
+                        android:textColor="@color/fg"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+
+                    <View
+                        android:layout_width="0dp"
+                        android:layout_height="1dp"
+                        android:layout_weight="1" />
+
+                    <Button
+                        android:id="@+id/btnAddPhoto"
+                        android:layout_width="wrap_content"
+                        android:layout_height="32dp"
+                        android:backgroundTint="?attr/colorPrimary"
+                        app:cornerRadius="8dp"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
+                        android:minWidth="0dp"
+                        android:minHeight="0dp"
+                        android:paddingStart="12dp"
+                        android:paddingEnd="12dp"
+                        android:stateListAnimator="@null"
+                        android:text="@string/photo_add"
+                        android:textColor="@color/on_accent"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/photoRow"
+                    android:layout_width="match_parent"
+                    android:layout_height="86dp"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginTop="10dp"
+                    android:layout_marginEnd="16dp"
+                    android:orientation="horizontal" />
+
+                <TextView
+                    android:id="@+id/textPhotoEmpty"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginTop="6dp"
+                    android:layout_marginEnd="16dp"
+                    android:text="@string/photo_count_hint"
+                    android:textColor="@color/text_tertiary"
+                    android:textSize="12sp" />
 
                 <View
                     android:layout_width="match_parent"
@@ -655,7 +663,7 @@
                         android:layout_height="16dp"
                         android:contentDescription="@null"
                         android:src="@drawable/ic_note"
-                        app:tint="?attr/appAccent" />
+                        app:tint="?attr/colorPrimary" />
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -700,7 +708,7 @@
                 android:id="@+id/btnSave"
                 android:layout_width="match_parent"
                 android:layout_height="48dp"
-                android:layout_marginTop="24dp"
+                android:layout_marginTop="20dp"
                 android:text="@string/checkin_save" />
         </LinearLayout>
     </ScrollView>

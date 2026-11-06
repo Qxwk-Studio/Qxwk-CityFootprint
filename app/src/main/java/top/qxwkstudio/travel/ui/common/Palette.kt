@@ -39,7 +39,7 @@ object Palette {
         return presets.firstOrNull { it.key == key } ?: presets.first()
     }
 
-    /** 代码里画强调色时用这个（与主题叠加同一个色值）。 */
+    /** 代码里画强调色时用这个（与主题叠加同一个色值；跟随系统时走动态配色，失败回退青色）。 */
     fun accent(context: Context): Int {
         val preset = selected()
         if (preset.key == "system") {
@@ -50,8 +50,11 @@ object Palette {
             }.getOrDefault(false)
             if (!dynamic) return teal
             return runCatching {
+                val wrapped = com.google.android.material.color.DynamicColors
+                    .wrapContextIfAvailable(context)
+                if (wrapped === context) return teal
                 com.google.android.material.color.MaterialColors.getColor(
-                    context,
+                    wrapped,
                     com.google.android.material.R.attr.colorPrimary,
                     teal,
                 )

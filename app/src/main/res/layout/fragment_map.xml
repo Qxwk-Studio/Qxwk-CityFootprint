@@ -4,7 +4,8 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="@color/map_bg">
 
     <org.maplibre.android.maps.MapView
         android:id="@+id/mapView"
@@ -43,7 +44,7 @@
         android:contentDescription="@string/map_locate"
         android:padding="10dp"
         android:src="@drawable/ic_locate"
-        android:tint="?attr/appAccent" />
+        android:tint="?attr/colorPrimary" />
 
     <!-- 点击城市后的只读面板：城市名 + 打卡条数 + 关闭，列表在代码里铺 -->
     <LinearLayout
@@ -68,7 +69,7 @@
                 android:layout_height="18dp"
                 android:contentDescription="@null"
                 android:src="@drawable/ic_city"
-                app:tint="?attr/appAccent" />
+                app:tint="?attr/colorPrimary" />
 
             <TextView
                 android:id="@+id/textCity"

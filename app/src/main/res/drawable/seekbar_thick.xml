@@ -13,7 +13,7 @@
             <shape>
                 <corners android:radius="1.5dp" />
                 <size android:height="3dp" />
-                <solid android:color="?attr/appAccent" />
+                <solid android:color="?attr/colorPrimary" />
             </shape>
         </clip>
     </item>

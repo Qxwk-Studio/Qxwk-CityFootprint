@@ -11,7 +11,7 @@
         android:title="@string/tab_home" />
     <item
         android:id="@+id/tab_trips"
-        android:icon="@drawable/ic_trips"
+        android:icon="@drawable/ic_luggage"
         android:title="@string/tab_trips" />
     <item
         android:id="@+id/tab_map"

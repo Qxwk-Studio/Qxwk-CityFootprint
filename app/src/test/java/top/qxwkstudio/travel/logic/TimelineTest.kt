@@ -25,7 +25,37 @@ class TimelineTest {
     private fun segment(city: String = "北京", vararg events: Timeline.Event) =
         Timeline.Segment(city = city, events = events.toList())
 
-    private fun timeline(vararg segments: Timeline.Segment) = Timeline(segments.toList())
+    private fun timeline(vararg segments: Timeline.Segment): Timeline {
+        val items = segments.flatMap { segment ->
+            listOf(
+                Timeline.Item(
+                    id = "visit-" + segment.city,
+                    type = Timeline.Type.VISIT,
+                    text = segment.city,
+                    companions = segment.companions,
+                    rating = segment.rating,
+                    photoPath = segment.photoPath,
+                    note = segment.note,
+                    cityCode = segment.cityCode,
+                    province = segment.province,
+                ),
+            ) + segment.events.map { event ->
+                Timeline.Item(
+                    id = event.id,
+                    type = event.type,
+                    time = event.time,
+                    tz = event.tz,
+                    text = event.text,
+                    costCents = event.costCents,
+                    note = event.note,
+                    lat = event.lat,
+                    lng = event.lng,
+                    photoPath = event.photoPath,
+                )
+            }
+        }
+        return Timeline(items)
+    }
 
     // ── 基本不变量 ──
 
@@ -37,7 +67,7 @@ class TimelineTest {
 
     @Test
     fun `blank city rejected`() {
-        assertEquals("第 1 段：请选择到访城市", timeline(segment("", event())).validate())
+        assertEquals("第 1 座城市：请选择到访城市", timeline(segment("", event())).validate())
     }
 
     @Test
@@ -85,7 +115,7 @@ class TimelineTest {
             segment("北京", event("a", 200)),
             segment("上海", event("b", 100)),
         ).validate()
-        assertTrue(error!!.contains("早于上一座城市"))
+        assertTrue(error!!.contains("时间不能早于上一条"))
     }
 
     @Test
@@ -158,6 +188,6 @@ class TimelineTest {
     @Test
     fun `garbage json returns null`() {
         assertNull(Timeline.decode("not json"))
-        assertNull(Timeline.decode("{\"segments\": 5}"))
+        assertNull(Timeline.decode("{\"items\": 5}"))
     }
 }

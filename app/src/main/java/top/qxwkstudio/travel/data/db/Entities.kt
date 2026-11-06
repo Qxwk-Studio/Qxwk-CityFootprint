@@ -43,7 +43,7 @@ object CheckinSource {
  * 这一列存的就是那组 int，不要在这里再定义第二套字面值。
  */
 
-/** 同步状态。2.0 全是 [LOCAL_ONLY]，列先留着。 */
+/** 同步状态。现在全是 [LOCAL_ONLY]，列与常量留给将来的同步功能。 */
 object SyncState {
     const val LOCAL_ONLY = 0
     const val PENDING = 1
@@ -87,12 +87,12 @@ data class TripEntity(
  * [cityName] 必须存中文名而不只是 adcode：成就定义是按中文城市名比对的（54 条里大量「去过 X」）。
  * [tripUuid] 只有派生打卡有值，手动打卡为 null。
  *
- * 唯一索引 `(trip_uuid, city_name, source)` 是**派生打卡重算幂等**的依据：同一条行程的同一座城市
- * 只允许一条派生打卡。注意 SQLite 里 NULL 互不相等，所以手动打卡（trip_uuid 为 null）不会撞这个索引 ——
+ * 唯一索引 `(trip_uuid, segment_index, source)` 是**派生打卡重算幂等**的依据：同一条行程的同一个城市段
+ * 只允许一条派生打卡。手动打卡 trip_uuid 为 null，SQLite 里 NULL 互不相等，不会撞这个索引 ——
  * 同一座城市可以有任意多条手动打卡，那正是想要的。
  *
- * 也因此，重算派生打卡时必须**物理删**旧行（见 [CheckinDao.deleteDerivedForTrip]），
- * 不能只打 deleted_at：软删的行还占着唯一索引，再插就冲突。
+ * 重算时旧派生行先打墓碑、再按 segment_index 复用（见 TripRepo.recomputeDerived）：
+ * 墓碑行仍占着唯一索引，物理删除换新行会撞键。
  */
 @Entity(
     tableName = "city_checkins",
@@ -115,7 +115,7 @@ data class CheckinEntity(
     val note: String? = null,
     /** 同行人 code（[top.qxwkstudio.travel.logic.Companions.code]）；null = 没填。 */
     val companions: String? = null,
-    /** 城市评分 1..5；null = 没评。 */
+    /** 城市评分 1..10；null = 没评。 */
     val rating: Int? = null,
     /** 本地照片路径；null = 没配图。 */
     @ColumnInfo(name = "photo_path") val photoPath: String? = null,

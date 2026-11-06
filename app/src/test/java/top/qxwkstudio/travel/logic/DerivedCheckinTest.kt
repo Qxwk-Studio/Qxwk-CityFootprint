@@ -14,7 +14,37 @@ class DerivedCheckinTest {
     private fun event(id: String, time: Long, type: Timeline.Type = Timeline.Type.ACTIVITY) =
         Timeline.Event(id = id, time = time, type = type, text = "x")
 
-    private fun timeline(vararg segments: Timeline.Segment) = Timeline(segments.toList())
+    private fun timeline(vararg segments: Timeline.Segment): Timeline {
+        val items = segments.flatMap { segment ->
+            listOf(
+                Timeline.Item(
+                    id = "visit-" + segment.city,
+                    type = Timeline.Type.VISIT,
+                    text = segment.city,
+                    companions = segment.companions,
+                    rating = segment.rating,
+                    photoPath = segment.photoPath,
+                    note = segment.note,
+                    cityCode = segment.cityCode,
+                    province = segment.province,
+                ),
+            ) + segment.events.map { event ->
+                Timeline.Item(
+                    id = event.id,
+                    type = event.type,
+                    time = event.time,
+                    tz = event.tz,
+                    text = event.text,
+                    costCents = event.costCents,
+                    note = event.note,
+                    lat = event.lat,
+                    lng = event.lng,
+                    photoPath = event.photoPath,
+                )
+            }
+        }
+        return Timeline(items)
+    }
 
     private val cities = mapOf(
         "北京" to City(name = "北京", province = "北京", lat = 39.9, lng = 116.4, adcode = 110000),

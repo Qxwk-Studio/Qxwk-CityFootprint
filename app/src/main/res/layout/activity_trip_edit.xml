@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 行程编辑器：标题一张卡、时间线一张卡（每座城市一张卡 + 底部添加城市）、备注一张卡。 -->
+<!-- 行程编辑器：总卡片（标题 + 备注）+ 扁平时间线（城市/活动/交通同级）。 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
@@ -25,7 +25,7 @@
             android:orientation="vertical"
             android:padding="16dp">
 
-            <!-- 标题卡 -->
+            <!-- 总卡片：标题 + 备注 -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -44,7 +44,7 @@
                         android:layout_height="16dp"
                         android:contentDescription="@null"
                         android:src="@drawable/ic_note"
-                        app:tint="?attr/appAccent" />
+                        app:tint="?attr/colorPrimary" />
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -54,23 +54,86 @@
                         android:textColor="@color/fg"
                         android:textSize="15sp"
                         android:textStyle="bold" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="2dp"
+                        android:text="*"
+                        android:textColor="@color/destructive"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
                 </LinearLayout>
 
                 <EditText
                     android:id="@+id/inputTitle"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
+                    android:layout_height="40dp"
+                    android:layout_marginTop="8dp"
                     android:background="@drawable/bg_input_box"
                     android:hint="@string/trip_title_hint"
                     android:inputType="text"
                     android:maxLength="23"
-                    android:padding="12dp"
+                    android:paddingStart="10dp"
+                    android:paddingEnd="10dp"
                     android:textColor="@color/fg"
                     android:textSize="15sp" />
 
                 <TextView
                     android:id="@+id/textTitleCounter"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:gravity="end"
+                    android:textColor="@color/text_tertiary"
+                    android:textSize="12sp" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginTop="14dp"
+                    android:background="@color/border" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_note"
+                        app:tint="?attr/colorPrimary" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="6dp"
+                        android:text="@string/trip_note_label"
+                        android:textColor="@color/fg"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <EditText
+                    android:id="@+id/inputNote"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/bg_input_box"
+                    android:gravity="top"
+                    android:hint="@string/trip_note_hint"
+                    android:inputType="textMultiLine"
+                    android:maxLength="233"
+                    android:minLines="3"
+                    android:padding="12dp"
+                    android:textColor="@color/fg"
+                    android:textSize="14sp" />
+
+                <TextView
+                    android:id="@+id/textNoteCounter"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
@@ -93,8 +156,8 @@
                     android:layout_width="18dp"
                     android:layout_height="18dp"
                     android:contentDescription="@null"
-                    android:src="@drawable/ic_span"
-                    app:tint="?attr/appAccent" />
+                    android:src="@drawable/ic_timeline"
+                    app:tint="?attr/colorPrimary" />
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -107,81 +170,10 @@
             </LinearLayout>
 
             <LinearLayout
+                android:id="@+id/eventContainer"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical">
-
-                <LinearLayout
-                    android:id="@+id/eventContainer"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical" />
-
-                <Button
-                    android:id="@+id/btnAddEvent"
-                    style="?attr/materialButtonOutlinedStyle"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
-                    android:text="@string/trip_add_city" />
-            </LinearLayout>
-
-            <!-- 备注卡 -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
-                android:background="@drawable/bg_card"
-                android:orientation="vertical"
-                android:padding="14dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
-
-                    <ImageView
-                        android:layout_width="16dp"
-                        android:layout_height="16dp"
-                        android:contentDescription="@null"
-                        android:src="@drawable/ic_note"
-                        app:tint="?attr/appAccent" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="6dp"
-                        android:text="@string/trip_note_label"
-                        android:textColor="@color/fg"
-                        android:textSize="15sp"
-                        android:textStyle="bold" />
-                </LinearLayout>
-
-                <EditText
-                    android:id="@+id/inputNote"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
-                    android:background="@drawable/bg_input_box"
-                    android:gravity="top"
-                    android:hint="@string/trip_note_hint"
-                    android:inputType="textMultiLine"
-                    android:maxLength="233"
-                    android:minLines="3"
-                    android:padding="12dp"
-                    android:textColor="@color/fg"
-                    android:textSize="14sp" />
-
-                <TextView
-                    android:id="@+id/textNoteCounter"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:gravity="end"
-                    android:textColor="@color/text_tertiary"
-                    android:textSize="12sp" />
-            </LinearLayout>
+                android:orientation="vertical" />
 
             <LinearLayout
                 android:layout_width="match_parent"
