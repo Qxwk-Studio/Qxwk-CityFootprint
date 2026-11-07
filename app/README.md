@@ -258,8 +258,10 @@ cd app && ./gradlew testDebugUnitTest
    `KEY_PASSWORD`。本地验证签名时按 `CF_KEYSTORE_FILE` / `CF_KEYSTORE_PASSWORD` /
    `CF_KEY_ALIAS` / `CF_KEY_PASSWORD` 环境变量传给 Gradle；缺这些变量时 release 产物是
    `*-release-unsigned.apk`。
-2. GitHub Actions → `Build Android APK` → `Run workflow`，填写 `version_name` 与 `version_code`。
-   CI 覆盖 `app/build.gradle.kts` 的版本行，跑单测 → `assembleRelease` → 上传 arm64-v8a 包；
+2. 在根目录 `CHANGELOG.md` 增加新版本段落，例如 `## 2.2.0 - 2026-11-08`，下面写更新日志。
+   GitHub Actions → `Build Android APK` → `Run workflow`（**仅手动触发，无版本输入**）。
+   CI 读取最新版本与日志，覆盖 `app/build.gradle.kts` 的版本行，跑单测 → `assembleRelease`
+   → 上传 arm64-v8a 包 → 创建 `v<version>` tag 与 GitHub Release，Release 正文取自 CHANGELOG。
    缺 keystore 或签名未生效会直接失败。
 3. 按 ABI 拆包：产物名为 `CityFootprint-<abi>-release.apk`，CI 取 **arm64-v8a**；
    debug 也拆包，本机安装取 `app/build/outputs/apk/debug/CityFootprint-arm64-v8a-debug.apk`。

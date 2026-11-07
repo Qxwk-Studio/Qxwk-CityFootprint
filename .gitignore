@@ -5,3 +5,6 @@ node_modules/
 
 # wrangler è‡ªåŠ¨ç”Ÿæˆçš„æ–‡ä»¶
 wrangler.jsonc
+
+# ±¾µØÉú³ÉµÄ Release ÕıÎÄ£¨CI Ã¿´ÎÉú³É£©
+release-notes.md
