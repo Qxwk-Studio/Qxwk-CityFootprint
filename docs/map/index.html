@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>行程地图 · City Footprint</title>
+  <meta name="description" content="查看 City Footprint 用户点亮过的城市足迹地图。">
+  <meta name="theme-color" content="#0891b2">
+  <link rel="icon" type="image/webp" href="/favicon.webp">
+  <link rel="stylesheet" href="/vendor/leaflet.css">
+  <link rel="stylesheet" href="/site.css">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="/" aria-label="City Footprint 首页">
+      <img src="/favicon.webp" alt="">
+      <span>City Footprint</span>
+    </a>
+    <nav aria-label="主导航">
+      <a href="/map" aria-current="page">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m9 18-6 3V6l6-3 6 3 6-3v15l-6 3-6-3Z"/><path d="M9 3v15M15 6v15"/></svg>
+        <span>行程地图</span>
+      </a>
+      <a href="/user">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 21a7 7 0 0 1 14 0"/></svg>
+        <span>用户查询</span>
+      </a>
+      <a href="/trip">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h16v11H4z"/><path d="M8 7V4h8v3M8 12h8"/></svg>
+        <span>行程查询</span>
+      </a>
+    </nav>
+  </header>
+
+  <main class="lookup-page">
+    <p class="lookup-kicker">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m9 18-6 3V6l6-3 6 3 6-3v15l-6 3-6-3Z"/><path d="M9 3v15M15 6v15"/></svg>
+      行程地图
+    </p>
+    <h1>点亮过的城市</h1>
+    <p class="lookup-lead">把所有用户的公开足迹拼成一张地图，点亮的城市按用户颜色显示。</p>
+
+    <div class="map-frame" aria-label="行程地图">
+      <div id="footprintMap" class="map-canvas"></div>
+      <div class="map-note">
+        公开行程接口接入后，城市会在这里点亮
+      </div>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-inner">
+      <span>© Qxwk Studio · City Footprint</span>
+      <div class="footer-links">
+        <a href="/map">行程地图</a>
+        <a href="/user">用户查询</a>
+        <a href="/trip">行程查询</a>
+      </div>
+    </div>
+  </footer>
+  <script src="/vendor/leaflet.js"></script>
+  <script>
+    const API_BASE = 'https://api.travel.qxwkstudio.top';
+    const map = L.map('footprintMap', { zoomControl: true, attributionControl: true }).setView([34.5, 104], 4);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 18,
+      attribution: '&copy; OpenStreetMap contributors',
+    }).addTo(map);
+    const layer = L.layerGroup().addTo(map);
+    const note = document.querySelector('.map-note');
+    const geoCache = new Map();
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+    }
+
+    function popupHtml(point) {
+      const people = (point.users || []).map((u) => escapeHtml(u.nickname)).join('、');
+      return '<strong>' + escapeHtml(point.city) + '</strong><br>' +
+        (point.province ? escapeHtml(point.province) + '<br>' : '') +
+        (people ? '点亮：' + people : '暂无用户') +
+        '<br>记录 ' + Number(point.count || 0) + ' 次';
+    }
+
+    async function loadGeo(adcode) {
+      if (!adcode) return null;
+      if (!geoCache.has(adcode)) {
+        geoCache.set(adcode, (async () => {
+          try {
+            const res = await fetch(API_BASE + '/api/geo/' + encodeURIComponent(adcode));
+            if (!res.ok) return null;
+            const geo = await res.json();
+            return geo?.type === 'FeatureCollection' && Array.isArray(geo.features) ? geo : null;
+          } catch { return null; }
+        })());
+      }
+      return geoCache.get(adcode);
+    }
+
+    function dot(point, color) {
+      const marker = L.circleMarker([point.lat, point.lng], {
+        radius: 7, color: '#fff', weight: 1.5, fillColor: color, fillOpacity: .9,
+      });
+      marker.bindPopup(popupHtml(point));
+      marker.addTo(layer);
+    }
+
+    async function drawPoint(point) {
+      const color = point.users?.[0]?.color || '#0891b2';
+      if (!Number.isFinite(Number(point.lat)) || !Number.isFinite(Number(point.lng))) return;
+      const geo = await loadGeo(point.adcode);
+      if (!geo) {
+        dot(point, color);
+        return;
+      }
+      const shape = L.geoJSON(geo, {
+        style: { color, weight: 1, fillColor: color, fillOpacity: .4 },
+      });
+      shape.on('mouseover', () => shape.setStyle({ fillOpacity: .62 }));
+      shape.on('mouseout', () => shape.setStyle({ fillOpacity: .4 }));
+      shape.bindPopup(popupHtml(point));
+      shape.addTo(layer);
+    }
+
+    async function loadMap() {
+      try {
+        const res = await fetch(API_BASE + '/api/map', { headers: { Accept: 'application/json' } });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const data = await res.json();
+        layer.clearLayers();
+        const points = data.cities || [];
+        let cursor = 0;
+        async function worker() {
+          while (cursor < points.length) {
+            const point = points[cursor++];
+            await drawPoint(point).catch(() => {});
+          }
+        }
+        await Promise.all(Array.from({ length: Math.min(6, points.length || 1) }, worker));
+        if (note) {
+          note.textContent = points.length
+            ? '已点亮 ' + (data.total_cities || points.length) + ' 座城市'
+            : '还没有公开行程，点亮第一座城市后会出现在这里';
+        }
+      } catch {
+        if (note) note.textContent = '地图数据暂时无法加载';
+      }
+    }
+    loadMap();
+  </script>
+  <script src="/site.js"></script>
+</body>
+</html>

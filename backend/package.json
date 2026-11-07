@@ -1,8 +1,5 @@
-{
+﻿{
   "name": "qxwk-cityfootprint-backend",
   "private": true,
-  "type": "module",
-  "scripts": {
-    "test": "node --test"
-  }
+  "type": "module"
 }

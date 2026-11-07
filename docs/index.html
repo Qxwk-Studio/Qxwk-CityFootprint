@@ -1,574 +1,150 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<!-- 全站外发请求一律不带 Referer（隐私考虑）。
-     最早是为了绕过 DataV 边界接口的来源检查，但现在边界数据已改由 Worker 服务端代理
-     （backend/src/worker.js 的 /api/geo/:adcode），DataV 不再直接面对浏览器，
-     这条 meta 对那个接口已经不起作用了；保留它的是高德瓦片等其余第三方请求 ——
-     真机 Referer 行为本地验证不了，没必要为了「注释对不上」去删一行能用的隐私设置 -->
-<meta name="referrer" content="no-referrer">
-<title>City Footprint - 青翔未阔工作室</title>
-<meta name="description" content="City Footprint 城市足迹地图 —— 记录每个人去过的城市，点亮属于自己的颜色，与朋友们一起拼出一张五彩斑斓的足迹大地图。">
-<link rel="icon" type="image/webp" href="/favicon.webp">
-<!-- 首屏就要连的两个跨域域名：后端接口（/api/cities、/api/geo）与高德瓦片。
-     提前握手 / 解析 DNS，省掉关键路径上的往返。瓦片有 1~4 四个子域，这里只预解析其中一个
-     —— TLS 握手省不了，先省 DNS 的解析时间即可 -->
-<link rel="preconnect" href="https://api.travel.qxwkstudio.top" crossorigin>
-<link rel="dns-prefetch" href="https://webrd01.is.autonavi.com">
-<link rel="stylesheet" href="vendor/leaflet.css">
-<link rel="stylesheet" href="/style.css">
-<style>
-
-  /* 地图页专有：横向锁定，避免地图/弹窗撑出横向滚动条。
-     其余基础样式（含导航栏）见 style.css，本页不再另调间距 */
-  body { overflow-x: hidden; }
-
-  /* 弹窗打开时锁页面滚动用的是 style.css 里的 body.no-scroll，这里由 JS 加/去（见 openQuickModal 与 close 事件） */
-
-  /* 右下角：汉堡菜单按钮 */
-  .fab-btn {
-    position: fixed;
-    right: 16px;
-    bottom: 16px;
-    z-index: 1000;
-    width: 52px;
-    height: 52px;
-    border-radius: var(--radius-full);
-    background: linear-gradient(135deg, var(--primary), var(--secondary));
-    color: #fff;
-    border: none;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: var(--shadow-md);
-    transition: all var(--transition);
-    font-family: inherit;
-  }
-  .fab-btn:hover, .fab-btn.active {
-    background: linear-gradient(135deg, var(--primary-hover), #0f766e);
-    transform: translateY(-1px);
-    box-shadow: var(--shadow-lg);
-  }
-
-  /* 汉堡菜单独立按钮（从汉堡位置向上散开） */
-  .fab-item {
-    position: fixed;
-    right: 16px;
-    z-index: 1000;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 18px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-pill);
-    color: var(--text-primary);
-    text-decoration: none;
-    font-size: 0.88rem;
-    font-weight: 500;
-    box-shadow: var(--shadow-md);
-    white-space: nowrap;
-    opacity: 0;
-    visibility: hidden;
-    transform: translateY(8px);
-    transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
-  }
-  .fab-item:hover { background: var(--primary-light); color: var(--primary); }
-  .fab-item.open {
-    opacity: 1;
-    visibility: visible;
-    transform: translateY(0);
-  }
-
-  .btn-nav {
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-    padding: 9px 20px;
-    background: linear-gradient(135deg, var(--primary), var(--secondary));
-    color: #fff;
-    text-decoration: none;
-    border-radius: var(--radius-pill);
-    font-size: 0.88rem;
-    font-weight: 600;
-    transition: all var(--transition);
-    white-space: nowrap;
-    flex-shrink: 0;
-    font-family: inherit;
-  }
-  .btn-nav:hover {
-    background: linear-gradient(135deg, var(--primary-hover), #0f766e);
-    transform: scale(1.02);
-    box-shadow: var(--shadow-md);
-  }
-
-  /* ========= Map ========= */
-  #map { flex: 1; background: #eef2f6; z-index: 1; }
-
-  /* ========= 图例 ========= */
-  .legend {
-    position: fixed;
-    top: calc(var(--nav-height) + 16px);
-    left: 16px;
-    right: auto;
-    z-index: 1000;
-    background: rgba(255, 255, 255, 0.92);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
-    box-shadow: var(--shadow-md);
-    padding: 14px 18px;
-    max-height: calc(100vh - var(--nav-height) - 48px);
-    overflow-y: auto;
-    min-width: 170px;
-  }
-  /* 图例标题行已改成 <button>（键盘才够得着，见 index.js 的 syncLegendA11y），
-     所以要把 UA 的按钮外观抹掉、撑满整行；标题用 span 而非 h4 —— button 里只能放 phrasing content */
-  .legend-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-    background: none;
-    border: none;
-    font-family: inherit;
-    cursor: pointer;
-    user-select: none;
-    margin-bottom: 6px;
-    padding: 2px;
-  }
-  .legend-title {
-    font-size: 0.72rem;
-    font-weight: 600;
-    color: var(--text-tertiary);
-    text-transform: uppercase;
-    letter-spacing: 0.6px;
-  }
-  .legend-toggle {
-    color: var(--text-tertiary);
-    transition: transform 0.2s ease;
-    flex-shrink: 0;
-  }
-  .legend.collapsed .legend-toggle { transform: rotate(-90deg); }
-  .legend.collapsed #legendList { display: none; }
-  .legend.collapsed {
-    padding: 6px 10px;
-    min-width: auto;
-    max-height: none;
-    overflow: hidden;
-  }
-  .legend.collapsed .legend-header { margin-bottom: 0; }
-  .legend .user {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 0.86rem;
-    color: var(--text-secondary);
-    /* 纵向只留 2px：一行一个人是纯信息列表，5px 上下留白叠起来会把图例拉得很长 */
-    padding: 2px 4px;
-    cursor: pointer;
-    user-select: none;
-    border-radius: var(--radius-sm);
-    transition: color var(--transition);
-  }
-  .legend .user:hover { color: var(--text-primary); }
-  .legend .dot {
-    width: 12px; height: 12px; border-radius: var(--radius-full); flex-shrink: 0;
-    box-shadow: 0 0 0 2px #fff, 0 1px 3px rgba(0, 0, 0, 0.2);
-  }
-  .legend .user-check {
-    width: 14px;
-    height: 14px;
-    margin: 0;
-    accent-color: var(--primary);
-    cursor: pointer;
-    flex-shrink: 0;
-  }
-  .legend .user-all {
-    border-bottom: 1px solid var(--border);
-    margin-bottom: 6px;
-    padding-bottom: 6px;
-  }
-  .legend .empty { font-size: 0.8rem; color: var(--text-tertiary); text-align: center; padding: 8px 0; }
-
-  /* 管理员视图提示（地图右上角）：外观（琥珀渐变胶囊）见 style.css 的 .admin-view-note，
-     这里只补本页特有的定位与浮起阴影；短徽章不换行 */
-  .admin-view-note {
-    position: fixed;
-    top: calc(var(--nav-height) + 12px);
-    right: 16px;
-    z-index: 1200;
-    box-shadow: var(--shadow-md);
-    white-space: nowrap;
-  }
-
-  /* ========= 加载 / 空态 ========= */
-  .overlay-msg {
-    position: fixed;
-    inset: 0;
-    z-index: 1500;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 14px;
-    background: var(--bg);
-    color: var(--text-tertiary);
-    font-size: 0.9rem;
-    transition: opacity .4s ease;
-  }
-  .spinner {
-    width: 28px; height: 28px; border-radius: var(--radius-full);
-    border: 3px solid var(--border);
-    border-top-color: var(--primary);
-    animation: spin .8s linear infinite;
-  }
-
-  /* ========= Leaflet 弹窗美化 ========= */
-  .leaflet-container { font-family: var(--font-sans); }
-  .leaflet-popup-content-wrapper { border-radius: var(--radius-md); box-shadow: var(--shadow-lg); }
-  .leaflet-popup-content {
-    /* 弹性：内容少时自适应，最多 360px，且不超过屏幕宽度 */
-    max-width: min(360px, calc(100vw - 48px));
-    margin: 14px 18px;
-  }
-  .popup-title { font-size: 1rem; font-weight: 700; margin-bottom: 8px; color: var(--text-primary); }
-  /* 每行一个人：名字 + 日期 + 备注同一行，备注占剩余宽度、**只占一行**，超长省略。
-     备注最长 100 字，若让它在这里折行，一行行程会撑成很窄很高的一列（弹窗也跟着长高），
-     所以这里跟足迹管理页的 .visit-note 同一口径：一行 + 省略号，要看全文去「足迹管理」点开这条 */
-  .popup-person {
-    display: flex;
-    align-items: baseline;
-    gap: 8px;
-    padding: 3px 0;
-    font-size: 0.84rem;
-  }
-  .popup-person .name { font-weight: 600; flex-shrink: 0; }
-  .popup-person .meta { color: var(--text-tertiary); font-size: 0.78rem; flex-shrink: 0; }
-  .popup-person .note {
-    flex: 1;
-    min-width: 0;               /* flex 子项默认 min-width:auto，不置 0 的话省略号不生效 */
-    color: var(--text-secondary);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .popup-more {
-    margin-top: 6px;
-    padding-top: 6px;
-    border-top: 1px solid var(--border);
-    font-size: 0.78rem;
-    color: var(--text-tertiary);
-    text-align: center;
-  }
-
-  /* ========= Toast 提示（顶部滑入，与其他项目统一） ========= */
-  .toast {
-    position: fixed;
-    top: -60px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: var(--surface);
-    color: var(--text-primary);
-    border: 1px solid var(--border);
-    padding: 12px 24px;
-    border-radius: var(--radius-sm);
-    font-size: 0.9rem;
-    font-weight: 500;
-    z-index: 3000;
-    opacity: 0;
-    pointer-events: none;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    transition: top 0.35s ease, opacity 0.35s ease;
-  }
-  .toast svg { color: var(--primary); flex-shrink: 0; }
-  .toast.show { top: 80px; opacity: 1; }
-
-  /* ========= 添加行程弹窗 =========
-     用原生 <dialog>：遮罩、Esc 关闭、焦点陷阱、关闭后把焦点还给触发的按钮都由浏览器给。
-     原先是一个 div + .show class 手搓的模态 —— 背景没锁、Tab 能一路穿到后面的地图上，
-     也没有焦点还原。这里只管它的外观，居中靠 dialog 默认的 inset:0 + margin:auto */
-  .modal {
-    width: calc(100% - 32px);
-    max-width: 380px;
-    /* 弹窗内容比视口高时必须能滚：上限扣掉上下留白（16px × 2），
-       让弹窗自己出滚动条而不是撑破视口 —— 手机横屏 / 键盘弹出时底部那颗「添加行程」要够得着 */
-    max-height: calc(100vh - 32px);
-    overflow-y: auto;
-    margin: auto;
-    background: var(--surface);
-    color: var(--text-primary);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-lg);
-    padding: 20px 20px 16px;
-  }
-  .modal::backdrop { background: rgba(0, 0, 0, 0.45); }
-  .modal-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 14px;
-  }
-  .modal-header h3 { font-size: 1.05rem; font-weight: 700; }
-  /* 圆底关闭按钮的外观在 style.css（.modal-close / .dialog-close 共用一套） */
-  .modal-field { margin-bottom: 14px; }
-  .modal-info {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 12px;
-    background: var(--primary-light);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    font-size: 0.92rem;
-    font-weight: 600;
-    color: var(--text-primary);
-  }
-  .modal-info + .modal-info { margin-top: 8px; }
-  .modal-info svg { color: var(--primary); flex-shrink: 0; }
-  .modal-info .info-date { color: var(--text-secondary); font-weight: 500; margin-left: auto; }
-  /* 城市这一格是国/省/市三级下拉（.city-selects 见 style.css），右侧再配定位按钮 */
-  /* 年 / 月并排 */
-  .modal-date { display: flex; gap: 8px; }
-  .modal-date .modal-input { flex: 1; min-width: 0; }
-  .modal-relocate {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 40px;
-    padding: 0 10px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    background: var(--bg);
-    color: var(--text-secondary);
-    cursor: pointer;
-    transition: all var(--transition);
-  }
-  .modal-relocate:hover { color: var(--primary); border-color: var(--primary); }
-  /* 设置项（记不清了 / 不公开行程）用滑动开关 .switch-row，见 style.css；
-     输入框外观（1.5px 边框 + 聚焦光圈）同样在 style.css，与 visits/account 表单同一套 */
-
-  .modal-actions { display: flex; gap: 10px; margin-top: 18px; }
-  .modal-btn {
-    flex: 1;
-    padding: 10px 0;
-    border: none;
-    border-radius: var(--radius-pill);
-    font-size: 0.9rem;
-    font-weight: 600;
-    cursor: pointer;
-    font-family: inherit;
-    transition: all var(--transition);
-  }
-  /* 悬停动画对齐 style.css 的 .btn-primary / .btn-ghost：确定（主按钮）上浮 1px + 投影，
-     取消（次按钮）只变底色。以前这两颗在弹窗里另写了一套（确定只换渐变、取消只变边框色），
-     跟全站主按钮（登录、保存修改等）对不上 —— 别再往这里加独立的 hover 效果 */
-  .modal-btn-primary { background: linear-gradient(135deg, var(--primary), var(--secondary)); color: #fff; }
-  .modal-btn-primary:hover { background: linear-gradient(135deg, var(--primary-hover), #0f766e); box-shadow: var(--shadow-md); transform: translateY(-1px); }
-  .modal-btn-cancel { background: var(--bg); color: var(--text-secondary); border: 1px solid var(--border); }
-  .modal-btn-cancel:hover { background: var(--border); color: var(--text-primary); }
-  .modal-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-  /* 弹窗提示文案 .msg / .msg.error 见 style.css */
-
-  /* ========= 我的位置蓝点（定位成功后标在地图上） ========= */
-  .my-loc-wrap { background: none; border: none; }
-  .my-loc-dot {
-    width: 20px;
-    height: 20px;
-    box-sizing: border-box;
-    border-radius: var(--radius-full);
-    background: #3b82f6;
-    border: 3px solid #fff;
-    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.45), 0 2px 8px rgba(0, 0, 0, 0.3);
-  }
-
-  /* ========= Responsive =========
-     导航/页脚的手机端缩进见 style.css，这里只写地图页自己的浮动组件 */
-  @media (max-width: 640px) {
-    .btn-nav { padding: 8px 16px; font-size: 0.84rem; }
-    /* 浮动组件：手机上靠边更紧凑 */
-    .legend { top: calc(var(--nav-height) + 10px); left: 10px; padding: 10px 12px; min-width: 150px; }
-    .legend.collapsed { padding: 5px 8px; }
-    .admin-view-note { right: 10px; top: calc(var(--nav-height) + 8px); padding: 5px 12px; font-size: 0.74rem; }
-    .fab-btn { right: 12px; bottom: 12px; width: 48px; height: 48px; }
-    .fab-item { right: 12px; padding: 8px 14px; font-size: 0.84rem; }
-    .leaflet-popup-content { max-width: min(300px, calc(100vw - 24px)); margin: 12px 14px; }
-    .modal { padding: 18px 16px 14px; }
-    .modal-actions { margin-top: 16px; }
-    .toast { padding: 10px 16px; font-size: 0.85rem; white-space: nowrap; }
-  }
-</style>
-<meta name="color-scheme" content="light dark">
-<!-- 主题切换：见 theme.js。必须留在 <head>、body 渲染之前，否则会闪色 -->
-<script src="theme.js"></script>
-<style>
-
-  /* ===== 黑夜模式：地图页元素覆盖 =====
-     颜色一律走 token（这里要的就是 style.css 深色档那几个值），别再写死 hex —— 写死就成了快照，
-     改主题时不会跟着走。rgba(15,23,42,…) 那几个是半透明、换起来要 color-mix，没动 */
-
-  :root[data-theme="dark"] #map { background:var(--bg); }
-  :root[data-theme="dark"] .legend { background:rgba(15,23,42,0.92); }
-  :root[data-theme="dark"] .legend .dot { box-shadow:0 0 0 2px var(--bg), 0 1px 3px rgba(0,0,0,0.5); }
-  /* 汉堡菜单项的悬停态：共享样式里写的是「半透明蓝底 + color: --primary」，而 --primary 在暗色下
-     没有被覆盖（仍是深蓝 #2563eb）——深蓝字压在深色地图上几乎看不见。暗色下改成实心、浅一档的
-     底 + 白字（亮色下「底变蓝、字变蓝」的意图保留，只是换成暗色下读得清的配色） */
-  :root[data-theme="dark"] .fab-item:hover { background:var(--border); color:#fff; }
-  /* Leaflet 控件深色 */
-  :root[data-theme="dark"] .leaflet-bar a { background:var(--surface); color:var(--text-primary); border-color:var(--border); }
-  :root[data-theme="dark"] .leaflet-bar a:hover { background:var(--bg); }
-  :root[data-theme="dark"] .leaflet-control-attribution { background:rgba(15,23,42,0.8); color:var(--text-secondary); }
-  :root[data-theme="dark"] .leaflet-popup-content-wrapper { background:var(--surface); color:var(--text-primary); }
-  :root[data-theme="dark"] .leaflet-popup-tip { background:var(--surface); }
-  /* 深色模式：瓦片暗化滤镜（只作用于瓦片，不影响标记/控件） */
-  :root[data-theme="dark"] .leaflet-tile {
-    filter: brightness(0.55);
-  }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>City Footprint · 把走过的城市点亮成地图</title>
+  <meta name="description" content="City Footprint 足迹：离线记录去过的城市、行程与打卡，把每一段旅程点亮成自己的地图。">
+  <meta name="theme-color" content="#0891b2">
+  <link rel="icon" type="image/webp" href="/favicon.webp">
+  <link rel="stylesheet" href="/site.css">
 </head>
 <body>
-
-<div class="overlay-msg" id="loading"><div class="spinner"></div><div>正在绘制足迹地图…</div></div>
-
-<header class="navbar">
-  <div class="navbar-inner">
-    <!-- 地图页就是主页本身，logo 点了没有可去之处：做成不带 href 的 <a>（无 href 的 a 不响应点击跳转），
-         也就替代了原先 onclick="return false" 那种内联处理器（CSP 会拦） -->
-    <a class="navbar-brand">
-      <img class="brand-logo" src="/favicon.webp" alt="City Footprint">
-      <span class="brand-text"><b>City Footprint</b><span>我们走过的城市</span></span>
+  <header class="site-header">
+    <a class="brand" href="/" aria-label="City Footprint 首页">
+      <img src="/favicon.webp" alt="">
+      <span>City Footprint</span>
     </a>
-    <div style="display:flex;align-items:center;gap:10px;">
-      <button class="theme-toggle" id="themeToggle" type="button" aria-label="切换主题" title="切换主题">
-        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
-        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-      </button>
+    <nav aria-label="主导航">
+      <a href="/map">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m9 18-6 3V6l6-3 6 3 6-3v15l-6 3-6-3Z"/><path d="M9 3v15M15 6v15"/></svg>
+        <span>行程地图</span>
+      </a>
+      <a href="/user">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 21a7 7 0 0 1 14 0"/></svg>
+        <span>用户查询</span>
+      </a>
+      <a href="/trip">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h16v11H4z"/><path d="M8 7V4h8v3M8 12h8"/></svg>
+        <span>行程查询</span>
+      </a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="hero-inner">
+        <p class="eyebrow">CITY FOOTPRINT · 足迹</p>
+        <h1>把走过的城市<br>点亮成<span>自己的地图</span></h1>
+        <p class="intro">
+          记录去过的城市、每一段行程和每次打卡。离线保存在本机，
+          用一张地图回看自己的足迹。
+        </p>
+        <div class="hero-actions">
+          <a class="btn-primary" href="https://github.com/Qxwk-Studio/Qxwk-CityFootprint/releases/download/v2.1.4/CityFootprint-2.1.4.apk">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></svg>
+            下载 Android 版
+          </a>
+          <a class="btn-ghost" href="#download">查看 2.1.4 更新</a>
+        </div>
+        <p class="hero-note">Android 7.0+ · arm64-v8a · 24.6 MB</p>
+      </div>
+    </section>
+
+    <section class="section" id="download">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="kicker">DOWNLOAD</p>
+            <h2>下载 City Footprint</h2>
+          </div>
+          <p>离线单机应用，数据保存在本机；安装前请确认系统版本与架构。</p>
+        </div>
+
+        <div class="download-grid">
+          <article class="download-card primary">
+            <h3>
+              <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M10 18.5h4"/></svg>
+              Android
+            </h3>
+            <p>当前版本 2.1.4，支持 Android 7.0 及以上 arm64-v8a 设备。</p>
+            <div class="meta">
+              <span class="tag">v2.1.4</span>
+              <span class="tag">24.6 MB</span>
+              <span class="tag">离线可用</span>
+            </div>
+            <a href="https://github.com/Qxwk-Studio/Qxwk-CityFootprint/releases/download/v2.1.4/CityFootprint-2.1.4.apk">
+              下载 APK
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            </a>
+          </article>
+
+          <aside class="download-card">
+            <h3>2.1.4 更新内容</h3>
+            <ul class="release-notes">
+              <li>权限管理、存储空间与数据导出</li>
+              <li>中英文界面与城市、成就英文</li>
+              <li>底图中文地名覆盖全部城市</li>
+              <li>修复地图渲染、清理照片与语言切换问题</li>
+            </ul>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <section class="section low">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="kicker">FEATURES</p>
+            <h2>轻量、离线、只属于你的足迹</h2>
+          </div>
+        </div>
+        <div class="feature-grid">
+          <article class="feature">
+            <div class="icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m9 18-6 3V6l6-3 6 3 6-3v15l-6 3-6-3Z"/><path d="M9 3v15M15 6v15"/></svg>
+            </div>
+            <h3>城市点亮</h3>
+            <p>去过的城市在地图上点亮，颜色跟着你的徽章色走。</p>
+          </article>
+          <article class="feature">
+            <div class="icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 19h16M6 16V8M12 16V4M18 16v-6"/></svg>
+            </div>
+            <h3>行程时间线</h3>
+            <p>按城市记录活动、交通、花费与照片，回看每一段路。</p>
+          </article>
+          <article class="feature">
+            <div class="icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m12 3 2.7 5.5 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1L3.2 9.4l6.1-.9L12 3Z"/></svg>
+            </div>
+            <h3>88 条成就</h3>
+            <p>城市、行程、主题路线与极限挑战，记录会自动判定。</p>
+          </article>
+          <article class="feature">
+            <div class="icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></svg>
+            </div>
+            <h3>数据导出</h3>
+            <p>行程、打卡和照片可导出 ZIP，保存到系统下载目录。</p>
+          </article>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-inner">
+      <span>© Qxwk Studio · City Footprint</span>
+      <div class="footer-links">
+        <a href="/map">行程地图</a>
+        <a href="/user">用户查询</a>
+        <a href="/trip">行程查询</a>
+      </div>
     </div>
-  </div>
-</header>
+  </footer>
 
-<div class="legend collapsed" id="legend">
-  <!-- 点标题收起/展开：用 <button>，键盘才够得着（原先是个挂 data-action 的 div，只有鼠标能点），
-       aria-expanded 由 index.js 的 syncLegendA11y 跟着 collapsed class 一起改 -->
-  <button type="button" class="legend-header" data-action="toggle-legend" aria-expanded="false" aria-controls="legendList" title="点击收起/展开">
-    <span class="legend-title">谁的足迹</span>
-    <svg class="legend-toggle" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-  </button>
-  <div id="legendList"><div class="empty">正在加载…</div></div>
-</div>
-
-<button class="fab-btn" id="fabBtn" data-action="toggle-fab" aria-label="菜单">
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
-</button>
-
-<!-- 站内导航一律写裸路径（不带 .html）：GitHub Pages 对 /account 会自动回落到 account.html，
-     地址栏就不会露出后缀。改链接时别把 .html 加回来。 -->
-<a class="fab-item" href="/account" style="bottom:76px">
-  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-  个人中心
-</a>
-<a class="fab-item" href="/visits" style="bottom:132px">
-  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
-  足迹管理
-</a>
-<a class="fab-item" href="#" data-action="open-quick-add" style="bottom:188px">
-  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-  添加行程
-</a>
-<a class="fab-item" href="/news" style="bottom:244px">
-  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-  公告与更新
-</a>
-<a class="fab-item" href="/stats" style="bottom:300px">
-  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-  全站统计
-</a>
-<!-- 后续新功能在此添加按钮 -->
-
-<div id="adminViewNote" class="admin-view-note" style="display:none;">👑 管理员视图</div>
-
-<!-- 添加行程弹窗 —— 全站唯一的「添加」入口。
-     原先主页的「快捷添加」（只有定位 + 本月 + 备注）与足迹管理页的「创建行程」表单（城市联想 +
-     年月 + 记不清了 + 备注 + 私密）是两套东西，现已合并到这里；visits.html 那边只剩编辑。
-     定位（右侧准心按钮）只是帮忙把城市填成最近的一座，失败也不影响手输。 -->
-<dialog class="modal" id="quickModal" aria-label="添加行程">
-  <div class="modal-header">
-    <h3>添加行程</h3>
-    <button type="button" class="modal-close" data-action="close-quick-modal" aria-label="关闭">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-    </button>
-  </div>
-  <div class="modal-field">
-    <!-- 这一格是「国 · 省 · 市」三个下拉 + 定位按钮的组合，没有单个能当 for 目标，
-         所以用 role=group + aria-labelledby 整组关联（出行方式那组与足迹管理页的编辑弹窗同理） -->
-    <label id="quickCityLabel">城市（国 · 省 · 市）</label>
-    <div class="city-selects" id="quickCitySelects" role="group" aria-labelledby="quickCityLabel">
-      <select id="quickCountry" data-city="country" aria-label="国家"></select>
-      <select id="quickProvince" data-city="province" aria-label="省份"></select>
-      <select id="quickCity" data-city="city" aria-label="城市"></select>
-      <button type="button" class="modal-relocate" data-action="locate-city" aria-label="定位到最近的城市" title="定位到最近的城市">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/></svg>
-      </button>
-    </div>
-  </div>
-  <div class="modal-field">
-    <label for="quickYear">时间</label>
-    <div class="modal-date">
-      <select class="modal-input" id="quickYear"></select>
-      <select class="modal-input" id="quickMonth" aria-label="月份"></select>
-    </div>
-    <label class="switch-row" style="margin-top:8px;">
-      <span>记不清了</span>
-      <span class="switch"><input type="checkbox" id="quickForgot" data-action="toggle-quick-date"><span class="switch-track"></span></span>
-    </label>
-  </div>
-  <div class="modal-field">
-    <label id="quickTransportLabel">出行方式（可多选）</label>
-    <div class="transport-chips" id="quickTransport" role="group" aria-labelledby="quickTransportLabel"></div>
-  </div>
-  <div class="modal-field">
-    <div class="field-head">
-      <label for="quickNote">备注（可选）</label>
-      <span class="note-count" id="quickNoteCount">0/100</span>
-    </div>
-    <input class="modal-input" id="quickNote" maxlength="100" placeholder="一句话留下回忆…" autocomplete="off" data-action="update-quick-note-count">
-  </div>
-  <div class="modal-field">
-    <label class="switch-row">
-      <span>不公开行程（仅自己可见）</span>
-      <span class="switch"><input type="checkbox" id="quickPrivate"><span class="switch-track"></span></span>
-    </label>
-  </div>
-  <div class="modal-actions">
-    <button type="button" class="modal-btn modal-btn-cancel" data-action="close-quick-modal">取消</button>
-    <button type="button" class="modal-btn modal-btn-primary" id="quickSubmit" data-action="submit-quick-add">添加行程</button>
-  </div>
-  <div class="msg" id="quickMsg"></div>
-</dialog>
-
-<!-- Toast 提示 -->
-<div class="toast" id="toast">
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
-  <span id="toastText"></span>
-</div>
-
-<div id="map"></div>
-
-<!-- 五个脚本都加 defer：并行下载、按这里的先后顺序执行（依赖顺序不变），
-     慢网络上不再是一个下完才开始下一个。它们本来就放在 body 末尾、不阻塞首屏解析，
-     这一改是把约 190KB 的下载从串行变成并行 -->
-<script defer src="vendor/leaflet.js"></script>
-<script defer src="cities.js"></script>
-<script defer src="city-codes.js"></script>
-<script defer src="app.js"></script>
-<script defer src="index.js"></script>
+  <script src="/site.js"></script>
 </body>
 </html>
