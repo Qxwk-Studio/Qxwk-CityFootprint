@@ -716,3 +716,52 @@ button, input { font: inherit; }
   color: var(--brand);
   font-weight: 700;
 }
+
+/* ── map popup（沿用原足迹地图） ─────────────────────── */
+.leaflet-popup-content {
+  max-width: min(360px, calc(100vw - 48px));
+  margin: 14px 18px;
+  font-family: inherit;
+}
+
+.popup-title {
+  margin-bottom: 8px;
+  color: var(--ink);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.popup-person {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 0;
+  font-size: .84rem;
+}
+
+.popup-person .dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  flex-shrink: 0;
+  border-radius: 50%;
+}
+
+.popup-person .name {
+  flex-shrink: 0;
+  font-weight: 600;
+}
+
+.popup-person .meta {
+  flex-shrink: 0;
+  color: var(--muted);
+  font-size: .78rem;
+}
+
+.popup-more {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: .78rem;
+}

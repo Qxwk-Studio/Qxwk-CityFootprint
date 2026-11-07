@@ -47,11 +47,13 @@
   <script src="/vendor/leaflet.js"></script>
   <script>
     const API_BASE = 'https://api.travel.qxwkstudio.top';
-    const map = L.map('footprintMap', { zoomControl: false, attributionControl: true }).setView([34.5, 104], 4);
+    const map = L.map('footprintMap', { zoomControl: false, preferCanvas: true }).setView([35.5, 105], 4);
     L.control.zoom({ position: 'bottomright' }).addTo(map);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    L.tileLayer('https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}', {
+      subdomains: ['1', '2', '3', '4'],
       maxZoom: 18,
-      attribution: '&copy; OpenStreetMap contributors',
+      updateWhenIdle: false,
+      attribution: '&copy; <a href="https://www.amap.com/" target="_blank" rel="noopener">高德地图</a>',
     }).addTo(map);
     const layer = L.layerGroup().addTo(map);
     const note = document.querySelector('.map-note');
@@ -66,12 +68,35 @@
         .replaceAll("'", '&#039;');
     }
 
+    function safeColor(value) {
+      return /^#[0-9a-f]{6}$/i.test(String(value || '')) ? value : '#0891b2';
+    }
+
+    function formatDate(at, precision) {
+      if (!at || Number(precision) === 3) return '时间不详';
+      const d = new Date(Number(at));
+      if (!Number.isFinite(d.getTime())) return '时间不详';
+      const y = d.getUTCFullYear();
+      const m = String(d.getUTCMonth() + 1).padStart(2, '0');
+      const day = String(d.getUTCDate()).padStart(2, '0');
+      if (Number(precision) === 0) return String(y);
+      if (Number(precision) === 1) return y + '-' + m;
+      return y + '-' + m + '-' + day;
+    }
+
     function popupHtml(point) {
-      const people = (point.users || []).map((u) => escapeHtml(u.nickname)).join('、');
-      return '<strong>' + escapeHtml(point.city) + '</strong><br>' +
-        (point.province ? escapeHtml(point.province) + '<br>' : '') +
-        (people ? '点亮：' + people : '暂无用户') +
-        '<br>记录 ' + Number(point.count || 0) + ' 次';
+      let html = '<div class="popup-title">' + escapeHtml(point.city) + '</div>';
+      const latest = point.latest || [];
+      if (!latest.length) return html + '<div class="popup-more">暂无记录</div>';
+      html += latest.map((row) =>
+        '<div class="popup-person">' +
+          '<span class="dot" style="background:' + safeColor(row.color) + '"></span>' +
+          '<span class="meta">' + escapeHtml(formatDate(row.at, row.precision)) + '</span>' +
+          '<span class="name" style="color:' + safeColor(row.color) + '">' + escapeHtml(row.nickname) + '</span>' +
+        '</div>'
+      ).join('');
+      if (Number(point.count || 0) > 10) html += '<div class="popup-more">仅显示最近 10 条</div>';
+      return html;
     }
 
     async function loadGeo(adcode) {
@@ -98,7 +123,7 @@
     }
 
     async function drawPoint(point) {
-      const color = point.users?.[0]?.color || '#0891b2';
+      const color = point.color || point.latest?.[0]?.color || point.users?.[0]?.color || '#0891b2';
       if (!Number.isFinite(Number(point.lat)) || !Number.isFinite(Number(point.lng))) return;
       const geo = await loadGeo(point.adcode);
       if (!geo) {

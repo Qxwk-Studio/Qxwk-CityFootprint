@@ -187,13 +187,15 @@ async function handlePublicGeo(request, env, adcode) {
 async function handlePublicMap(request, env) {
   if (request.method !== 'GET') return fail(405, 'method_not_allowed', '仅支持 GET');
   const users = await env.DB.prepare('SELECT id, passport_uuid, nickname, color FROM users').all();
-  const trips = await env.DB.prepare('SELECT user_id, timeline FROM trips WHERE deleted_at IS NULL').all();
-  const checkins = await env.DB.prepare('SELECT user_id, city_name, province FROM checkins WHERE deleted_at IS NULL').all();
+  const trips = await env.DB.prepare('SELECT user_id, timeline, start_time FROM trips WHERE deleted_at IS NULL').all();
+  const checkins = await env.DB.prepare(
+    'SELECT user_id, city_name, province, checkin_at, date_precision FROM checkins WHERE deleted_at IS NULL',
+  ).all();
 
   const owners = new Map((users.results || []).map((u) => [u.id, u]));
   const cities = new Map();
 
-  function add(cityName, province, userId) {
+  function add(cityName, province, userId, at, precision) {
     const name = String(cityName || '').trim();
     if (!name) return;
     const owner = owners.get(userId);
@@ -209,6 +211,7 @@ async function handlePublicMap(request, env) {
         adcode: Number.isFinite(Number(coord.adcode)) ? Number(coord.adcode) : null,
         count: 0,
         users: new Map(),
+        latest: [],
       };
       cities.set(name, entry);
     }
@@ -218,14 +221,24 @@ async function handlePublicMap(request, env) {
       nickname: owner.nickname,
       color: owner.color,
     });
+    entry.latest.push({
+      nickname: owner.nickname,
+      color: owner.color,
+      at: Number(at) || 0,
+      precision: Number(precision) || 3,
+    });
   }
 
-  for (const c of checkins.results || []) add(c.city_name, c.province, c.user_id);
+  for (const c of checkins.results || []) {
+    add(c.city_name, c.province, c.user_id, c.checkin_at, c.date_precision);
+  }
   for (const trip of trips.results || []) {
     try {
       const timeline = typeof trip.timeline === 'string' ? JSON.parse(trip.timeline) : trip.timeline;
       for (const item of timeline?.items || []) {
-        if (item?.type === 'visit' && item.text) add(item.text, null, trip.user_id);
+        if (item?.type === 'visit' && item.text) {
+          add(item.text, null, trip.user_id, trip.start_time, 2);
+        }
       }
     } catch {
       // 损坏的时间线不影响其他行程
@@ -234,15 +247,20 @@ async function handlePublicMap(request, env) {
 
   const points = [...cities.values()]
     .filter((c) => c.lat !== null && c.lng !== null)
-    .map((c) => ({
-      city: c.city,
-      province: c.province,
-      lat: c.lat,
-      lng: c.lng,
-      adcode: c.adcode,
-      count: c.count,
-      users: [...c.users.values()],
-    }))
+    .map((c) => {
+      const latest = c.latest.sort((a, b) => b.at - a.at).slice(0, 10);
+      return {
+        city: c.city,
+        province: c.province,
+        lat: c.lat,
+        lng: c.lng,
+        adcode: c.adcode,
+        count: c.count,
+        color: latest[0]?.color || '#0891b2',
+        users: [...c.users.values()],
+        latest,
+      };
+    })
     .sort((a, b) => b.count - a.count || a.city.localeCompare(b.city, 'zh-CN'));
 
   return json({
