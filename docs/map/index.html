@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="/vendor/leaflet.css">
   <link rel="stylesheet" href="/site.css">
 </head>
-<body>
+<body class="map-page">
   <header class="site-header">
     <a class="brand" href="/" aria-label="City Footprint 首页">
       <img src="/favicon.webp" alt="">
@@ -32,36 +32,23 @@
     </nav>
   </header>
 
-  <main class="lookup-page">
-    <p class="lookup-kicker">
-      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m9 18-6 3V6l6-3 6 3 6-3v15l-6 3-6-3Z"/><path d="M9 3v15M15 6v15"/></svg>
-      行程地图
-    </p>
-    <h1>点亮过的城市</h1>
-    <p class="lookup-lead">把所有用户的公开足迹拼成一张地图，点亮的城市按用户颜色显示。</p>
-
-    <div class="map-frame" aria-label="行程地图">
-      <div id="footprintMap" class="map-canvas"></div>
-      <div class="map-note">
-        公开行程接口接入后，城市会在这里点亮
-      </div>
+  <main class="map-page-main">
+    <div id="footprintMap" class="map-canvas-full" aria-label="公开行程地图"></div>
+    <div class="map-overlay">
+      <p class="map-kicker">公开足迹</p>
+      <h1>点亮过的城市</h1>
+      <p>按城市轮廓显示公开行程与打卡。</p>
+    </div>
+    <div class="map-note">
+      公开行程接口接入后，城市会在这里点亮
     </div>
   </main>
 
-  <footer class="site-footer">
-    <div class="wrap footer-inner">
-      <span>© Qxwk Studio · City Footprint</span>
-      <div class="footer-links">
-        <a href="/map">行程地图</a>
-        <a href="/user">用户查询</a>
-        <a href="/trip">行程查询</a>
-      </div>
-    </div>
-  </footer>
   <script src="/vendor/leaflet.js"></script>
   <script>
     const API_BASE = 'https://api.travel.qxwkstudio.top';
-    const map = L.map('footprintMap', { zoomControl: true, attributionControl: true }).setView([34.5, 104], 4);
+    const map = L.map('footprintMap', { zoomControl: false, attributionControl: true }).setView([34.5, 104], 4);
+    L.control.zoom({ position: 'bottomright' }).addTo(map);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 18,
       attribution: '&copy; OpenStreetMap contributors',

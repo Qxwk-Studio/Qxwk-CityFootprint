@@ -8,6 +8,20 @@
     if (href === path) a.setAttribute('aria-current', 'page');
   });
 
+  const versionEl = document.getElementById('releaseVersion');
+  const githubLink = document.getElementById('githubDownload');
+  if (versionEl) {
+    fetch(API_BASE + '/api/manifest', { headers: { Accept: 'application/json' } })
+      .then((res) => res.ok ? res.json() : null)
+      .then((data) => {
+        const android = data?.android;
+        if (!android?.version_code) return;
+        versionEl.textContent = 'v' + android.version_name;
+        if (githubLink && android.download_url) githubLink.href = android.download_url;
+      })
+      .catch(() => {});
+  }
+
   const form = document.querySelector('[data-lookup]');
   if (!form) return;
 

@@ -551,3 +551,168 @@ button, input { font: inherit; }
   .input-row button { width: 100%; }
   .lookup-page { padding-top: 36px; }
 }
+
+/* ── fullscreen map ───────────────────────────────────── */
+.map-page { overflow: hidden; }
+
+.map-page-main {
+  position: relative;
+  height: calc(100svh - 68px);
+  min-height: 420px;
+}
+
+.map-canvas-full {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.map-overlay {
+  position: absolute;
+  z-index: 500;
+  top: 20px;
+  left: 20px;
+  max-width: min(380px, calc(100% - 40px));
+  padding: 18px 20px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--surface) 93%, transparent);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(10px);
+}
+
+.map-kicker {
+  margin: 0 0 4px;
+  color: var(--brand);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .12em;
+}
+
+.map-overlay h1 {
+  margin: 0;
+  font-size: clamp(22px, 3vw, 30px);
+  letter-spacing: -.02em;
+}
+
+.map-overlay p:last-child {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+@media (max-width: 620px) {
+  .map-overlay { top: 12px; left: 12px; padding: 14px 16px; }
+  .map-note { left: 12px; bottom: 12px; }
+}
+
+.hero-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.08fr) minmax(320px, .92fr);
+  gap: clamp(32px, 6vw, 72px);
+  align-items: center;
+}
+
+.hero-copy { min-width: 0; }
+
+.hero h1 {
+  font-family: "Noto Serif SC", "Songti SC", "STSong", serif;
+  font-weight: 800;
+}
+
+.hero-art {
+  display: flex;
+  justify-content: center;
+  perspective: 1200px;
+}
+
+.footprint-card {
+  width: min(100%, 430px);
+  color: #123231;
+  background: #f7f5ee;
+  border: 1px solid rgba(255, 255, 255, .2);
+  border-radius: 16px;
+  padding: 18px 18px 14px;
+  box-shadow: 0 28px 70px rgba(0, 0, 0, .32);
+  transform: rotate(1.2deg);
+}
+
+.footprint-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2px 8px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  color: #43615f;
+}
+
+.footprint-year {
+  color: #0f766e;
+  font-variant-numeric: tabular-nums;
+}
+
+.footprint-map {
+  display: block;
+  width: 100%;
+  height: auto;
+  color: #0f766e;
+}
+
+.footprint-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  padding: 12px 2px 2px;
+  border-top: 1px solid #dfe5de;
+}
+
+.footprint-stats div {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.footprint-stats strong {
+  font-size: 22px;
+  font-variant-numeric: tabular-nums;
+}
+
+.footprint-stats span {
+  color: #58716f;
+  font-size: 11px;
+}
+
+@media (max-width: 900px) {
+  .hero-grid { grid-template-columns: 1fr; }
+  .hero-art { order: -1; }
+  .footprint-card { max-width: 380px; }
+}
+
+.download-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.download-card .btn-download {
+  min-width: 132px;
+  justify-content: center;
+}
+
+.download-card .btn-download.secondary {
+  background: transparent;
+  color: var(--brand);
+  border: 1px solid color-mix(in srgb, var(--brand) 45%, var(--line));
+}
+
+.download-card .btn-download.secondary:hover {
+  background: var(--brand-soft);
+}
+
+#releaseVersion {
+  margin-left: 6px;
+  color: var(--brand);
+  font-weight: 700;
+}

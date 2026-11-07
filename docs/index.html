@@ -34,20 +34,67 @@
   <main>
     <section class="hero">
       <div class="hero-inner">
-        <p class="eyebrow">CITY FOOTPRINT · 足迹</p>
-        <h1>把走过的城市<br>点亮成<span>自己的地图</span></h1>
-        <p class="intro">
-          记录去过的城市、每一段行程和每次打卡。离线保存在本机，
-          用一张地图回看自己的足迹。
-        </p>
-        <div class="hero-actions">
-          <a class="btn-primary" href="https://github.com/Qxwk-Studio/Qxwk-CityFootprint/releases/download/v2.1.4/CityFootprint-2.1.4.apk">
-            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></svg>
-            下载 Android 版
-          </a>
-          <a class="btn-ghost" href="#download">查看 2.1.4 更新</a>
+        <div class="hero-grid">
+          <div class="hero-copy">
+            <p class="eyebrow">CITY FOOTPRINT · 足迹</p>
+            <h1>把走过的城市<br>点亮成<span>自己的地图</span></h1>
+            <p class="intro">
+              记录去过的城市、每一段行程和每次打卡。离线保存在本机，
+              用一张地图回看自己的足迹。
+            </p>
+            <div class="hero-actions">
+              <a class="btn-primary" href="#download">
+                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></svg>
+                下载 Android 版
+              </a>
+              <a class="btn-ghost" href="/map">先看看足迹地图</a>
+            </div>
+            <p class="hero-note">Android 7.0+ · arm64-v8a · 离线可用</p>
+          </div>
+
+          <div class="hero-art" aria-hidden="true">
+            <div class="footprint-card">
+              <div class="footprint-card-head">
+                <span>我的足迹</span>
+                <span class="footprint-year">2026</span>
+              </div>
+              <svg viewBox="0 0 420 300" class="footprint-map">
+                <defs>
+                  <pattern id="mapGrid" width="28" height="28" patternUnits="userSpaceOnUse">
+                    <path d="M28 0H0V28" fill="none" stroke="currentColor" stroke-opacity=".14" stroke-width="1"/>
+                  </pattern>
+                </defs>
+                <rect x="0" y="0" width="420" height="300" fill="url(#mapGrid)"/>
+                <path d="M46 202c30-45 50-83 92-94 28-7 41 12 72 2 35-11 47-47 88-39 24 5 34 26 31 54-5 45-40 58-63 83-25 27-43 54-88 51-39-3-58-13-88-22-24-7-49-4-44-35Z"
+                      fill="currentColor" fill-opacity=".08" stroke="currentColor" stroke-opacity=".35" stroke-width="1.5"/>
+                <path d="M82 190c26-28 40-56 71-62 26-5 43 8 69 1 29-8 43-27 70-21 18 4 25 19 22 36-4 26-26 35-43 52-17 16-29 33-58 30-28-2-43-8-64-14-18-5-39-1-67-22Z"
+                      fill="currentColor" fill-opacity=".08" stroke="currentColor" stroke-opacity=".25" stroke-width="1"/>
+                <g fill="currentColor">
+                  <circle cx="150" cy="128" r="5"/>
+                  <circle cx="258" cy="118" r="4"/>
+                  <circle cx="310" cy="168" r="5"/>
+                  <circle cx="196" cy="196" r="4"/>
+                  <circle cx="112" cy="176" r="4"/>
+                </g>
+                <g fill="none" stroke="currentColor" stroke-opacity=".5" stroke-width="1">
+                  <circle cx="150" cy="128" r="13"/>
+                  <circle cx="310" cy="168" r="13"/>
+                </g>
+                <g fill="currentColor" font-size="11" font-family="inherit" font-weight="600">
+                  <text x="160" y="123">北京</text>
+                  <text x="320" y="164">上海</text>
+                  <text x="206" y="201">成都</text>
+                  <text x="122" y="181">西安</text>
+                </g>
+              </svg>
+              <div class="footprint-stats">
+                <div><strong>24</strong><span>城市</span></div>
+                <div><strong>8</strong><span>省份</span></div>
+                <div><strong>16</strong><span>行程</span></div>
+              </div>
+            </div>
+          </div>
         </div>
-        <p class="hero-note">Android 7.0+ · arm64-v8a · 24.6 MB</p>
       </div>
     </section>
 
@@ -67,25 +114,30 @@
               <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M10 18.5h4"/></svg>
               Android
             </h3>
-            <p>当前版本 2.1.4，支持 Android 7.0 及以上 arm64-v8a 设备。</p>
+            <p>选择国内网盘或 GitHub 下载最新版本 APK。<span id="releaseVersion">最新版本</span></p>
             <div class="meta">
-              <span class="tag">v2.1.4</span>
-              <span class="tag">24.6 MB</span>
+              <span class="tag">Android 7.0+</span>
+              <span class="tag">arm64-v8a</span>
               <span class="tag">离线可用</span>
             </div>
-            <a href="https://github.com/Qxwk-Studio/Qxwk-CityFootprint/releases/download/v2.1.4/CityFootprint-2.1.4.apk">
-              下载 APK
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-            </a>
+            <div class="download-actions">
+              <a class="btn-download" href="https://tidalstarnan.lanzouc.com/b007uu7dod" target="_blank" rel="noopener">
+                国内网盘
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+              </a>
+              <a class="btn-download secondary" id="githubDownload" href="https://github.com/Qxwk-Studio/Qxwk-CityFootprint/releases/latest" target="_blank" rel="noopener">
+                GitHub
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+              </a>
+            </div>
           </article>
 
           <aside class="download-card">
-            <h3>2.1.4 更新内容</h3>
+            <h3>下载说明</h3>
             <ul class="release-notes">
-              <li>权限管理、存储空间与数据导出</li>
-              <li>中英文界面与城市、成就英文</li>
-              <li>底图中文地名覆盖全部城市</li>
-              <li>修复地图渲染、清理照片与语言切换问题</li>
+              <li>国内网盘：适合国内网络环境</li>
+              <li>GitHub：始终指向最新 Release</li>
+              <li>版本信息与更新说明由下载页自动读取</li>
             </ul>
           </aside>
         </div>
