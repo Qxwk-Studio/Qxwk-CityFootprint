@@ -15,12 +15,13 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AppCompatActivity
+import top.qxwkstudio.travel.ui.common.LocalizedActivity
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import top.qxwkstudio.travel.R
 import top.qxwkstudio.travel.data.CheckinRepo
+import top.qxwkstudio.travel.data.CityStore
 import top.qxwkstudio.travel.data.TripRepo
 import top.qxwkstudio.travel.data.db.AppDatabase
 import top.qxwkstudio.travel.databinding.ActivityDetailBinding
@@ -35,7 +36,7 @@ import top.qxwkstudio.travel.logic.Timeline
  * 布局与打卡详情一致：主卡片（编号 / 标题 / UUID）+ 逐项卡片 + 每个城市段一张卡。
  * 没填的字段显示「-」，不隐藏，方便一眼看出还缺什么。
  */
-class TripDetailActivity : AppCompatActivity() {
+class TripDetailActivity : LocalizedActivity() {
 
     private lateinit var binding: ActivityDetailBinding
     private var tripId = 0L
@@ -246,7 +247,7 @@ class TripDetailActivity : AppCompatActivity() {
         }
         header.addView(seqBadgeText(getString(R.string.trips_derived_seq, seq, segmentOrdinal), color))
         header.addView(TextView(this).apply {
-            text = segment.city
+            text = CityStore.displayName(this@TripDetailActivity, segment.city)
             textSize = 15f
             typeface = Typeface.DEFAULT_BOLD
             setTextColor(getColor(R.color.fg))

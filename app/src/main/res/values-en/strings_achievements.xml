@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 成就 (English) -->
+<resources>
+    <string name="ach_progress">%1$d/%2$d</string>
+    <string name="ach_unlocked">Unlocked</string>
+    <string name="ach_unlocked_count">%1$d / %2$d unlocked</string>
+    <string name="ach_category_percent">%1$d%%</string>
+    <string name="ach_empty">No achievements yet. Add a check-in or trip and they will light up here.</string>
+    <string name="ach_unlocked_at">Unlocked %1$s</string>
+</resources>

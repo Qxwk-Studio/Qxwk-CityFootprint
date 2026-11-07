@@ -18,12 +18,13 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AppCompatActivity
+import top.qxwkstudio.travel.ui.common.LocalizedActivity
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import top.qxwkstudio.travel.R
 import top.qxwkstudio.travel.data.CheckinRepo
+import top.qxwkstudio.travel.data.CityStore
 import top.qxwkstudio.travel.data.TripRepo
 import top.qxwkstudio.travel.data.db.AppDatabase
 import top.qxwkstudio.travel.data.db.CheckinEntity
@@ -36,7 +37,7 @@ import top.qxwkstudio.travel.logic.Money
 /**
  * 打卡详情（只读）：右上角「编辑」只对手动打卡开放 —— 派生打卡是行程的产物，改它等于改行程。
  */
-class CheckinDetailActivity : AppCompatActivity() {
+class CheckinDetailActivity : LocalizedActivity() {
 
     private lateinit var binding: ActivityDetailBinding
     private var checkinId = 0L
@@ -142,7 +143,7 @@ class CheckinDetailActivity : AppCompatActivity() {
         }
         headerRow.addView(seqBadgeText(badgeText, if (derived) R.color.stripe_derived else R.color.stripe_manual))
         headerRow.addView(TextView(this).apply {
-            text = entity.cityName
+            text = CityStore.displayName(this@CheckinDetailActivity, entity.cityName)
             textSize = 18f
             typeface = Typeface.DEFAULT_BOLD
             setTextColor(getColor(R.color.fg))

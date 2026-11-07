@@ -6,6 +6,7 @@
          所有操作都是用户点一下才发生。
          （2.1 加「自动记录」时会引入前台服务与通知权限，届时在这里补。） -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <!-- 定位：打卡页的准心按钮与地图页的「我的位置」用（见 ui/Locate）。
          只要**粗略位置** —— 找最近的城市用不到米级精度，权限也更轻，

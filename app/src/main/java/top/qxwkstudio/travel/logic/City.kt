@@ -25,6 +25,9 @@ data class City(
     val lat: Double,
     val lng: Double,
     val adcode: Int? = null,
+    /** 英文/拼音名（生成物，见 assets/cities.json）；null = 老数据，回退中文。 */
+    val nameEn: String? = null,
+    val provinceEn: String? = null,
 ) {
     companion object {
         /** 缺省国家：源数据不带 country 时按它归类。 */
@@ -55,6 +58,7 @@ object CitySearch {
         val lower = q.lowercase()
         return cities.filter { city ->
             city.name.contains(q) || city.province.contains(q) ||
+                city.nameEn?.contains(q, ignoreCase = true) == true || city.provinceEn?.contains(q, ignoreCase = true) == true ||
                 city.name.lowercase().contains(lower) || city.province.lowercase().contains(lower)
         }
     }

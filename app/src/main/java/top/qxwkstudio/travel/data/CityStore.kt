@@ -24,6 +24,17 @@ object CityStore {
         }
     }
 
+    /** 已保存记录里存的是中文名；按当前语言找英文显示名，找不到回退中文。 */
+    fun provinceDisplay(context: Context, province: String): String {
+        if (context.resources.configuration.locales[0].language != "en") return province
+        return all(context).firstOrNull { it.province == province }?.provinceEn ?: province
+    }
+
+    fun displayName(context: Context, name: String): String {
+        if (context.resources.configuration.locales[0].language != "en") return name
+        return all(context).firstOrNull { it.name == name }?.nameEn ?: name
+    }
+
     /** assets/cities.json 的报文：`{ "cities": [...] }`。 */
     @Serializable
     private data class CitiesFile(val cities: List<City> = emptyList())

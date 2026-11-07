@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 我的与个性化 (English) -->
+<resources>
+    <string name="profile_update_new_title">Update available</string>
+    <string name="profile_update_new_message">Latest version v%1$s</string>
+    <string name="profile_update_go">Download</string>
+    <string name="profile_update_latest">You are on the latest version</string>
+    <string name="profile_update_failed">Update check failed. Try again later</string>
+    <string name="profile_update_no_url">Download link unavailable</string>
+    <string name="mine_nickname_default">Traveler</string>
+    <string name="mine_uuid">UUID: %1$s</string>
+    <string name="mine_appearance">Appearance</string>
+    <string name="mine_appearance_follow_system">Follow system</string>
+    <string name="mine_appearance_light">Light</string>
+    <string name="mine_appearance_dark">Dark</string>
+    <string name="mine_appearance_title">Appearance</string>
+    <string name="mine_cleanup_photos">Clean unused photos</string>
+    <string name="cleanup_confirm_title">Clean unused photos?</string>
+    <string name="cleanup_confirm_message">Deletes only photos not referenced by any check-in or trip. Photos in use are kept.</string>
+    <string name="cleanup_done">Cleaned %1$d photos, freed %2$s</string>
+    <string name="cleanup_none">No photos to clean</string>
+    <string name="mine_version">Version</string>
+    <string name="mine_check_update">Check for updates</string>
+    <string name="mine_group_personal">Personalization</string>
+    <string name="mine_name">Nickname</string>
+    <string name="mine_group_about">About</string>
+    <string name="mine_theme_color">Theme color</string>
+    <string name="mine_open_source">Open source &amp; licenses</string>
+    <string name="mine_open_source_body">· MapLibre Native — BSD-2-Clause, map rendering engine\n· OpenStreetMap data — © OpenStreetMap contributors, ODbL, basemap data\n· Protomaps — ODbL, China z0–6 basemap tiles\n· Material Icons — Apache-2.0, UI icons\n· AndroidX / Material Components — Apache-2.0\n· Kotlin / kotlinx.serialization / Room — Apache-2.0</string>
+    <string name="mine_badge_color">Badge color</string>
+    <string name="mine_group_software">Permissions &amp; storage</string>
+    <string name="mine_permissions">Permissions</string>
+    <string name="mine_storage">Storage</string>
+    <string name="mine_export_data">Export data</string>
+    <string name="mine_language">Language</string>
+    <string name="color_follow_system">Follow system</string>
+    <string name="color_red">Red</string>
+    <string name="color_orange">Orange</string>
+    <string name="color_green">Green</string>
+    <string name="color_teal">Teal</string>
+    <string name="color_blue">Blue</string>
+    <string name="color_purple">Purple</string>
+    <string name="color_pink">Pink</string>
+    <string name="color_gray">Gray</string>
+</resources>

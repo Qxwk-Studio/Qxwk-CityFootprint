@@ -42,14 +42,14 @@ class MineFragment : Fragment() {
 
     /** 徽章色预设（口径：一组预设，不做取色器）。名字只给弹窗用，值进库。 */
     private val badgeOptions = listOf(
-        "红" to "#DC2626",
-        "橙" to "#F59E0B",
-        "绿" to "#34A853",
-        "青" to "#0891B2",
-        "蓝" to "#2563EB",
-        "紫" to "#7C3AED",
-        "粉" to "#DB2777",
-        "灰" to "#64748B",
+        R.string.color_red to "#DC2626",
+        R.string.color_orange to "#F59E0B",
+        R.string.color_green to "#34A853",
+        R.string.color_teal to "#0891B2",
+        R.string.color_blue to "#2563EB",
+        R.string.color_purple to "#7C3AED",
+        R.string.color_pink to "#DB2777",
+        R.string.color_gray to "#64748B",
     )
 
     /** 当前徽章色（用于弹窗选中项与头像圆底）。 */
@@ -75,6 +75,7 @@ class MineFragment : Fragment() {
         binding.rowName.setOnClickListener { chooseName() }
         binding.rowAppearance.setOnClickListener { chooseAppearance() }
         binding.rowTheme.setOnClickListener { chooseThemeColor() }
+        binding.rowLanguage.setOnClickListener { chooseLanguage() }
         binding.rowBadge.setOnClickListener { chooseBadgeColor() }
         binding.rowOpenSource.setOnClickListener { showOpenSource() }
         binding.rowCheckUpdate.setOnClickListener { checkUpdate() }
@@ -118,8 +119,9 @@ class MineFragment : Fragment() {
 
     private fun bindProfile(profile: Profile) {
         val b = binding
-        b.textNickname.text = profile.nickname ?: getString(R.string.mine_nickname_default)
-        b.textNameValue.text = profile.nickname ?: getString(R.string.mine_nickname_default)
+        val displayName = localizedNickname(profile.nickname)
+        b.textNickname.text = displayName
+        b.textNameValue.text = displayName
         b.textUuid.text = getString(R.string.mine_uuid, profile.uuid)
 
         // 头像：主题色圆底 + 白色人像（不提供修改入口）
@@ -132,8 +134,23 @@ class MineFragment : Fragment() {
             Palette.selected().color
         }
         b.colorDotTheme.background = circle(themeColor)
+        b.textLanguage.text = when (Prefs.languageTag) {
+            "zh-CN" -> getString(R.string.language_zh_cn)
+            "en" -> getString(R.string.language_en)
+            else -> getString(R.string.language_follow_system)
+        }
         currentBadge = profile.badge
         refreshLocal()
+    }
+
+    /** 昵称预设按当前语言显示；库里始终存 canonical 中文。 */
+    private fun localizedNickname(name: String?): String {
+        if (name.isNullOrBlank()) return getString(R.string.mine_nickname_default)
+        val canonical = resources.getStringArray(R.array.mine_name_presets_canonical)
+        val localized = resources.getStringArray(R.array.mine_name_presets)
+        val index = canonical.indexOf(name).takeIf { it >= 0 } ?: localized.indexOf(name)
+        if (index < 0) return name
+        return if (resources.configuration.locales[0].language == "en") localized[index] else canonical[index]
     }
 
     /** 外观是同步读 SharedPreferences 的，单独一个方法，切回来时不用再查库。 */
@@ -168,7 +185,7 @@ class MineFragment : Fragment() {
 
     private fun chooseBadgeColor() {
         val current = badgeOptions.indexOfFirst { it.second == currentBadge }
-        val names = badgeOptions.map { it.first }.toTypedArray()
+        val names = badgeOptions.map { getString(it.first) }.toTypedArray()
         MaterialAlertDialogBuilder(requireContext())
             .setTitle(R.string.mine_badge_color)
             .setSingleChoiceItems(names, current) { dialog, which ->
@@ -185,10 +202,22 @@ class MineFragment : Fragment() {
      * 主题色：只换「主色」这一档（按钮 / 开关 / 底栏选中态 / 代码里画的强调色），
      * 面与文字不动。选完要 recreate：主题叠层在 Activity 创建时就定了，不重建看不到效果。
      */
+    private fun themeLabel(key: String): String = getString(
+        when (key) {
+            "rose" -> R.string.color_red
+            "orange" -> R.string.color_orange
+            "green" -> R.string.color_green
+            "teal" -> R.string.color_teal
+            "blue" -> R.string.color_blue
+            "purple" -> R.string.color_purple
+            else -> R.string.color_follow_system
+        },
+    )
+
     private fun chooseThemeColor() {
         val presets = Palette.presets
         val current = presets.indexOfFirst { it.key == Palette.selected().key }
-        val labels = presets.map { it.label }.toTypedArray()
+        val labels = presets.map { themeLabel(it.key) }.toTypedArray()
         MaterialAlertDialogBuilder(requireContext())
             .setTitle(R.string.mine_theme_color)
             .setSingleChoiceItems(labels, current) { dialog, which ->
@@ -199,8 +228,33 @@ class MineFragment : Fragment() {
             .show()
     }
 
+    private fun chooseLanguage() {
+        val tags = arrayOf("", "zh-CN", "en")
+        val labels = arrayOf(
+            getString(R.string.language_follow_system),
+            getString(R.string.language_zh_cn),
+            getString(R.string.language_en),
+        )
+        val current = tags.indexOf(Prefs.languageTag).coerceAtLeast(0)
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.mine_language)
+            .setSingleChoiceItems(labels, current) { dialog, which ->
+                dialog.dismiss()
+                Prefs.saveLanguage(requireContext(), tags[which])
+                if (tags[which].isBlank()) {
+                    java.io.File(
+                        requireContext().filesDir,
+                        "androidx.appcompat.app.AppCompatDelegate.application_locales_record_file",
+                    ).delete()
+                }
+                AppRestart.exitForLanguageChange(requireContext(), tags[which])
+            }
+            .show()
+    }
+
     /** 名称：从预制选项里选一个，写入本机设置。 */
     private fun chooseName() {
+        val canonical = resources.getStringArray(R.array.mine_name_presets_canonical)
         val presets = resources.getStringArray(R.array.mine_name_presets)
         val current = binding.textNameValue.text?.toString().orEmpty()
         val checked = presets.indexOfFirst { it == current }
@@ -209,7 +263,7 @@ class MineFragment : Fragment() {
             .setSingleChoiceItems(presets, checked) { dialog, which ->
                 dialog.dismiss()
                 viewLifecycleOwner.lifecycleScope.runIo({
-                    SettingsRepo.setNickname(AppDatabase.get(requireContext()), presets[which])
+                    SettingsRepo.setNickname(AppDatabase.get(requireContext()), canonical[which])
                 }) { load() }
             }
             .show()

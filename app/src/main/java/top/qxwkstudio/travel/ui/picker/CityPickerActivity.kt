@@ -13,7 +13,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
-import androidx.appcompat.app.AppCompatActivity
+import top.qxwkstudio.travel.ui.common.LocalizedActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import top.qxwkstudio.travel.R
@@ -35,7 +35,7 @@ import top.qxwkstudio.travel.logic.CitySearch
  *  - 没在搜索 = **按省份分组的浏览态**：组标题吸顶，顺着省份滚下去就能找到城市；
  *  - 在搜索 = 平铺的匹配结果：结果跨省，行尾补上省份，同名或近名的市才分得清。
  */
-class CityPickerActivity : AppCompatActivity() {
+class CityPickerActivity : LocalizedActivity() {
 
     // 非空 lateinit：Activity 与视图同生共死，不必在 onDestroy 里置 null
     private lateinit var binding: ActivityCityPickerBinding
@@ -118,7 +118,8 @@ class CityPickerActivity : AppCompatActivity() {
             )
             .flatMap { (key, inGroup) ->
                 val (country, province) = key
-                val title = if (country == City.DEFAULT_COUNTRY) province else "$country · $province"
+                val shownProvince = CityStore.provinceDisplay(this, province)
+                val title = if (country == City.DEFAULT_COUNTRY) shownProvince else "$country · $shownProvince"
                 buildList {
                     add(CityRow.Header(getString(R.string.city_group_title, title, inGroup.size)))
                     inGroup.sortedWith(
@@ -217,8 +218,8 @@ private class CityRowAdapter(private val onClick: (City) -> Unit) : RecyclerView
     // inner：Holder 要用外层的 onClick 与 showProvince（非 inner 的内部类拿不到外层实例）
     private inner class EntryHolder(private val b: ItemCityBinding) : RecyclerView.ViewHolder(b.root) {
         fun bind(city: City) {
-            b.textCityName.text = city.name
-            b.textProvince.text = city.province
+            b.textCityName.text = if (b.root.resources.configuration.locales[0].language == "en") city.nameEn ?: city.name else city.name
+            b.textProvince.text = if (b.root.resources.configuration.locales[0].language == "en") city.provinceEn ?: city.province else city.province
             b.textProvince.visibility = if (showProvince) View.VISIBLE else View.GONE
             b.root.setOnClickListener { onClick(city) }
         }

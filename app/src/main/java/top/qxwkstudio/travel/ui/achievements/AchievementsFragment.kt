@@ -24,6 +24,7 @@ import top.qxwkstudio.travel.data.db.AppDatabase
 import top.qxwkstudio.travel.databinding.FragmentAchievementsBinding
 import top.qxwkstudio.travel.databinding.ItemAchievementBinding
 import top.qxwkstudio.travel.logic.Achievements
+import top.qxwkstudio.travel.logic.AchievementsEnglish
 import top.qxwkstudio.travel.logic.Dates
 
 /**
@@ -115,7 +116,7 @@ class AchievementsFragment : Fragment() {
         container.removeAllViews()
         Achievements.categories.forEachIndexed { index, category ->
             val chip = TextView(requireContext()).apply {
-                text = category.title
+                text = categoryTitle(index)
                 textSize = 12f
                 gravity = android.view.Gravity.CENTER
                 layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f)
@@ -193,6 +194,22 @@ class AchievementsFragment : Fragment() {
         binding.list.visibility = View.VISIBLE
     }
 
+    private fun isEnglish(): Boolean =
+        resources.configuration.locales[0].language == "en"
+
+    private fun categoryTitle(index: Int): String =
+        if (isEnglish()) {
+            AchievementsEnglish.categories.getOrElse(index) { Achievements.categories[index].title }
+        } else {
+            Achievements.categories[index].title
+        }
+
+    private fun localizedName(def: Achievements.AchievementDef): String =
+        if (isEnglish()) AchievementsEnglish.name(def.code, def.name) else def.name
+
+    private fun localizedDesc(def: Achievements.AchievementDef): String =
+        if (isEnglish()) AchievementsEnglish.desc(def.code, def.desc) else def.desc
+
     private sealed interface Row {
         data class Header(val title: String, val done: Int, val total: Int) : Row
         data class Card(
@@ -208,7 +225,7 @@ class AchievementsFragment : Fragment() {
         val codes = categories[index].items.map { it.code }
         val done = codes.count { states[it]?.done == true }
         val rows = ArrayList<Row>(16)
-        rows.add(Row.Header(categories[index].title, done, codes.size))
+        rows.add(Row.Header(categoryTitle(index), done, codes.size))
         categories[index].items.forEach { def ->
             val state = states[def.code] ?: return@forEach
             rows.add(Row.Card(index, def, state))
@@ -328,8 +345,8 @@ class AchievementsFragment : Fragment() {
                 b.textMilestone.visibility = View.GONE
                 b.icon.setImageResource(iconFor(row.def.code, row.category))
             }
-            b.textName.text = row.def.name
-            b.textDesc.text = row.def.desc
+            b.textName.text = localizedName(row.def)
+            b.textDesc.text = localizedDesc(row.def)
 
             if (state.done && state.unlockedAt != null) {
                 b.textDate.visibility = View.VISIBLE

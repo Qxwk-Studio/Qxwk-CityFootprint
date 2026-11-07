@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 我的与个性化（简体中文） -->
+<resources>
+    <string name="profile_update_new_title">发现新版本</string>
+    <string name="profile_update_new_message">最新版本 v%1$s</string>
+    <string name="profile_update_go">前往下载</string>
+    <string name="profile_update_latest">已是最新版本</string>
+    <string name="profile_update_failed">检查更新失败，请稍后重试</string>
+    <string name="profile_update_no_url">下载地址暂不可用</string>
+    <string name="mine_nickname_default">旅行者</string>
+    <string name="mine_uuid">UUID：%1$s</string>
+    <string name="mine_appearance">外观</string>
+    <string name="mine_appearance_follow_system">跟随系统</string>
+    <string name="mine_appearance_light">浅色</string>
+    <string name="mine_appearance_dark">深色</string>
+    <string name="mine_appearance_title">外观</string>
+    <string name="mine_cleanup_photos">清理无引用照片</string>
+    <string name="cleanup_confirm_title">清理无引用照片？</string>
+    <string name="cleanup_confirm_message">只删除没有任何打卡或行程引用的照片文件，正在使用的照片不受影响。</string>
+    <string name="cleanup_done">已清理 %1$d 张照片，释放 %2$s</string>
+    <string name="cleanup_none">没有可清理的照片</string>
+    <string name="mine_version">版本</string>
+    <string name="mine_check_update">检查更新</string>
+    <string name="mine_group_personal">个性化</string>
+    <string name="mine_name">昵称</string>
+    <string name="mine_group_about">关于软件</string>
+    <string name="mine_theme_color">主题色</string>
+    <string name="mine_open_source">开源项目与许可</string>
+    <string name="mine_open_source_body">· MapLibre Native — BSD-2-Clause，地图渲染内核\n· OpenStreetMap 数据 — © OpenStreetMap 贡献者，ODbL，底图地理数据\n· Protomaps — ODbL，中国区 z0–6 底图切片\n· Material Icons — Apache-2.0，界面图标\n· AndroidX / Material Components — Apache-2.0\n· Kotlin / kotlinx.serialization / Room — Apache-2.0</string>
+    <string name="mine_badge_color">徽章色</string>
+    <string name="mine_group_software">软件设置</string>
+    <string name="mine_permissions">权限管理</string>
+    <string name="mine_storage">存储空间</string>
+    <string name="mine_export_data">导出数据</string>
+    <string name="mine_language">语言</string>
+    <string name="color_follow_system">跟随系统</string>
+    <string name="color_red">红</string>
+    <string name="color_orange">橙</string>
+    <string name="color_green">绿</string>
+    <string name="color_teal">青</string>
+    <string name="color_blue">蓝</string>
+    <string name="color_purple">紫</string>
+    <string name="color_pink">粉</string>
+    <string name="color_gray">灰</string>
+</resources>

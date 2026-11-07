@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 通用与底部导航（简体中文） -->
+<resources>
+    <string name="app_name">City Footprint</string>
+    <string name="tab_home">主页</string>
+    <string name="tab_achievements">成就</string>
+    <string name="tab_map">地图</string>
+    <string name="tab_profile">我的</string>
+    <string name="edit_delete">删除</string>
+    <string name="discard_title">放弃未保存的修改？</string>
+    <string name="discard_message">当前填写的内容不会被保存。</string>
+    <string name="discard_positive">放弃</string>
+    <string name="discard_negative">继续编辑</string>
+    <string name="delete_title">删除这条记录？</string>
+    <string name="delete_message">「%1$s」删除后无法恢复。</string>
+    <string name="common_confirm">确定</string>
+    <string name="common_cancel">取消</string>
+    <string name="common_delete">删除</string>
+    <string name="common_back">返回</string>
+    <string name="common_menu">菜单</string>
+    <string name="common_error">操作失败，请重试</string>
+    <string name="common_open_url_failed">没有可打开网页的应用</string>
+    <string name="tab_trips">行程</string>
+    <string name="menu_checkin">城市打卡</string>
+    <string name="menu_trip">添加足迹</string>
+    <string name="common_add">添加</string>
+    <string name="top_save">保存</string>
+</resources>

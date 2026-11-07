@@ -18,7 +18,7 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AppCompatActivity
+import top.qxwkstudio.travel.ui.common.LocalizedActivity
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -43,7 +43,7 @@ import java.util.UUID
  * 到访城市与活动/交通是同级项，顺序即列表顺序；保存后由 [Timeline.segments] 按城市切段，
  * 派生打卡与统计都从切段结果来。城市之前/之后的交通活动允许存在，只是不归属任何城市。
  */
-class TripEditActivity : AppCompatActivity() {
+class TripEditActivity : LocalizedActivity() {
 
     private lateinit var binding: ActivityTripEditBinding
     private val items = mutableListOf<DraftItem>()
@@ -343,7 +343,7 @@ class TripEditActivity : AppCompatActivity() {
             addView(starView())
             addView(View(this@TripEditActivity).apply { layoutParams = LinearLayout.LayoutParams(dp(6), 1) })
             addView(TextView(this@TripEditActivity).apply {
-                text = item.text.ifBlank { getString(R.string.trip_add_city_item) }
+                text = if (item.text.isBlank()) getString(R.string.trip_add_city_item) else CityStore.displayName(this@TripEditActivity, item.text)
                 textSize = 15f
                 setTextColor(getColor(if (item.text.isBlank()) R.color.text_tertiary else R.color.fg))
                 gravity = Gravity.CENTER_VERTICAL
@@ -997,7 +997,7 @@ class TripEditActivity : AppCompatActivity() {
             return
         }
         val timeline = Timeline(items.map { it.toItem() })
-        timeline.validate()?.let {
+        timeline.validate(english = resources.configuration.locales[0].language == "en")?.let {
             showError(it)
             return
         }
@@ -1054,7 +1054,7 @@ class TripEditActivity : AppCompatActivity() {
     }
 
     private fun showError(message: String) {
-        notify(message, long = true)
+        notify(ValidationText.localize(this, message), long = true)
     }
 
     private fun fieldCounter(): TextView = TextView(this).apply {

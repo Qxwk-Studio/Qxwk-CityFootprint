@@ -66,6 +66,17 @@ const DEFAULT_COUNTRY = '中国';
 const citiesText = read(citiesSource);
 const codesText = read(codesSource);
 
+// 英文名不是 docs 源数据的一部分，重新生成时保留上一次输出的 nameEn/provinceEn。
+let previousEn = {};
+try {
+  const old = JSON.parse(readFileSync(outFile, 'utf8'));
+  for (const city of old.cities ?? []) {
+    if (city.nameEn) previousEn[city.name] = { nameEn: city.nameEn, provinceEn: city.provinceEn };
+  }
+} catch {
+  // 首次生成没有旧文件，正常
+}
+
 const cities = [];
 for (const m of citiesText.matchAll(CITY_RE)) {
   cities.push({
@@ -74,6 +85,7 @@ for (const m of citiesText.matchAll(CITY_RE)) {
     province: m[3],
     lat: Number(m[4]),
     lng: Number(m[5]),
+    ...(previousEn[m[1]] ?? {}),
   });
 }
 

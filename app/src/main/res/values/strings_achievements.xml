@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 成就（简体中文） -->
+<resources>
+    <string name="ach_progress">%1$d/%2$d</string>
+    <string name="ach_unlocked">已解锁</string>
+    <string name="ach_unlocked_count">已解锁 %1$d / %2$d</string>
+    <string name="ach_category_percent">%1$d%%</string>
+    <string name="ach_empty">还没有任何成就。先去记一条打卡或足迹，这里会亮起来。</string>
+    <string name="ach_unlocked_at">%1$s 解锁</string>
+</resources>

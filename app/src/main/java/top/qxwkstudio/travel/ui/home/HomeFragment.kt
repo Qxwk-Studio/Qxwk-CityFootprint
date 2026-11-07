@@ -12,6 +12,7 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import top.qxwkstudio.travel.R
 import top.qxwkstudio.travel.data.CheckinRepo
+import top.qxwkstudio.travel.data.CityStore
 import top.qxwkstudio.travel.data.DataVersion
 import top.qxwkstudio.travel.data.db.AppDatabase
 import top.qxwkstudio.travel.data.db.CheckinSource
@@ -136,7 +137,9 @@ class HomeFragment : Fragment() {
 
         b.valueRange.text = Dates.range(overview.rangeStart, overview.rangeEnd) ?: getString(R.string.home_dash)
         b.valueCities.text = getString(R.string.home_cities_provinces, overview.cities, overview.provinces)
-        b.valueMost.text = overview.mostVisitedCity ?: getString(R.string.home_dash)
+        b.valueMost.text = overview.mostVisitedCity
+            ?.let { CityStore.displayName(requireContext(), it) }
+            ?: getString(R.string.home_dash)
         b.valueDays.text = getString(R.string.home_days_value, totalDays.toString())
         b.valueCost.text = getString(R.string.home_cost_value, Money.yuan(checkinCostCents))
 
@@ -150,6 +153,10 @@ class HomeFragment : Fragment() {
         val b = binding
         val onAccent = ContextCompat.getColor(requireContext(), R.color.on_accent)
         val secondary = ContextCompat.getColor(requireContext(), R.color.text_secondary)
+        b.btnRankCount.text = getString(R.string.home_rank_count)
+        b.btnRankAmount.text = getString(R.string.home_rank_amount)
+        b.btnRankTime.text = getString(R.string.home_rank_time)
+        b.btnRankRating.text = getString(R.string.home_rank_rating)
         b.btnRankCount.setTextColor(if (rankBy == RankBy.COUNT) onAccent else secondary)
         b.btnRankAmount.setTextColor(if (rankBy == RankBy.AMOUNT) onAccent else secondary)
         b.btnRankTime.setTextColor(if (rankBy == RankBy.TIME) onAccent else secondary)
@@ -247,17 +254,18 @@ class HomeFragment : Fragment() {
             layoutParams = android.widget.LinearLayout.LayoutParams(dp(24), dp(24))
         })
 
-        val cityText = android.text.SpannableStringBuilder(row.city)
+        val shownCity = CityStore.displayName(requireContext(), row.city)
+        val cityText = android.text.SpannableStringBuilder(shownCity)
         if (row.province.isNotBlank()) {
-            cityText.append(" · ").append(row.province)
+            cityText.append(" · ").append(CityStore.provinceDisplay(requireContext(), row.province))
             cityText.setSpan(
                 android.text.style.ForegroundColorSpan(ContextCompat.getColor(ctx, R.color.text_tertiary)),
-                row.city.length, cityText.length, android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE,
+                shownCity.length, cityText.length, android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE,
             )
             // 省份不只是换色，字号也小一号（0.82 倍）
             cityText.setSpan(
                 android.text.style.RelativeSizeSpan(0.82f),
-                row.city.length, cityText.length, android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE,
+                shownCity.length, cityText.length, android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE,
             )
         }
         line.addView(TextView(ctx).apply {

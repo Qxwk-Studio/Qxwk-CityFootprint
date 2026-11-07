@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 地图 (English) -->
+<resources>
+    <string name="map_empty">No footprints yet. Add one on the Trips page</string>
+    <string name="map_locate">Locate me</string>
+    <string name="map_city_count">%1$d check-ins</string>
+    <string name="map_empty_city">No check-ins in this city yet</string>
+    <string name="map_close">Close</string>
+    <string name="map_loading">Loading map…</string>
+    <string name="map_failed">Failed to load basemap (city overlays still available)</string>
+</resources>

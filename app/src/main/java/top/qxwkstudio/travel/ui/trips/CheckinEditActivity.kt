@@ -17,7 +17,7 @@ import android.text.TextWatcher
 import android.view.View
 import android.widget.ArrayAdapter
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AppCompatActivity
+import top.qxwkstudio.travel.ui.common.LocalizedActivity
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import top.qxwkstudio.travel.R
@@ -48,7 +48,7 @@ import java.util.UUID
  *
  * 落库走 [CheckinRepo.createManual]；写成功由仓库自增 DataVersion，主页/行程页据此重读。
  */
-class CheckinEditActivity : AppCompatActivity() {
+class CheckinEditActivity : LocalizedActivity() {
 
     private lateinit var binding: ActivityCheckinEditBinding
 
@@ -221,7 +221,7 @@ class CheckinEditActivity : AppCompatActivity() {
 
     private fun setCity(city: City) {
         this.city = city
-        binding.inputCity.setText(city.name)
+        binding.inputCity.setText(CityStore.displayName(this, city.name))
         binding.textCityError.visibility = View.GONE
     }
 
@@ -284,7 +284,7 @@ class CheckinEditActivity : AppCompatActivity() {
                     lng = 0.0,
                     adcode = entity.cityCode,
                 )
-            binding.inputCity.setText(entity.cityName)
+            binding.inputCity.setText(CityStore.displayName(this, entity.cityName))
             binding.inputNote.setText(entity.note.orEmpty())
             binding.inputCompanions.setText(entity.companions.orEmpty())
             companions = entity.companions
@@ -559,7 +559,7 @@ class CheckinEditActivity : AppCompatActivity() {
     private fun dp(v: Int): Int = (v * resources.displayMetrics.density).toInt()
 
     private fun showError(message: String) {
-        notify(message, long = true)
+        notify(ValidationText.localize(this, message), long = true)
     }
 
     companion object {

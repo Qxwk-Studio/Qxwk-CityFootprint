@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 主页 (English) -->
+<resources>
+    <string name="home_stats_title">Trip stats</string>
+    <string name="home_range">Date range</string>
+    <string name="home_cities">Cities</string>
+    <string name="home_most">Most visits</string>
+    <string name="home_cost">Total spent</string>
+    <string name="home_rank">City ranking</string>
+    <string name="home_rank_count">Visits</string>
+    <string name="home_rank_amount">Amount</string>
+    <string name="home_rank_time">Duration</string>
+    <string name="home_money_value">¥%1$s</string>
+    <string name="home_days_value">%1$s days</string>
+    <string name="home_cost_value">¥%1$s</string>
+    <string name="home_count_value">%1$s visits</string>
+    <string name="home_empty">No cities lit yet. Add your first trip</string>
+    <string name="home_dash">—</string>
+    <string name="home_cities_provinces_label">Cities / provinces</string>
+    <string name="home_cities_provinces">%1$d / %2$d</string>
+    <string name="home_days">Total days</string>
+    <string name="home_rank_rating">Rating</string>
+    <string name="home_rating_value">%1$s pts</string>
+</resources>

@@ -7,7 +7,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
 import android.view.View
-import androidx.appcompat.app.AppCompatActivity
+import top.qxwkstudio.travel.ui.common.LocalizedActivity
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import top.qxwkstudio.travel.R
@@ -19,7 +19,7 @@ import java.io.File
 import java.util.Locale
 
 /** 存储空间：分项统计 + 清理无引用照片 / 缓存。 */
-class StorageActivity : AppCompatActivity() {
+class StorageActivity : LocalizedActivity() {
 
     private lateinit var binding: ActivityStorageBinding
 

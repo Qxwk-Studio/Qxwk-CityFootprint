@@ -168,9 +168,10 @@ data class Timeline(
      *  - 活动时间按列表顺序**允许相等、不允许逆序**（城市项没有时间，不参与比较）；
      *  - 坐标成对出现且在合法范围内。
      */
-    fun validate(requireSegments: Boolean = true): String? {
-        if (cityCount == 0) return if (requireSegments) "至少添加一座到访城市" else null
-        if (events.isEmpty()) return "请至少添加一条活动或交通"
+    fun validate(requireSegments: Boolean = true, english: Boolean = false): String? {
+        fun tr(zh: String, en: String): String = if (english) en else zh
+        if (cityCount == 0) return if (requireSegments) tr("至少添加一座到访城市", "Add at least one city") else null
+        if (events.isEmpty()) return tr("请至少添加一条活动或交通", "Add at least one activity or transport")
 
         var cityNo = 0
         var eventNo = 0
@@ -181,23 +182,23 @@ data class Timeline(
         items.forEach { item ->
             if (item.type == Type.VISIT) {
                 if (currentCity != null && !hasEventInCity) {
-                    return "「$currentCity」请至少添加一条活动或交通"
+                    return tr("「$currentCity」请至少添加一条活动或交通", "\"$currentCity\": add at least one activity or transport")
                 }
                 currentCity = item.text
                 hasEventInCity = false
                 cityNo++
-                if (item.text.isBlank()) return "第 $cityNo 座城市：请选择到访城市"
+                if (item.text.isBlank()) return tr("第 $cityNo 座城市：请选择到访城市", "City $cityNo: choose a city")
                 if (item.text.length > Limits.SHORT) {
-                    return "「${item.text}」城市名不能超过 ${Limits.SHORT} 字"
+                    return tr("「${item.text}」城市名不能超过 ${Limits.SHORT} 字", "\"${item.text}\": city name cannot exceed ${Limits.SHORT} characters")
                 }
                 if (item.rating != null && item.rating !in 1..10) {
-                    return "「${item.text}」评分需在 1–10 之间"
+                    return tr("「${item.text}」评分需在 1–10 之间", "\"${item.text}\": rating must be between 1 and 10")
                 }
                 if (item.companions.orEmpty().length > Limits.SHORT) {
-                    return "「${item.text}」同行人不能超过 ${Limits.SHORT} 字"
+                    return tr("「${item.text}」同行人不能超过 ${Limits.SHORT} 字", "\"${item.text}\": companions cannot exceed ${Limits.SHORT} characters")
                 }
                 if (item.note.orEmpty().length > Limits.NOTE) {
-                    return "「${item.text}」备注不能超过 ${Limits.NOTE} 字"
+                    return tr("「${item.text}」备注不能超过 ${Limits.NOTE} 字", "\"${item.text}\": note cannot exceed ${Limits.NOTE} characters")
                 }
                 return@forEach
             }
@@ -205,30 +206,33 @@ data class Timeline(
             eventNo++
             if (currentCity != null) hasEventInCity = true
             if (item.text.isBlank()) {
-                return "第 $eventNo 条：请填写${when (item.type) { Type.RIDE -> "交通方式"; else -> "活动内容" }}"
+                return tr(
+                    "第 $eventNo 条：请填写${when (item.type) { Type.RIDE -> "交通方式"; else -> "活动内容" }}",
+                    "Item $eventNo: enter ${when (item.type) { Type.RIDE -> "transport"; else -> "activity" }}",
+                )
             }
             if (item.text.length > Limits.SHORT) {
-                return "第 $eventNo 条：内容不能超过 ${Limits.SHORT} 字"
+                return tr("第 $eventNo 条：内容不能超过 ${Limits.SHORT} 字", "Item $eventNo: content cannot exceed ${Limits.SHORT} characters")
             }
             if (item.note.orEmpty().length > Limits.NOTE) {
-                return "第 $eventNo 条：备注不能超过 ${Limits.NOTE} 字"
+                return tr("第 $eventNo 条：备注不能超过 ${Limits.NOTE} 字", "Item $eventNo: note cannot exceed ${Limits.NOTE} characters")
             }
             if ((item.lat == null) != (item.lng == null)) {
-                return "第 $eventNo 条：位置坐标不完整"
+                return tr("第 $eventNo 条：位置坐标不完整", "Item $eventNo: incomplete coordinates")
             }
             if (item.lat != null && item.lat !in -90.0..90.0) {
-                return "第 $eventNo 条：纬度不合法"
+                return tr("第 $eventNo 条：纬度不合法", "Item $eventNo: invalid latitude")
             }
             if (item.lng != null && item.lng !in -180.0..180.0) {
-                return "第 $eventNo 条：经度不合法"
+                return tr("第 $eventNo 条：经度不合法", "Item $eventNo: invalid longitude")
             }
             if (previousTime != Long.MIN_VALUE && item.time < previousTime) {
-                return "第 $eventNo 条：时间不能早于上一条"
+                return tr("第 $eventNo 条：时间不能早于上一条", "Item $eventNo: time cannot be earlier than the previous item")
             }
             previousTime = item.time
         }
         if (currentCity != null && !hasEventInCity) {
-            return "「$currentCity」请至少添加一条活动或交通"
+            return tr("「$currentCity」请至少添加一条活动或交通", "\"$currentCity\": add at least one activity or transport")
         }
         return null
     }

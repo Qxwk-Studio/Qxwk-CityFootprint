@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 主页（简体中文） -->
+<resources>
+    <string name="home_stats_title">行程统计</string>
+    <string name="home_range">时间跨度</string>
+    <string name="home_cities">打卡城市</string>
+    <string name="home_most">次数最多</string>
+    <string name="home_cost">总花销</string>
+    <string name="home_rank">城市排名</string>
+    <string name="home_rank_count">次数</string>
+    <string name="home_rank_amount">金额</string>
+    <string name="home_rank_time">时长</string>
+    <string name="home_money_value">¥%1$s</string>
+    <string name="home_days_value">%1$s 天</string>
+    <string name="home_cost_value">¥%1$s</string>
+    <string name="home_count_value">%1$s 次</string>
+    <string name="home_empty">还没有点亮任何城市，快去添加第一条足迹吧</string>
+    <string name="home_dash">—</string>
+    <string name="home_cities_provinces_label">打卡城市/省</string>
+    <string name="home_cities_provinces">%1$d / %2$d</string>
+    <string name="home_days">总天数</string>
+    <string name="home_rank_rating">评分</string>
+    <string name="home_rating_value">%1$s 分</string>
+</resources>

@@ -6,13 +6,13 @@ on:
   workflow_dispatch:
     inputs:
       version_name:
-        description: '版本名，例如 1.0.0'
+        description: '版本名，例如 2.1.4'
         required: true
-        default: '1.0.0'
+        default: '2.1.4'
       version_code:
-        description: '版本号（整数），例如 1'
+        description: '版本号（整数），例如 20104'
         required: true
-        default: '1'
+        default: '20104'
 
 jobs:
   # 后端单测：成就定义与达成人数全站只有 backend/src/achievements.js 这一份（app 里那份判定表
@@ -111,27 +111,22 @@ jobs:
         working-directory: app
 
       - name: Rename APK
-        # 按 ABI 拆包后产物是 CityFootprint-<abi>-release.apk（见 app/build.gradle.kts 的 splits）。
-        # **两个 ABI 都上传**：arm64-v8a 给主流真机、armeabi-v7a 给 32 位设备，
-        # 用户按自己的机型取（Android 装包不会自动挑 ABI，所以两个都得给）。
+        # 只发布 arm64-v8a：产物仍是 CityFootprint-arm64-v8a-release.apk，
+        # 重命名为 CityFootprint-<version>.apk。
         #
         # 守卫：签名没生效时产物叫 *-release-unsigned.apk，不匹配下面的模式，取不到就报错退出
         # 并打印目录内容 —— 绝不把未签名包当正式包传上去。
         run: |
           DIR=app/build/outputs/apk/release
-          for abi in arm64-v8a armeabi-v7a; do
-            APK=$(ls "$DIR"/*-$abi-release.apk 2>/dev/null) || {
-              echo "::error::没找到已签名的 *-$abi-release.apk（签名没生效？），目录实际内容如下："
-              ls -l "$DIR"
-              exit 1
-            }
-            mv "$APK" "$DIR/CityFootprint-${{ github.event.inputs.version_name }}-$abi.apk"
-          done
+          APK=$(ls "$DIR"/*-arm64-v8a-release.apk 2>/dev/null) || {
+            echo "::error::没找到已签名的 *-arm64-v8a-release.apk（签名没生效？），目录实际内容如下："
+            ls -l "$DIR"
+            exit 1
+          }
+          mv "$APK" "$DIR/CityFootprint-${{ github.event.inputs.version_name }}.apk"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: CityFootprint-${{ github.event.inputs.version_name }}
-          path: |
-            app/build/outputs/apk/release/CityFootprint-${{ github.event.inputs.version_name }}-arm64-v8a.apk
-            app/build/outputs/apk/release/CityFootprint-${{ github.event.inputs.version_name }}-armeabi-v7a.apk
+          path: app/build/outputs/apk/release/CityFootprint-${{ github.event.inputs.version_name }}.apk

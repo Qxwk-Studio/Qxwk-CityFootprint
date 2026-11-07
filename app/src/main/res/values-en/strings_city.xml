@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 城市选择与定位 (English) -->
+<resources>
+    <string name="city_picker_title">Choose city</string>
+    <string name="city_search_hint">Search city or province</string>
+    <string name="city_empty">No matching cities</string>
+    <string name="city_group_title">%1$s · %2$d cities</string>
+    <string name="city_group_unknown">Other</string>
+    <string name="locate_locating">Locating…</string>
+    <string name="locate_no_permission">Location permission not granted</string>
+    <string name="locate_disabled">Location failed. Check that GPS is enabled</string>
+    <string name="locate_failed">Location failed. Try again</string>
+    <string name="locate_no_city">No nearby city found</string>
+</resources>

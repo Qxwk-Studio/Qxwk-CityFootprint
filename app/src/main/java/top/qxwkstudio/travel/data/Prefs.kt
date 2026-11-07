@@ -29,10 +29,12 @@ object Prefs {
     private const val KEY_APPEARANCE = "appearance"
     private const val KEY_ACCENT = "accent_key"
     private const val KEY_NETWORK = "network_allowed"
+    private const val KEY_LANGUAGE = "language_tag"
 
     @Volatile private var appearanceValue = Appearance.SYSTEM
     @Volatile private var accentValue = ""
     @Volatile private var networkValue = false
+    @Volatile private var languageValue = ""
 
     fun init(context: Context) {
         val app = context.applicationContext
@@ -41,6 +43,7 @@ object Prefs {
             ?: Appearance.SYSTEM
         accentValue = sp.getString(SP_ACCENT, null).orEmpty()
         networkValue = sp.getBoolean(KEY_NETWORK, false)
+        languageValue = sp.getString(KEY_LANGUAGE, null).orEmpty()
 
         // 后台把库里的值同步回来；若库里没有（首次迁库），把 SP 的值写进库
         Thread {
@@ -76,9 +79,20 @@ object Prefs {
     /** 可选「网络」开关：默认关闭，只影响检查更新这类主动联网。 */
     val networkAllowed: Boolean get() = networkValue
 
+    /** "" = 跟随系统，否则是 BCP-47 语言标签（目前只有 zh-CN）。 */
+    val languageTag: String get() = languageValue
+
     fun saveAppearance(context: Context, appearance: Appearance) {
         appearanceValue = appearance
         write(context, KEY_APPEARANCE, appearance.value)
+    }
+
+
+    fun saveLanguage(context: Context, tag: String) {
+        languageValue = tag
+        context.applicationContext
+            .getSharedPreferences(SP_NAME, Context.MODE_PRIVATE)
+            .edit().putString(KEY_LANGUAGE, tag).commit()
     }
 
     fun saveNetworkAllowed(context: Context, allowed: Boolean) {

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="mine_name_presets">
+        <item>Traveler</item>
+        <item>Pioneer</item>
+        <item>Captain</item>
+        <item>Doctor</item>
+        <item>Admin</item>
+        <item>Sensei</item>
+        <item>Commander</item>
+        <item>Wanderer</item>
+        <item>Analyst</item>
+        <item>Investigator</item>
+    </string-array>
+</resources>

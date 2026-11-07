@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 权限管理 (English) -->
+<resources>
+    <string name="perm_intro">Only permissions the app actually uses are listed here. You can change them in system settings at any time.</string>
+    <string name="perm_location">Location</string>
+    <string name="perm_location_desc">Locate the current city for check-ins and the map</string>
+    <string name="perm_storage">Storage permission</string>
+    <string name="perm_storage_desc">Save photos to gallery (Android 9 and below)</string>
+    <string name="perm_storage_scoped_desc">Android 10+ uses scoped storage; no extra permission needed</string>
+    <string name="perm_network">Network</string>
+    <string name="perm_network_desc">Only used to check for updates</string>
+    <string name="perm_photos">Photos</string>
+    <string name="perm_photos_desc">Read through the system photo picker; gallery permission is not requested</string>
+    <string name="perm_not_required">Not required</string>
+    <string name="perm_granted">Granted</string>
+    <string name="perm_denied">Not granted</string>
+    <string name="perm_granted_toast">Permission already granted</string>
+    <string name="perm_storage_not_needed">Storage permission is not needed on this system</string>
+    <string name="perm_open_settings">Open system settings</string>
+    <string name="perm_group_required">Required permissions</string>
+    <string name="perm_group_optional">Optional permissions</string>
+    <string name="perm_network_off">Network is off; update checks are unavailable</string>
+    <string name="perm_notification">Notifications</string>
+    <string name="perm_notification_desc">Auto-recording status and arrival reminders</string>
+    <string name="perm_notification_not_needed">Not required on this system</string>
+</resources>

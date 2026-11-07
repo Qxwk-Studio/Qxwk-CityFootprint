@@ -33,6 +33,25 @@ class CityFootprintApp : Application() {
         MapLibre.getInstance(this)
         // 读一次本机偏好（app_settings，进程启动时读进内存），随后交给 AppCompat
         Prefs.init(this)
+        // 语言：空标签 = 跟随系统；先同步 JVM 默认 Locale，再交给 AppCompat
+        val languageTag = Prefs.languageTag
+        // 不再使用 AppCompat 的 per-app locale：它会持久化上次显式选择的语言，
+        // 选「跟随系统」后仍覆盖成旧英文。统一由 LocalizedActivity 包装。
+        java.io.File(
+            filesDir,
+            "androidx.appcompat.app.AppCompatDelegate.application_locales_record_file",
+        ).delete()
+        val targetLocale = if (languageTag.isBlank()) {
+            android.content.res.Resources.getSystem().configuration.locales[0]
+        } else {
+            java.util.Locale.forLanguageTag(languageTag)
+        }
+        java.util.Locale.setDefault(targetLocale)
+        @Suppress("DEPRECATION")
+        resources.updateConfiguration(
+            resources.configuration.apply { setLocale(targetLocale) },
+            resources.displayMetrics,
+        )
         PhotoFiles.init(this)
         applyAppearance(Prefs.appearance)
         preloadCities()

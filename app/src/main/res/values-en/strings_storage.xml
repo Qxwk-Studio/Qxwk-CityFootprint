@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 存储空间 (English) -->
+<resources>
+    <string name="storage_total">Total</string>
+    <string name="storage_calculating">Calculating…</string>
+    <string name="storage_photos">Trip photos</string>
+    <string name="storage_basemap">Offline map</string>
+    <string name="storage_database">Trip data</string>
+    <string name="storage_cache">Cache</string>
+    <string name="storage_photo_note">Photos stay in the app private directory. Cleaning removes only files not referenced by any check-in or trip.</string>
+    <string name="storage_cleanup_photos">Clean unused photos</string>
+    <string name="storage_cleanup_cache">Clear cache</string>
+    <string name="storage_cache_confirm">Deletes temporary cache only; check-ins and photos are untouched.</string>
+    <string name="storage_cache_cleared">Cache cleared</string>
+    <string name="storage_app">App</string>
+    <string name="storage_section_title">Storage details</string>
+</resources>

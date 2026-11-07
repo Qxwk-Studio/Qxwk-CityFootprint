@@ -4,9 +4,9 @@ import top.qxwkstudio.travel.ui.common.*
 
 import android.content.Context
 import android.graphics.Canvas
-import android.graphics.Color
 import android.graphics.Paint
-import android.util.TypedValue
+import android.graphics.RectF
+import android.util.AttributeSet
 import android.view.View
 import androidx.core.content.ContextCompat
 import org.maplibre.android.geometry.LatLng
@@ -14,53 +14,55 @@ import org.maplibre.android.maps.MapLibreMap
 import top.qxwkstudio.travel.R
 
 /**
- * 去过的城市名——**用原生 Canvas 画在地图上**，不走 MapLibre 的文字图层。
+ * 地图中文地名：原生 Canvas 绘制，不依赖 MapLibre glyphs 字体包。
  *
- * 为什么不用 SymbolLayer：文字图层需要 glyphs 字体包，离线打包一套中文字形要么几十 MB、
- * 要么得自己起本地 HTTP 服务；而这一版要的只是「点亮的城市叫什么」，原生绘制零依赖、
- * 中文直接吃系统字体，也不受底图缺字影响。
- *
- * 只画 [submit] 进来的城市（也就是本地库里去过的那些），不是底图全量地名 —— 底图 z7+ 的
- * 全量地名与区域包等有托管位置后再做。
- *
- * 文字是城市唯一的地图标识：不再单独渲染城市圆点。字号随缩放走（[sizeForZoom]），
- * 坐标点上下左右居中。
+ * 数据来自本地 384 城表，随缩放分层显示：
+ *  - 低缩放：只画省会/直辖市等主要城市，避免全国视角糊成一片；
+ *  - 高缩放：逐渐放开全部城市，并按文字包围盒做碰撞剔除；
+ *  - 去过的城市始终画在最上层，并用主题色加粗。
  */
 class CityLabelsView @JvmOverloads constructor(
     context: Context,
-    attrs: android.util.AttributeSet? = null,
+    attrs: AttributeSet? = null,
 ) : View(context, attrs) {
 
+    data class Label(
+        val name: String,
+        val latLng: LatLng,
+        val visited: Boolean,
+        val major: Boolean,
+    )
+
     private var map: MapLibreMap? = null
-    private var labels: List<Pair<String, LatLng>> = emptyList()
+    private var labels: List<Label> = emptyList()
 
     private val density = resources.displayMetrics.density
 
-    private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = ContextCompat.getColor(context, R.color.fg)
-        // 半透明：文字压在颜色面层之下时会被面染一层，这里直接给出那种观感
-        alpha = 190
+    private val basePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = ContextCompat.getColor(context, R.color.text_secondary)
     }
-
-    /** 描边当光晕：压在底图/城市面上也读得清；粗细跟着字号走。 */
+    private val visitedPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = Palette.accent(context)
+        typeface = android.graphics.Typeface.DEFAULT_BOLD
+    }
     private val haloPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
         color = ContextCompat.getColor(context, R.color.card)
-        alpha = 170
+        alpha = 210
     }
 
-    /**
-     * 字号随缩放：z2 约 6dp（全国视角允许看不清），z6 约 12dp，封顶 18dp ——
-     * 这个量级才和底图标注接近；原来 17dp 起跳会盖过大片城市面。
-     */
-    private fun sizeForZoom(zoom: Float): Float = (6f + (zoom - 2f) * 1.5f).coerceIn(6f, 18f)
+    /** 已点亮城市的名字颜色：跟随用户徽章色，而不是主题色。 */
+    fun setVisitedColor(color: Int) {
+        visitedPaint.color = color
+        invalidate()
+    }
 
     fun attach(mapLibre: MapLibreMap) {
         map = mapLibre
         invalidate()
     }
 
-    fun submit(newLabels: List<Pair<String, LatLng>>) {
+    fun submit(newLabels: List<Label>) {
         labels = newLabels
         invalidate()
     }
@@ -68,24 +70,40 @@ class CityLabelsView @JvmOverloads constructor(
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         val mapLibre = map ?: return
-        val projection = mapLibre.projection
-        val size = sizeForZoom(mapLibre.cameraPosition.zoom.toFloat()) * density
-        if (textPaint.textSize != size) {
-            textPaint.textSize = size
-            haloPaint.textSize = size
-            // 光晕只做「描一圈」的量，0.28 会把字糊成一团白块
-            haloPaint.strokeWidth = (size * 0.10f).coerceAtLeast(1f * density)
-        }
-        val metrics = textPaint.fontMetrics
+        val zoom = mapLibre.cameraPosition.zoom.toFloat()
+        // 低缩放只保留主要城市；到 z4.2 才放开全部城市
+        val showAll = zoom >= 4.2f
+        val size = (6f + (zoom - 2f) * 1.5f).coerceIn(6f, 18f) * density
+        listOf(basePaint, visitedPaint, haloPaint).forEach { it.textSize = size }
+        haloPaint.strokeWidth = (size * 0.10f).coerceAtLeast(1f * density)
+
+        val metrics = basePaint.fontMetrics
         val baselineOffset = -(metrics.ascent + metrics.descent) / 2f
-        labels.forEach { (name, latLng) ->
-            val point = projection.toScreenLocation(latLng)
+        val occupied = mutableListOf<RectF>()
+
+        // 去过的城市 > 主要城市 > 普通城市；同优先级按名称稳定排序
+        val ordered = labels.sortedWith(
+            compareByDescending<Label> { it.visited }
+                .thenByDescending { it.major }
+                .thenBy { it.name },
+        )
+        ordered.forEach { label ->
+            if (!showAll && !label.visited && !label.major) return@forEach
+            val point = mapLibre.projection.toScreenLocation(label.latLng)
             if (point.x < 0 || point.y < 0 || point.x > width || point.y > height) return@forEach
-            // 以城市坐标为中心：左右按文字宽度回退一半，上下按字形中心对齐
-            val x = point.x.toFloat() - textPaint.measureText(name) / 2f
-            val y = point.y.toFloat() + baselineOffset
-            canvas.drawText(name, x, y, haloPaint)
-            canvas.drawText(name, x, y, textPaint)
+
+            val paint = if (label.visited) visitedPaint else basePaint
+            paint.textSize = size
+            val textWidth = paint.measureText(label.name)
+            if (textWidth > width * 0.36f) return@forEach
+            val x = point.x - textWidth / 2f
+            val y = point.y + baselineOffset
+            val rect = RectF(x, point.y - size, x + textWidth, point.y + size)
+            if (occupied.any { RectF.intersects(it, rect) }) return@forEach
+            occupied += rect
+
+            canvas.drawText(label.name, x, y, haloPaint)
+            canvas.drawText(label.name, x, y, paint)
         }
     }
 }

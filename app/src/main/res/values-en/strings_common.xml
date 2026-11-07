@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 通用与底部导航 (English) -->
+<resources>
+    <string name="app_name">City Footprint</string>
+    <string name="tab_home">Home</string>
+    <string name="tab_achievements">Achievements</string>
+    <string name="tab_map">Map</string>
+    <string name="tab_profile">Profile</string>
+    <string name="edit_delete">Delete</string>
+    <string name="discard_title">Discard unsaved changes?</string>
+    <string name="discard_message">Your current edits will not be saved.</string>
+    <string name="discard_positive">Discard</string>
+    <string name="discard_negative">Keep editing</string>
+    <string name="delete_title">Delete this record?</string>
+    <string name="delete_message">“%1$s” cannot be recovered after deletion.</string>
+    <string name="common_confirm">OK</string>
+    <string name="common_cancel">Cancel</string>
+    <string name="common_delete">Delete</string>
+    <string name="common_back">Back</string>
+    <string name="common_menu">Menu</string>
+    <string name="common_error">Something went wrong. Try again</string>
+    <string name="common_open_url_failed">No app can open this link</string>
+    <string name="tab_trips">Trips</string>
+    <string name="menu_checkin">City check-in</string>
+    <string name="menu_trip">Add trip</string>
+    <string name="common_add">Add</string>
+    <string name="top_save">Save</string>
+</resources>

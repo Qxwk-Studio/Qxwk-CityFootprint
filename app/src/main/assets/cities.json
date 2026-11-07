@@ -10,7 +10,9 @@
       "province": "北京",
       "lat": 39.904,
       "lng": 116.407,
-      "adcode": 110000
+      "adcode": 110000,
+      "nameEn": "Beijing",
+      "provinceEn": "Beijing"
     },
     {
       "name": "上海",
@@ -18,7 +20,9 @@
       "province": "上海",
       "lat": 31.23,
       "lng": 121.474,
-      "adcode": 310000
+      "adcode": 310000,
+      "nameEn": "Shanghai",
+      "provinceEn": "Shanghai"
     },
     {
       "name": "天津",
@@ -26,7 +30,9 @@
       "province": "天津",
       "lat": 39.084,
       "lng": 117.201,
-      "adcode": 120000
+      "adcode": 120000,
+      "nameEn": "Tianjin",
+      "provinceEn": "Tianjin"
     },
     {
       "name": "重庆",
@@ -34,7 +40,9 @@
       "province": "重庆",
       "lat": 29.563,
       "lng": 106.551,
-      "adcode": 500000
+      "adcode": 500000,
+      "nameEn": "Chongqing",
+      "provinceEn": "Chongqing"
     },
     {
       "name": "石家庄",
@@ -42,7 +50,9 @@
       "province": "河北",
       "lat": 38.043,
       "lng": 114.515,
-      "adcode": 130100
+      "adcode": 130100,
+      "nameEn": "Shijiazhuang",
+      "provinceEn": "Hebei"
     },
     {
       "name": "唐山",
@@ -50,7 +60,9 @@
       "province": "河北",
       "lat": 39.631,
       "lng": 118.18,
-      "adcode": 130200
+      "adcode": 130200,
+      "nameEn": "Tangshan",
+      "provinceEn": "Hebei"
     },
     {
       "name": "秦皇岛",
@@ -58,7 +70,9 @@
       "province": "河北",
       "lat": 39.935,
       "lng": 119.6,
-      "adcode": 130300
+      "adcode": 130300,
+      "nameEn": "Qinhuangdao",
+      "provinceEn": "Hebei"
     },
     {
       "name": "邯郸",
@@ -66,7 +80,9 @@
       "province": "河北",
       "lat": 36.626,
       "lng": 114.539,
-      "adcode": 130400
+      "adcode": 130400,
+      "nameEn": "Handan",
+      "provinceEn": "Hebei"
     },
     {
       "name": "邢台",
@@ -74,7 +90,9 @@
       "province": "河北",
       "lat": 37.071,
       "lng": 114.504,
-      "adcode": 130500
+      "adcode": 130500,
+      "nameEn": "Xingtai",
+      "provinceEn": "Hebei"
     },
     {
       "name": "保定",
@@ -82,7 +100,9 @@
       "province": "河北",
       "lat": 38.874,
       "lng": 115.465,
-      "adcode": 130600
+      "adcode": 130600,
+      "nameEn": "Baoding",
+      "provinceEn": "Hebei"
     },
     {
       "name": "张家口",
@@ -90,7 +110,9 @@
       "province": "河北",
       "lat": 40.824,
       "lng": 114.886,
-      "adcode": 130700
+      "adcode": 130700,
+      "nameEn": "Zhangjiakou",
+      "provinceEn": "Hebei"
     },
     {
       "name": "承德",
@@ -98,7 +120,9 @@
       "province": "河北",
       "lat": 40.951,
       "lng": 117.963,
-      "adcode": 130800
+      "adcode": 130800,
+      "nameEn": "Chengde",
+      "provinceEn": "Hebei"
     },
     {
       "name": "沧州",
@@ -106,7 +130,9 @@
       "province": "河北",
       "lat": 38.304,
       "lng": 116.839,
-      "adcode": 130900
+      "adcode": 130900,
+      "nameEn": "Cangzhou",
+      "provinceEn": "Hebei"
     },
     {
       "name": "廊坊",
@@ -114,7 +140,9 @@
       "province": "河北",
       "lat": 39.538,
       "lng": 116.684,
-      "adcode": 131000
+      "adcode": 131000,
+      "nameEn": "Langfang",
+      "provinceEn": "Hebei"
     },
     {
       "name": "衡水",
@@ -122,7 +150,9 @@
       "province": "河北",
       "lat": 37.739,
       "lng": 115.671,
-      "adcode": 131100
+      "adcode": 131100,
+      "nameEn": "Hengshui",
+      "provinceEn": "Hebei"
     },
     {
       "name": "太原",
@@ -130,7 +160,9 @@
       "province": "山西",
       "lat": 37.87,
       "lng": 112.549,
-      "adcode": 140100
+      "adcode": 140100,
+      "nameEn": "Taiyuan",
+      "provinceEn": "Shanxi"
     },
     {
       "name": "大同",
@@ -138,7 +170,9 @@
       "province": "山西",
       "lat": 40.076,
       "lng": 113.3,
-      "adcode": 140200
+      "adcode": 140200,
+      "nameEn": "Datong",
+      "provinceEn": "Shanxi"
     },
     {
       "name": "阳泉",
@@ -146,7 +180,9 @@
       "province": "山西",
       "lat": 37.857,
       "lng": 113.58,
-      "adcode": 140300
+      "adcode": 140300,
+      "nameEn": "Yangquan",
+      "provinceEn": "Shanxi"
     },
     {
       "name": "长治",
@@ -154,7 +190,9 @@
       "province": "山西",
       "lat": 36.196,
       "lng": 113.116,
-      "adcode": 140400
+      "adcode": 140400,
+      "nameEn": "Zhangzhi",
+      "provinceEn": "Shanxi"
     },
     {
       "name": "晋城",
@@ -162,7 +200,9 @@
       "province": "山西",
       "lat": 35.49,
       "lng": 112.851,
-      "adcode": 140500
+      "adcode": 140500,
+      "nameEn": "Jincheng",
+      "provinceEn": "Shanxi"
     },
     {
       "name": "朔州",
@@ -170,7 +210,9 @@
       "province": "山西",
       "lat": 39.332,
       "lng": 112.433,
-      "adcode": 140600
+      "adcode": 140600,
+      "nameEn": "Shuozhou",
+      "provinceEn": "Shanxi"
     },
     {
       "name": "晋中",
@@ -178,7 +220,9 @@
       "province": "山西",
       "lat": 37.687,
       "lng": 112.753,
-      "adcode": 140700
+      "adcode": 140700,
+      "nameEn": "Jinzhong",
+      "provinceEn": "Shanxi"
     },
     {
       "name": "运城",
@@ -186,7 +230,9 @@
       "province": "山西",
       "lat": 35.026,
       "lng": 111.007,
-      "adcode": 140800
+      "adcode": 140800,
+      "nameEn": "Yuncheng",
+      "provinceEn": "Shanxi"
     },
     {
       "name": "忻州",
@@ -194,7 +240,9 @@
       "province": "山西",
       "lat": 38.417,
       "lng": 112.734,
-      "adcode": 140900
+      "adcode": 140900,
+      "nameEn": "Xinzhou",
+      "provinceEn": "Shanxi"
     },
     {
       "name": "临汾",
@@ -202,7 +250,9 @@
       "province": "山西",
       "lat": 36.088,
       "lng": 111.519,
-      "adcode": 141000
+      "adcode": 141000,
+      "nameEn": "Linfen",
+      "provinceEn": "Shanxi"
     },
     {
       "name": "吕梁",
@@ -210,7 +260,9 @@
       "province": "山西",
       "lat": 37.518,
       "lng": 111.143,
-      "adcode": 141100
+      "adcode": 141100,
+      "nameEn": "Lvliang",
+      "provinceEn": "Shanxi"
     },
     {
       "name": "兴安",
@@ -218,7 +270,9 @@
       "province": "内蒙古",
       "lat": 46.076268,
       "lng": 122.070317,
-      "adcode": 152200
+      "adcode": 152200,
+      "nameEn": "Xing'an",
+      "provinceEn": "Inner Mongolia"
     },
     {
       "name": "锡林郭勒",
@@ -226,7 +280,9 @@
       "province": "内蒙古",
       "lat": 43.944018,
       "lng": 116.090996,
-      "adcode": 152500
+      "adcode": 152500,
+      "nameEn": "Xilinguolei",
+      "provinceEn": "Inner Mongolia"
     },
     {
       "name": "阿拉善",
@@ -234,7 +290,9 @@
       "province": "内蒙古",
       "lat": 38.844814,
       "lng": 105.706422,
-      "adcode": 152900
+      "adcode": 152900,
+      "nameEn": "Alashan",
+      "provinceEn": "Inner Mongolia"
     },
     {
       "name": "呼和浩特",
@@ -242,7 +300,9 @@
       "province": "内蒙古",
       "lat": 40.842,
       "lng": 111.75,
-      "adcode": 150100
+      "adcode": 150100,
+      "nameEn": "Hohhot",
+      "provinceEn": "Inner Mongolia"
     },
     {
       "name": "包头",
@@ -250,7 +310,9 @@
       "province": "内蒙古",
       "lat": 40.657,
       "lng": 109.84,
-      "adcode": 150200
+      "adcode": 150200,
+      "nameEn": "Baotou",
+      "provinceEn": "Inner Mongolia"
     },
     {
       "name": "乌海",
@@ -258,7 +320,9 @@
       "province": "内蒙古",
       "lat": 39.655,
       "lng": 106.794,
-      "adcode": 150300
+      "adcode": 150300,
+      "nameEn": "Wuhai",
+      "provinceEn": "Inner Mongolia"
     },
     {
       "name": "赤峰",
@@ -266,7 +330,9 @@
       "province": "内蒙古",
       "lat": 42.257,
       "lng": 118.888,
-      "adcode": 150400
+      "adcode": 150400,
+      "nameEn": "Chifeng",
+      "provinceEn": "Inner Mongolia"
     },
     {
       "name": "通辽",
@@ -274,7 +340,9 @@
       "province": "内蒙古",
       "lat": 43.652,
       "lng": 122.243,
-      "adcode": 150500
+      "adcode": 150500,
+      "nameEn": "Tongliao",
+      "provinceEn": "Inner Mongolia"
     },
     {
       "name": "鄂尔多斯",
@@ -282,7 +350,9 @@
       "province": "内蒙古",
       "lat": 39.608,
       "lng": 109.781,
-      "adcode": 150600
+      "adcode": 150600,
+      "nameEn": "Eerduosi",
+      "provinceEn": "Inner Mongolia"
     },
     {
       "name": "呼伦贝尔",
@@ -290,7 +360,9 @@
       "province": "内蒙古",
       "lat": 49.212,
       "lng": 119.766,
-      "adcode": 150700
+      "adcode": 150700,
+      "nameEn": "Hulunbeier",
+      "provinceEn": "Inner Mongolia"
     },
     {
       "name": "巴彦淖尔",
@@ -298,7 +370,9 @@
       "province": "内蒙古",
       "lat": 40.743,
       "lng": 107.388,
-      "adcode": 150800
+      "adcode": 150800,
+      "nameEn": "Bayannaoer",
+      "provinceEn": "Inner Mongolia"
     },
     {
       "name": "乌兰察布",
@@ -306,7 +380,9 @@
       "province": "内蒙古",
       "lat": 40.994,
       "lng": 113.132,
-      "adcode": 150900
+      "adcode": 150900,
+      "nameEn": "Wulanchabu",
+      "provinceEn": "Inner Mongolia"
     },
     {
       "name": "沈阳",
@@ -314,7 +390,9 @@
       "province": "辽宁",
       "lat": 41.806,
       "lng": 123.432,
-      "adcode": 210100
+      "adcode": 210100,
+      "nameEn": "Shenyang",
+      "provinceEn": "Liaoning"
     },
     {
       "name": "大连",
@@ -322,7 +400,9 @@
       "province": "辽宁",
       "lat": 38.914,
       "lng": 121.615,
-      "adcode": 210200
+      "adcode": 210200,
+      "nameEn": "Dalian",
+      "provinceEn": "Liaoning"
     },
     {
       "name": "鞍山",
@@ -330,7 +410,9 @@
       "province": "辽宁",
       "lat": 41.108,
       "lng": 122.994,
-      "adcode": 210300
+      "adcode": 210300,
+      "nameEn": "Anshan",
+      "provinceEn": "Liaoning"
     },
     {
       "name": "抚顺",
@@ -338,7 +420,9 @@
       "province": "辽宁",
       "lat": 41.88,
       "lng": 123.957,
-      "adcode": 210400
+      "adcode": 210400,
+      "nameEn": "Fushun",
+      "provinceEn": "Liaoning"
     },
     {
       "name": "本溪",
@@ -346,7 +430,9 @@
       "province": "辽宁",
       "lat": 41.294,
       "lng": 123.765,
-      "adcode": 210500
+      "adcode": 210500,
+      "nameEn": "Benxi",
+      "provinceEn": "Liaoning"
     },
     {
       "name": "丹东",
@@ -354,7 +440,9 @@
       "province": "辽宁",
       "lat": 40.129,
       "lng": 124.383,
-      "adcode": 210600
+      "adcode": 210600,
+      "nameEn": "Dandong",
+      "provinceEn": "Liaoning"
     },
     {
       "name": "锦州",
@@ -362,7 +450,9 @@
       "province": "辽宁",
       "lat": 41.096,
       "lng": 121.127,
-      "adcode": 210700
+      "adcode": 210700,
+      "nameEn": "Jinzhou",
+      "provinceEn": "Liaoning"
     },
     {
       "name": "营口",
@@ -370,7 +460,9 @@
       "province": "辽宁",
       "lat": 40.667,
       "lng": 122.235,
-      "adcode": 210800
+      "adcode": 210800,
+      "nameEn": "Yingkou",
+      "provinceEn": "Liaoning"
     },
     {
       "name": "阜新",
@@ -378,7 +470,9 @@
       "province": "辽宁",
       "lat": 42.022,
       "lng": 121.67,
-      "adcode": 210900
+      "adcode": 210900,
+      "nameEn": "Fuxin",
+      "provinceEn": "Liaoning"
     },
     {
       "name": "辽阳",
@@ -386,7 +480,9 @@
       "province": "辽宁",
       "lat": 41.27,
       "lng": 123.237,
-      "adcode": 211000
+      "adcode": 211000,
+      "nameEn": "Liaoyang",
+      "provinceEn": "Liaoning"
     },
     {
       "name": "盘锦",
@@ -394,7 +490,9 @@
       "province": "辽宁",
       "lat": 41.124,
       "lng": 122.071,
-      "adcode": 211100
+      "adcode": 211100,
+      "nameEn": "Panjin",
+      "provinceEn": "Liaoning"
     },
     {
       "name": "铁岭",
@@ -402,7 +500,9 @@
       "province": "辽宁",
       "lat": 42.286,
       "lng": 123.726,
-      "adcode": 211200
+      "adcode": 211200,
+      "nameEn": "Tieling",
+      "provinceEn": "Liaoning"
     },
     {
       "name": "朝阳",
@@ -410,7 +510,9 @@
       "province": "辽宁",
       "lat": 41.573,
       "lng": 120.451,
-      "adcode": 211300
+      "adcode": 211300,
+      "nameEn": "Zhaoyang",
+      "provinceEn": "Liaoning"
     },
     {
       "name": "葫芦岛",
@@ -418,7 +520,9 @@
       "province": "辽宁",
       "lat": 40.711,
       "lng": 120.837,
-      "adcode": 211400
+      "adcode": 211400,
+      "nameEn": "Huludao",
+      "provinceEn": "Liaoning"
     },
     {
       "name": "长春",
@@ -426,7 +530,9 @@
       "province": "吉林",
       "lat": 43.817,
       "lng": 125.324,
-      "adcode": 220100
+      "adcode": 220100,
+      "nameEn": "Changchun",
+      "provinceEn": "Jilin"
     },
     {
       "name": "吉林",
@@ -434,7 +540,9 @@
       "province": "吉林",
       "lat": 43.838,
       "lng": 126.55,
-      "adcode": 220200
+      "adcode": 220200,
+      "nameEn": "Jilin",
+      "provinceEn": "Jilin"
     },
     {
       "name": "四平",
@@ -442,7 +550,9 @@
       "province": "吉林",
       "lat": 43.167,
       "lng": 124.351,
-      "adcode": 220300
+      "adcode": 220300,
+      "nameEn": "Siping",
+      "provinceEn": "Jilin"
     },
     {
       "name": "辽源",
@@ -450,7 +560,9 @@
       "province": "吉林",
       "lat": 42.888,
       "lng": 125.144,
-      "adcode": 220400
+      "adcode": 220400,
+      "nameEn": "Liaoyuan",
+      "provinceEn": "Jilin"
     },
     {
       "name": "通化",
@@ -458,7 +570,9 @@
       "province": "吉林",
       "lat": 41.728,
       "lng": 125.94,
-      "adcode": 220500
+      "adcode": 220500,
+      "nameEn": "Tonghua",
+      "provinceEn": "Jilin"
     },
     {
       "name": "白山",
@@ -466,7 +580,9 @@
       "province": "吉林",
       "lat": 41.943,
       "lng": 126.424,
-      "adcode": 220600
+      "adcode": 220600,
+      "nameEn": "Baishan",
+      "provinceEn": "Jilin"
     },
     {
       "name": "松原",
@@ -474,7 +590,9 @@
       "province": "吉林",
       "lat": 45.141,
       "lng": 124.825,
-      "adcode": 220700
+      "adcode": 220700,
+      "nameEn": "Songyuan",
+      "provinceEn": "Jilin"
     },
     {
       "name": "白城",
@@ -482,7 +600,9 @@
       "province": "吉林",
       "lat": 45.62,
       "lng": 122.84,
-      "adcode": 220800
+      "adcode": 220800,
+      "nameEn": "Baicheng",
+      "provinceEn": "Jilin"
     },
     {
       "name": "延边",
@@ -490,7 +610,9 @@
       "province": "吉林",
       "lat": 42.904,
       "lng": 129.508,
-      "adcode": 222400
+      "adcode": 222400,
+      "nameEn": "Yanbian",
+      "provinceEn": "Jilin"
     },
     {
       "name": "哈尔滨",
@@ -498,7 +620,9 @@
       "province": "黑龙江",
       "lat": 45.803,
       "lng": 126.535,
-      "adcode": 230100
+      "adcode": 230100,
+      "nameEn": "Harbin",
+      "provinceEn": "Heilongjiang"
     },
     {
       "name": "齐齐哈尔",
@@ -506,7 +630,9 @@
       "province": "黑龙江",
       "lat": 47.354,
       "lng": 123.918,
-      "adcode": 230200
+      "adcode": 230200,
+      "nameEn": "Qiqihar",
+      "provinceEn": "Heilongjiang"
     },
     {
       "name": "鸡西",
@@ -514,7 +640,9 @@
       "province": "黑龙江",
       "lat": 45.295,
       "lng": 130.969,
-      "adcode": 230300
+      "adcode": 230300,
+      "nameEn": "Jixi",
+      "provinceEn": "Heilongjiang"
     },
     {
       "name": "鹤岗",
@@ -522,7 +650,9 @@
       "province": "黑龙江",
       "lat": 47.35,
       "lng": 130.298,
-      "adcode": 230400
+      "adcode": 230400,
+      "nameEn": "Hegang",
+      "provinceEn": "Heilongjiang"
     },
     {
       "name": "双鸭山",
@@ -530,7 +660,9 @@
       "province": "黑龙江",
       "lat": 46.646,
       "lng": 131.159,
-      "adcode": 230500
+      "adcode": 230500,
+      "nameEn": "Shuangyashan",
+      "provinceEn": "Heilongjiang"
     },
     {
       "name": "大庆",
@@ -538,7 +670,9 @@
       "province": "黑龙江",
       "lat": 46.589,
       "lng": 125.103,
-      "adcode": 230600
+      "adcode": 230600,
+      "nameEn": "Daqing",
+      "provinceEn": "Heilongjiang"
     },
     {
       "name": "伊春",
@@ -546,7 +680,9 @@
       "province": "黑龙江",
       "lat": 47.727,
       "lng": 128.839,
-      "adcode": 230700
+      "adcode": 230700,
+      "nameEn": "Yichun",
+      "provinceEn": "Heilongjiang"
     },
     {
       "name": "佳木斯",
@@ -554,7 +690,9 @@
       "province": "黑龙江",
       "lat": 46.8,
       "lng": 130.319,
-      "adcode": 230800
+      "adcode": 230800,
+      "nameEn": "Jiamusi",
+      "provinceEn": "Heilongjiang"
     },
     {
       "name": "七台河",
@@ -562,7 +700,9 @@
       "province": "黑龙江",
       "lat": 45.771,
       "lng": 131.003,
-      "adcode": 230900
+      "adcode": 230900,
+      "nameEn": "Qitaihe",
+      "provinceEn": "Heilongjiang"
     },
     {
       "name": "牡丹江",
@@ -570,7 +710,9 @@
       "province": "黑龙江",
       "lat": 44.551,
       "lng": 129.633,
-      "adcode": 231000
+      "adcode": 231000,
+      "nameEn": "Mudanjiang",
+      "provinceEn": "Heilongjiang"
     },
     {
       "name": "黑河",
@@ -578,7 +720,9 @@
       "province": "黑龙江",
       "lat": 50.245,
       "lng": 127.529,
-      "adcode": 231100
+      "adcode": 231100,
+      "nameEn": "Heihe",
+      "provinceEn": "Heilongjiang"
     },
     {
       "name": "绥化",
@@ -586,7 +730,9 @@
       "province": "黑龙江",
       "lat": 46.653,
       "lng": 126.99,
-      "adcode": 231200
+      "adcode": 231200,
+      "nameEn": "Suihua",
+      "provinceEn": "Heilongjiang"
     },
     {
       "name": "南京",
@@ -594,7 +740,9 @@
       "province": "江苏",
       "lat": 32.06,
       "lng": 118.797,
-      "adcode": 320100
+      "adcode": 320100,
+      "nameEn": "Nanjing",
+      "provinceEn": "Jiangsu"
     },
     {
       "name": "无锡",
@@ -602,7 +750,9 @@
       "province": "江苏",
       "lat": 31.491,
       "lng": 120.312,
-      "adcode": 320200
+      "adcode": 320200,
+      "nameEn": "Wuxi",
+      "provinceEn": "Jiangsu"
     },
     {
       "name": "徐州",
@@ -610,7 +760,9 @@
       "province": "江苏",
       "lat": 34.205,
       "lng": 117.285,
-      "adcode": 320300
+      "adcode": 320300,
+      "nameEn": "Xuzhou",
+      "provinceEn": "Jiangsu"
     },
     {
       "name": "常州",
@@ -618,7 +770,9 @@
       "province": "江苏",
       "lat": 31.811,
       "lng": 119.974,
-      "adcode": 320400
+      "adcode": 320400,
+      "nameEn": "Changzhou",
+      "provinceEn": "Jiangsu"
     },
     {
       "name": "苏州",
@@ -626,7 +780,9 @@
       "province": "江苏",
       "lat": 31.299,
       "lng": 120.585,
-      "adcode": 320500
+      "adcode": 320500,
+      "nameEn": "Suzhou",
+      "provinceEn": "Jiangsu"
     },
     {
       "name": "南通",
@@ -634,7 +790,9 @@
       "province": "江苏",
       "lat": 31.98,
       "lng": 120.894,
-      "adcode": 320600
+      "adcode": 320600,
+      "nameEn": "Nantong",
+      "provinceEn": "Jiangsu"
     },
     {
       "name": "连云港",
@@ -642,7 +800,9 @@
       "province": "江苏",
       "lat": 34.6,
       "lng": 119.222,
-      "adcode": 320700
+      "adcode": 320700,
+      "nameEn": "Lianyungang",
+      "provinceEn": "Jiangsu"
     },
     {
       "name": "淮安",
@@ -650,7 +810,9 @@
       "province": "江苏",
       "lat": 33.611,
       "lng": 119.015,
-      "adcode": 320800
+      "adcode": 320800,
+      "nameEn": "Huai'an",
+      "provinceEn": "Jiangsu"
     },
     {
       "name": "盐城",
@@ -658,7 +820,9 @@
       "province": "江苏",
       "lat": 33.348,
       "lng": 120.163,
-      "adcode": 320900
+      "adcode": 320900,
+      "nameEn": "Yancheng",
+      "provinceEn": "Jiangsu"
     },
     {
       "name": "扬州",
@@ -666,7 +830,9 @@
       "province": "江苏",
       "lat": 32.394,
       "lng": 119.413,
-      "adcode": 321000
+      "adcode": 321000,
+      "nameEn": "Yangzhou",
+      "provinceEn": "Jiangsu"
     },
     {
       "name": "镇江",
@@ -674,7 +840,9 @@
       "province": "江苏",
       "lat": 32.188,
       "lng": 119.425,
-      "adcode": 321100
+      "adcode": 321100,
+      "nameEn": "Zhenjiang",
+      "provinceEn": "Jiangsu"
     },
     {
       "name": "泰州",
@@ -682,7 +850,9 @@
       "province": "江苏",
       "lat": 32.456,
       "lng": 119.923,
-      "adcode": 321200
+      "adcode": 321200,
+      "nameEn": "Taizhou",
+      "provinceEn": "Jiangsu"
     },
     {
       "name": "宿迁",
@@ -690,7 +860,9 @@
       "province": "江苏",
       "lat": 33.963,
       "lng": 118.275,
-      "adcode": 321300
+      "adcode": 321300,
+      "nameEn": "Suqian",
+      "provinceEn": "Jiangsu"
     },
     {
       "name": "杭州",
@@ -698,7 +870,9 @@
       "province": "浙江",
       "lat": 30.274,
       "lng": 120.155,
-      "adcode": 330100
+      "adcode": 330100,
+      "nameEn": "Hangzhou",
+      "provinceEn": "Zhejiang"
     },
     {
       "name": "宁波",
@@ -706,7 +880,9 @@
       "province": "浙江",
       "lat": 29.868,
       "lng": 121.544,
-      "adcode": 330200
+      "adcode": 330200,
+      "nameEn": "Ningbo",
+      "provinceEn": "Zhejiang"
     },
     {
       "name": "温州",
@@ -714,7 +890,9 @@
       "province": "浙江",
       "lat": 27.994,
       "lng": 120.699,
-      "adcode": 330300
+      "adcode": 330300,
+      "nameEn": "Wenzhou",
+      "provinceEn": "Zhejiang"
     },
     {
       "name": "嘉兴",
@@ -722,7 +900,9 @@
       "province": "浙江",
       "lat": 30.746,
       "lng": 120.755,
-      "adcode": 330400
+      "adcode": 330400,
+      "nameEn": "Jiaxing",
+      "provinceEn": "Zhejiang"
     },
     {
       "name": "湖州",
@@ -730,7 +910,9 @@
       "province": "浙江",
       "lat": 30.893,
       "lng": 120.087,
-      "adcode": 330500
+      "adcode": 330500,
+      "nameEn": "Huzhou",
+      "provinceEn": "Zhejiang"
     },
     {
       "name": "绍兴",
@@ -738,7 +920,9 @@
       "province": "浙江",
       "lat": 30.03,
       "lng": 120.58,
-      "adcode": 330600
+      "adcode": 330600,
+      "nameEn": "Shaoxing",
+      "provinceEn": "Zhejiang"
     },
     {
       "name": "金华",
@@ -746,7 +930,9 @@
       "province": "浙江",
       "lat": 29.079,
       "lng": 119.647,
-      "adcode": 330700
+      "adcode": 330700,
+      "nameEn": "Jinhua",
+      "provinceEn": "Zhejiang"
     },
     {
       "name": "衢州",
@@ -754,7 +940,9 @@
       "province": "浙江",
       "lat": 28.936,
       "lng": 118.874,
-      "adcode": 330800
+      "adcode": 330800,
+      "nameEn": "Quzhou",
+      "provinceEn": "Zhejiang"
     },
     {
       "name": "舟山",
@@ -762,7 +950,9 @@
       "province": "浙江",
       "lat": 30,
       "lng": 122.207,
-      "adcode": 330900
+      "adcode": 330900,
+      "nameEn": "Zhoushan",
+      "provinceEn": "Zhejiang"
     },
     {
       "name": "台州",
@@ -770,7 +960,9 @@
       "province": "浙江",
       "lat": 28.656,
       "lng": 121.421,
-      "adcode": 331000
+      "adcode": 331000,
+      "nameEn": "Taizhou",
+      "provinceEn": "Zhejiang"
     },
     {
       "name": "丽水",
@@ -778,7 +970,9 @@
       "province": "浙江",
       "lat": 28.452,
       "lng": 119.922,
-      "adcode": 331100
+      "adcode": 331100,
+      "nameEn": "Lishui",
+      "provinceEn": "Zhejiang"
     },
     {
       "name": "合肥",
@@ -786,7 +980,9 @@
       "province": "安徽",
       "lat": 31.821,
       "lng": 117.227,
-      "adcode": 340100
+      "adcode": 340100,
+      "nameEn": "Hefei",
+      "provinceEn": "Anhui"
     },
     {
       "name": "芜湖",
@@ -794,7 +990,9 @@
       "province": "安徽",
       "lat": 31.352,
       "lng": 118.433,
-      "adcode": 340200
+      "adcode": 340200,
+      "nameEn": "Wuhu",
+      "provinceEn": "Anhui"
     },
     {
       "name": "蚌埠",
@@ -802,7 +1000,9 @@
       "province": "安徽",
       "lat": 32.916,
       "lng": 117.389,
-      "adcode": 340300
+      "adcode": 340300,
+      "nameEn": "Bengbu",
+      "provinceEn": "Anhui"
     },
     {
       "name": "淮南",
@@ -810,7 +1010,9 @@
       "province": "安徽",
       "lat": 32.626,
       "lng": 117.018,
-      "adcode": 340400
+      "adcode": 340400,
+      "nameEn": "Huainan",
+      "provinceEn": "Anhui"
     },
     {
       "name": "马鞍山",
@@ -818,7 +1020,9 @@
       "province": "安徽",
       "lat": 31.671,
       "lng": 118.507,
-      "adcode": 340500
+      "adcode": 340500,
+      "nameEn": "Maanshan",
+      "provinceEn": "Anhui"
     },
     {
       "name": "淮北",
@@ -826,7 +1030,9 @@
       "province": "安徽",
       "lat": 33.955,
       "lng": 116.799,
-      "adcode": 340600
+      "adcode": 340600,
+      "nameEn": "Huaibei",
+      "provinceEn": "Anhui"
     },
     {
       "name": "铜陵",
@@ -834,7 +1040,9 @@
       "province": "安徽",
       "lat": 30.945,
       "lng": 117.812,
-      "adcode": 340700
+      "adcode": 340700,
+      "nameEn": "Tongling",
+      "provinceEn": "Anhui"
     },
     {
       "name": "安庆",
@@ -842,7 +1050,9 @@
       "province": "安徽",
       "lat": 30.543,
       "lng": 117.063,
-      "adcode": 340800
+      "adcode": 340800,
+      "nameEn": "Anqing",
+      "provinceEn": "Anhui"
     },
     {
       "name": "黄山",
@@ -850,7 +1060,9 @@
       "province": "安徽",
       "lat": 29.715,
       "lng": 118.338,
-      "adcode": 341000
+      "adcode": 341000,
+      "nameEn": "Huangshan",
+      "provinceEn": "Anhui"
     },
     {
       "name": "滁州",
@@ -858,7 +1070,9 @@
       "province": "安徽",
       "lat": 32.302,
       "lng": 118.317,
-      "adcode": 341100
+      "adcode": 341100,
+      "nameEn": "Chuzhou",
+      "provinceEn": "Anhui"
     },
     {
       "name": "阜阳",
@@ -866,7 +1080,9 @@
       "province": "安徽",
       "lat": 32.89,
       "lng": 115.814,
-      "adcode": 341200
+      "adcode": 341200,
+      "nameEn": "Fuyang",
+      "provinceEn": "Anhui"
     },
     {
       "name": "宿州",
@@ -874,7 +1090,9 @@
       "province": "安徽",
       "lat": 33.647,
       "lng": 116.964,
-      "adcode": 341300
+      "adcode": 341300,
+      "nameEn": "Suzhou",
+      "provinceEn": "Anhui"
     },
     {
       "name": "六安",
@@ -882,7 +1100,9 @@
       "province": "安徽",
       "lat": 31.755,
       "lng": 116.52,
-      "adcode": 341500
+      "adcode": 341500,
+      "nameEn": "Lu'an",
+      "provinceEn": "Anhui"
     },
     {
       "name": "亳州",
@@ -890,7 +1110,9 @@
       "province": "安徽",
       "lat": 33.846,
       "lng": 115.779,
-      "adcode": 341600
+      "adcode": 341600,
+      "nameEn": "Bozhou",
+      "provinceEn": "Anhui"
     },
     {
       "name": "池州",
@@ -898,7 +1120,9 @@
       "province": "安徽",
       "lat": 30.657,
       "lng": 117.491,
-      "adcode": 341700
+      "adcode": 341700,
+      "nameEn": "Chizhou",
+      "provinceEn": "Anhui"
     },
     {
       "name": "宣城",
@@ -906,7 +1130,9 @@
       "province": "安徽",
       "lat": 30.941,
       "lng": 118.759,
-      "adcode": 341800
+      "adcode": 341800,
+      "nameEn": "Xuancheng",
+      "provinceEn": "Anhui"
     },
     {
       "name": "福州",
@@ -914,7 +1140,9 @@
       "province": "福建",
       "lat": 26.074,
       "lng": 119.297,
-      "adcode": 350100
+      "adcode": 350100,
+      "nameEn": "Fuzhou",
+      "provinceEn": "Fujian"
     },
     {
       "name": "厦门",
@@ -922,7 +1150,9 @@
       "province": "福建",
       "lat": 24.48,
       "lng": 118.089,
-      "adcode": 350200
+      "adcode": 350200,
+      "nameEn": "Xiamen",
+      "provinceEn": "Fujian"
     },
     {
       "name": "莆田",
@@ -930,7 +1160,9 @@
       "province": "福建",
       "lat": 25.454,
       "lng": 119.008,
-      "adcode": 350300
+      "adcode": 350300,
+      "nameEn": "Putian",
+      "provinceEn": "Fujian"
     },
     {
       "name": "三明",
@@ -938,7 +1170,9 @@
       "province": "福建",
       "lat": 26.264,
       "lng": 117.639,
-      "adcode": 350400
+      "adcode": 350400,
+      "nameEn": "Sanming",
+      "provinceEn": "Fujian"
     },
     {
       "name": "泉州",
@@ -946,7 +1180,9 @@
       "province": "福建",
       "lat": 24.874,
       "lng": 118.676,
-      "adcode": 350500
+      "adcode": 350500,
+      "nameEn": "Quanzhou",
+      "provinceEn": "Fujian"
     },
     {
       "name": "漳州",
@@ -954,7 +1190,9 @@
       "province": "福建",
       "lat": 24.514,
       "lng": 117.647,
-      "adcode": 350600
+      "adcode": 350600,
+      "nameEn": "Zhangzhou",
+      "provinceEn": "Fujian"
     },
     {
       "name": "南平",
@@ -962,7 +1200,9 @@
       "province": "福建",
       "lat": 26.642,
       "lng": 118.178,
-      "adcode": 350700
+      "adcode": 350700,
+      "nameEn": "Nanping",
+      "provinceEn": "Fujian"
     },
     {
       "name": "龙岩",
@@ -970,7 +1210,9 @@
       "province": "福建",
       "lat": 25.075,
       "lng": 117.017,
-      "adcode": 350800
+      "adcode": 350800,
+      "nameEn": "Longyan",
+      "provinceEn": "Fujian"
     },
     {
       "name": "宁德",
@@ -978,7 +1220,9 @@
       "province": "福建",
       "lat": 26.666,
       "lng": 119.548,
-      "adcode": 350900
+      "adcode": 350900,
+      "nameEn": "Ningde",
+      "provinceEn": "Fujian"
     },
     {
       "name": "南昌",
@@ -986,7 +1230,9 @@
       "province": "江西",
       "lat": 28.682,
       "lng": 115.858,
-      "adcode": 360100
+      "adcode": 360100,
+      "nameEn": "Nanchang",
+      "provinceEn": "Jiangxi"
     },
     {
       "name": "景德镇",
@@ -994,7 +1240,9 @@
       "province": "江西",
       "lat": 29.269,
       "lng": 117.178,
-      "adcode": 360200
+      "adcode": 360200,
+      "nameEn": "Jingdezhen",
+      "provinceEn": "Jiangxi"
     },
     {
       "name": "萍乡",
@@ -1002,7 +1250,9 @@
       "province": "江西",
       "lat": 27.622,
       "lng": 113.854,
-      "adcode": 360300
+      "adcode": 360300,
+      "nameEn": "Pingxiang",
+      "provinceEn": "Jiangxi"
     },
     {
       "name": "九江",
@@ -1010,7 +1260,9 @@
       "province": "江西",
       "lat": 29.705,
       "lng": 116.002,
-      "adcode": 360400
+      "adcode": 360400,
+      "nameEn": "Jiujiang",
+      "provinceEn": "Jiangxi"
     },
     {
       "name": "新余",
@@ -1018,7 +1270,9 @@
       "province": "江西",
       "lat": 27.818,
       "lng": 114.917,
-      "adcode": 360500
+      "adcode": 360500,
+      "nameEn": "Xinyu",
+      "provinceEn": "Jiangxi"
     },
     {
       "name": "鹰潭",
@@ -1026,7 +1280,9 @@
       "province": "江西",
       "lat": 28.26,
       "lng": 117.07,
-      "adcode": 360600
+      "adcode": 360600,
+      "nameEn": "Yingtan",
+      "provinceEn": "Jiangxi"
     },
     {
       "name": "赣州",
@@ -1034,7 +1290,9 @@
       "province": "江西",
       "lat": 25.831,
       "lng": 114.935,
-      "adcode": 360700
+      "adcode": 360700,
+      "nameEn": "Ganzhou",
+      "provinceEn": "Jiangxi"
     },
     {
       "name": "吉安",
@@ -1042,7 +1300,9 @@
       "province": "江西",
       "lat": 27.114,
       "lng": 114.993,
-      "adcode": 360800
+      "adcode": 360800,
+      "nameEn": "Ji'an",
+      "provinceEn": "Jiangxi"
     },
     {
       "name": "宜春",
@@ -1050,7 +1310,9 @@
       "province": "江西",
       "lat": 27.815,
       "lng": 114.416,
-      "adcode": 360900
+      "adcode": 360900,
+      "nameEn": "Yichun",
+      "provinceEn": "Jiangxi"
     },
     {
       "name": "抚州",
@@ -1058,7 +1320,9 @@
       "province": "江西",
       "lat": 27.954,
       "lng": 116.358,
-      "adcode": 361000
+      "adcode": 361000,
+      "nameEn": "Fuzhou",
+      "provinceEn": "Jiangxi"
     },
     {
       "name": "上饶",
@@ -1066,7 +1330,9 @@
       "province": "江西",
       "lat": 28.455,
       "lng": 117.943,
-      "adcode": 361100
+      "adcode": 361100,
+      "nameEn": "Shangrao",
+      "provinceEn": "Jiangxi"
     },
     {
       "name": "济南",
@@ -1074,7 +1340,9 @@
       "province": "山东",
       "lat": 36.651,
       "lng": 117.12,
-      "adcode": 370100
+      "adcode": 370100,
+      "nameEn": "Jinan",
+      "provinceEn": "Shandong"
     },
     {
       "name": "青岛",
@@ -1082,7 +1350,9 @@
       "province": "山东",
       "lat": 36.067,
       "lng": 120.383,
-      "adcode": 370200
+      "adcode": 370200,
+      "nameEn": "Qingdao",
+      "provinceEn": "Shandong"
     },
     {
       "name": "淄博",
@@ -1090,7 +1360,9 @@
       "province": "山东",
       "lat": 36.813,
       "lng": 118.055,
-      "adcode": 370300
+      "adcode": 370300,
+      "nameEn": "Zibo",
+      "provinceEn": "Shandong"
     },
     {
       "name": "枣庄",
@@ -1098,7 +1370,9 @@
       "province": "山东",
       "lat": 34.81,
       "lng": 117.323,
-      "adcode": 370400
+      "adcode": 370400,
+      "nameEn": "Zaozhuang",
+      "provinceEn": "Shandong"
     },
     {
       "name": "东营",
@@ -1106,7 +1380,9 @@
       "province": "山东",
       "lat": 37.435,
       "lng": 118.675,
-      "adcode": 370500
+      "adcode": 370500,
+      "nameEn": "Dongying",
+      "provinceEn": "Shandong"
     },
     {
       "name": "烟台",
@@ -1114,7 +1390,9 @@
       "province": "山东",
       "lat": 37.464,
       "lng": 121.448,
-      "adcode": 370600
+      "adcode": 370600,
+      "nameEn": "Yantai",
+      "provinceEn": "Shandong"
     },
     {
       "name": "潍坊",
@@ -1122,7 +1400,9 @@
       "province": "山东",
       "lat": 36.707,
       "lng": 119.162,
-      "adcode": 370700
+      "adcode": 370700,
+      "nameEn": "Weifang",
+      "provinceEn": "Shandong"
     },
     {
       "name": "济宁",
@@ -1130,7 +1410,9 @@
       "province": "山东",
       "lat": 35.415,
       "lng": 116.587,
-      "adcode": 370800
+      "adcode": 370800,
+      "nameEn": "Jining",
+      "provinceEn": "Shandong"
     },
     {
       "name": "泰安",
@@ -1138,7 +1420,9 @@
       "province": "山东",
       "lat": 36.2,
       "lng": 117.088,
-      "adcode": 370900
+      "adcode": 370900,
+      "nameEn": "Tai'an",
+      "provinceEn": "Shandong"
     },
     {
       "name": "威海",
@@ -1146,7 +1430,9 @@
       "province": "山东",
       "lat": 37.513,
       "lng": 122.121,
-      "adcode": 371000
+      "adcode": 371000,
+      "nameEn": "Weihai",
+      "provinceEn": "Shandong"
     },
     {
       "name": "日照",
@@ -1154,7 +1440,9 @@
       "province": "山东",
       "lat": 35.416,
       "lng": 119.527,
-      "adcode": 371100
+      "adcode": 371100,
+      "nameEn": "Rizhao",
+      "provinceEn": "Shandong"
     },
     {
       "name": "临沂",
@@ -1162,7 +1450,9 @@
       "province": "山东",
       "lat": 35.104,
       "lng": 118.356,
-      "adcode": 371300
+      "adcode": 371300,
+      "nameEn": "Linyi",
+      "provinceEn": "Shandong"
     },
     {
       "name": "德州",
@@ -1170,7 +1460,9 @@
       "province": "山东",
       "lat": 37.436,
       "lng": 116.357,
-      "adcode": 371400
+      "adcode": 371400,
+      "nameEn": "Dezhou",
+      "provinceEn": "Shandong"
     },
     {
       "name": "聊城",
@@ -1178,7 +1470,9 @@
       "province": "山东",
       "lat": 36.457,
       "lng": 115.985,
-      "adcode": 371500
+      "adcode": 371500,
+      "nameEn": "Liaocheng",
+      "provinceEn": "Shandong"
     },
     {
       "name": "滨州",
@@ -1186,7 +1480,9 @@
       "province": "山东",
       "lat": 37.382,
       "lng": 117.971,
-      "adcode": 371600
+      "adcode": 371600,
+      "nameEn": "Binzhou",
+      "provinceEn": "Shandong"
     },
     {
       "name": "菏泽",
@@ -1194,7 +1490,9 @@
       "province": "山东",
       "lat": 35.233,
       "lng": 115.481,
-      "adcode": 371700
+      "adcode": 371700,
+      "nameEn": "Heze",
+      "provinceEn": "Shandong"
     },
     {
       "name": "济源",
@@ -1202,7 +1500,9 @@
       "province": "河南",
       "lat": 35.090378,
       "lng": 112.590047,
-      "adcode": 419001
+      "adcode": 419001,
+      "nameEn": "Jiyuan",
+      "provinceEn": "Henan"
     },
     {
       "name": "郑州",
@@ -1210,7 +1510,9 @@
       "province": "河南",
       "lat": 34.747,
       "lng": 113.625,
-      "adcode": 410100
+      "adcode": 410100,
+      "nameEn": "Zhengzhou",
+      "provinceEn": "Henan"
     },
     {
       "name": "开封",
@@ -1218,7 +1520,9 @@
       "province": "河南",
       "lat": 34.798,
       "lng": 114.308,
-      "adcode": 410200
+      "adcode": 410200,
+      "nameEn": "Kaifeng",
+      "provinceEn": "Henan"
     },
     {
       "name": "洛阳",
@@ -1226,7 +1530,9 @@
       "province": "河南",
       "lat": 34.62,
       "lng": 112.454,
-      "adcode": 410300
+      "adcode": 410300,
+      "nameEn": "Luoyang",
+      "provinceEn": "Henan"
     },
     {
       "name": "平顶山",
@@ -1234,7 +1540,9 @@
       "province": "河南",
       "lat": 33.766,
       "lng": 113.193,
-      "adcode": 410400
+      "adcode": 410400,
+      "nameEn": "Pingdingshan",
+      "provinceEn": "Henan"
     },
     {
       "name": "安阳",
@@ -1242,7 +1550,9 @@
       "province": "河南",
       "lat": 36.099,
       "lng": 114.393,
-      "adcode": 410500
+      "adcode": 410500,
+      "nameEn": "Anyang",
+      "provinceEn": "Henan"
     },
     {
       "name": "鹤壁",
@@ -1250,7 +1560,9 @@
       "province": "河南",
       "lat": 35.748,
       "lng": 114.297,
-      "adcode": 410600
+      "adcode": 410600,
+      "nameEn": "Hebi",
+      "provinceEn": "Henan"
     },
     {
       "name": "新乡",
@@ -1258,7 +1570,9 @@
       "province": "河南",
       "lat": 35.303,
       "lng": 113.926,
-      "adcode": 410700
+      "adcode": 410700,
+      "nameEn": "Xinxiang",
+      "provinceEn": "Henan"
     },
     {
       "name": "焦作",
@@ -1266,7 +1580,9 @@
       "province": "河南",
       "lat": 35.216,
       "lng": 113.242,
-      "adcode": 410800
+      "adcode": 410800,
+      "nameEn": "Jiaozuo",
+      "provinceEn": "Henan"
     },
     {
       "name": "濮阳",
@@ -1274,7 +1590,9 @@
       "province": "河南",
       "lat": 35.762,
       "lng": 115.029,
-      "adcode": 410900
+      "adcode": 410900,
+      "nameEn": "Puyang",
+      "provinceEn": "Henan"
     },
     {
       "name": "许昌",
@@ -1282,7 +1600,9 @@
       "province": "河南",
       "lat": 34.036,
       "lng": 113.852,
-      "adcode": 411000
+      "adcode": 411000,
+      "nameEn": "Xuchang",
+      "provinceEn": "Henan"
     },
     {
       "name": "漯河",
@@ -1290,7 +1610,9 @@
       "province": "河南",
       "lat": 33.581,
       "lng": 114.017,
-      "adcode": 411100
+      "adcode": 411100,
+      "nameEn": "Tahe",
+      "provinceEn": "Henan"
     },
     {
       "name": "三门峡",
@@ -1298,7 +1620,9 @@
       "province": "河南",
       "lat": 34.773,
       "lng": 111.2,
-      "adcode": 411200
+      "adcode": 411200,
+      "nameEn": "Sanmenxia",
+      "provinceEn": "Henan"
     },
     {
       "name": "南阳",
@@ -1306,7 +1630,9 @@
       "province": "河南",
       "lat": 32.991,
       "lng": 112.529,
-      "adcode": 411300
+      "adcode": 411300,
+      "nameEn": "Nanyang",
+      "provinceEn": "Henan"
     },
     {
       "name": "商丘",
@@ -1314,7 +1640,9 @@
       "province": "河南",
       "lat": 34.414,
       "lng": 115.656,
-      "adcode": 411400
+      "adcode": 411400,
+      "nameEn": "Shangqiu",
+      "provinceEn": "Henan"
     },
     {
       "name": "信阳",
@@ -1322,7 +1650,9 @@
       "province": "河南",
       "lat": 32.147,
       "lng": 114.091,
-      "adcode": 411500
+      "adcode": 411500,
+      "nameEn": "Xinyang",
+      "provinceEn": "Henan"
     },
     {
       "name": "周口",
@@ -1330,7 +1660,9 @@
       "province": "河南",
       "lat": 33.626,
       "lng": 114.697,
-      "adcode": 411600
+      "adcode": 411600,
+      "nameEn": "Zhoukou",
+      "provinceEn": "Henan"
     },
     {
       "name": "驻马店",
@@ -1338,7 +1670,9 @@
       "province": "河南",
       "lat": 33.014,
       "lng": 114.022,
-      "adcode": 411700
+      "adcode": 411700,
+      "nameEn": "Zhumadian",
+      "provinceEn": "Henan"
     },
     {
       "name": "仙桃",
@@ -1346,7 +1680,9 @@
       "province": "湖北",
       "lat": 30.364953,
       "lng": 113.453974,
-      "adcode": 429004
+      "adcode": 429004,
+      "nameEn": "Xiantao",
+      "provinceEn": "Hubei"
     },
     {
       "name": "天门",
@@ -1354,7 +1690,9 @@
       "province": "湖北",
       "lat": 30.653061,
       "lng": 113.165862,
-      "adcode": 429006
+      "adcode": 429006,
+      "nameEn": "Tianmen",
+      "provinceEn": "Hubei"
     },
     {
       "name": "恩施",
@@ -1362,7 +1700,9 @@
       "province": "湖北",
       "lat": 30.283114,
       "lng": 109.48699,
-      "adcode": 422800
+      "adcode": 422800,
+      "nameEn": "Enshi",
+      "provinceEn": "Hubei"
     },
     {
       "name": "潜江",
@@ -1370,7 +1710,9 @@
       "province": "湖北",
       "lat": 30.421215,
       "lng": 112.896866,
-      "adcode": 429005
+      "adcode": 429005,
+      "nameEn": "Qianjiang",
+      "provinceEn": "Hubei"
     },
     {
       "name": "神农架",
@@ -1378,7 +1720,9 @@
       "province": "湖北",
       "lat": 31.744449,
       "lng": 110.671525,
-      "adcode": 429021
+      "adcode": 429021,
+      "nameEn": "Shennongjia",
+      "provinceEn": "Hubei"
     },
     {
       "name": "武汉",
@@ -1386,7 +1730,9 @@
       "province": "湖北",
       "lat": 30.593,
       "lng": 114.305,
-      "adcode": 420100
+      "adcode": 420100,
+      "nameEn": "Wuhan",
+      "provinceEn": "Hubei"
     },
     {
       "name": "黄石",
@@ -1394,7 +1740,9 @@
       "province": "湖北",
       "lat": 30.2,
       "lng": 115.039,
-      "adcode": 420200
+      "adcode": 420200,
+      "nameEn": "Huangshi",
+      "provinceEn": "Hubei"
     },
     {
       "name": "十堰",
@@ -1402,7 +1750,9 @@
       "province": "湖北",
       "lat": 32.629,
       "lng": 110.798,
-      "adcode": 420300
+      "adcode": 420300,
+      "nameEn": "Shiyan",
+      "provinceEn": "Hubei"
     },
     {
       "name": "宜昌",
@@ -1410,7 +1760,9 @@
       "province": "湖北",
       "lat": 30.692,
       "lng": 111.287,
-      "adcode": 420500
+      "adcode": 420500,
+      "nameEn": "Yichang",
+      "provinceEn": "Hubei"
     },
     {
       "name": "襄阳",
@@ -1418,7 +1770,9 @@
       "province": "湖北",
       "lat": 32.008,
       "lng": 112.122,
-      "adcode": 420600
+      "adcode": 420600,
+      "nameEn": "Xiangyang",
+      "provinceEn": "Hubei"
     },
     {
       "name": "鄂州",
@@ -1426,7 +1780,9 @@
       "province": "湖北",
       "lat": 30.391,
       "lng": 114.895,
-      "adcode": 420700
+      "adcode": 420700,
+      "nameEn": "Ezhou",
+      "provinceEn": "Hubei"
     },
     {
       "name": "荆门",
@@ -1434,7 +1790,9 @@
       "province": "湖北",
       "lat": 31.035,
       "lng": 112.199,
-      "adcode": 420800
+      "adcode": 420800,
+      "nameEn": "Jingmen",
+      "provinceEn": "Hubei"
     },
     {
       "name": "孝感",
@@ -1442,7 +1800,9 @@
       "province": "湖北",
       "lat": 30.925,
       "lng": 113.917,
-      "adcode": 420900
+      "adcode": 420900,
+      "nameEn": "Xiaogan",
+      "provinceEn": "Hubei"
     },
     {
       "name": "荆州",
@@ -1450,7 +1810,9 @@
       "province": "湖北",
       "lat": 30.335,
       "lng": 112.24,
-      "adcode": 421000
+      "adcode": 421000,
+      "nameEn": "Jingzhou",
+      "provinceEn": "Hubei"
     },
     {
       "name": "黄冈",
@@ -1458,7 +1820,9 @@
       "province": "湖北",
       "lat": 30.447,
       "lng": 114.872,
-      "adcode": 421100
+      "adcode": 421100,
+      "nameEn": "Huanggang",
+      "provinceEn": "Hubei"
     },
     {
       "name": "咸宁",
@@ -1466,7 +1830,9 @@
       "province": "湖北",
       "lat": 29.841,
       "lng": 114.323,
-      "adcode": 421200
+      "adcode": 421200,
+      "nameEn": "Xianning",
+      "provinceEn": "Hubei"
     },
     {
       "name": "随州",
@@ -1474,7 +1840,9 @@
       "province": "湖北",
       "lat": 31.69,
       "lng": 113.383,
-      "adcode": 421300
+      "adcode": 421300,
+      "nameEn": "Suizhou",
+      "provinceEn": "Hubei"
     },
     {
       "name": "湘西",
@@ -1482,7 +1850,9 @@
       "province": "湖南",
       "lat": 28.314296,
       "lng": 109.739735,
-      "adcode": 433100
+      "adcode": 433100,
+      "nameEn": "Xiangxi",
+      "provinceEn": "Hunan"
     },
     {
       "name": "长沙",
@@ -1490,7 +1860,9 @@
       "province": "湖南",
       "lat": 28.228,
       "lng": 112.939,
-      "adcode": 430100
+      "adcode": 430100,
+      "nameEn": "Changsha",
+      "provinceEn": "Hunan"
     },
     {
       "name": "株洲",
@@ -1498,7 +1870,9 @@
       "province": "湖南",
       "lat": 27.827,
       "lng": 113.134,
-      "adcode": 430200
+      "adcode": 430200,
+      "nameEn": "Zhuzhou",
+      "provinceEn": "Hunan"
     },
     {
       "name": "湘潭",
@@ -1506,7 +1880,9 @@
       "province": "湖南",
       "lat": 27.829,
       "lng": 112.944,
-      "adcode": 430300
+      "adcode": 430300,
+      "nameEn": "Xiangtan",
+      "provinceEn": "Hunan"
     },
     {
       "name": "衡阳",
@@ -1514,7 +1890,9 @@
       "province": "湖南",
       "lat": 26.893,
       "lng": 112.572,
-      "adcode": 430400
+      "adcode": 430400,
+      "nameEn": "Hengyang",
+      "provinceEn": "Hunan"
     },
     {
       "name": "邵阳",
@@ -1522,7 +1900,9 @@
       "province": "湖南",
       "lat": 27.239,
       "lng": 111.468,
-      "adcode": 430500
+      "adcode": 430500,
+      "nameEn": "Shaoyang",
+      "provinceEn": "Hunan"
     },
     {
       "name": "岳阳",
@@ -1530,7 +1910,9 @@
       "province": "湖南",
       "lat": 29.357,
       "lng": 113.129,
-      "adcode": 430600
+      "adcode": 430600,
+      "nameEn": "Yueyang",
+      "provinceEn": "Hunan"
     },
     {
       "name": "常德",
@@ -1538,7 +1920,9 @@
       "province": "湖南",
       "lat": 29.032,
       "lng": 111.699,
-      "adcode": 430700
+      "adcode": 430700,
+      "nameEn": "Changde",
+      "provinceEn": "Hunan"
     },
     {
       "name": "张家界",
@@ -1546,7 +1930,9 @@
       "province": "湖南",
       "lat": 29.117,
       "lng": 110.479,
-      "adcode": 430800
+      "adcode": 430800,
+      "nameEn": "Zhangjiajie",
+      "provinceEn": "Hunan"
     },
     {
       "name": "益阳",
@@ -1554,7 +1940,9 @@
       "province": "湖南",
       "lat": 28.554,
       "lng": 112.355,
-      "adcode": 430900
+      "adcode": 430900,
+      "nameEn": "Yiyang",
+      "provinceEn": "Hunan"
     },
     {
       "name": "郴州",
@@ -1562,7 +1950,9 @@
       "province": "湖南",
       "lat": 25.77,
       "lng": 113.015,
-      "adcode": 431000
+      "adcode": 431000,
+      "nameEn": "Chenzhou",
+      "provinceEn": "Hunan"
     },
     {
       "name": "永州",
@@ -1570,7 +1960,9 @@
       "province": "湖南",
       "lat": 26.42,
       "lng": 111.613,
-      "adcode": 431100
+      "adcode": 431100,
+      "nameEn": "Yongzhou",
+      "provinceEn": "Hunan"
     },
     {
       "name": "怀化",
@@ -1578,7 +1970,9 @@
       "province": "湖南",
       "lat": 27.55,
       "lng": 110.002,
-      "adcode": 431200
+      "adcode": 431200,
+      "nameEn": "Huaihua",
+      "provinceEn": "Hunan"
     },
     {
       "name": "娄底",
@@ -1586,7 +1980,9 @@
       "province": "湖南",
       "lat": 27.728,
       "lng": 111.996,
-      "adcode": 431300
+      "adcode": 431300,
+      "nameEn": "Loudi",
+      "provinceEn": "Hunan"
     },
     {
       "name": "广州",
@@ -1594,7 +1990,9 @@
       "province": "广东",
       "lat": 23.129,
       "lng": 113.264,
-      "adcode": 440100
+      "adcode": 440100,
+      "nameEn": "Guangzhou",
+      "provinceEn": "Guangdong"
     },
     {
       "name": "韶关",
@@ -1602,7 +2000,9 @@
       "province": "广东",
       "lat": 24.81,
       "lng": 113.597,
-      "adcode": 440200
+      "adcode": 440200,
+      "nameEn": "Shaoguan",
+      "provinceEn": "Guangdong"
     },
     {
       "name": "深圳",
@@ -1610,7 +2010,9 @@
       "province": "广东",
       "lat": 22.543,
       "lng": 114.058,
-      "adcode": 440300
+      "adcode": 440300,
+      "nameEn": "Shenzhen",
+      "provinceEn": "Guangdong"
     },
     {
       "name": "珠海",
@@ -1618,7 +2020,9 @@
       "province": "广东",
       "lat": 22.271,
       "lng": 113.577,
-      "adcode": 440400
+      "adcode": 440400,
+      "nameEn": "Zhuhai",
+      "provinceEn": "Guangdong"
     },
     {
       "name": "汕头",
@@ -1626,7 +2030,9 @@
       "province": "广东",
       "lat": 23.354,
       "lng": 116.682,
-      "adcode": 440500
+      "adcode": 440500,
+      "nameEn": "Shantou",
+      "provinceEn": "Guangdong"
     },
     {
       "name": "佛山",
@@ -1634,7 +2040,9 @@
       "province": "广东",
       "lat": 23.022,
       "lng": 113.122,
-      "adcode": 440600
+      "adcode": 440600,
+      "nameEn": "Foshan",
+      "provinceEn": "Guangdong"
     },
     {
       "name": "江门",
@@ -1642,7 +2050,9 @@
       "province": "广东",
       "lat": 22.579,
       "lng": 113.082,
-      "adcode": 440700
+      "adcode": 440700,
+      "nameEn": "Jiangmen",
+      "provinceEn": "Guangdong"
     },
     {
       "name": "湛江",
@@ -1650,7 +2060,9 @@
       "province": "广东",
       "lat": 21.271,
       "lng": 110.359,
-      "adcode": 440800
+      "adcode": 440800,
+      "nameEn": "Zhanjiang",
+      "provinceEn": "Guangdong"
     },
     {
       "name": "茂名",
@@ -1658,7 +2070,9 @@
       "province": "广东",
       "lat": 21.663,
       "lng": 110.925,
-      "adcode": 440900
+      "adcode": 440900,
+      "nameEn": "Maoming",
+      "provinceEn": "Guangdong"
     },
     {
       "name": "肇庆",
@@ -1666,7 +2080,9 @@
       "province": "广东",
       "lat": 23.047,
       "lng": 112.473,
-      "adcode": 441200
+      "adcode": 441200,
+      "nameEn": "Zhaoqing",
+      "provinceEn": "Guangdong"
     },
     {
       "name": "惠州",
@@ -1674,7 +2090,9 @@
       "province": "广东",
       "lat": 23.11,
       "lng": 114.416,
-      "adcode": 441300
+      "adcode": 441300,
+      "nameEn": "Huizhou",
+      "provinceEn": "Guangdong"
     },
     {
       "name": "梅州",
@@ -1682,7 +2100,9 @@
       "province": "广东",
       "lat": 24.289,
       "lng": 116.117,
-      "adcode": 441400
+      "adcode": 441400,
+      "nameEn": "Meizhou",
+      "provinceEn": "Guangdong"
     },
     {
       "name": "汕尾",
@@ -1690,7 +2110,9 @@
       "province": "广东",
       "lat": 22.786,
       "lng": 115.375,
-      "adcode": 441500
+      "adcode": 441500,
+      "nameEn": "Shanwei",
+      "provinceEn": "Guangdong"
     },
     {
       "name": "河源",
@@ -1698,7 +2120,9 @@
       "province": "广东",
       "lat": 23.744,
       "lng": 114.7,
-      "adcode": 441600
+      "adcode": 441600,
+      "nameEn": "Heyuan",
+      "provinceEn": "Guangdong"
     },
     {
       "name": "阳江",
@@ -1706,7 +2130,9 @@
       "province": "广东",
       "lat": 21.858,
       "lng": 111.982,
-      "adcode": 441700
+      "adcode": 441700,
+      "nameEn": "Yangjiang",
+      "provinceEn": "Guangdong"
     },
     {
       "name": "清远",
@@ -1714,7 +2140,9 @@
       "province": "广东",
       "lat": 23.682,
       "lng": 113.056,
-      "adcode": 441800
+      "adcode": 441800,
+      "nameEn": "Qingyuan",
+      "provinceEn": "Guangdong"
     },
     {
       "name": "东莞",
@@ -1722,7 +2150,9 @@
       "province": "广东",
       "lat": 23.02,
       "lng": 113.752,
-      "adcode": 441900
+      "adcode": 441900,
+      "nameEn": "Dongguan",
+      "provinceEn": "Guangdong"
     },
     {
       "name": "中山",
@@ -1730,7 +2160,9 @@
       "province": "广东",
       "lat": 22.517,
       "lng": 113.393,
-      "adcode": 442000
+      "adcode": 442000,
+      "nameEn": "Zhongshan",
+      "provinceEn": "Guangdong"
     },
     {
       "name": "潮州",
@@ -1738,7 +2170,9 @@
       "province": "广东",
       "lat": 23.657,
       "lng": 116.622,
-      "adcode": 445100
+      "adcode": 445100,
+      "nameEn": "Chaozhou",
+      "provinceEn": "Guangdong"
     },
     {
       "name": "揭阳",
@@ -1746,7 +2180,9 @@
       "province": "广东",
       "lat": 23.55,
       "lng": 116.373,
-      "adcode": 445200
+      "adcode": 445200,
+      "nameEn": "Jieyang",
+      "provinceEn": "Guangdong"
     },
     {
       "name": "云浮",
@@ -1754,7 +2190,9 @@
       "province": "广东",
       "lat": 22.915,
       "lng": 112.045,
-      "adcode": 445300
+      "adcode": 445300,
+      "nameEn": "Yunfu",
+      "provinceEn": "Guangdong"
     },
     {
       "name": "南宁",
@@ -1762,7 +2200,9 @@
       "province": "广西",
       "lat": 22.817,
       "lng": 108.366,
-      "adcode": 450100
+      "adcode": 450100,
+      "nameEn": "Nanning",
+      "provinceEn": "Guangxi"
     },
     {
       "name": "柳州",
@@ -1770,7 +2210,9 @@
       "province": "广西",
       "lat": 24.326,
       "lng": 109.428,
-      "adcode": 450200
+      "adcode": 450200,
+      "nameEn": "Liuzhou",
+      "provinceEn": "Guangxi"
     },
     {
       "name": "桂林",
@@ -1778,7 +2220,9 @@
       "province": "广西",
       "lat": 25.274,
       "lng": 110.29,
-      "adcode": 450300
+      "adcode": 450300,
+      "nameEn": "Guilin",
+      "provinceEn": "Guangxi"
     },
     {
       "name": "梧州",
@@ -1786,7 +2230,9 @@
       "province": "广西",
       "lat": 23.477,
       "lng": 111.279,
-      "adcode": 450400
+      "adcode": 450400,
+      "nameEn": "Wuzhou",
+      "provinceEn": "Guangxi"
     },
     {
       "name": "北海",
@@ -1794,7 +2240,9 @@
       "province": "广西",
       "lat": 21.481,
       "lng": 109.12,
-      "adcode": 450500
+      "adcode": 450500,
+      "nameEn": "Beihai",
+      "provinceEn": "Guangxi"
     },
     {
       "name": "防城港",
@@ -1802,7 +2250,9 @@
       "province": "广西",
       "lat": 21.687,
       "lng": 108.354,
-      "adcode": 450600
+      "adcode": 450600,
+      "nameEn": "Fangchenggang",
+      "provinceEn": "Guangxi"
     },
     {
       "name": "钦州",
@@ -1810,7 +2260,9 @@
       "province": "广西",
       "lat": 21.98,
       "lng": 108.654,
-      "adcode": 450700
+      "adcode": 450700,
+      "nameEn": "Qinzhou",
+      "provinceEn": "Guangxi"
     },
     {
       "name": "贵港",
@@ -1818,7 +2270,9 @@
       "province": "广西",
       "lat": 23.111,
       "lng": 109.598,
-      "adcode": 450800
+      "adcode": 450800,
+      "nameEn": "Guigang",
+      "provinceEn": "Guangxi"
     },
     {
       "name": "玉林",
@@ -1826,7 +2280,9 @@
       "province": "广西",
       "lat": 22.654,
       "lng": 110.181,
-      "adcode": 450900
+      "adcode": 450900,
+      "nameEn": "Yulin",
+      "provinceEn": "Guangxi"
     },
     {
       "name": "百色",
@@ -1834,7 +2290,9 @@
       "province": "广西",
       "lat": 23.902,
       "lng": 106.618,
-      "adcode": 451000
+      "adcode": 451000,
+      "nameEn": "Baise",
+      "provinceEn": "Guangxi"
     },
     {
       "name": "贺州",
@@ -1842,7 +2300,9 @@
       "province": "广西",
       "lat": 24.403,
       "lng": 111.567,
-      "adcode": 451100
+      "adcode": 451100,
+      "nameEn": "Hezhou",
+      "provinceEn": "Guangxi"
     },
     {
       "name": "河池",
@@ -1850,7 +2310,9 @@
       "province": "广西",
       "lat": 24.693,
       "lng": 108.085,
-      "adcode": 451200
+      "adcode": 451200,
+      "nameEn": "Hechi",
+      "provinceEn": "Guangxi"
     },
     {
       "name": "来宾",
@@ -1858,7 +2320,9 @@
       "province": "广西",
       "lat": 23.75,
       "lng": 109.222,
-      "adcode": 451300
+      "adcode": 451300,
+      "nameEn": "Laibin",
+      "provinceEn": "Guangxi"
     },
     {
       "name": "崇左",
@@ -1866,7 +2330,9 @@
       "province": "广西",
       "lat": 22.377,
       "lng": 107.365,
-      "adcode": 451400
+      "adcode": 451400,
+      "nameEn": "Chongzuo",
+      "provinceEn": "Guangxi"
     },
     {
       "name": "万宁",
@@ -1874,7 +2340,9 @@
       "province": "海南",
       "lat": 18.796216,
       "lng": 110.388793,
-      "adcode": 469006
+      "adcode": 469006,
+      "nameEn": "Wanning",
+      "provinceEn": "Hainan"
     },
     {
       "name": "东方",
@@ -1882,7 +2350,9 @@
       "province": "海南",
       "lat": 19.10198,
       "lng": 108.653789,
-      "adcode": 469007
+      "adcode": 469007,
+      "nameEn": "Dongfang",
+      "provinceEn": "Hainan"
     },
     {
       "name": "临高",
@@ -1890,7 +2360,9 @@
       "province": "海南",
       "lat": 19.908293,
       "lng": 109.687697,
-      "adcode": 469024
+      "adcode": 469024,
+      "nameEn": "Lingao",
+      "provinceEn": "Hainan"
     },
     {
       "name": "乐东",
@@ -1898,7 +2370,9 @@
       "province": "海南",
       "lat": 18.74758,
       "lng": 109.175444,
-      "adcode": 469027
+      "adcode": 469027,
+      "nameEn": "Ledong",
+      "provinceEn": "Hainan"
     },
     {
       "name": "五指山",
@@ -1906,7 +2380,9 @@
       "province": "海南",
       "lat": 18.776921,
       "lng": 109.516662,
-      "adcode": 469001
+      "adcode": 469001,
+      "nameEn": "Wuzhishan",
+      "provinceEn": "Hainan"
     },
     {
       "name": "保亭",
@@ -1914,7 +2390,9 @@
       "province": "海南",
       "lat": 18.636371,
       "lng": 109.70245,
-      "adcode": 469029
+      "adcode": 469029,
+      "nameEn": "Baoting",
+      "provinceEn": "Hainan"
     },
     {
       "name": "定安",
@@ -1922,7 +2400,9 @@
       "province": "海南",
       "lat": 19.684966,
       "lng": 110.349235,
-      "adcode": 469021
+      "adcode": 469021,
+      "nameEn": "Dingan",
+      "provinceEn": "Hainan"
     },
     {
       "name": "屯昌",
@@ -1930,7 +2410,9 @@
       "province": "海南",
       "lat": 19.362916,
       "lng": 110.102773,
-      "adcode": 469022
+      "adcode": 469022,
+      "nameEn": "Tunchang",
+      "provinceEn": "Hainan"
     },
     {
       "name": "昌江",
@@ -1938,7 +2420,9 @@
       "province": "海南",
       "lat": 19.260968,
       "lng": 109.053351,
-      "adcode": 469026
+      "adcode": 469026,
+      "nameEn": "Changjiang",
+      "provinceEn": "Hainan"
     },
     {
       "name": "澄迈",
@@ -1946,7 +2430,9 @@
       "province": "海南",
       "lat": 19.737095,
       "lng": 110.007147,
-      "adcode": 469023
+      "adcode": 469023,
+      "nameEn": "Chengmai",
+      "provinceEn": "Hainan"
     },
     {
       "name": "琼中",
@@ -1954,7 +2440,9 @@
       "province": "海南",
       "lat": 19.03557,
       "lng": 109.839996,
-      "adcode": 469030
+      "adcode": 469030,
+      "nameEn": "Qiongzhong",
+      "provinceEn": "Hainan"
     },
     {
       "name": "琼海",
@@ -1962,7 +2450,9 @@
       "province": "海南",
       "lat": 19.246011,
       "lng": 110.466785,
-      "adcode": 469002
+      "adcode": 469002,
+      "nameEn": "Qionghai",
+      "provinceEn": "Hainan"
     },
     {
       "name": "白沙",
@@ -1970,7 +2460,9 @@
       "province": "海南",
       "lat": 19.224584,
       "lng": 109.452606,
-      "adcode": 469025
+      "adcode": 469025,
+      "nameEn": "Baisha",
+      "provinceEn": "Hainan"
     },
     {
       "name": "陵水",
@@ -1978,7 +2470,9 @@
       "province": "海南",
       "lat": 18.505006,
       "lng": 110.037218,
-      "adcode": 469028
+      "adcode": 469028,
+      "nameEn": "Lingshui",
+      "provinceEn": "Hainan"
     },
     {
       "name": "海口",
@@ -1986,7 +2480,9 @@
       "province": "海南",
       "lat": 20.044,
       "lng": 110.199,
-      "adcode": 460100
+      "adcode": 460100,
+      "nameEn": "Haikou",
+      "provinceEn": "Hainan"
     },
     {
       "name": "三亚",
@@ -1994,7 +2490,9 @@
       "province": "海南",
       "lat": 18.253,
       "lng": 109.512,
-      "adcode": 460200
+      "adcode": 460200,
+      "nameEn": "Sanya",
+      "provinceEn": "Hainan"
     },
     {
       "name": "三沙",
@@ -2002,7 +2500,9 @@
       "province": "海南",
       "lat": 16.831,
       "lng": 112.339,
-      "adcode": 460300
+      "adcode": 460300,
+      "nameEn": "Sansha",
+      "provinceEn": "Hainan"
     },
     {
       "name": "儋州",
@@ -2010,7 +2510,9 @@
       "province": "海南",
       "lat": 19.521,
       "lng": 109.581,
-      "adcode": 460400
+      "adcode": 460400,
+      "nameEn": "Danzhou",
+      "provinceEn": "Hainan"
     },
     {
       "name": "凉山",
@@ -2018,7 +2520,9 @@
       "province": "四川",
       "lat": 27.886762,
       "lng": 102.258746,
-      "adcode": 513400
+      "adcode": 513400,
+      "nameEn": "Liangshan",
+      "provinceEn": "Sichuan"
     },
     {
       "name": "甘孜",
@@ -2026,7 +2530,9 @@
       "province": "四川",
       "lat": 30.050663,
       "lng": 101.963815,
-      "adcode": 513300
+      "adcode": 513300,
+      "nameEn": "Ganzi",
+      "provinceEn": "Sichuan"
     },
     {
       "name": "阿坝",
@@ -2034,7 +2540,9 @@
       "province": "四川",
       "lat": 31.899792,
       "lng": 102.221374,
-      "adcode": 513200
+      "adcode": 513200,
+      "nameEn": "Aba",
+      "provinceEn": "Sichuan"
     },
     {
       "name": "成都",
@@ -2042,7 +2550,9 @@
       "province": "四川",
       "lat": 30.573,
       "lng": 104.067,
-      "adcode": 510100
+      "adcode": 510100,
+      "nameEn": "Chengdu",
+      "provinceEn": "Sichuan"
     },
     {
       "name": "自贡",
@@ -2050,7 +2560,9 @@
       "province": "四川",
       "lat": 29.339,
       "lng": 104.778,
-      "adcode": 510300
+      "adcode": 510300,
+      "nameEn": "Zigong",
+      "provinceEn": "Sichuan"
     },
     {
       "name": "攀枝花",
@@ -2058,7 +2570,9 @@
       "province": "四川",
       "lat": 26.582,
       "lng": 101.719,
-      "adcode": 510400
+      "adcode": 510400,
+      "nameEn": "Panzhihua",
+      "provinceEn": "Sichuan"
     },
     {
       "name": "泸州",
@@ -2066,7 +2580,9 @@
       "province": "四川",
       "lat": 28.872,
       "lng": 105.443,
-      "adcode": 510500
+      "adcode": 510500,
+      "nameEn": "Luzhou",
+      "provinceEn": "Sichuan"
     },
     {
       "name": "德阳",
@@ -2074,7 +2590,9 @@
       "province": "四川",
       "lat": 31.127,
       "lng": 104.398,
-      "adcode": 510600
+      "adcode": 510600,
+      "nameEn": "Deyang",
+      "provinceEn": "Sichuan"
     },
     {
       "name": "绵阳",
@@ -2082,7 +2600,9 @@
       "province": "四川",
       "lat": 31.467,
       "lng": 104.68,
-      "adcode": 510700
+      "adcode": 510700,
+      "nameEn": "Mianyang",
+      "provinceEn": "Sichuan"
     },
     {
       "name": "广元",
@@ -2090,7 +2610,9 @@
       "province": "四川",
       "lat": 32.436,
       "lng": 105.844,
-      "adcode": 510800
+      "adcode": 510800,
+      "nameEn": "Guangyuan",
+      "provinceEn": "Sichuan"
     },
     {
       "name": "遂宁",
@@ -2098,7 +2620,9 @@
       "province": "四川",
       "lat": 30.513,
       "lng": 105.593,
-      "adcode": 510900
+      "adcode": 510900,
+      "nameEn": "Suining",
+      "provinceEn": "Sichuan"
     },
     {
       "name": "内江",
@@ -2106,7 +2630,9 @@
       "province": "四川",
       "lat": 29.58,
       "lng": 105.059,
-      "adcode": 511000
+      "adcode": 511000,
+      "nameEn": "Neijiang",
+      "provinceEn": "Sichuan"
     },
     {
       "name": "乐山",
@@ -2114,7 +2640,9 @@
       "province": "四川",
       "lat": 29.552,
       "lng": 103.766,
-      "adcode": 511100
+      "adcode": 511100,
+      "nameEn": "Leshan",
+      "provinceEn": "Sichuan"
     },
     {
       "name": "南充",
@@ -2122,7 +2650,9 @@
       "province": "四川",
       "lat": 30.837,
       "lng": 106.111,
-      "adcode": 511300
+      "adcode": 511300,
+      "nameEn": "Nanchong",
+      "provinceEn": "Sichuan"
     },
     {
       "name": "眉山",
@@ -2130,7 +2660,9 @@
       "province": "四川",
       "lat": 30.049,
       "lng": 103.832,
-      "adcode": 511400
+      "adcode": 511400,
+      "nameEn": "Meishan",
+      "provinceEn": "Sichuan"
     },
     {
       "name": "宜宾",
@@ -2138,7 +2670,9 @@
       "province": "四川",
       "lat": 28.752,
       "lng": 104.643,
-      "adcode": 511500
+      "adcode": 511500,
+      "nameEn": "Yibin",
+      "provinceEn": "Sichuan"
     },
     {
       "name": "广安",
@@ -2146,7 +2680,9 @@
       "province": "四川",
       "lat": 30.456,
       "lng": 106.633,
-      "adcode": 511600
+      "adcode": 511600,
+      "nameEn": "Guang'an",
+      "provinceEn": "Sichuan"
     },
     {
       "name": "达州",
@@ -2154,7 +2690,9 @@
       "province": "四川",
       "lat": 31.209,
       "lng": 107.468,
-      "adcode": 511700
+      "adcode": 511700,
+      "nameEn": "Dazhou",
+      "provinceEn": "Sichuan"
     },
     {
       "name": "雅安",
@@ -2162,7 +2700,9 @@
       "province": "四川",
       "lat": 30.011,
       "lng": 103.042,
-      "adcode": 511800
+      "adcode": 511800,
+      "nameEn": "Ya'an",
+      "provinceEn": "Sichuan"
     },
     {
       "name": "巴中",
@@ -2170,7 +2710,9 @@
       "province": "四川",
       "lat": 31.867,
       "lng": 106.753,
-      "adcode": 511900
+      "adcode": 511900,
+      "nameEn": "Bazhong",
+      "provinceEn": "Sichuan"
     },
     {
       "name": "资阳",
@@ -2178,7 +2720,9 @@
       "province": "四川",
       "lat": 30.122,
       "lng": 104.628,
-      "adcode": 512000
+      "adcode": 512000,
+      "nameEn": "Ziyang",
+      "provinceEn": "Sichuan"
     },
     {
       "name": "西昌",
@@ -2186,7 +2730,9 @@
       "province": "四川",
       "lat": 27.894,
       "lng": 102.264,
-      "adcode": null
+      "adcode": null,
+      "nameEn": "Xichang",
+      "provinceEn": "Sichuan"
     },
     {
       "name": "康定",
@@ -2194,7 +2740,9 @@
       "province": "四川",
       "lat": 29.998,
       "lng": 101.958,
-      "adcode": null
+      "adcode": null,
+      "nameEn": "Kangding",
+      "provinceEn": "Sichuan"
     },
     {
       "name": "黔东南",
@@ -2202,7 +2750,9 @@
       "province": "贵州",
       "lat": 26.583352,
       "lng": 107.977488,
-      "adcode": 522600
+      "adcode": 522600,
+      "nameEn": "Qiandongnan",
+      "provinceEn": "Guizhou"
     },
     {
       "name": "黔南",
@@ -2210,7 +2760,9 @@
       "province": "贵州",
       "lat": 26.258219,
       "lng": 107.517156,
-      "adcode": 522700
+      "adcode": 522700,
+      "nameEn": "Qiannan",
+      "provinceEn": "Guizhou"
     },
     {
       "name": "黔西南",
@@ -2218,7 +2770,9 @@
       "province": "贵州",
       "lat": 25.08812,
       "lng": 104.897971,
-      "adcode": 522300
+      "adcode": 522300,
+      "nameEn": "Qianxinan",
+      "provinceEn": "Guizhou"
     },
     {
       "name": "贵阳",
@@ -2226,7 +2780,9 @@
       "province": "贵州",
       "lat": 26.647,
       "lng": 106.63,
-      "adcode": 520100
+      "adcode": 520100,
+      "nameEn": "Guiyang",
+      "provinceEn": "Guizhou"
     },
     {
       "name": "六盘水",
@@ -2234,7 +2790,9 @@
       "province": "贵州",
       "lat": 26.593,
       "lng": 104.831,
-      "adcode": 520200
+      "adcode": 520200,
+      "nameEn": "Liupanshui",
+      "provinceEn": "Guizhou"
     },
     {
       "name": "遵义",
@@ -2242,7 +2800,9 @@
       "province": "贵州",
       "lat": 27.725,
       "lng": 106.927,
-      "adcode": 520300
+      "adcode": 520300,
+      "nameEn": "Zunyi",
+      "provinceEn": "Guizhou"
     },
     {
       "name": "安顺",
@@ -2250,7 +2810,9 @@
       "province": "贵州",
       "lat": 26.245,
       "lng": 105.943,
-      "adcode": 520400
+      "adcode": 520400,
+      "nameEn": "Anshun",
+      "provinceEn": "Guizhou"
     },
     {
       "name": "毕节",
@@ -2258,7 +2820,9 @@
       "province": "贵州",
       "lat": 27.302,
       "lng": 105.305,
-      "adcode": 520500
+      "adcode": 520500,
+      "nameEn": "Bijie",
+      "provinceEn": "Guizhou"
     },
     {
       "name": "铜仁",
@@ -2266,7 +2830,9 @@
       "province": "贵州",
       "lat": 27.718,
       "lng": 109.19,
-      "adcode": 520600
+      "adcode": 520600,
+      "nameEn": "Tongren",
+      "provinceEn": "Guizhou"
     },
     {
       "name": "德宏",
@@ -2274,7 +2840,9 @@
       "province": "云南",
       "lat": 24.436694,
       "lng": 98.578363,
-      "adcode": 533100
+      "adcode": 533100,
+      "nameEn": "Dehong",
+      "provinceEn": "Yunnan"
     },
     {
       "name": "怒江",
@@ -2282,7 +2850,9 @@
       "province": "云南",
       "lat": 25.850949,
       "lng": 98.854304,
-      "adcode": 533300
+      "adcode": 533300,
+      "nameEn": "Nujiang",
+      "provinceEn": "Yunnan"
     },
     {
       "name": "迪庆",
@@ -2290,7 +2860,9 @@
       "province": "云南",
       "lat": 27.826853,
       "lng": 99.706463,
-      "adcode": 533400
+      "adcode": 533400,
+      "nameEn": "Diqing",
+      "provinceEn": "Yunnan"
     },
     {
       "name": "昆明",
@@ -2298,7 +2870,9 @@
       "province": "云南",
       "lat": 25.038,
       "lng": 102.718,
-      "adcode": 530100
+      "adcode": 530100,
+      "nameEn": "Kunming",
+      "provinceEn": "Yunnan"
     },
     {
       "name": "曲靖",
@@ -2306,7 +2880,9 @@
       "province": "云南",
       "lat": 25.49,
       "lng": 103.796,
-      "adcode": 530300
+      "adcode": 530300,
+      "nameEn": "Qujing",
+      "provinceEn": "Yunnan"
     },
     {
       "name": "玉溪",
@@ -2314,7 +2890,9 @@
       "province": "云南",
       "lat": 24.355,
       "lng": 102.547,
-      "adcode": 530400
+      "adcode": 530400,
+      "nameEn": "Yuxi",
+      "provinceEn": "Yunnan"
     },
     {
       "name": "保山",
@@ -2322,7 +2900,9 @@
       "province": "云南",
       "lat": 25.111,
       "lng": 99.162,
-      "adcode": 530500
+      "adcode": 530500,
+      "nameEn": "Baoshan",
+      "provinceEn": "Yunnan"
     },
     {
       "name": "昭通",
@@ -2330,7 +2910,9 @@
       "province": "云南",
       "lat": 27.338,
       "lng": 103.717,
-      "adcode": 530600
+      "adcode": 530600,
+      "nameEn": "Zhaotong",
+      "provinceEn": "Yunnan"
     },
     {
       "name": "丽江",
@@ -2338,7 +2920,9 @@
       "province": "云南",
       "lat": 26.872,
       "lng": 100.23,
-      "adcode": 530700
+      "adcode": 530700,
+      "nameEn": "Lijiang",
+      "provinceEn": "Yunnan"
     },
     {
       "name": "普洱",
@@ -2346,7 +2930,9 @@
       "province": "云南",
       "lat": 22.825,
       "lng": 100.966,
-      "adcode": 530800
+      "adcode": 530800,
+      "nameEn": "Puer",
+      "provinceEn": "Yunnan"
     },
     {
       "name": "临沧",
@@ -2354,7 +2940,9 @@
       "province": "云南",
       "lat": 23.878,
       "lng": 100.088,
-      "adcode": 530900
+      "adcode": 530900,
+      "nameEn": "Lincang",
+      "provinceEn": "Yunnan"
     },
     {
       "name": "大理",
@@ -2362,7 +2950,9 @@
       "province": "云南",
       "lat": 25.606,
       "lng": 100.268,
-      "adcode": 532900
+      "adcode": 532900,
+      "nameEn": "Dali",
+      "provinceEn": "Yunnan"
     },
     {
       "name": "楚雄",
@@ -2370,7 +2960,9 @@
       "province": "云南",
       "lat": 25.032,
       "lng": 101.546,
-      "adcode": 532300
+      "adcode": 532300,
+      "nameEn": "Chuxiong",
+      "provinceEn": "Yunnan"
     },
     {
       "name": "红河",
@@ -2378,7 +2970,9 @@
       "province": "云南",
       "lat": 23.367,
       "lng": 103.375,
-      "adcode": 532500
+      "adcode": 532500,
+      "nameEn": "Honghe",
+      "provinceEn": "Yunnan"
     },
     {
       "name": "文山",
@@ -2386,7 +2980,9 @@
       "province": "云南",
       "lat": 23.369,
       "lng": 104.244,
-      "adcode": 532600
+      "adcode": 532600,
+      "nameEn": "Wenshan",
+      "provinceEn": "Yunnan"
     },
     {
       "name": "西双版纳",
@@ -2394,7 +2990,9 @@
       "province": "云南",
       "lat": 22.009,
       "lng": 100.797,
-      "adcode": 532800
+      "adcode": 532800,
+      "nameEn": "Xishuangbanna",
+      "provinceEn": "Yunnan"
     },
     {
       "name": "山南",
@@ -2402,7 +3000,9 @@
       "province": "西藏",
       "lat": 29.236023,
       "lng": 91.766529,
-      "adcode": 540500
+      "adcode": 540500,
+      "nameEn": "Shannan",
+      "provinceEn": "Tibet"
     },
     {
       "name": "昌都",
@@ -2410,7 +3010,9 @@
       "province": "西藏",
       "lat": 31.136875,
       "lng": 97.178452,
-      "adcode": 540300
+      "adcode": 540300,
+      "nameEn": "Qamdo",
+      "provinceEn": "Tibet"
     },
     {
       "name": "林芝",
@@ -2418,7 +3020,9 @@
       "province": "西藏",
       "lat": 29.654693,
       "lng": 94.362348,
-      "adcode": 540400
+      "adcode": 540400,
+      "nameEn": "Nyingchi",
+      "provinceEn": "Tibet"
     },
     {
       "name": "阿里",
@@ -2426,7 +3030,9 @@
       "province": "西藏",
       "lat": 32.503187,
       "lng": 80.105498,
-      "adcode": 542500
+      "adcode": 542500,
+      "nameEn": "Ngari",
+      "provinceEn": "Tibet"
     },
     {
       "name": "拉萨",
@@ -2434,7 +3040,9 @@
       "province": "西藏",
       "lat": 29.646,
       "lng": 91.14,
-      "adcode": 540100
+      "adcode": 540100,
+      "nameEn": "Lhasa",
+      "provinceEn": "Tibet"
     },
     {
       "name": "日喀则",
@@ -2442,7 +3050,9 @@
       "province": "西藏",
       "lat": 29.267,
       "lng": 88.88,
-      "adcode": 540200
+      "adcode": 540200,
+      "nameEn": "Shigatse",
+      "provinceEn": "Tibet"
     },
     {
       "name": "西安",
@@ -2450,7 +3060,9 @@
       "province": "陕西",
       "lat": 34.342,
       "lng": 108.94,
-      "adcode": 610100
+      "adcode": 610100,
+      "nameEn": "Xi'an",
+      "provinceEn": "Shaanxi"
     },
     {
       "name": "铜川",
@@ -2458,7 +3070,9 @@
       "province": "陕西",
       "lat": 34.897,
       "lng": 108.945,
-      "adcode": 610200
+      "adcode": 610200,
+      "nameEn": "Tongchuan",
+      "provinceEn": "Shaanxi"
     },
     {
       "name": "宝鸡",
@@ -2466,7 +3080,9 @@
       "province": "陕西",
       "lat": 34.362,
       "lng": 107.237,
-      "adcode": 610300
+      "adcode": 610300,
+      "nameEn": "Baoji",
+      "provinceEn": "Shaanxi"
     },
     {
       "name": "咸阳",
@@ -2474,7 +3090,9 @@
       "province": "陕西",
       "lat": 34.329,
       "lng": 108.709,
-      "adcode": 610400
+      "adcode": 610400,
+      "nameEn": "Xianyang",
+      "provinceEn": "Shaanxi"
     },
     {
       "name": "渭南",
@@ -2482,7 +3100,9 @@
       "province": "陕西",
       "lat": 34.5,
       "lng": 109.51,
-      "adcode": 610500
+      "adcode": 610500,
+      "nameEn": "Weinan",
+      "provinceEn": "Shaanxi"
     },
     {
       "name": "延安",
@@ -2490,7 +3110,9 @@
       "province": "陕西",
       "lat": 36.585,
       "lng": 109.49,
-      "adcode": 610600
+      "adcode": 610600,
+      "nameEn": "Yan'an",
+      "provinceEn": "Shaanxi"
     },
     {
       "name": "汉中",
@@ -2498,7 +3120,9 @@
       "province": "陕西",
       "lat": 33.068,
       "lng": 107.024,
-      "adcode": 610700
+      "adcode": 610700,
+      "nameEn": "Hanzhong",
+      "provinceEn": "Shaanxi"
     },
     {
       "name": "榆林",
@@ -2506,7 +3130,9 @@
       "province": "陕西",
       "lat": 38.285,
       "lng": 109.734,
-      "adcode": 610800
+      "adcode": 610800,
+      "nameEn": "Yulin",
+      "provinceEn": "Shaanxi"
     },
     {
       "name": "安康",
@@ -2514,7 +3140,9 @@
       "province": "陕西",
       "lat": 32.685,
       "lng": 109.029,
-      "adcode": 610900
+      "adcode": 610900,
+      "nameEn": "Ankang",
+      "provinceEn": "Shaanxi"
     },
     {
       "name": "商洛",
@@ -2522,7 +3150,9 @@
       "province": "陕西",
       "lat": 33.87,
       "lng": 109.94,
-      "adcode": 611000
+      "adcode": 611000,
+      "nameEn": "Shangluo",
+      "provinceEn": "Shaanxi"
     },
     {
       "name": "兰州",
@@ -2530,7 +3160,9 @@
       "province": "甘肃",
       "lat": 36.061,
       "lng": 103.834,
-      "adcode": 620100
+      "adcode": 620100,
+      "nameEn": "Lanzhou",
+      "provinceEn": "Gansu"
     },
     {
       "name": "嘉峪关",
@@ -2538,7 +3170,9 @@
       "province": "甘肃",
       "lat": 39.773,
       "lng": 98.29,
-      "adcode": 620200
+      "adcode": 620200,
+      "nameEn": "Jiayuguan",
+      "provinceEn": "Gansu"
     },
     {
       "name": "金昌",
@@ -2546,7 +3180,9 @@
       "province": "甘肃",
       "lat": 38.52,
       "lng": 102.188,
-      "adcode": 620300
+      "adcode": 620300,
+      "nameEn": "Jinchang",
+      "provinceEn": "Gansu"
     },
     {
       "name": "白银",
@@ -2554,7 +3190,9 @@
       "province": "甘肃",
       "lat": 36.545,
       "lng": 104.139,
-      "adcode": 620400
+      "adcode": 620400,
+      "nameEn": "Baiyin",
+      "provinceEn": "Gansu"
     },
     {
       "name": "天水",
@@ -2562,7 +3200,9 @@
       "province": "甘肃",
       "lat": 34.581,
       "lng": 105.725,
-      "adcode": 620500
+      "adcode": 620500,
+      "nameEn": "Tianshui",
+      "provinceEn": "Gansu"
     },
     {
       "name": "武威",
@@ -2570,7 +3210,9 @@
       "province": "甘肃",
       "lat": 37.928,
       "lng": 102.638,
-      "adcode": 620600
+      "adcode": 620600,
+      "nameEn": "Wuwei",
+      "provinceEn": "Gansu"
     },
     {
       "name": "张掖",
@@ -2578,7 +3220,9 @@
       "province": "甘肃",
       "lat": 38.926,
       "lng": 100.45,
-      "adcode": 620700
+      "adcode": 620700,
+      "nameEn": "Zhangye",
+      "provinceEn": "Gansu"
     },
     {
       "name": "平凉",
@@ -2586,7 +3230,9 @@
       "province": "甘肃",
       "lat": 35.543,
       "lng": 106.665,
-      "adcode": 620800
+      "adcode": 620800,
+      "nameEn": "Pingliang",
+      "provinceEn": "Gansu"
     },
     {
       "name": "酒泉",
@@ -2594,7 +3240,9 @@
       "province": "甘肃",
       "lat": 39.732,
       "lng": 98.494,
-      "adcode": 620900
+      "adcode": 620900,
+      "nameEn": "Jiuquan",
+      "provinceEn": "Gansu"
     },
     {
       "name": "庆阳",
@@ -2602,7 +3250,9 @@
       "province": "甘肃",
       "lat": 35.71,
       "lng": 107.644,
-      "adcode": 621000
+      "adcode": 621000,
+      "nameEn": "Qingyang",
+      "provinceEn": "Gansu"
     },
     {
       "name": "定西",
@@ -2610,7 +3260,9 @@
       "province": "甘肃",
       "lat": 35.581,
       "lng": 104.626,
-      "adcode": 621100
+      "adcode": 621100,
+      "nameEn": "Dingxi",
+      "provinceEn": "Gansu"
     },
     {
       "name": "陇南",
@@ -2618,7 +3270,9 @@
       "province": "甘肃",
       "lat": 33.401,
       "lng": 104.922,
-      "adcode": 621200
+      "adcode": 621200,
+      "nameEn": "Longnan",
+      "provinceEn": "Gansu"
     },
     {
       "name": "临夏",
@@ -2626,7 +3280,9 @@
       "province": "甘肃",
       "lat": 35.601,
       "lng": 103.216,
-      "adcode": 622900
+      "adcode": 622900,
+      "nameEn": "Linxia",
+      "provinceEn": "Gansu"
     },
     {
       "name": "甘南",
@@ -2634,7 +3290,9 @@
       "province": "甘肃",
       "lat": 34.992,
       "lng": 102.911,
-      "adcode": 623000
+      "adcode": 623000,
+      "nameEn": "Gannan",
+      "provinceEn": "Gansu"
     },
     {
       "name": "果洛",
@@ -2642,7 +3300,9 @@
       "province": "青海",
       "lat": 34.4736,
       "lng": 100.242143,
-      "adcode": 632600
+      "adcode": 632600,
+      "nameEn": "Guoluo",
+      "provinceEn": "Qinghai"
     },
     {
       "name": "海北",
@@ -2650,7 +3310,9 @@
       "province": "青海",
       "lat": 36.959435,
       "lng": 100.901059,
-      "adcode": 632200
+      "adcode": 632200,
+      "nameEn": "Haibei",
+      "provinceEn": "Qinghai"
     },
     {
       "name": "海南州",
@@ -2658,7 +3320,9 @@
       "province": "青海",
       "lat": 36.280353,
       "lng": 100.619542,
-      "adcode": 632500
+      "adcode": 632500,
+      "nameEn": "Hainanzhou",
+      "provinceEn": "Qinghai"
     },
     {
       "name": "海西",
@@ -2666,7 +3330,9 @@
       "province": "青海",
       "lat": 37.374663,
       "lng": 97.370785,
-      "adcode": 632800
+      "adcode": 632800,
+      "nameEn": "Haixi",
+      "provinceEn": "Qinghai"
     },
     {
       "name": "玉树",
@@ -2674,7 +3340,9 @@
       "province": "青海",
       "lat": 33.004049,
       "lng": 97.008522,
-      "adcode": 632700
+      "adcode": 632700,
+      "nameEn": "Yushu",
+      "provinceEn": "Qinghai"
     },
     {
       "name": "黄南",
@@ -2682,7 +3350,9 @@
       "province": "青海",
       "lat": 35.517744,
       "lng": 102.019988,
-      "adcode": 632300
+      "adcode": 632300,
+      "nameEn": "Huangnan",
+      "provinceEn": "Qinghai"
     },
     {
       "name": "西宁",
@@ -2690,7 +3360,9 @@
       "province": "青海",
       "lat": 36.617,
       "lng": 101.778,
-      "adcode": 630100
+      "adcode": 630100,
+      "nameEn": "Xining",
+      "provinceEn": "Qinghai"
     },
     {
       "name": "海东",
@@ -2698,7 +3370,9 @@
       "province": "青海",
       "lat": 36.502,
       "lng": 102.104,
-      "adcode": 630200
+      "adcode": 630200,
+      "nameEn": "Haidong",
+      "provinceEn": "Qinghai"
     },
     {
       "name": "格尔木",
@@ -2706,7 +3380,9 @@
       "province": "青海",
       "lat": 36.402,
       "lng": 94.903,
-      "adcode": null
+      "adcode": null,
+      "nameEn": "Geermu",
+      "provinceEn": "Qinghai"
     },
     {
       "name": "银川",
@@ -2714,7 +3390,9 @@
       "province": "宁夏",
       "lat": 38.487,
       "lng": 106.231,
-      "adcode": 640100
+      "adcode": 640100,
+      "nameEn": "Yinchuan",
+      "provinceEn": "Ningxia"
     },
     {
       "name": "石嘴山",
@@ -2722,7 +3400,9 @@
       "province": "宁夏",
       "lat": 38.984,
       "lng": 106.384,
-      "adcode": 640200
+      "adcode": 640200,
+      "nameEn": "Shizuishan",
+      "provinceEn": "Ningxia"
     },
     {
       "name": "吴忠",
@@ -2730,7 +3410,9 @@
       "province": "宁夏",
       "lat": 37.998,
       "lng": 106.199,
-      "adcode": 640300
+      "adcode": 640300,
+      "nameEn": "Wuzhong",
+      "provinceEn": "Ningxia"
     },
     {
       "name": "固原",
@@ -2738,7 +3420,9 @@
       "province": "宁夏",
       "lat": 36.016,
       "lng": 106.242,
-      "adcode": 640400
+      "adcode": 640400,
+      "nameEn": "Guyuan",
+      "provinceEn": "Ningxia"
     },
     {
       "name": "中卫",
@@ -2746,7 +3430,9 @@
       "province": "宁夏",
       "lat": 37.5,
       "lng": 105.196,
-      "adcode": 640500
+      "adcode": 640500,
+      "nameEn": "Zhongwei",
+      "provinceEn": "Ningxia"
     },
     {
       "name": "五家渠",
@@ -2754,7 +3440,9 @@
       "province": "新疆",
       "lat": 44.167401,
       "lng": 87.526884,
-      "adcode": 659004
+      "adcode": 659004,
+      "nameEn": "Wujiaqu",
+      "provinceEn": "Xinjiang"
     },
     {
       "name": "伊犁",
@@ -2762,7 +3450,9 @@
       "province": "新疆",
       "lat": 43.92186,
       "lng": 81.317946,
-      "adcode": 654000
+      "adcode": 654000,
+      "nameEn": "Yili",
+      "provinceEn": "Xinjiang"
     },
     {
       "name": "北屯",
@@ -2770,7 +3460,9 @@
       "province": "新疆",
       "lat": 47.353177,
       "lng": 87.824932,
-      "adcode": 659005
+      "adcode": 659005,
+      "nameEn": "Beitun",
+      "provinceEn": "Xinjiang"
     },
     {
       "name": "博尔塔拉",
@@ -2778,7 +3470,9 @@
       "province": "新疆",
       "lat": 44.903258,
       "lng": 82.074778,
-      "adcode": 652700
+      "adcode": 652700,
+      "nameEn": "Boertala",
+      "provinceEn": "Xinjiang"
     },
     {
       "name": "双河",
@@ -2786,7 +3480,9 @@
       "province": "新疆",
       "lat": 44.840524,
       "lng": 82.353656,
-      "adcode": 659007
+      "adcode": 659007,
+      "nameEn": "Shuanghe",
+      "provinceEn": "Xinjiang"
     },
     {
       "name": "可克达拉",
@@ -2794,7 +3490,9 @@
       "province": "新疆",
       "lat": 43.6832,
       "lng": 80.63579,
-      "adcode": 659008
+      "adcode": 659008,
+      "nameEn": "Kekedala",
+      "provinceEn": "Xinjiang"
     },
     {
       "name": "图木舒克",
@@ -2802,7 +3500,9 @@
       "province": "新疆",
       "lat": 39.867316,
       "lng": 79.077978,
-      "adcode": 659003
+      "adcode": 659003,
+      "nameEn": "Tumushuke",
+      "provinceEn": "Xinjiang"
     },
     {
       "name": "塔城",
@@ -2810,7 +3510,9 @@
       "province": "新疆",
       "lat": 46.746301,
       "lng": 82.985732,
-      "adcode": 654200
+      "adcode": 654200,
+      "nameEn": "Tacheng",
+      "provinceEn": "Xinjiang"
     },
     {
       "name": "巴音郭楞",
@@ -2818,7 +3520,9 @@
       "province": "新疆",
       "lat": 41.768552,
       "lng": 86.150969,
-      "adcode": 652800
+      "adcode": 652800,
+      "nameEn": "Bayinguoleng",
+      "provinceEn": "Xinjiang"
     },
     {
       "name": "昆玉",
@@ -2826,7 +3530,9 @@
       "province": "新疆",
       "lat": 37.207994,
       "lng": 79.287372,
-      "adcode": 659009
+      "adcode": 659009,
+      "nameEn": "Kunyu",
+      "provinceEn": "Xinjiang"
     },
     {
       "name": "昌吉",
@@ -2834,7 +3540,9 @@
       "province": "新疆",
       "lat": 44.014577,
       "lng": 87.304012,
-      "adcode": 652300
+      "adcode": 652300,
+      "nameEn": "Changji",
+      "provinceEn": "Xinjiang"
     },
     {
       "name": "胡杨河",
@@ -2842,7 +3550,9 @@
       "province": "新疆",
       "lat": 44.69288853,
       "lng": 84.8275959,
-      "adcode": 659010
+      "adcode": 659010,
+      "nameEn": "Huyanghe",
+      "provinceEn": "Xinjiang"
     },
     {
       "name": "铁门关",
@@ -2850,7 +3560,9 @@
       "province": "新疆",
       "lat": 41.827251,
       "lng": 85.501218,
-      "adcode": 659006
+      "adcode": 659006,
+      "nameEn": "Tiemenguan",
+      "provinceEn": "Xinjiang"
     },
     {
       "name": "阿勒泰",
@@ -2858,7 +3570,9 @@
       "province": "新疆",
       "lat": 47.848393,
       "lng": 88.13963,
-      "adcode": 654300
+      "adcode": 654300,
+      "nameEn": "Aleitai",
+      "provinceEn": "Xinjiang"
     },
     {
       "name": "阿拉尔",
@@ -2866,7 +3580,9 @@
       "province": "新疆",
       "lat": 40.541914,
       "lng": 81.285884,
-      "adcode": 659002
+      "adcode": 659002,
+      "nameEn": "Alaer",
+      "provinceEn": "Xinjiang"
     },
     {
       "name": "乌鲁木齐",
@@ -2874,7 +3590,9 @@
       "province": "新疆",
       "lat": 43.826,
       "lng": 87.617,
-      "adcode": 650100
+      "adcode": 650100,
+      "nameEn": "Urumqi",
+      "provinceEn": "Xinjiang"
     },
     {
       "name": "克拉玛依",
@@ -2882,7 +3600,9 @@
       "province": "新疆",
       "lat": 45.58,
       "lng": 84.889,
-      "adcode": 650200
+      "adcode": 650200,
+      "nameEn": "Kelamayi",
+      "provinceEn": "Xinjiang"
     },
     {
       "name": "吐鲁番",
@@ -2890,7 +3610,9 @@
       "province": "新疆",
       "lat": 42.951,
       "lng": 89.19,
-      "adcode": 650400
+      "adcode": 650400,
+      "nameEn": "Tulufan",
+      "provinceEn": "Xinjiang"
     },
     {
       "name": "哈密",
@@ -2898,7 +3620,9 @@
       "province": "新疆",
       "lat": 42.833,
       "lng": 93.516,
-      "adcode": 650500
+      "adcode": 650500,
+      "nameEn": "Hami",
+      "provinceEn": "Xinjiang"
     },
     {
       "name": "伊宁",
@@ -2906,7 +3630,9 @@
       "province": "新疆",
       "lat": 43.914,
       "lng": 81.277,
-      "adcode": null
+      "adcode": null,
+      "nameEn": "Yining",
+      "provinceEn": "Xinjiang"
     },
     {
       "name": "喀什",
@@ -2914,7 +3640,9 @@
       "province": "新疆",
       "lat": 39.47,
       "lng": 75.99,
-      "adcode": 653100
+      "adcode": 653100,
+      "nameEn": "Kashi",
+      "provinceEn": "Xinjiang"
     },
     {
       "name": "库尔勒",
@@ -2922,7 +3650,9 @@
       "province": "新疆",
       "lat": 41.724,
       "lng": 86.146,
-      "adcode": null
+      "adcode": null,
+      "nameEn": "Kuerlei",
+      "provinceEn": "Xinjiang"
     },
     {
       "name": "阿克苏",
@@ -2930,7 +3660,9 @@
       "province": "新疆",
       "lat": 41.168,
       "lng": 80.26,
-      "adcode": 652900
+      "adcode": 652900,
+      "nameEn": "Akesu",
+      "provinceEn": "Xinjiang"
     },
     {
       "name": "和田",
@@ -2938,7 +3670,9 @@
       "province": "新疆",
       "lat": 37.114,
       "lng": 79.923,
-      "adcode": 653200
+      "adcode": 653200,
+      "nameEn": "Hetian",
+      "provinceEn": "Xinjiang"
     },
     {
       "name": "石河子",
@@ -2946,7 +3680,9 @@
       "province": "新疆",
       "lat": 44.306,
       "lng": 86.08,
-      "adcode": 659001
+      "adcode": 659001,
+      "nameEn": "Shihezi",
+      "provinceEn": "Xinjiang"
     },
     {
       "name": "台湾",
@@ -2954,7 +3690,9 @@
       "province": "台湾",
       "lat": 23.7,
       "lng": 121,
-      "adcode": 710000
+      "adcode": 710000,
+      "nameEn": "Taiwan",
+      "provinceEn": "Taiwan"
     },
     {
       "name": "台北",
@@ -2962,7 +3700,9 @@
       "province": "台湾",
       "lat": 25.033,
       "lng": 121.565,
-      "adcode": null
+      "adcode": null,
+      "nameEn": "Taipei",
+      "provinceEn": "Taiwan"
     },
     {
       "name": "新北",
@@ -2970,7 +3710,9 @@
       "province": "台湾",
       "lat": 25.012,
       "lng": 121.466,
-      "adcode": null
+      "adcode": null,
+      "nameEn": "New Taipei",
+      "provinceEn": "Taiwan"
     },
     {
       "name": "桃园",
@@ -2978,7 +3720,9 @@
       "province": "台湾",
       "lat": 24.994,
       "lng": 121.301,
-      "adcode": null
+      "adcode": null,
+      "nameEn": "Taoyuan",
+      "provinceEn": "Taiwan"
     },
     {
       "name": "台中",
@@ -2986,7 +3730,9 @@
       "province": "台湾",
       "lat": 24.148,
       "lng": 120.674,
-      "adcode": null
+      "adcode": null,
+      "nameEn": "Taichung",
+      "provinceEn": "Taiwan"
     },
     {
       "name": "台南",
@@ -2994,7 +3740,9 @@
       "province": "台湾",
       "lat": 22.999,
       "lng": 120.227,
-      "adcode": null
+      "adcode": null,
+      "nameEn": "Tainan",
+      "provinceEn": "Taiwan"
     },
     {
       "name": "高雄",
@@ -3002,7 +3750,9 @@
       "province": "台湾",
       "lat": 22.616,
       "lng": 120.313,
-      "adcode": null
+      "adcode": null,
+      "nameEn": "Kaohsiung",
+      "provinceEn": "Taiwan"
     },
     {
       "name": "基隆",
@@ -3010,7 +3760,9 @@
       "province": "台湾",
       "lat": 25.128,
       "lng": 121.739,
-      "adcode": null
+      "adcode": null,
+      "nameEn": "Keelung",
+      "provinceEn": "Taiwan"
     },
     {
       "name": "新竹",
@@ -3018,7 +3770,9 @@
       "province": "台湾",
       "lat": 24.802,
       "lng": 120.969,
-      "adcode": null
+      "adcode": null,
+      "nameEn": "Hsinchu",
+      "provinceEn": "Taiwan"
     },
     {
       "name": "嘉义",
@@ -3026,7 +3780,9 @@
       "province": "台湾",
       "lat": 23.48,
       "lng": 120.449,
-      "adcode": null
+      "adcode": null,
+      "nameEn": "Chiayi",
+      "provinceEn": "Taiwan"
     },
     {
       "name": "香港",
@@ -3034,7 +3790,9 @@
       "province": "香港",
       "lat": 22.319,
       "lng": 114.169,
-      "adcode": 810000
+      "adcode": 810000,
+      "nameEn": "Hong Kong",
+      "provinceEn": "Hong Kong"
     },
     {
       "name": "澳门",
@@ -3042,7 +3800,9 @@
       "province": "澳门",
       "lat": 22.198,
       "lng": 113.544,
-      "adcode": 820000
+      "adcode": 820000,
+      "nameEn": "Macau",
+      "provinceEn": "Macau"
     },
     {
       "name": "大兴安岭",
@@ -3050,7 +3810,9 @@
       "province": "黑龙江",
       "lat": 50.411,
       "lng": 124.118,
-      "adcode": 232700
+      "adcode": 232700,
+      "nameEn": "Daxinganling",
+      "provinceEn": "Heilongjiang"
     },
     {
       "name": "克孜勒苏",
@@ -3058,7 +3820,9 @@
       "province": "新疆",
       "lat": 39.715,
       "lng": 76.168,
-      "adcode": 653000
+      "adcode": 653000,
+      "nameEn": "Kezileisu",
+      "provinceEn": "Xinjiang"
     },
     {
       "name": "文昌",
@@ -3066,7 +3830,9 @@
       "province": "海南",
       "lat": 19.613,
       "lng": 110.753,
-      "adcode": 469005
+      "adcode": 469005,
+      "nameEn": "Wenchang",
+      "provinceEn": "Hainan"
     },
     {
       "name": "那曲",
@@ -3074,7 +3840,9 @@
       "province": "西藏",
       "lat": 31.476,
       "lng": 92.051,
-      "adcode": 540600
+      "adcode": 540600,
+      "nameEn": "Nagqu",
+      "provinceEn": "Tibet"
     }
   ]
 }

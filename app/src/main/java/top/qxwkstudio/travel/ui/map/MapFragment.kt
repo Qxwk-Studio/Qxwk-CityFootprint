@@ -290,6 +290,7 @@ class MapFragment : Fragment() {
     private fun refreshVisited() {
         val loaded = style ?: return
         val color = if (badgeColor != 0) badgeColor else Palette.accent(requireContext())
+        _binding?.cityLabels?.setVisitedColor(color)
         val shapes = CityBoundaries.locator(requireContext()).shapesFor(visited)
         if (shapes.isNotEmpty()) {
             val json = shapesJson(shapes)
@@ -327,11 +328,16 @@ class MapFragment : Fragment() {
                 ?: ("边界资产 " + CityBoundaries.lastAssetChars + " 字")
             requireContext().notify("边界: " + reason, long = true)
         }
-        // 去过的城市名（只画本地点亮的那些，不是底图全量地名）
+        // 底图中文地名：全部本地城市按缩放分层绘制，去过的城市重点显示
         _binding?.cityLabels?.submit(
-            CityStore.all(requireContext())
-                .filter { it.name in visited }
-                .map { it.name to LatLng(it.lat, it.lng) },
+            CityStore.all(requireContext()).map { city ->
+                CityLabelsView.Label(
+                    name = if (resources.configuration.locales[0].language == "en") city.nameEn ?: city.name else city.name,
+                    latLng = LatLng(city.lat, city.lng),
+                    visited = city.name in visited,
+                    major = city.name in MAJOR_CITIES,
+                )
+            },
         )
         // 加载完成：收掉布局里默认那行「正在载入地图」
         _binding?.textStatus?.visibility = View.GONE
@@ -427,7 +433,8 @@ class MapFragment : Fragment() {
     private fun showCity(city: String) {
         val b = binding
         b.cityCard.visibility = View.VISIBLE
-        b.textCity.text = city
+        b.textCity.tag = city
+        b.textCity.text = CityStore.displayName(requireContext(), city)
         b.textCount.setText(R.string.map_loading)
         b.cityList.removeAllViews()
 
@@ -437,7 +444,7 @@ class MapFragment : Fragment() {
         }) { result ->
             val (checkins, tripSeqs) = result.getOrNull() ?: return@runIo
             // 面板可能已经被关掉、或点去了别的城市：对不上就不填
-            if (b.cityCard.visibility != View.VISIBLE || b.textCity.text.toString() != city) return@runIo
+            if (b.cityCard.visibility != View.VISIBLE || b.textCity.tag != city) return@runIo
             b.textCount.text = getString(R.string.map_city_count, checkins.size)
             b.cityList.removeAllViews()
             // 首访：这座城市里时间最早的那条就是（首访只做角标，不做整卡描边）
@@ -643,6 +650,15 @@ class MapFragment : Fragment() {
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 
     private companion object {
+        /** 低缩放时显示的主要城市：直辖市 + 省会/首府 + 港澳台。 */
+        val MAJOR_CITIES = setOf(
+            "北京", "天津", "上海", "重庆",
+            "石家庄", "太原", "呼和浩特", "沈阳", "长春", "哈尔滨",
+            "南京", "杭州", "合肥", "福州", "南昌", "济南", "郑州",
+            "武汉", "长沙", "广州", "南宁", "海口", "成都", "贵阳",
+            "昆明", "拉萨", "西安", "兰州", "西宁", "银川", "乌鲁木齐",
+            "香港", "澳门", "台北",
+        )
         const val STYLE_TIMEOUT_MS = 8_000L
         const val EMPTY_COLLECTION = "{\"type\":\"FeatureCollection\",\"features\":[]}"
         const val VISITED_SOURCE = "visited"

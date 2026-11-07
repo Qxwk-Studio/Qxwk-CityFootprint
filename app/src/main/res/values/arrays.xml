@@ -11,4 +11,16 @@
         <item>分析员</item>
         <item>调查员</item>
     </string-array>
+    <string-array name="mine_name_presets_canonical">
+        <item>旅行者</item>
+        <item>开拓者</item>
+        <item>舰长</item>
+        <item>博士</item>
+        <item>管理员</item>
+        <item>Sensei</item>
+        <item>指挥官</item>
+        <item>漂泊者</item>
+        <item>分析师</item>
+        <item>调查员</item>
+    </string-array>
 </resources>

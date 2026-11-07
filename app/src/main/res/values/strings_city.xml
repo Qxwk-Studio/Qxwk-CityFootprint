@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 城市选择与定位（简体中文） -->
+<resources>
+    <string name="city_picker_title">选择城市</string>
+    <string name="city_search_hint">搜索城市名或省份</string>
+    <string name="city_empty">没有匹配的城市</string>
+    <string name="city_group_title">%1$s · %2$d 座</string>
+    <string name="city_group_unknown">其他</string>
+    <string name="locate_locating">正在定位…</string>
+    <string name="locate_no_permission">未获得定位权限，请允许定位</string>
+    <string name="locate_disabled">定位失败，请检查是否已开启定位（GPS）</string>
+    <string name="locate_failed">定位失败，请重试</string>
+    <string name="locate_no_city">未找到附近城市</string>
+</resources>

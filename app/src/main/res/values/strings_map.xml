@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 地图（简体中文） -->
+<resources>
+    <string name="map_empty">还没有足迹，先去「足迹」页添加</string>
+    <string name="map_locate">定位我的位置</string>
+    <string name="map_city_count">%1$d 次打卡</string>
+    <string name="map_empty_city">这座城市还没有打卡记录</string>
+    <string name="map_close">关闭</string>
+    <string name="map_loading">正在载入地图…</string>
+    <string name="map_failed">底图载入失败（叠加的城市面仍可用）</string>
+</resources>

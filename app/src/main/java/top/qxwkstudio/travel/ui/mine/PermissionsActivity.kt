@@ -11,7 +11,7 @@ import android.os.Bundle
 import android.provider.Settings
 import android.view.View
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AppCompatActivity
+import top.qxwkstudio.travel.ui.common.LocalizedActivity
 import androidx.core.content.ContextCompat
 import top.qxwkstudio.travel.R
 import top.qxwkstudio.travel.data.Prefs
@@ -19,7 +19,7 @@ import top.qxwkstudio.travel.databinding.ActivityPermissionsBinding
 import top.qxwkstudio.travel.ui.common.Palette
 
 /** 权限管理：只列这个 App 真正会用到/会申请的权限。 */
-class PermissionsActivity : AppCompatActivity() {
+class PermissionsActivity : LocalizedActivity() {
 
     private lateinit var binding: ActivityPermissionsBinding
 
@@ -28,6 +28,10 @@ class PermissionsActivity : AppCompatActivity() {
     ) { refresh() }
 
     private val storagePermission = registerForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+    ) { refresh() }
+
+    private val notificationPermission = registerForActivityResult(
         ActivityResultContracts.RequestPermission(),
     ) { refresh() }
 
@@ -68,6 +72,22 @@ class PermissionsActivity : AppCompatActivity() {
             Prefs.saveNetworkAllowed(this, checked)
         }
         binding.rowNetwork.setOnClickListener { binding.switchNetwork.toggle() }
+
+        binding.switchNotification.setOnCheckedChangeListener { _, checked ->
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+                binding.switchNotification.isChecked = false
+                return@setOnCheckedChangeListener
+            }
+            if (checked) {
+                if (!granted(Manifest.permission.POST_NOTIFICATIONS)) {
+                    notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+                }
+            } else if (granted(Manifest.permission.POST_NOTIFICATIONS)) {
+                binding.switchNotification.isChecked = true
+                openAppSettings()
+            }
+        }
+        binding.rowNotification.setOnClickListener { binding.switchNotification.toggle() }
         binding.btnSystemSettings.setOnClickListener { openAppSettings() }
     }
 
@@ -90,6 +110,28 @@ class PermissionsActivity : AppCompatActivity() {
                 openAppSettings()
             }
         }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val notificationGranted = granted(Manifest.permission.POST_NOTIFICATIONS)
+            binding.switchNotification.setOnCheckedChangeListener(null)
+            binding.switchNotification.isChecked = notificationGranted
+            binding.switchNotification.isEnabled = true
+            binding.switchNotification.setOnCheckedChangeListener { _, checked ->
+                if (checked) {
+                    if (!granted(Manifest.permission.POST_NOTIFICATIONS)) {
+                        notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    }
+                } else if (granted(Manifest.permission.POST_NOTIFICATIONS)) {
+                    binding.switchNotification.isChecked = true
+                    openAppSettings()
+                }
+            }
+        } else {
+            binding.switchNotification.setOnCheckedChangeListener(null)
+            binding.switchNotification.isChecked = false
+            binding.switchNotification.isEnabled = false
+            binding.textNotificationDesc.setText(R.string.perm_notification_not_needed)
+        }
+
         if (Build.VERSION.SDK_INT > Build.VERSION_CODES.P) {
             binding.textStorageDesc.setText(R.string.perm_storage_scoped_desc)
             binding.textStorageStatus.setText(R.string.perm_not_required)

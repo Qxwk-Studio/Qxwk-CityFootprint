@@ -22,6 +22,7 @@ import androidx.lifecycle.lifecycleScope
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import top.qxwkstudio.travel.R
 import top.qxwkstudio.travel.data.CheckinRepo
+import top.qxwkstudio.travel.data.CityStore
 import top.qxwkstudio.travel.data.DataVersion
 import top.qxwkstudio.travel.data.PhotoJanitor
 import top.qxwkstudio.travel.data.TripRepo
@@ -218,10 +219,10 @@ class TripsFragment : Fragment() {
             getString(R.string.trips_trip_seq, checkin.seqNo)
         }
         header.addView(numberBadgeText(badgeText, stripe))
-        header.addView(titleViewWrap(checkin.cityName))
+        header.addView(titleViewWrap(CityStore.displayName(requireContext(), checkin.cityName)))
         if (!checkin.province.isNullOrBlank()) {
             header.addView(dotView())
-            header.addView(provinceView(checkin.province))
+            header.addView(provinceView(CityStore.provinceDisplay(requireContext(), checkin.province)))
         }
         checkin.amountCents?.takeIf { it > 0 }?.let { header.addView(costBadge(it)) }
         header.addView(spacer())
@@ -344,14 +345,14 @@ class TripsFragment : Fragment() {
         // 第二行：左「城市串」、右「时间线数 · 时间」
         val meta = row(topMargin = 8)
         val cities = citiesByUuid[trip.uuid].orEmpty()
-        val cityText = cities.joinToString(" · ").ifBlank { "-" }
+        val cityText = cities.map { CityStore.displayName(requireContext(), it) }.joinToString(" · ").ifBlank { "-" }
         val cityView = iconText(R.drawable.ic_city, cityText, expandText = true)
         cityView.layoutParams = weightParams()
         meta.addView(cityView)
         // 左右两组之间留空隙
         meta.addView(View(requireContext()).apply { layoutParams = LinearLayout.LayoutParams(dp(12), 1) })
         val counts = timelineCountByUuid[trip.uuid] ?: (0 to 0)
-        meta.addView(iconText(R.drawable.ic_luggage, "${counts.first} 城 · ${counts.second} 项"))
+        meta.addView(iconText(R.drawable.ic_luggage, getString(R.string.trips_meta_counts, counts.first, counts.second)))
         meta.addView(iconText(R.drawable.ic_calendar, Dates.ymd(trip.startTime), marginStart = 10))
         card.addView(meta)
 
@@ -628,7 +629,7 @@ class TripsFragment : Fragment() {
     private fun confirmDeleteCheckin(checkin: CheckinEntity) {
         MaterialAlertDialogBuilder(requireContext())
             .setTitle(R.string.delete_title)
-            .setMessage(getString(R.string.delete_message, checkin.cityName))
+            .setMessage(getString(R.string.delete_message, CityStore.displayName(requireContext(), checkin.cityName)))
             .setPositiveButton(R.string.common_delete) { _, _ ->
                 viewLifecycleOwner.lifecycleScope.runIo({
                     CheckinRepo.delete(AppDatabase.get(requireContext()), checkin.id)

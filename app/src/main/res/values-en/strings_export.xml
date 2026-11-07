@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 导出数据 (English) -->
+<resources>
+    <string name="export_confirm_title">Export all data?</string>
+    <string name="export_confirm_message">Packages trips, check-ins and photos into a ZIP in Downloads. Settings and achievements are not included.</string>
+    <string name="export_done">Exported to %1$s (%2$d trips / %3$d check-ins / %4$d photos)</string>
+    <string name="export_failed">Export failed</string>
+    <string name="export_permission">Storage permission is required to write to Downloads</string>
+</resources>
