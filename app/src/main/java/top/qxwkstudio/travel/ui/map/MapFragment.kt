@@ -12,6 +12,8 @@ import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.launch
 import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLng
@@ -24,6 +26,7 @@ import org.maplibre.android.style.layers.FillLayer
 import org.maplibre.android.style.layers.LineLayer
 import org.maplibre.android.style.sources.GeoJsonSource
 import top.qxwkstudio.travel.R
+import top.qxwkstudio.travel.data.SyncEvents
 import top.qxwkstudio.travel.data.BasemapStore
 import top.qxwkstudio.travel.data.CheckinRepo
 import top.qxwkstudio.travel.data.TripRepo
@@ -90,6 +93,9 @@ class MapFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        viewLifecycleOwner.lifecycleScope.launch {
+            SyncEvents.events.collect { load() }
+        }
         mapView = binding.mapView
         // MapView 不要自己再吃系统栏 inset：inset 已在 MainActivity 的壳层消费，
         // 否则底部会留一条与导航栏等高的空白。

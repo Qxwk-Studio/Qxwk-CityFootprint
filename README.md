@@ -1,360 +1,158 @@
 # 🗺️ City Footprint
 
-> 记录每个人去过的城市，在足迹地图上点亮属于自己的颜色。
->
-> 登录通行证后把自己去过的城市打点在地图上，和朋友们一起拼出一张五彩斑斓的足迹大地图。
+> 把走过的城市点亮成自己的地图。
 
-## ✨ 功能一览
+City Footprint 由三部分组成：
 
-### 🗺️ 足迹大地图 (`index.html`)
-- **公开浏览**：所有访客无需登录即可查看完整地图
-- **专属颜色**：每个用户一种标记色（颜色由通行证统一分配），同城多点自动散开
-- **按人筛选**：点击图例中的昵称，只看某一个人的足迹
-- **私密行程**：本人登录时可见自己的不公开足迹（弹窗带 🔒），他人不可见
-- **管理员视图**：管理员可查看所有人的行程（含私密），右上角显示 👑 标识
-- **添加行程**：右下角菜单里的唯一新建入口 —— 打开即尝试定位并把城市填成最近的一座（可手输检索），再选年 / 月（或勾「记不清了」）、多选出行方式、填备注、勾「不公开行程」
+- **安卓 App**：离线记录行程、手动打卡、照片与成就；可选登录后同步。
+- **网页**：新官网、全屏行程地图、用户查询、行程/打卡查询。
+- **Cloudflare Worker + D1**：通行证登录、公开查询、可选同步。
 
-### 👤 个人中心 (`account.html`)
-- **本站登录表单**：未登录视图直接给出「昵称或邮箱 + 密码」表单，提交后由本站前端 JS 跨域调通行证 `/api/login` 换取 token（密码只从浏览器发给通行证，不经过本站服务器）；下方保留「打开通行证」外链用于注册 / 找回密码
-- **本地会话**：登录成功把 token 存 localStorage（键 `qxwf_token`），再调本站 `/api/me` 把用户信息写入 `qxwf_user` 缓存，后续访问免登录
-- **账户信息**：专属颜色大头像（**直接使用通行证返回的 avatar URL，前端不再自己计算邮箱哈希**）、UID、注册时间、管理员徽章
-- **通行证中心入口**：个人中心左列底部提供通行证外链卡，方便改昵称 / 颜色 / 密码、生成邀请码
-- **清除缓存**：右列顶部提供「清除缓存」卡，一键清掉本机的接口报文缓存（sessionStorage 的 `qxwf_cache_*`）与地图边界缓存（IndexedDB `cityfootprint-geo`）；不动登录态与主题 / 图例折叠等偏好
-- **关于软件**：右列底部提供「关于软件」卡，列明使用的开源内容（Leaflet / 高德瓦片 / DataV GeoAtlas）、开发者与联系方式，以及当前版本号（硬编码在 `docs/account.js` 的 `APP_VERSION`，发版时与 `docs/news.html` 网页端日志同步）
-- **退出登录**：清掉本地 token 后，顺带跨域 POST 通行证 `/api/logout` 撤销该会话（请求失败不影响本地登出）
+## ✨ 功能
 
-### ✈️ 足迹管理 (`visits.html`)
-- **足迹修改与删除**：列表里点「编辑」弹出原生 `<dialog>` 改这一条（城市联想、时间/出行方式/备注/私密开关），点「删除」移除；**新建入口统一在主页**，这里不再有第二个添加表单
-- **足迹统计**：去过城市数、覆盖省份、足迹总数、最早·最近行程
-- **成就系统**：4 大分类（足迹丰碑 / 巡游四方 / 城市打卡 / 极限挑战），自动判定解锁，成就卡片整体折叠
-- **不公开行程**：添加 / 编辑时可勾选"仅自己可见"，不出现在公开地图与统计中
+### 安卓 App
 
-### 📊 全站统计 (`stats.html`)
-- 总行程、总城市、总用户、覆盖省份（4 卡网格排版）
-- 城市次数排名 Top30、成就达成人数
-- 管理员登录时统计全部行程（含私密）
+- 行程编辑：时间线、到访城市、交通、花销、备注、评分、照片
+- 手动打卡：年 / 年月 / 年月日 / 时间不详四档日期精度
+- 足迹地图：MapLibre + 本地 PMTiles 离线底图、城市边界、中文地名
+- 成就：88 条，四大分类，按本地打卡回溯解锁
+- 统计：城市、省份、次数、花销、城市排名
+- 导出：ZIP（`data.json` + `photos/`）
+- **可选同步**：不登录也能完整使用；登录后同步行程与手动打卡
 
-### 🌓 夜间模式
-- **全站 6 页面**支持：默认跟随系统深浅色自动切换，导航栏可手动切换（太阳/月亮按钮），选择存 localStorage
-- 深色下地图瓦片自动暗化（滤镜），UI（图例 / FAB / 弹窗 / 表单 / 统计卡）全部深色适配
-- **深色下「主色系文字」统一换亮一档**（`#60a5fa`）：更新日志选项卡、导航返回链接、出行方式 chip 的选中态都走这一条。
-  `--primary` 在深色下**不翻**（按钮蓝底上的白字靠它），压在深底上当文字读不清，所以只有「当文字用」的那一档换
+### 网页
 
-### 🛡️ 安全设计
-- **统一认证**：本站不再持有密码 / 会话，登录态完全由通行证 account.qxwkstudio.top 签发与撤销
-- **密码不经本站服务器**：登录由前端 JS 跨域直调通行证 `/api/login`，密码只发往通行证，本站后端全程不接触
-- **Bearer Token**：业务请求带通行证下发的 token，本站后端拿 token 去问通行证 `/api/me` 验证（**无缓存**，每个业务请求都会跨站验证一次）
-- **私密数据**：不公开行程在接口层过滤，仅本人（或管理员）可见
+| 页面 | 路径 | 内容 |
+| --- | --- | --- |
+| 首页 | `/` | 软件介绍、版本号、国内网盘与 GitHub 下载 |
+| 行程地图 | `/map/` | 全屏高德瓦片、城市边界、最近 10 条记录弹窗 |
+| 用户查询 | `/user/` | 按通行证 UUID 查昵称、颜色、行程数、城市数 |
+| 行程查询 | `/trip/` | 足迹 / 打卡切换，按 UUID 查详情 |
 
-## 🔗 通行证登录接入说明
+网页使用原生 HTML/CSS/JS + Leaflet。地图边界经 Worker 代理 DataV GeoAtlas，前端 IndexedDB 缓存 7 天。
 
-本站是 [Qxwk 通行证](https://account.qxwkstudio.top/) 的接入站点之一。通行证侧的**跨站 SSO / 跳转授权已整条下线**（`/?redirect=` 入口、URL 片段交付 `#_t=<token>`、授权确认页与 `/api/sso/*` 接口均已删除），本站不再有「跳过去登录再回跳落地」的流程，改为**本站前端直调通行证登录接口**换 token：
+### 可选同步
 
-1. 用户在 `account.html` 未登录视图的表单填「昵称或邮箱 + 密码」并提交，`docs/app.js` 的 `passportLogin(nickname, password)` 跨域 POST 通行证 `https://account.qxwkstudio.top/api/login`，body 为 `{nickname, password, client: location.origin}`（`client` 供通行证侧 `apps` 白名单识别来源站点，未登记也能登录）
-2. 通行证校验通过返回 `token`，本站前端把 token 存进 localStorage（键 `qxwf_token`），再调本站 `/api/me` 把用户信息写入 `qxwf_user` 缓存；失败则把错误信息显示在表单下方
-3. 后续业务请求带 `Authorization: Bearer <token>`，本站后端 `resolveViewer()` 拿 token 去通行证 `/api/me` 验证（**无缓存**），再**按通行证 userId 映射**到本地 `users` 表：先按 `users.passport_id` 查行 → 查不到时把「同昵称且 `passport_id IS NULL`」的存量行回填 `passport_id` 认领（保住该行已有的足迹与 `is_admin` 标志）→ 仍查不到才 `INSERT OR IGNORE` 新建；昵称 / 颜色 / 头像每次访问同步通行证，昵称撞上本站 `users.nickname` 唯一约束时保留本站旧昵称、只同步颜色与头像
-4. 退出登录：`logout()` 清掉本地 token 后，跨域 POST 通行证 `/api/logout`（带 `Authorization: Bearer <token>`）撤销该会话；请求失败不影响本地登出
+只有同时满足以下条件才同步：
 
-> **已知限制**：本地昵称与通行证昵称已经不一致、且该用户此前从没用过新版流程的存量行无法被认领——登录时会新建一行，旧行及其足迹需人工在库里合并。
+1. 权限页「网络」开启
+2. 网络子项「可选同步」开启
+3. 已保存同步服务器地址与凭证
 
-## 🧱 技术栈
+同步范围：
 
-- **运行时**：Cloudflare Workers（只跑接口，不再托管静态资源）
-- **数据库**：D1（SQLite，Cloudflare 原生）
-- **认证**：Qxwk 通行证统一登录（本站前端直调通行证 `/api/login` 换 token + Bearer Token 跨站校验，无缓存）
-- **前端**：原生 HTML / JS + [Leaflet](https://leafletjs.com/) 地图库
-- **托管平台**：前端 **GitHub Pages**（发布仓库的 `docs/` 目录，域名 `travel.qxwkstudio.top`）+ 后端 **Cloudflare Workers**（域名 `api.travel.qxwkstudio.top`，部署命令在 `backend/` 目录执行 `npx wrangler deploy`）
+- 行程
+- 手动打卡
+
+不同步：
+
+- 成就（本地按同步后的数据重算）
+- 照片
+- 昵称、主题色、语言等设置
+
+行为：
+
+- App 启动时自动同步
+- 行程或打卡变化后延迟自动同步
+- 同步页可手动同步
+- 新设备首次同步拉取服务端快照，解决迁移数据没有 `sync_changes` 的问题
+- 冲突弹窗对比本地/远端，由用户选择保留哪边
+- 失败最多重试 3 次，仍失败则 Toast 提示
 
 ## 📁 项目结构
 
-仓库根目录按「前端 / 后端 / 安卓 app」三分（前端目录叫 `docs/` 是 GitHub Pages 的要求 —— 它只允许发布仓库根或 `/docs`）：
-
-```
-├── docs/                   # 静态前端（GitHub Pages 就发布这个目录）
-│   ├── vendor/             # 自托管前端依赖（Leaflet JS + CSS + 标记图标，避免外链与 CORS）
-│   ├── style.css           # index/account/visits/stats/news 五个内容页共用的样式（导航、卡片、按钮、表单控件、加载态、断点、主题变量…）；各页 <link> 它在自己的 <style> 之前，页面内仍可覆盖（setup.html 是独立落地页，不引入）。**凡是各页应该长得一样的样式都写这里，页内不要再抄一份**
-│   ├── index.html          # 足迹大地图
-│   ├── account.html        # 个人中心（本站登录表单 + 资料卡）
-│   ├── visits.html         # 足迹管理（增删改/统计/成就）
-│   ├── setup.html          # 欢迎动画页（嵌入 account 未登录左侧，跟随主题同步）
-│   ├── stats.html          # 全站统计
-│   ├── news.html           # 公告与更新日志
-│   ├── app.js              # API 客户端 + 通行证登录/会话（直调 /api/login、401 兜底） + setAvatarFromUrl()（头像渲染）；window.TRANSPORTS 出行方式枚举与多选 chips 工具
-│   ├── cities.js           # 国内地级市坐标数据
-│   ├── city-codes.js       # 城市 adcode（地图边界用）；与 backend/src/city-codes.js 同源，都由 scripts/gen-city-codes.js 生成
-│   ├── favicon.webp        # 站点图标（lossless webp，与安卓启动图标同一张源图，见 app/README.md）
-│   └── robots.txt          # 爬虫规则（屏蔽登录页与足迹管理页；接口在另一个域上，这里管不到）
-├── backend/                # 后端（Cloudflare Worker + D1）；后端命令都在这个目录里执行
+```text
+.
+├── app/                    # 安卓 App，详见 app/README.md
+├── backend/                # Cloudflare Worker + D1，详见 backend/README.md
 │   ├── src/
-│   │   ├── worker.js       # Worker 入口（/api/* 接口 + CORS；静态资源回退已删）
-│   │   ├── lib.js          # 通行证 token 验证 + 本地用户映射 + 私密可见性片段 visibility()
-│   │   ├── ratelimit.js    # 接口限速：分钟档走 CF Rate Limiting 绑定、天档写 D1（阈值与文案的单一出处）
-│   │   ├── achievements.js # 成就定义与判定（**全站唯一一份**，网页/app 都只消费接口结果）
-│   │   └── city-codes.js   # 城市 adcode 字典（写入行程时按城市名派生 adcode 用；与 docs/city-codes.js 同源）
-│   ├── test/
-│   │   └── achievements.test.js  # 成就判定与达成人数的单测（cd backend && npm test）
-│   ├── migrations/
-│   │   └── 0001_init.sql     # 全站唯一建表文件：users（与 Qxwk-Blog 共享）/ cf_users（独占）/ cf_visits（含 adcode / transport 与 CHECK 约束）/ cf_rate_daily（限速天级计数）/ cf_app_version、cf_notices、cf_menu（App 清单，GET /api/manifest 读这三张）
-│   ├── package.json        # 只声明 ESM（"type":"module"）+ npm test，无任何依赖
-│   └── wrangler.toml       # Worker 配置（D1 绑定 + 两个限速绑定 RL_WRITE / RL_READ；静态资源段已删 —— 页面在 GitHub Pages）
-├── app/                    # 安卓 app，见 app/README.md。**2.0 起是离线单机**：数据在本地 SQLite、
-│                            # 无登录；地图是 MapLibre + 打包进 APK 的离线 PMTiles；只有一个网络请求（检查更新）
-├── scripts/                # 城市数据维护脚本（Node，本地手动跑，不参与部署）
-│   ├── complete-cities.js  # 从 DataV 补齐 docs/cities.js 缺失的地级行政区
-│   └── gen-city-codes.js   # 由 DataV 生成 docs/city-codes.js 与 backend/src/city-codes.js（城市名 → adcode，单一数据源出两份）
-├── .github/
-│   └── workflows/
-│       └── build-android.yml  # 手动触发的安卓打包（JDK 17 + Secrets 里的签名密钥 → 按 ABI 拆分的签名 APK artifact）
-└── README.md
+│   │   ├── worker.js       # 路由、公开接口、通行证登录
+│   │   ├── sync.js         # 可选同步：register / push / pull
+│   │   ├── auth.js         # 通行证 token 校验
+│   │   └── city-coordinates.js
+│   ├── migrations-sync/    # 同步库建表
+│   ├── test/               # 同步参数、新设备快照测试
+│   └── wrangler.toml
+├── docs/                   # GitHub Pages 前端
+│   ├── index.html
+│   ├── map/
+│   ├── user/
+│   ├── trip/
+│   ├── site.css
+│   └── site.js
+├── scripts/                # 城市数据生成脚本
+└── .github/workflows/      # Android 构建
 ```
 
-## 🔌 API 接口
+## 🔌 主要接口
 
-| 方法 | 路径 | 鉴权 | 说明 |
-|------|------|------|------|
-| GET | `/api/me` | Bearer | 当前用户信息（token 经通行证验证，返回 `userId/nickname/color/avatar/is_admin/created_at`） |
-| GET | `/api/manifest` | 无 | App 清单：安卓版本（`android`）、公告（`notices`）、主页菜单栏目（`menu`）—— 数据在 D1 |
-| GET | `/api/cities` | 可选 Bearer | 地图数据：城市 + 坐标 + `adcode` + 去过的人（仅 `nickname/color`；登录可见本人私密，管理员可见全部）。日期/备注等明细不在这里下发 |
-| GET | `/api/city/:city` | 可选 Bearer | 某座城市的全部行程（地图弹窗**点开时才拉**；无记录回 200 + 空数组，前端只铺最近 10 条）。城市名直接当路径参数，每条带 `adcode` 与 `transport`（数组） |
-| GET | `/api/stats` | 可选 Bearer | 全站统计（`totalVisits/totalCities/totalUsers/cityRank/achievements/isAdmin`，管理员含私密行程） |
-| GET | `/api/my-visits` | Bearer | 自己的足迹（含 `is_private/adcode/transport`）+ 我的成就 |
-| POST | `/api/visits` | Bearer | 添加足迹（可带 `is_private`、`transport` 多选数组；`adcode` 由后端按城市名派生） |
-| PUT | `/api/visits/:id` | Bearer | 修改（仅本人，可改 `is_private` / `transport`；`adcode` 随城市名重算） |
-| DELETE | `/api/visits/:id` | Bearer | 删除（仅本人） |
-| GET | `/api/geo/:adcode` | 无 | 代理 DataV 边界接口（规避浏览器跨域，结果缓存 7 天） |
+### 公开
 
-> 注册 / 改密 / 邀请码 等账号能力已全部移交通行证 account.qxwkstudio.top；本站的登录表单只是前端直调通行证 `/api/login`，本站后端不自建账号体系。
+| 方法 | 路径 | 说明 |
+| --- | --- | --- |
+| GET | `/api/health` | 健康检查 |
+| GET | `/api/manifest` | App 版本清单 |
+| GET | `/api/server` | 服务器名称、照片上传能力 |
+| GET | `/api/map` | 地图城市、最近 10 条打卡/足迹 |
+| GET | `/api/users/:uuid` | 用户公开资料与统计 |
+| GET | `/api/trips/:uuid` | 行程详情 |
+| GET | `/api/checkins/:uuid` | 打卡详情 |
+| GET | `/api/geo/:adcode` | DataV 边界代理，缓存 7 天 |
 
-> **限速**：写接口（`POST/PUT/DELETE /api/visits`）1 分钟 10 次、每天 200 次，按登录用户计；其余读接口 1 分钟 120 次，按 IP 计；`/api/geo/:adcode` 不限。超限一律回 **429** + 中文提示（两端原样透出，见下面「接口限速」一节）。
+### 登录与同步
 
-## 🛠 设计说明
+| 方法 | 路径 | 说明 |
+| --- | --- | --- |
+| POST | `/api/auth/login` | 通行证账号密码登录，返回 Bearer token |
+| GET | `/api/auth/me` | 校验 token 并返回当前用户 |
+| POST | `/api/sync/register` | 注册设备 |
+| POST | `/api/sync/push` | 推送行程/打卡变更 |
+| GET | `/api/sync/pull?since=` | 拉取增量；`since=0` 返回当前快照 |
 
-- **认证完全移交通行证**：本站不持有密码、不签发会话、不生成 token，登录也只由前端跨域直调通行证 `/api/login`（密码不经本站服务器）。所有身份来源都由 `account.qxwkstudio.top` 负责。前端收到 401 清掉本地 token 并回到登录视图；后端业务接口的 Bearer Token 必须经通行证 `/api/me` 二次验证（**无任何缓存**，每个请求都会跨站验证一次）。
-- **前后端跨域，接口自带 CORS**：页面在 `travel.qxwkstudio.top`（GitHub Pages）、接口在 `api.travel.qxwkstudio.top`（Worker），不同源。前端请求带 `Authorization` / `Content-Type`，浏览器会先发 `OPTIONS` 预检，所以 Worker 必须处理预检并回 `Access-Control-Allow-*`；**4xx/5xx 也要带头**，否则浏览器只报 "CORS error"，前端那套 401 清 token / 回登录视图的逻辑永远触发不了。白名单（`backend/src/worker.js` 的 `ALLOWED_ORIGINS`）只放行前端域与 localhost —— 身份靠 Bearer token、不用 cookie，本就没有「靠 CORS 挡人」的安全边界，但也没必要让任意站点读响应。
-- **接口限速**：两套机制各管一段，判定都在 `backend/src/ratelimit.js`（阈值、文案、key 拼法的单一出处）。
-  - **分钟档**用 Cloudflare 的 **Rate Limiting 绑定**（`RL_WRITE` / `RL_READ`，配置在 `backend/wrangler.toml`）。选它是因为它由边缘侧计数、不落任何库：既绕开了「Workers 无状态、可能多 isolate 并发，进程内计数不可靠」，也不占 D1 额度。限制是**只能给 10s / 60s 窗口**，且按 colo **近似**（不是全局精确值）—— 防滥用够用，别拿它当计费口径。
-  - **天档**（写接口每天 200 次）必须持久化，落在 D1 的 `cf_rate_daily`（`migrations/0001_init.sql`），一天一行、upsert 原地累加。计数用**单条** `INSERT ... ON CONFLICT DO UPDATE ... RETURNING count` 先加再读回，才是原子的；换成「先 SELECT 再 UPDATE」并发时会双双读到最后一个名额而一起放行。**读接口刻意没有天档**：读请求量大，逐条写这张表会白白吃掉 D1 的每日写入额度（免费 10 万行/天），换来的只是「防一个已登录的人多翻几页」。
-  - **维度**：写接口按**登录用户**（本来就要求登录，userId 稳定、不受 NAT 影响），读接口按 **IP**（`CF-Connecting-IP`，Cloudflare 注入、客户端伪造不了）—— 因为 `/api/cities`、`/api/stats` 这些匿名就能访问，没有 userId 可用。每个请求只落一种 key，不是双重计数。**管理员不豁免**。
-  - **顺序**：限速判定在鉴权**之后**（未登录该回 401，不该消耗配额）、在解析 body 与落库**之前**；写接口先判分钟档、过了才动 D1，否则被分钟档挡下的请求照样能让刷子每次多写一行 D1。
-  - **fail open**：绑定没配（旧版 wrangler 会静默丢弃配置段）或调用抛错一律放行 —— 限速坏了不该把正常用户挡在门外；`/api/geo/:adcode` 也整条豁免（首屏按城市数逐个拉边界是正常行为，Worker 与浏览器各缓存 7 天已经不回源）。
-  - **超限响应**：`429` + 中文文案，由 `withCors` 贴头（否则浏览器只报 CORS 错、看不到文案）。网页端 `docs/app.js` 抛 `new Error(data.error)` 直接显示后端原文。（安卓 2.0 已离线，只剩一个只读的 `/api/manifest`，不涉及写接口与限速。）
-- **本地身份按 `passport_id` 映射**：`resolveViewer()` 用通行证 `/api/me` 返回的 `userId` 认人（`cf_users.passport_id`，唯一索引 `idx_cf_users_passport`）。通行证里改昵称不会改 userId，所以改昵称不会在本站多出一条行；升级前的老行按「同昵称且 `passport_id IS NULL`」自动回填认领，保住原有足迹与管理员标志。
-- **颜色与头像都由 Account 输出**：`cf_users.color` 和用户头像 URL 都是通行证"单一事实源"，本站每次用户访问时同步覆盖。这样用户在通行证改颜色 / 改邮箱（头像 hash 变化）后，访问本站自动生效，避免两端数据漂移。
-- **私密行程接口层过滤**：`is_private` 过滤在 Worker 侧做，而不是前端，防止有人抓接口构造出别人的私密足迹。规则只写一处 —— `lib.js` 的 `visibility(viewer)`（管理员不过滤；其余放行「非私密」或「自己的」），`/api/cities`、`/api/city/:city`、`/api/stats` 共用它。凡是新增「面向他人数据」的接口，都必须套这一段，别各自手抄。
-- **成就系统**：判定逻辑的源头是 `backend/src/achievements.js` —— "足迹丰碑 / 巡游四方 / 城市打卡 / 极限挑战"四大类共 **54 条**，每条带**稳定的 `code`**（早期拿中文 name 当计数键，改文案就会静默错位）。网页**只消费接口**：`GET /api/my-visits` 下发 `done`（我的成就）、`GET /api/stats` 下发 `count`（达成人数），两者都把 `icon/name/desc` 一起给。**安卓 2.0 因为改成离线单机，把这套定义搬进了 app**（`logic/Achievements.kt`，去掉了 emoji、判定输入改成本地打卡）—— 所以改阈值/加成就时**网页与安卓要一起改**，app 侧有单测与逐条比对。新增成就时同步 `backend/test/achievements.test.js`。
-- **地图边界与瓦片缓存**：DataV GeoAtlas 边界由 Worker `/api/geo/:adcode` 代理，三层都按 7 天缓存 —— Worker 内部 `caches.default` 的副本带 `Cache-Control: public, max-age=604800`，返回给浏览器的响应也带同一个头（浏览器 HTTP 缓存才吃得到），前端再用 IndexedDB 存 7 天：命中且未过期直接画，命中但已过期也先画上（边界几年才动一次），同时后台重下刷新缓存，只有完全没缓存时才等网络。行政边界几年才动一次（撤市设区那类），7 天很安全；三层写同一口径是为了避免前端先到期、白白多发一次往返。瓦片用高德免 Key 内网直出、Leaflet 资源自托管到 `docs/vendor/`，避免外链失效与 CORS 折腾。
-- **读接口报文缓存（会话级 1 天 + SWR）**：`docs/app.js` 的 `api()` 是所有读接口的唯一入口，GET 成功写 `sessionStorage`，写接口成功与登录 / 登出 / 401 时整体作废（`cacheInvalidate()`）。页面侧用 `apiWatch()` 取数：命中缓存先画一版、网络回来再画一版，所以要求各页渲染幂等；需要「必须最新」的场合（增删改后重新拉地图 / 列表）仍直接调 `api()` —— 那时缓存已作废，本来也不会命中。用 `sessionStorage` 而非 `localStorage`，是因为报文可能含私密足迹，按标签页隔离、关标签即清；代价是 **F5 不会清**，失效只有换账号 / 写操作 / 24 小时过期三条路。缓存 key 按 `userId` 隔离（未登录用 `anon`），否则换账号会先画出上一个人的私密数据；`/me` 刻意不缓存 —— 缓存它会让「token 已被撤销」晚一天才被发现。边界 GeoJSON 是公共数据、与账号无关，不在这套缓存里（见上一条）。（安卓 2.0 离线后没有报文缓存，页面靠 `DataVersion` 版本号决定要不要重读本地库。）
-- **城市字典与 adcode 由后端派生**：`cf_visits.adcode` 在**写入时**由后端按城市名从字典取出（`backend/src/city-codes.js`），字典与前端 `docs/city-codes.js` **同源** —— `scripts/gen-city-codes.js` 一次生成两份，避免两端各存一份后慢慢漂移。字典未命中（用户自造的城市名）留 `NULL` 而**不拒绝请求**；读取时用 `v.adcode || 字典[city]` 兜底，加列前的老行也有值。网页端不必再自带「城市名 → adcode」映射，直接拿接口给的 `adcode` 取边界。（安卓 2.0 离线，自带 `assets/cities.json` 与打包的城市边界，判城与取边界都在本机做 —— 城市数据改了要重跑 `node app/tools/gen-cities.mjs` 并提交生成物。）
-- **出行方式（`transport`）**：网页端一条行程可多选（飞机 / 火车 / 高铁 / 自驾 / 大巴 / 轮船 / 骑行 / 徒步 / 其他），库里存英文 code 的 **JSON 数组**（`CHECK json_valid` 兜底）；code 白名单与固定排序都在 `worker.js` 的 `TRANSPORTS`，前端枚举在 `docs/app.js` 的 `window.TRANSPORTS`（两处必须同步）。入库前会过滤未知 code、去重并按固定顺序排，前端可以放心直接提交勾选结果。（安卓 2.0 把出行方式改成了**自由文本**，挂在行程时间线的「乘坐」事件上，不再使用这套枚举。）
-- **页面链接不带 `.html`**：GitHub Pages 对 `/xxx` 会自动回落到 `xxx.html`（`travel.qxwkstudio.top/account`、`/stats` 已线上验证），所以站内导航统一写裸路径（`/account`、`/visits`…），浏览器地址栏就不露后缀。`docs/app.js` 的 401 兜底与 `docs/robots.txt` 的路径都已按裸路径对齐 —— 改导航时别把后缀加回来。
-- **响应式边距规范**：全站 6 页（index / account / visits / stats / news / setup）沿用同一套间距规范，新增页面或模块**务必遵守**，避免不同页面在手机/桌面上松紧不一。
+同步使用 `revision` 乐观锁。服务端冲突返回 `conflict` 和远端数据，客户端弹窗选择，不自动覆盖。
 
-  | 元素 | 桌面端（默认 CSS） | 手机端 `@media (max-width: 640px)` |
-  |---|---|---|
-  | `.navbar-inner` 左右内边距 | `0 24px` | `0 12px` |
-  | `.main` 上 / 左右 / 下内边距 | `36px 24px 60px` | `20px 12px 32px` |
-  | `.card` 内边距（普通卡片） | `24px` | `14px` |
-  | `.back-link` 内边距 / 字号 | `8px 18px` / `0.88rem` | `6px 12px` / `0.82rem` |
-  | `.footer` 上下 / 左右内边距 | `14px 24px`（所有页面已统一） | `12px 12px` |
-  | `.page-header` 底部间距 | `28px` | `20px` |
+## 🛠 开发
 
-  - 全屏页面（`index.html` 地图）的浮动元素（图例 / 管理员提示 / FAB 菜单 / Leaflet 弹窗）手机端也统一缩小：靠边 10–12px、FAB 直径 48px、弹窗最大宽度 300px
-  - **不要用 768px 做手机断点**，全站统一 640px，保证与 account 项目断点对齐
+### 安卓
+
+```powershell
+$env:JAVA_HOME='C:\Code\.tool\jdk-17.0.2'
+$env:ANDROID_HOME='C:\Code\.tool\android-sdk'
+$env:GRADLE_USER_HOME='C:\Code\.tool\gradle-home'
+cd app
+C:\Code\.tool\gradle-8.2\bin\gradle.bat testDebugUnitTest
+C:\Code\.tool\gradle-8.2\bin\gradle.bat assembleDebug
+```
+
+Debug APK：
+
+```text
+app/build/outputs/apk/debug/CityFootprint-arm64-v8a-debug.apk
+```
+
+### 后端
+
+```powershell
+cd backend
+npm.cmd test
+npx.cmd wrangler deploy
+```
+
+### 网页
+
+直接打开 `docs/index.html`，或用静态服务器：
+
+```powershell
+npx.cmd -y serve docs
+```
+
+## 🌐 在线地址
+
+- 网页：<https://travel.qxwkstudio.top>
+- 后端：<https://api.travel.qxwkstudio.top>
+- 通行证：<https://account.qxwkstudio.top>
 
 ---
-
-## 🚀 部署指南
-
-### 1️⃣ 创建 D1 数据库
-
-Cloudflare 控制台 → **Workers & Pages** → **D1** → **创建数据库**（Create database）
-
-- 名字填：`qxwk-data`
-- 创建后复制 **database_id**（一串 UUID）
-
-### 2️⃣ 建表（迁移）
-
-在 `backend/` 目录里执行（会自动按顺序应用 `backend/migrations/` 下所有迁移）：
-
-```bash
-cd backend
-npx wrangler d1 migrations apply qxwk-data --remote
-```
-
-> PowerShell 下请把 `npx` 写成 `npx.cmd`（执行策略会拦掉 `npx`；下同，所有 wrangler 命令都适用）。
-
-这条命令只会跑**还没记录在 D1 的 `d1_migrations` 表里的**迁移，新增迁移文件后重跑一次即可。
-
-> ⚠ **已有线上库要注意**：上面那些新表是**合并进 `0001_init.sql`** 的，而这份文件早先已经应用过 ——
-> `migrations apply` 只认「没跑过的文件」，**不会重跑改过的 `0001`**。所以老库要手动跑一次（幂等）：
->
-> ```bash
-> npx wrangler d1 execute qxwk-data --remote --file=migrations/0001_init.sql
-> ```
->
-> 整份文件都是 `IF NOT EXISTS` / `INSERT OR IGNORE`，重复执行无副作用；全新库直接 `apply` 即可，不必单独跑这条。
-
-迁移会创建本站所需的全部表：`cf_users`（`is_admin` 管理员标志、`color` 颜色随通行证同步、`passport_id` 通行证 userId，本站独占）、`cf_visits`（足迹，含 `is_private` / `adcode` / `transport` 与一批 CHECK 约束）、`cf_rate_daily`（接口限速的天级计数）以及 App 清单的三张表 `cf_app_version`（含更新说明 `notes` 列）/ `cf_notices` / `cf_menu`，另有 `users`（**与 Qxwk-Blog 共享**，博客的 `bg_*` 表外键指着它，本站已不再读写），并建出两个 `passport_id` 唯一索引。
-
-### 3️⃣ 在通行证注册本站
-
-建议在通行证的 `apps` 表登记本站（仅用于登录时把 `client` 认成本站站点名；通行证 `/api/login`、`/api/me` 的 CORS 已全面放行，未登记站点也能正常登录与跨域验证 token，只是来源会被记为「未登记来源」）。在通行证项目执行：
-
-> ⚠️ 网页来源填 `match_type='origin'`，`match_key` 必须是**规范 origin**（`scheme://host[:port]`，无路径、无末尾斜杠，要与浏览器请求里的 `Origin` 完全一致）。
-
-```bash
-cd c:\Code\Qxwk-Account
-npx wrangler d1 execute qxwk-account --remote --command "INSERT OR IGNORE INTO apps (display_name, match_type, match_key, homepage) VALUES ('City Footprint', 'origin', 'https://travel.qxwkstudio.top', 'https://travel.qxwkstudio.top')"
-```
-
-本地联调另插一行 origin（填**本地页面**的地址，端口随你用的静态服务器而定；不登记也能登录，只是来源会被记成「未登记来源」）：
-
-```bash
-npx wrangler d1 execute qxwk-account --local --command "INSERT OR IGNORE INTO apps (display_name, match_type, match_key, homepage) VALUES ('City Footprint 本地', 'origin', 'http://localhost:8080', 'http://localhost:8080')"
-```
-
-### 4️⃣ 填入 database_id 并部署
-
-打开 `backend/wrangler.toml`，把 `database_id` 替换成你的 D1 数据库 ID：
-
-```toml
-database_id = "你的-D1-数据库ID"
-```
-
-这个文件里**没有 `[assets]` 静态资源段** —— 页面已搬去 GitHub Pages（`docs/` 目录），所以 Worker 只服务 `/api/*`。绑定有两类：D1（`DB`）与接口限速（`RL_WRITE` / `RL_READ`，见下面「接口限速」）。
-
-提交并推送，然后在 `backend/` 目录执行部署：
-
-```bash
-cd backend
-npx wrangler deploy
-```
-
-部署结果应为 **Worker + D1 绑定 + 两个限速绑定**（都写在 `backend/wrangler.toml` 里，无需再去网页配置）。
-
-> 限速绑定有个坑：**wrangler < 4.36.0 会把 `[[ratelimits]]` 整段静默丢弃**（不报错、部署完却没有绑定，限速形同不存在）。改过这一段后，先用 `npx wrangler deploy --dry-run` 看一眼输出里有没有 `RL_WRITE` / `RL_READ`，再正式部署。代码侧对「绑定不在」是 fail open（放行），所以漏配不会报错、只会静默不限速。
-
-> 前端不在 Cloudflare 上：GitHub 仓库 → **Settings → Pages → Source** 选 `Deploy from a branch`，分支 `main` / 目录 `/docs`，保存后 `docs/` 里的页面就发布到 `travel.qxwkstudio.top`。
-
-### 5️⃣ 自定义域名
-
-前端与后端现在是**两个域**，各配各的：
-
-- **前端（GitHub Pages）**：仓库 Settings → Pages → Custom domain 填 `travel.qxwkstudio.top`（同时按提示在 DNS 配好 CNAME）
-- **后端（Worker）**：CF 控制台 → 该 Worker → Settings → Domains & Routes → 添加自定义域 `api.travel.qxwkstudio.top`
-
-> **两处必须配对**：`docs/app.js` 的 `API_BASE` 写死指后端域，`backend/src/worker.js` 的 `ALLOWED_ORIGINS` 白名单只放行前端域。以后换域名要同时改这两处，否则浏览器侧会直接报 CORS 错误。
-
-### 👑 管理员
-
-管理员标志存在本站 `cf_users` 表，由通行证登录后映射到本地用户时保留。直接改 D1：
-
-```sql
--- 把某用户设为管理员
-UPDATE cf_users SET is_admin = 1 WHERE nickname = '你的昵称';
-
--- 取消管理员
-UPDATE cf_users SET is_admin = 0 WHERE nickname = '你的昵称';
-
--- 查看所有管理员
-SELECT id, nickname, is_admin FROM cf_users WHERE is_admin = 1;
-```
-
-### 💻 本地开发
-
-在 `backend/` 目录里启动（PowerShell 下用 `npx.cmd`）：
-
-```bash
-cd backend
-npx wrangler dev --port 8788
-```
-
-本地会读取 `backend/wrangler.toml` 里的 D1 绑定（需先建库并填 ID）。**本地只起后端** —— 页面已经不在 Worker 上了，
-想看页面就另起一个静态服务器指向仓库的 `docs/`（例如 `npx.cmd -y serve docs`）。`docs/app.js` 的 `API_BASE`
-这时仍指向线上后端，够用；要连本地后端就把它临时改成 `http://localhost:8788/api`，CORS 白名单已放行
-localhost 的任意端口（见 `backend/src/worker.js` 的 `ALLOWED_ORIGINS`）。
-
-**通行证登录本地联调**：把 `backend/src/lib.js` 与 `docs/app.js` 顶部 `PASSPORT_URL` 改成 `http://localhost:8787`，另起一个终端跑通行证 `cd c:\Code\Qxwk-Account && npx wrangler dev`（端口 8787），并在通行证本地 DB 插入本站 origin（见 3️⃣）。
-
-**限速在本地同样生效**（`wrangler dev` 会模拟 `[[ratelimits]]` 绑定）。管理员不豁免，所以自己压测写接口时会被 10 次/分钟那档挡住 —— 临时把 `wrangler.toml` 里 `RL_WRITE` 的 `limit` 调大即可，别去改代码。
-
-## 🔧 自定义指南
-
-**1. 补充城市数据**
-- 编辑 `docs/cities.js`，往对应省份数组里加 `{ name, province, lat, lng }` 即可
-- 想批量补全（自治州 / 地区 / 盟 / 直辖县级）或重算 adcode，用 `scripts/` 下的两个脚本：`node scripts/complete-cities.js`（补 `cities.js`）、`node scripts/gen-city-codes.js`（重生成 `docs/city-codes.js` + `backend/src/city-codes.js` 两份），数据都来自阿里 DataV GeoAtlas
-- 改完 `docs/` 的城市数据后**必须重跑** `node app/tools/gen-cities.mjs` 并提交 `app/src/main/assets/cities.json`，否则安卓端的城市表与网页版分叉
-
-**2. 更换地图瓦片**
-- 默认使用**高德免 Key 瓦片**（国内加载快），Leaflet 库也已自托管到 `docs/vendor/`（与站点同源，走 GitHub Pages 的 CDN）
-- 如需换回 OpenStreetMap 或其他官方瓦片源，修改 `docs/index.html` 里 `L.tileLayer` 的 URL 即可（高德/腾讯官方瓦片需申请 Key）
-
-**3. 查看免费额度**
-- Workers 每天 10 万次请求、D1 5GB 存储，个人使用完全足够
-- 注意 D1 单查询上限为 10 万行读取；`cf_visits` 达到数万条后再考虑加接口缓存 / 预计算
-
-**4. 不公开行程（`is_private`）**
-- 勾选"不公开行程"的足迹仅本人可见，接口层通过 `is_private` 字段过滤
-- 公开接口（地图 `/api/cities`、统计 `/api/stats`）默认不含私密；登录用户在地图上可见自己的私密行程，管理员可见全部
-- 地图边界数据已做浏览器 IndexedDB 缓存（7 天过期），重复打开不重复请求；过期的那批先画旧的、后台重下刷新（SWR）
-- 报文接口（`/api/cities`、`/api/city/:city`、`/api/stats`、`/api/my-visits`）在网页端另有一层**会话级缓存**（sessionStorage、1 天过期、key 按 userId 隔离）：命中先渲染缓存、网络回来再覆盖（SWR）；换账号 / 登录登出 / 任意写操作成功后整体作废。`/api/me` 刻意不缓存 —— 缓存它会让「token 已被撤销」晚一天才发现（见 `docs/app.js`）。安卓端的等价物是 `Store.cachedPayload`（同样 1 天，见 `app/README.md`）
-
-**5. 用户颜色来源**
-- 本站 `cf_users.color` 不再独立分配，每次用户访问时由通行证 `/api/me` 返回的 color 同步覆盖
-- 颜色的源头是通行证侧：注册时按用户数 `count % 60` 顺序分配 60 个预设色，用户也可在通行证个人中心自定义
-- 用户在通行证改了颜色，下次访问本站会自动同步过来
-
-**6. 头像机制（WeAvatar）**
-- 所有头像 URL 由通行证 Account 后端集中计算（基于 `sha256(lowercase(trim(email)))` → `https://weavatar.com/avatar/{hash}?s=400&d=404`），本站**不再持有任何哈希实现**
-- 消费方式：`docs/app.js` 中定义的 `setAvatarFromUrl(el, avatarUrl, nickname, color)`（原 `avatar.js` 已删除并合并入 app.js）——加载失败自动回退到「昵称首字 + 专属颜色」的文字头像
-- 通行证返回 `token` 后，本站调 `/api/me` 即带回 `avatar` 字段并写入本地用户缓存 `qxwf_user`；更换头像服务（如切到 QQ 官方头像或自托管 Gravatar）**只需改 Account 后端 `getAvatarUrl()` 一处**，本站零改动
-
-**7. 限时活动页面（App 主页菜单里的栏目）**
-
-活动页就是 `docs/` 下的一个普通页面（自己起名，例如 `activity-2026-fall.html`），
-把它一行插进后端 D1 的 `cf_menu` 表（`title` + `url`）即可 —— **不用发新版 App**：
-
-```bash
-# 在 backend/ 目录下执行
-npx wrangler d1 execute qxwk-data --remote --command \
-  "INSERT INTO cf_menu (title, url) VALUES ('🎉 限时活动', 'https://travel.qxwkstudio.top/activity-2026-fall.html')"
-```
-
-主页右上角三横菜单里会多出一行，点开在 App 内的 WebView 里打开（同域名的页面留在 WebView，外链交系统浏览器）。
-（同理，「检查更新」与「公告」的内容也在 D1，见 `app/README.md` 的「App 清单」一节。）
-
-页面在 App 里打开时**默认是未登录态**（App 的 token 在 SharedPreferences、网页的 token 在 localStorage，
-两套身份互不相通）。需要用户身份就调 App 留的 JS 方法：
-
-```js
-// window.CityFootprint 只在「App 内 + 自家域名」时存在；在普通浏览器里打开没有这个对象，必须兜底
-const raw = window.CityFootprint && window.CityFootprint.getIdentity();
-const me = raw ? JSON.parse(raw) : null;
-// me = { token, userId, nickname, color, avatar, is_admin }
-// 拿不到身份时 me 为 null（不在 App 里、或活动页被放到了别的域名）；
-// 有桥但没登录时字段照给、值为 "" / 0 / false
-if (me && me.token) {
-  // 已登录：me.token 就是本站的会话 token，可以直接拿去调后端接口；
-  // 也可以只用 me.nickname / me.color 渲染个称呼
-}
-```
-
-- `getIdentity()` 返回的是**字符串**（JSON），别忘了 `JSON.parse`
-- 桥名 `CityFootprint`、方法名 `getIdentity`、报文字段名都是**跨语言契约**，改一个就要两端一起改：
-  App 侧实现在 `app/src/main/java/top/qxwkstudio/travel/ui/WebViewActivity.kt` 的 `IdentityBridge`，
-  release 包靠 `app/proguard-rules.pro` 里那条 keep 规则才不会被改名
-  （漏了它，debug 正常、release 里网页会报 `getIdentity is not a function`）
-- 桥只在**自家域名**（`Api.WEB_ORIGIN`，即 `travel.qxwkstudio.top`）的页面上注入，
-  活动页放到别的域名拿不到身份
-- 现在只有这一条**只读**的取身份接口，没有「网页回写 App」的通道
-- 若想沿用 `docs/app.js` 现成的请求封装，页面可以把拿到的身份写进 localStorage 的那两个 key
-  （见 `docs/app.js` 顶部的 `LS_TOKEN` / `LS_USER`）—— 这是页面自己的选择，App 不会替你写
-
----
-
-🌐 在线地址：[https://travel.qxwkstudio.top](https://travel.qxwkstudio.top/)
-
-🎫 通行证：[https://account.qxwkstudio.top](https://account.qxwkstudio.top/)
 
 📧 联系邮箱：QxwkStudio@outlook.com
 

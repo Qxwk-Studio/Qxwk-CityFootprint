@@ -70,6 +70,14 @@ class MineFragment : Fragment() {
         return binding.root
     }
 
+    override fun onResume() {
+        super.onResume()
+        val showSync = top.qxwkstudio.travel.data.Prefs.networkAllowed &&
+            top.qxwkstudio.travel.data.Prefs.syncEnabled
+        _binding?.rowSync?.visibility = if (showSync) View.VISIBLE else View.GONE
+        _binding?.dividerSync?.visibility = if (showSync) View.VISIBLE else View.GONE
+    }
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         binding.rowName.setOnClickListener { chooseName() }
@@ -82,6 +90,7 @@ class MineFragment : Fragment() {
         binding.rowPermissions.setOnClickListener { startActivity(PermissionsActivity.intent(requireContext())) }
         binding.rowStorage.setOnClickListener { startActivity(StorageActivity.intent(requireContext())) }
         binding.rowExportData.setOnClickListener { startExportFlow() }
+        binding.rowSync.setOnClickListener { startActivity(SyncActivity.intent(requireContext())) }
         binding.root.fadeSlideIn()
         binding.textVersion.text = BuildConfig.VERSION_NAME
         load()

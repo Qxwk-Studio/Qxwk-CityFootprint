@@ -23,4 +23,6 @@
     <string name="perm_notification">通知</string>
     <string name="perm_notification_desc">自动记录状态与到达提醒</string>
     <string name="perm_notification_not_needed">当前系统无需授权</string>
+    <string name="perm_sync">可选同步</string>
+    <string name="perm_sync_desc">自动同步行程与打卡</string>
 </resources>

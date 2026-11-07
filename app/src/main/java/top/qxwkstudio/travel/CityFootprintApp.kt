@@ -8,6 +8,7 @@ import top.qxwkstudio.travel.data.CityStore
 import top.qxwkstudio.travel.data.PhotoJanitor
 import top.qxwkstudio.travel.data.PhotoFiles
 import top.qxwkstudio.travel.data.Prefs
+import top.qxwkstudio.travel.data.SyncScheduler
 
 /**
  * 进程入口。两件事：
@@ -57,6 +58,8 @@ class CityFootprintApp : Application() {
         preloadCities()
         // 启动后台扫一次孤儿照片（删记录、换图、进程被杀留下的），不阻塞首帧
         PhotoJanitor.sweepAsync(this)
+        // 可选同步：进程启动后自动同步一次，并监听行程/打卡变化
+        SyncScheduler.start(this)
     }
 
     /**

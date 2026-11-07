@@ -82,6 +82,11 @@
             android:parentActivityName=".ui.MainActivity" />
 
         <activity
+            android:name=".ui.mine.SyncActivity"
+            android:exported="false"
+            android:parentActivityName=".ui.MainActivity" />
+
+        <activity
             android:name=".ui.mine.StorageActivity"
             android:exported="false"
             android:parentActivityName=".ui.MainActivity" />

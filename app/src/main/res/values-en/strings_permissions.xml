@@ -23,4 +23,6 @@
     <string name="perm_notification">Notifications</string>
     <string name="perm_notification_desc">Auto-recording status and arrival reminders</string>
     <string name="perm_notification_not_needed">Not required on this system</string>
+    <string name="perm_sync">Optional sync</string>
+    <string name="perm_sync_desc">Auto sync trips and check-ins</string>
 </resources>

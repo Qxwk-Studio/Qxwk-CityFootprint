@@ -136,6 +136,11 @@ object TripRepo {
      *  2. uuid 由 (行程 uuid, 城市段序号) 确定性生成 —— 同一段在任何设备/任何一次重算
      *     都是同一个身份，不会每次同步都变成「新记录」。v3（MD5）足够，不需要随机。
      */
+    /** 远端行程落库后重算派生打卡；派生打卡本身不参与同步。 */
+    suspend fun recomputeDerivedForSync(db: AppDatabase, trip: TripEntity, lookup: CityLookup) {
+        db.withTransaction { recomputeDerived(db, trip, lookup, System.currentTimeMillis()) }
+    }
+
     private suspend fun recomputeDerived(
         db: AppDatabase,
         trip: TripEntity,

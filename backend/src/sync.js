@@ -380,6 +380,40 @@ export async function handleSyncPull(request, env, user) {
   const url = new URL(request.url);
   const since = Math.max(0, asInt(url.searchParams.get('since'), 0));
   const limit = Math.min(MAX_PULL, Math.max(1, asInt(url.searchParams.get('limit'), 100)));
+  // 新设备首次登录（cursor=0）直接下发当前快照。
+  // 迁移进库的数据没有写 sync_changes，只靠增量会让新设备永远拉不到旧行程/打卡。
+  if (since === 0) {
+    const seq = await currentSeq(env, user.id);
+    const trips = await env.DB.prepare(
+      'SELECT * FROM trips WHERE user_id = ? AND deleted_at IS NULL ORDER BY start_time ASC',
+    ).bind(user.id).all();
+    const checkins = await env.DB.prepare(
+      'SELECT * FROM checkins WHERE user_id = ? AND deleted_at IS NULL ORDER BY checkin_at ASC',
+    ).bind(user.id).all();
+    const snapshot = [];
+    for (const row of trips.results || []) {
+      snapshot.push({
+        seq,
+        entity_type: 'trip',
+        uuid: row.uuid,
+        op: 'upsert',
+        changed_at: row.modified_at,
+        data: tripData(row),
+      });
+    }
+    for (const row of checkins.results || []) {
+      snapshot.push({
+        seq,
+        entity_type: 'checkin',
+        uuid: row.uuid,
+        op: 'upsert',
+        changed_at: row.modified_at,
+        data: checkinData(row),
+      });
+    }
+    return json({ changes: snapshot, next_since: seq, has_more: false });
+  }
+
   const changeRows = await env.DB.prepare(
     `SELECT seq, entity_type, entity_uuid, op, changed_at
      FROM sync_changes

@@ -36,6 +36,15 @@ interface TripDao {
     @Query("SELECT * FROM trips WHERE deleted_at IS NULL ORDER BY start_time DESC, id DESC")
     suspend fun list(): List<TripEntity>
 
+    @Query("SELECT * FROM trips")
+    suspend fun allForSync(): List<TripEntity>
+
+    @Query("DELETE FROM trips")
+    suspend fun deleteAll()
+
+    @Query("SELECT * FROM trips WHERE uuid = :uuid LIMIT 1")
+    suspend fun byUuidAny(uuid: String): TripEntity?
+
     /** 下一个 `#编号`：取最大值 +1，**不复用**（删掉的行程不回收编号）。 */
     @Query("SELECT COALESCE(MAX(seq_no), 0) + 1 FROM trips")
     suspend fun nextSeqNo(): Int
@@ -77,6 +86,12 @@ interface CheckinDao {
      */
     @Query("SELECT * FROM city_checkins WHERE source = ${CheckinSource.MANUAL} AND deleted_at IS NULL")
     suspend fun syncableCheckins(): List<CheckinEntity>
+
+    @Query("SELECT * FROM city_checkins WHERE source = ${CheckinSource.MANUAL}")
+    suspend fun manualAllForSync(): List<CheckinEntity>
+
+    @Query("SELECT * FROM city_checkins WHERE uuid = :uuid LIMIT 1")
+    suspend fun byUuidAny(uuid: String): CheckinEntity?
     /**
      * 该行程的全部派生打卡，**含已软删的墓碑**（重算时按城市段序号复用行，避免与唯一索引冲突）。
      */
@@ -128,6 +143,9 @@ interface AchievementDao {
     /** 整体替换：每次重算把 54 条全部写一遍，省掉「哪些变了」的比对。 */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertAll(states: List<AchievementStateEntity>)
+
+    @Query("DELETE FROM achievement_states")
+    suspend fun deleteAll()
 
     @Query("SELECT * FROM achievement_states")
     suspend fun list(): List<AchievementStateEntity>

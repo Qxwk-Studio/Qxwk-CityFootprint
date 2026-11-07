@@ -13,9 +13,12 @@ import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.launch
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import top.qxwkstudio.travel.R
+import top.qxwkstudio.travel.data.SyncEvents
 import top.qxwkstudio.travel.data.CheckinRepo
 import top.qxwkstudio.travel.data.TripRepo
 import top.qxwkstudio.travel.data.DataVersion
@@ -53,6 +56,9 @@ class AchievementsFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        viewLifecycleOwner.lifecycleScope.launch {
+            SyncEvents.events.collect { load() }
+        }
         binding.root.fadeSlideIn()
         binding.list.layoutManager = LinearLayoutManager(requireContext())
         binding.list.adapter = adapter

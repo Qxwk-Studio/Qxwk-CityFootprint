@@ -15,4 +15,10 @@ object Api {
      * 数据在后端 D1 的 `cf_app_version`，由 Worker 的 `GET /api/manifest` 读出来。
      */
     const val VERSION_MANIFEST = "$TRAVEL_BASE/manifest"
+    const val LOGIN = "$TRAVEL_BASE/auth/login"
+    const val ME = "$TRAVEL_BASE/auth/me"
+    const val SERVER = "$TRAVEL_BASE/server"
+    const val SYNC_REGISTER = "$TRAVEL_BASE/sync/register"
+    const val SYNC_PUSH = "$TRAVEL_BASE/sync/push"
+    const val SYNC_PULL = "$TRAVEL_BASE/sync/pull"
 }

@@ -1,6 +1,8 @@
 package top.qxwkstudio.travel.data
 
 import android.content.Context
+import org.json.JSONArray
+import org.json.JSONObject
 import kotlinx.coroutines.runBlocking
 import top.qxwkstudio.travel.data.db.AppDatabase
 import top.qxwkstudio.travel.data.db.AppSettingEntity
@@ -30,20 +32,65 @@ object Prefs {
     private const val KEY_ACCENT = "accent_key"
     private const val KEY_NETWORK = "network_allowed"
     private const val KEY_LANGUAGE = "language_tag"
+    private const val KEY_SYNC_TOKEN = "sync_token"
+    private const val KEY_SYNC_NICKNAME = "sync_nickname"
+    private const val KEY_SYNC_UUID = "sync_uuid"
+    private const val KEY_SYNC_ENABLED = "sync_enabled"
+    private const val KEY_SYNC_REVISIONS = "sync_revisions"
+    private const val KEY_SYNC_SYNCED = "sync_synced"
+    private const val KEY_SYNC_CURSOR = "sync_cursor"
+    private const val KEY_SYNC_LAST_AT = "sync_last_at"
+    private const val KEY_SYNC_LAST_PUSHED = "sync_last_pushed"
+    private const val KEY_SYNC_LAST_PULLED = "sync_last_pulled"
+    private const val KEY_SYNC_LAST_CONFLICTS = "sync_last_conflicts"
+    private const val KEY_SYNC_LAST_OK = "sync_last_ok"
+    private const val KEY_SYNC_LAST_ERROR = "sync_last_error"
+    private const val KEY_SYNC_CONFLICTS = "sync_conflicts"
+    private const val KEY_SYNC_SERVER = "sync_server"
+    const val DEFAULT_SYNC_SERVER = ""
 
     @Volatile private var appearanceValue = Appearance.SYSTEM
     @Volatile private var accentValue = ""
     @Volatile private var networkValue = false
     @Volatile private var languageValue = ""
+    @Volatile private var syncTokenValue = ""
+    @Volatile private var syncNicknameValue = ""
+    @Volatile private var syncUuidValue = ""
+    @Volatile private var syncEnabledValue = false
+    @Volatile private var syncRevisions = JSONObject()
+    @Volatile private var syncSynced = JSONObject()
+    @Volatile private var syncCursorValue = 0L
+    @Volatile private var syncLastAtValue = 0L
+    @Volatile private var syncServerValue = DEFAULT_SYNC_SERVER
+    @Volatile private var syncLastPushedValue = 0
+    @Volatile private var syncLastPulledValue = 0
+    @Volatile private var syncLastConflictsValue = 0
+    @Volatile private var syncLastOkValue = false
+    @Volatile private var syncLastErrorValue = ""
 
     fun init(context: Context) {
         val app = context.applicationContext
+        appContext = app
         val sp = app.getSharedPreferences(SP_NAME, Context.MODE_PRIVATE)
         appearanceValue = Appearance.entries.firstOrNull { it.value == sp.getString(SP_APPEARANCE, null) }
             ?: Appearance.SYSTEM
         accentValue = sp.getString(SP_ACCENT, null).orEmpty()
         networkValue = sp.getBoolean(KEY_NETWORK, false)
         languageValue = sp.getString(KEY_LANGUAGE, null).orEmpty()
+        syncTokenValue = sp.getString(KEY_SYNC_TOKEN, null).orEmpty()
+        syncNicknameValue = sp.getString(KEY_SYNC_NICKNAME, null).orEmpty()
+        syncUuidValue = sp.getString(KEY_SYNC_UUID, null).orEmpty()
+        syncEnabledValue = sp.getBoolean(KEY_SYNC_ENABLED, false)
+        syncRevisions = runCatching { JSONObject(sp.getString(KEY_SYNC_REVISIONS, "{}")) }.getOrElse { JSONObject() }
+        syncSynced = runCatching { JSONObject(sp.getString(KEY_SYNC_SYNCED, "{}")) }.getOrElse { JSONObject() }
+        syncCursorValue = sp.getLong(KEY_SYNC_CURSOR, 0L)
+        syncLastAtValue = sp.getLong(KEY_SYNC_LAST_AT, 0L)
+        syncServerValue = sp.getString(KEY_SYNC_SERVER, DEFAULT_SYNC_SERVER).orEmpty().ifBlank { DEFAULT_SYNC_SERVER }
+        syncLastPushedValue = sp.getInt(KEY_SYNC_LAST_PUSHED, 0)
+        syncLastPulledValue = sp.getInt(KEY_SYNC_LAST_PULLED, 0)
+        syncLastConflictsValue = sp.getInt(KEY_SYNC_LAST_CONFLICTS, 0)
+        syncLastOkValue = sp.getBoolean(KEY_SYNC_LAST_OK, false)
+        syncLastErrorValue = sp.getString(KEY_SYNC_LAST_ERROR, "").orEmpty()
 
         // 后台把库里的值同步回来；若库里没有（首次迁库），把 SP 的值写进库
         Thread {
@@ -82,11 +129,160 @@ object Prefs {
     /** "" = 跟随系统，否则是 BCP-47 语言标签（目前只有 zh-CN）。 */
     val languageTag: String get() = languageValue
 
+    /** 可选同步：Token 只在 SP 中保存，不进入 app_settings / 导出包。 */
+    val syncToken: String get() = syncTokenValue
+    val syncNickname: String get() = syncNicknameValue
+    val syncUuid: String get() = syncUuidValue
+    val syncEnabled: Boolean get() = syncEnabledValue
+    val syncCursor: Long get() = syncCursorValue
+    val syncLastAt: Long get() = syncLastAtValue
+    val syncServer: String get() = syncServerValue
+    val syncLastPushed: Int get() = syncLastPushedValue
+    val syncLastPulled: Int get() = syncLastPulledValue
+    val syncLastConflicts: Int get() = syncLastConflictsValue
+    val syncLastOk: Boolean get() = syncLastOkValue
+    val syncLastError: String get() = syncLastErrorValue
+
+    fun syncRevision(type: String, uuid: String): Int =
+        syncRevisions.optInt("$type:$uuid", 0)
+
+    fun syncSyncedAt(type: String, uuid: String): Long =
+        syncSynced.optLong("$type:$uuid", 0L)
+
+    fun saveSyncEntity(type: String, uuid: String, revision: Int, syncedAt: Long) {
+        syncRevisions.put("$type:$uuid", revision)
+        syncSynced.put("$type:$uuid", syncedAt)
+        val sp = appContext.getSharedPreferences(SP_NAME, Context.MODE_PRIVATE)
+        sp.edit()
+            .putString(KEY_SYNC_REVISIONS, syncRevisions.toString())
+            .putString(KEY_SYNC_SYNCED, syncSynced.toString())
+            .commit()
+    }
+
+    fun saveSyncServer(context: Context, server: String) {
+        syncServerValue = server.trim().trimEnd('/')
+        context.applicationContext.getSharedPreferences(SP_NAME, Context.MODE_PRIVATE)
+            .edit().putString(KEY_SYNC_SERVER, syncServerValue).commit()
+    }
+
+    /** 切换/退出账号时清空同步元数据，避免把旧账号的本地数据推到新账号。 */
+    fun syncConflicts(): List<SyncConflict> {
+        val sp = appContext.getSharedPreferences(SP_NAME, Context.MODE_PRIVATE)
+        val raw = sp.getString(KEY_SYNC_CONFLICTS, "[]").orEmpty()
+        return runCatching {
+            val array = JSONArray(raw)
+            (0 until array.length()).mapNotNull { index ->
+                val o = array.optJSONObject(index) ?: return@mapNotNull null
+                SyncConflict(
+                    entityType = o.optString("entity_type"),
+                    uuid = o.optString("uuid"),
+                    serverRevision = o.optInt("server_revision"),
+                    localJson = o.optString("local").ifBlank { null },
+                    remoteJson = o.optString("remote"),
+                )
+            }
+        }.getOrElse { emptyList() }
+    }
+
+    fun saveSyncConflicts(conflicts: List<SyncConflict>) {
+        val array = JSONArray()
+        conflicts.forEach { c ->
+            array.put(JSONObject().apply {
+                put("entity_type", c.entityType)
+                put("uuid", c.uuid)
+                put("server_revision", c.serverRevision)
+                put("local", c.localJson.orEmpty())
+                put("remote", c.remoteJson)
+            })
+        }
+        appContext.getSharedPreferences(SP_NAME, Context.MODE_PRIVATE)
+            .edit().putString(KEY_SYNC_CONFLICTS, array.toString()).commit()
+    }
+
+    fun clearSyncData(context: Context) {
+        syncRevisions = JSONObject()
+        syncSynced = JSONObject()
+        syncCursorValue = 0L
+        syncLastAtValue = 0L
+        syncLastPushedValue = 0
+        syncLastPulledValue = 0
+        syncLastConflictsValue = 0
+        syncLastOkValue = false
+        syncLastErrorValue = ""
+        context.applicationContext.getSharedPreferences(SP_NAME, Context.MODE_PRIVATE)
+            .edit()
+            .remove(KEY_SYNC_REVISIONS)
+            .remove(KEY_SYNC_SYNCED)
+            .remove(KEY_SYNC_CURSOR)
+            .remove(KEY_SYNC_LAST_AT)
+            .remove(KEY_SYNC_LAST_PUSHED)
+            .remove(KEY_SYNC_LAST_PULLED)
+            .remove(KEY_SYNC_LAST_CONFLICTS)
+            .remove(KEY_SYNC_LAST_OK)
+            .remove(KEY_SYNC_LAST_ERROR)
+            .remove(KEY_SYNC_CONFLICTS)
+            .commit()
+    }
+
+    fun saveSyncResult(context: Context, pushed: Int, pulled: Int, conflicts: Int, ok: Boolean, error: String = "") {
+        syncLastPushedValue = pushed
+        syncLastPulledValue = pulled
+        syncLastConflictsValue = conflicts
+        syncLastOkValue = ok
+        syncLastErrorValue = if (ok) "" else error
+        syncLastAtValue = System.currentTimeMillis()
+        context.applicationContext.getSharedPreferences(SP_NAME, Context.MODE_PRIVATE)
+            .edit()
+            .putInt(KEY_SYNC_LAST_PUSHED, pushed)
+            .putInt(KEY_SYNC_LAST_PULLED, pulled)
+            .putInt(KEY_SYNC_LAST_CONFLICTS, conflicts)
+            .putBoolean(KEY_SYNC_LAST_OK, ok)
+            .putString(KEY_SYNC_LAST_ERROR, if (ok) "" else error)
+            .putLong(KEY_SYNC_LAST_AT, syncLastAtValue)
+            .commit()
+    }
+
+    fun saveSyncCursor(context: Context, cursor: Long) {
+        syncCursorValue = cursor
+        syncLastAtValue = System.currentTimeMillis()
+        context.applicationContext.getSharedPreferences(SP_NAME, Context.MODE_PRIVATE)
+            .edit().putLong(KEY_SYNC_CURSOR, cursor).putLong(KEY_SYNC_LAST_AT, syncLastAtValue).commit()
+    }
+
+    private lateinit var appContext: Context
+
+
     fun saveAppearance(context: Context, appearance: Appearance) {
         appearanceValue = appearance
         write(context, KEY_APPEARANCE, appearance.value)
     }
 
+
+    fun saveSyncSession(context: Context, token: String, uuid: String, nickname: String) {
+        syncTokenValue = token
+        syncUuidValue = uuid
+        syncNicknameValue = nickname
+        context.applicationContext.getSharedPreferences(SP_NAME, Context.MODE_PRIVATE)
+            .edit()
+            .putString(KEY_SYNC_TOKEN, token)
+            .putString(KEY_SYNC_UUID, uuid)
+            .putString(KEY_SYNC_NICKNAME, nickname)
+            .commit()
+    }
+
+    fun clearSyncSession(context: Context) {
+        syncTokenValue = ""
+        syncUuidValue = ""
+        syncNicknameValue = ""
+        context.applicationContext.getSharedPreferences(SP_NAME, Context.MODE_PRIVATE)
+            .edit().remove(KEY_SYNC_TOKEN).remove(KEY_SYNC_UUID).remove(KEY_SYNC_NICKNAME).commit()
+    }
+
+    fun saveSyncEnabled(context: Context, enabled: Boolean) {
+        syncEnabledValue = enabled
+        context.applicationContext.getSharedPreferences(SP_NAME, Context.MODE_PRIVATE)
+            .edit().putBoolean(KEY_SYNC_ENABLED, enabled).commit()
+    }
 
     fun saveLanguage(context: Context, tag: String) {
         languageValue = tag

@@ -15,6 +15,7 @@ import top.qxwkstudio.travel.ui.common.LocalizedActivity
 import androidx.core.content.ContextCompat
 import top.qxwkstudio.travel.R
 import top.qxwkstudio.travel.data.Prefs
+import top.qxwkstudio.travel.data.SyncScheduler
 import top.qxwkstudio.travel.databinding.ActivityPermissionsBinding
 import top.qxwkstudio.travel.ui.common.Palette
 
@@ -68,10 +69,26 @@ class PermissionsActivity : LocalizedActivity() {
             }
         }
         binding.switchNetwork.isChecked = Prefs.networkAllowed
+        binding.rowSyncPermission.visibility = if (Prefs.networkAllowed) View.VISIBLE else View.GONE
+        binding.dividerSyncPermission.visibility = if (Prefs.networkAllowed) View.VISIBLE else View.GONE
+        binding.switchSyncPermission.isChecked = Prefs.syncEnabled
         binding.switchNetwork.setOnCheckedChangeListener { _, checked ->
             Prefs.saveNetworkAllowed(this, checked)
+            binding.rowSyncPermission.visibility = if (checked) View.VISIBLE else View.GONE
+            binding.dividerSyncPermission.visibility = if (checked) View.VISIBLE else View.GONE
+            if (!checked) {
+                Prefs.saveSyncEnabled(this, false)
+                binding.switchSyncPermission.isChecked = false
+                SyncScheduler.cancel()
+            }
         }
         binding.rowNetwork.setOnClickListener { binding.switchNetwork.toggle() }
+
+        binding.switchSyncPermission.setOnCheckedChangeListener { _, checked ->
+            Prefs.saveSyncEnabled(this, checked)
+            if (!checked) SyncScheduler.cancel() else SyncScheduler.request(500)
+        }
+        binding.rowSyncPermission.setOnClickListener { binding.switchSyncPermission.toggle() }
 
         binding.switchNotification.setOnCheckedChangeListener { _, checked ->
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
