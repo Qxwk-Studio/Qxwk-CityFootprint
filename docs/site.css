@@ -710,3 +710,35 @@ button, input { font: inherit; }
   color: var(--muted);
   font-size: .78rem;
 }
+
+.lookup-tabs {
+  display: inline-flex;
+  gap: 4px;
+  margin-bottom: 14px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-low);
+}
+
+.lookup-tab {
+  min-width: 76px;
+  height: 34px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.lookup-tab.active {
+  background: var(--brand);
+  color: #fff;
+}
+
+.lookup-tab:hover:not(.active) {
+  color: var(--brand);
+}

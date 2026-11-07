@@ -48,7 +48,106 @@
       attribution: '&copy; <a href="https://www.amap.com/" target="_blank" rel="noopener">高德地图</a>',
     }).addTo(map);
     const layer = L.layerGroup().addTo(map);
+    // 边界缓存：内存 → IndexedDB（7 天）→ 网络，沿用旧版足迹地图方案。
     const geoCache = new Map();
+    const GEO_DB_NAME = 'cityfootprint-geo';
+    const GEO_STORE = 'boundaries';
+    const GEO_MAX_AGE = 7 * 24 * 60 * 60 * 1000;
+    const GEO_CONCURRENCY = 6;
+    let geoActive = 0;
+    const geoQueue = [];
+    let geoDBPromise = null;
+
+    function geoFetch(url) {
+      return new Promise((resolve, reject) => {
+        const run = () => {
+          geoActive++;
+          fetch(url).then(resolve).catch(reject).finally(() => {
+            geoActive--;
+            if (geoQueue.length) geoQueue.shift()();
+          });
+        };
+        if (geoActive < GEO_CONCURRENCY) run();
+        else geoQueue.push(run);
+      });
+    }
+
+    function getGeoDB() {
+      if (!geoDBPromise) {
+        geoDBPromise = new Promise((resolve) => {
+          try {
+            const req = indexedDB.open(GEO_DB_NAME, 1);
+            req.onupgradeneeded = () => {
+              if (!req.result.objectStoreNames.contains(GEO_STORE)) {
+                req.result.createObjectStore(GEO_STORE, { keyPath: 'adcode' });
+              }
+            };
+            req.onsuccess = () => resolve(req.result);
+            req.onerror = () => resolve(null);
+          } catch { resolve(null); }
+        });
+      }
+      return geoDBPromise;
+    }
+
+    async function geoDBRead(adcode) {
+      const db = await getGeoDB();
+      if (!db) return null;
+      return new Promise((resolve) => {
+        try {
+          const tx = db.transaction(GEO_STORE, 'readonly');
+          const get = tx.objectStore(GEO_STORE).get(adcode);
+          get.onsuccess = () => {
+            const row = get.result;
+            if (!row) return resolve(null);
+            resolve({ data: row.data, stale: Date.now() - row.ts >= GEO_MAX_AGE });
+          };
+          get.onerror = () => resolve(null);
+        } catch { resolve(null); }
+      });
+    }
+
+    async function geoDBWrite(adcode, data) {
+      const db = await getGeoDB();
+      if (!db) return;
+      try {
+        const tx = db.transaction(GEO_STORE, 'readwrite');
+        tx.objectStore(GEO_STORE).put({ adcode, data, ts: Date.now() });
+      } catch { /* 忽略 */ }
+    }
+
+    async function geoFetchGeo(adcode) {
+      const res = await geoFetch(API_BASE + '/api/geo/' + encodeURIComponent(adcode));
+      if (!res.ok) return null;
+      let geo = null;
+      try {
+        geo = await res.json();
+        if (!(geo && geo.type === 'FeatureCollection' && Array.isArray(geo.features))) geo = null;
+      } catch { geo = null; }
+      if (geo) geoDBWrite(adcode, geo);
+      return geo;
+    }
+
+    function loadCityGeo(adcode) {
+      if (!adcode) return Promise.resolve(null);
+      if (!geoCache.has(adcode)) {
+        const p = (async () => {
+          try {
+            const row = await geoDBRead(adcode);
+            if (row) {
+              if (row.stale) geoFetchGeo(adcode).catch(() => {});
+              return row.data;
+            }
+            return await geoFetchGeo(adcode);
+          } catch {
+            return null;
+          }
+        })();
+        p.then((geo) => { if (!geo) geoCache.delete(adcode); });
+        geoCache.set(adcode, p);
+      }
+      return geoCache.get(adcode);
+    }
 
     function escapeHtml(value) {
       return String(value)
@@ -90,21 +189,6 @@
       return html;
     }
 
-    async function loadGeo(adcode) {
-      if (!adcode) return null;
-      if (!geoCache.has(adcode)) {
-        geoCache.set(adcode, (async () => {
-          try {
-            const res = await fetch(API_BASE + '/api/geo/' + encodeURIComponent(adcode));
-            if (!res.ok) return null;
-            const geo = await res.json();
-            return geo?.type === 'FeatureCollection' && Array.isArray(geo.features) ? geo : null;
-          } catch { return null; }
-        })());
-      }
-      return geoCache.get(adcode);
-    }
-
     function dot(point, color) {
       const marker = L.circleMarker([point.lat, point.lng], {
         radius: 7, color: '#fff', weight: 1.5, fillColor: color, fillOpacity: .9,
@@ -116,7 +200,7 @@
     async function drawPoint(point) {
       const color = point.color || point.latest?.[0]?.color || point.users?.[0]?.color || '#0891b2';
       if (!Number.isFinite(Number(point.lat)) || !Number.isFinite(Number(point.lng))) return;
-      const geo = await loadGeo(point.adcode);
+      const geo = await loadCityGeo(point.adcode);
       if (!geo) {
         dot(point, color);
         return;

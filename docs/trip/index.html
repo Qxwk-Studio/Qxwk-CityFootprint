@@ -36,11 +36,16 @@
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h16v11H4z"/><path d="M8 7V4h8v3M8 12h8"/></svg>
       行程查询
     </p>
-    <h1>查找一段行程</h1>
-    <p class="lookup-lead">输入行程 UUID，查看行程记录及其归属。</p>
+    <h1>查找足迹或打卡</h1>
+    <p class="lookup-lead">选择类型，输入对应 UUID，查看记录及其归属。</p>
+
+    <div class="lookup-tabs" role="tablist" aria-label="查询类型">
+      <button type="button" class="lookup-tab active" data-record-type="trip" role="tab" aria-selected="true">足迹</button>
+      <button type="button" class="lookup-tab" data-record-type="checkin" role="tab" aria-selected="false">打卡</button>
+    </div>
 
     <form class="lookup-form" data-lookup="trip">
-      <label for="lookupId">行程 UUID</label>
+      <label for="lookupId" id="lookupLabel">行程 UUID</label>
       <div class="input-row">
         <input id="lookupId" name="id" type="text" autocomplete="off" spellcheck="false" placeholder="例如 7f3c2a1e-...">
         <button type="submit">
@@ -48,7 +53,7 @@
           查询
         </button>
       </div>
-      <p class="lookup-help">行程 UUID 可在导出数据或行程详情中查看。</p>
+      <p class="lookup-help" id="lookupHelp">行程 UUID 可在导出数据或行程详情中查看。</p>
     </form>
 
     <section class="result-state" id="lookupResult" aria-live="polite" hidden></section>

@@ -325,6 +325,41 @@ async function handlePublicTrip(request, env, uuid) {
   });
 }
 
+async function handlePublicCheckin(request, env, uuid) {
+  if (request.method !== 'GET') return fail(405, 'method_not_allowed', '仅支持 GET');
+  const row = await env.DB.prepare(
+    'SELECT * FROM checkins WHERE uuid = ? AND deleted_at IS NULL LIMIT 1',
+  ).bind(uuid).first();
+  if (!row) return fail(404, 'not_found', '未找到该打卡');
+  const owner = await env.DB.prepare(
+    'SELECT passport_uuid, nickname, color, avatar FROM users WHERE id = ?',
+  ).bind(row.user_id).first();
+  return json({
+    checkin: {
+      uuid: row.uuid,
+      city_name: row.city_name,
+      city_code: row.city_code,
+      province: row.province,
+      checkin_at: row.checkin_at,
+      created_at: row.created_at,
+      date_precision: row.date_precision,
+      note: row.note,
+      companions: row.companions,
+      rating: row.rating,
+      amount_cents: row.amount_cents,
+      stay_days: row.stay_days,
+      client_modified_at: row.client_modified_at,
+      server_modified_at: row.server_modified_at,
+    },
+    user: owner ? {
+      uuid: owner.passport_uuid,
+      nickname: owner.nickname,
+      color: owner.color,
+      avatar: owner.avatar,
+    } : null,
+  });
+}
+
 async function withUser(request, env, fn) {
   const user = await requireUser(request, env);
   if (!user) return fail(401, 'unauthorized', '登录已失效');
@@ -448,6 +483,13 @@ function route(request, env) {
     let uuid = '';
     try { uuid = decodeURIComponent(tripMatch[1]); } catch { return fail(400, 'invalid_uuid', 'UUID 不合法'); }
     return handlePublicTrip(request, env, uuid);
+  }
+
+  const checkinMatch = url.pathname.match(/^\/api\/checkins\/([^/]+)$/);
+  if (checkinMatch) {
+    let uuid = '';
+    try { uuid = decodeURIComponent(checkinMatch[1]); } catch { return fail(400, 'invalid_uuid', 'UUID 不合法'); }
+    return handlePublicCheckin(request, env, uuid);
   }
   if (url.pathname === '/api/manifest') return handleManifest(request, env);
   if (url.pathname === '/api/health') return handleHealth(request, env);
