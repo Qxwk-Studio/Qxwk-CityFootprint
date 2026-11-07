@@ -111,6 +111,8 @@ data class CheckinEntity(
     val source: Int = CheckinSource.MANUAL,
     @ColumnInfo(name = "trip_uuid") val tripUuid: String? = null,
     @ColumnInfo(name = "checkin_at") val checkinAt: Long,
+    /** 记录创建时间：同一打卡时间时按它决定先后。 */
+    @ColumnInfo(name = "created_at") val createdAt: Long = 0,
     @ColumnInfo(name = "date_precision") val datePrecision: Int = DatePrecision.DAY,
     val note: String? = null,
     /** 同行人 code（[top.qxwkstudio.travel.logic.Companions.code]）；null = 没填。 */

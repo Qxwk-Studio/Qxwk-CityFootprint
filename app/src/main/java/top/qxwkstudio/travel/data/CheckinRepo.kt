@@ -62,6 +62,7 @@ object CheckinRepo {
                     amountCents = amountCents,
                     stayDays = stayDays,
                     seqNo = db.checkins().nextManualSeqNo(),
+                    createdAt = now,
                     modifiedAt = now,
                 )
             )
@@ -78,6 +79,7 @@ object CheckinRepo {
     ) {
         require(checkin.source == CheckinSource.MANUAL) { "派生打卡不能单独编辑，请修改对应的行程" }
         db.checkins().update(checkin.copy(modifiedAt = now))
+        DataVersion.bump()
     }
 
     /** 软删一条打卡。派生打卡的删除走 [TripRepo.delete]/[TripRepo.update] 的重算。 */

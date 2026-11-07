@@ -8,7 +8,7 @@ import java.io.File
  *
  * **为什么要先拷到 filesDir**：MapLibre 的 PMTiles 读取在原生层，官方只认
  * `pmtiles://https://…` 与 `pmtiles://file://…` 两种 URL（见 2.0 工程口径文档 §7.1），
- * **不支持 `asset://`**。所以首次进地图页时把 5.8 MB 的资产拷到应用私有目录，之后直接用绝对路径。
+ * **不支持 `asset://`**。所以首次进地图页时把 6.6 MB 的资产拷到应用私有目录，之后直接用绝对路径。
  *
  * 判「要不要再拷」用文件大小而不是存在性：升级时 asset 变了（重新抽的包）而旧文件还在，
  * 只判存在就会一直读旧底图。大小不一致才重拷，代价只是多比较一次 stat。
@@ -22,7 +22,7 @@ object BasemapStore {
     private const val DIR = "basemap"
     private const val NAME = "cn-z0-6.pmtiles"
 
-    /** 确保本地有一份最新的底图，返回它的绝对路径。**只能在 IO 线程调用**（要读 5.8 MB 资产）。 */
+    /** 确保本地有一份最新的底图，返回它的绝对路径。**只能在 IO 线程调用**（要读 23 MB 资产）。 */
     fun ensure(context: Context): String {
         val app = context.applicationContext
         val dir = File(app.filesDir, DIR).apply { mkdirs() }

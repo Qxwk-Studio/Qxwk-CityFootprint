@@ -1,4 +1,4 @@
-package top.qxwkstudio.travel.ui.trips
+﻿package top.qxwkstudio.travel.ui.trips
 
 import top.qxwkstudio.travel.ui.common.*
 import top.qxwkstudio.travel.ui.picker.CityPickerActivity
@@ -147,10 +147,7 @@ class CheckinEditActivity : AppCompatActivity() {
         b.btnSave.setOnClickListener { save() }
         b.topBar.btnSaveIcon.visibility = View.VISIBLE
         b.topBar.btnSaveIcon.setOnClickListener { save() }
-        b.btnDaysMinus.setOnClickListener { stepDays(-1) }
-        b.btnDaysPlus.setOnClickListener { stepDays(1) }
-        b.btnAmountMinus.setOnClickListener { stepAmount(-100) }
-        b.btnAmountPlus.setOnClickListener { stepAmount(100) }
+
         setupRating()
         renderPhoto()
 
@@ -332,24 +329,6 @@ class CheckinEditActivity : AppCompatActivity() {
         }
     }
     /** 停留天数步进：最少 1 天。 */
-    private fun stepDays(delta: Int) {
-        val current = binding.inputDays.text?.toString()?.toIntOrNull() ?: 1
-        val next = (current + delta).coerceAtLeast(1)
-        binding.inputDays.setText(next.toString())
-        binding.inputDays.setSelection(binding.inputDays.text?.length ?: 0)
-    }
-
-    /** 金额步进：±1 元，最小 0。 */
-    private fun stepAmount(deltaCents: Int) {
-        val current = binding.inputAmount.text?.toString()?.toDoubleOrNull() ?: 0.0
-        val next = (current + deltaCents / 100.0).coerceAtLeast(0.0)
-        binding.inputAmount.setText(
-            if (next == next.toInt().toDouble()) next.toInt().toString()
-            else String.format(java.util.Locale.US, "%.2f", next),
-        )
-        binding.inputAmount.setSelection(binding.inputAmount.text?.length ?: 0)
-    }
-
     private fun updateCounter(length: Int) {
         binding.textCounter.text = getString(R.string.char_counter, length, 233)
     }

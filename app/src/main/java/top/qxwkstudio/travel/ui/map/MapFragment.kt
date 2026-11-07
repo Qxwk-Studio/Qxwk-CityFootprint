@@ -69,6 +69,8 @@ class MapFragment : Fragment() {
 
     /** 省界 GeoJSON（assets/data/provinces.geojson），空串表示读失败。 */
     private var provincesJson: String = ""
+    /** 南海诸岛等无名字岛屿，作为瓦片缺失时的兜底填充。 */
+    private var islandsJson: String = ""
 
     /** 定位请求在跑时忽略重复点击。 */
     private var locating = false
@@ -89,10 +91,14 @@ class MapFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         mapView = binding.mapView
-        // 夜间样式加载前 MapLibre 会先露出自己的浅色底；先铺主题底色并隐藏，
-        // 等 style 回调再淡入，避免夜间模式闪一下米黄。
+        // MapView 不要自己再吃系统栏 inset：inset 已在 MainActivity 的壳层消费，
+        // 否则底部会留一条与导航栏等高的空白。
+        mapView.fitsSystemWindows = false
+        mapView.setPadding(0, 0, 0, 0)
+        // 夜间样式加载前先用一层主题色遮罩挡住 MapLibre 的浅色底。
+        // 不要对 MapView 做 alpha 动画：它内部是 SurfaceView，alpha 会让 GL 表面错位，
+        // 表现为地图只显示一条、上下出现大片底色。
         mapView.setBackgroundColor(androidx.core.content.ContextCompat.getColor(requireContext(), R.color.map_bg))
-        mapView.alpha = 0f
         mapView.onCreate(savedInstanceState)
         binding.btnClose.setOnClickListener { binding.cityCard.visibility = View.GONE }
         binding.btnLocate.setOnClickListener { locate() }
@@ -112,6 +118,7 @@ class MapFragment : Fragment() {
     }
 
     override fun onPause() {
+        hideCityPanel()
         mapView.onPause()
         super.onPause()
     }
@@ -134,8 +141,12 @@ class MapFragment : Fragment() {
 
     override fun onHiddenChanged(hidden: Boolean) {
         super.onHiddenChanged(hidden)
-        if (hidden) mapView.onPause() else {
+        if (hidden) {
+            hideCityPanel()
+            mapView.onPause()
+        } else {
             mapView.onResume()
+            mapView.post { mapView.requestLayout() }
             load()
         }
     }
@@ -156,6 +167,18 @@ class MapFragment : Fragment() {
             // 省界（0.1MB）一并读出来，建 style 后作为线图层压在城市面下面
             provincesJson = runCatching {
                 requireContext().assets.open("data/provinces.geojson").bufferedReader().use { it.readText() }
+            }.getOrDefault("")
+            islandsJson = runCatching {
+                val root = org.json.JSONObject(provincesJson)
+                val features = root.optJSONArray("features") ?: org.json.JSONArray()
+                val picked = org.json.JSONArray()
+                for (i in 0 until features.length()) {
+                    val feature = features.optJSONObject(i) ?: continue
+                    val name = feature.optJSONObject("properties")?.optString("name").orEmpty()
+                    // 无名字的岛屿 + 海南（含南海诸岛附属岛礁）作为瓦片缺失时的兜底
+                    if (name.isBlank() || name.contains("海南")) picked.put(feature)
+                }
+                org.json.JSONObject().put("type", "FeatureCollection").put("features", picked).toString()
             }.getOrDefault("")
             // 顺手把边界解析**放在 IO 线程**预热：4.6 MB 的 GeoJSON 解析要几百毫秒到几秒，
             // 如果在主线程（refreshVisited 里第一次取 locator）才做，首帧地图会卡住甚至 ANR。
@@ -181,7 +204,9 @@ class MapFragment : Fragment() {
             mapLibre.uiSettings.isRotateGesturesEnabled = false
             mapLibre.uiSettings.isTiltGesturesEnabled = false
             mapLibre.setMinZoomPreference(2.4)
-            mapLibre.setMaxZoomPreference(9.0)
+            // 底图 z0–6 已覆盖南海（北纬 3° 起）；最大缩放到 6，
+            // 不再请求超过数据范围的瓦片。
+            mapLibre.setMaxZoomPreference(6.0)
             mapLibre.setLatLngBoundsForCameraTarget(LatLngBounds.from(53.6, 135.1, 3.8, 73.5))
             mapLibre.cameraPosition = CameraPosition.Builder()
                 .target(LatLng(35.0, 105.0))
@@ -196,6 +221,15 @@ class MapFragment : Fragment() {
             mapLibre.setStyle(Style.Builder().fromJson(styleJson(BasemapStore.url(path)))) { loaded ->
                 styleLoaded = true
                 style = loaded
+                if (islandsJson.isNotEmpty() && islandsJson.contains("Feature")) {
+                    loaded.addSource(GeoJsonSource(ISLAND_SOURCE, islandsJson))
+                    loaded.addLayer(
+                        FillLayer(ISLAND_FILL, ISLAND_SOURCE).withProperties(
+                            org.maplibre.android.style.layers.PropertyFactory.fillColor(colorHex(R.color.map_land)),
+                            org.maplibre.android.style.layers.PropertyFactory.fillOpacity(0.85f),
+                        )
+                    )
+                }
                 if (provincesJson.isNotEmpty()) {
                     loaded.addSource(GeoJsonSource(PROVINCE_SOURCE, provincesJson))
                     loaded.addLayer(
@@ -218,7 +252,7 @@ class MapFragment : Fragment() {
                 )
                 binding.cityLabels.attach(mapLibre)
                 mapLibre.addOnCameraMoveListener { binding.cityLabels.invalidate() }
-                mapView.animate().alpha(1f).setDuration(180L).start()
+                _binding?.mapCover?.visibility = View.GONE
                 refreshVisited()
                 mapLibre.addOnMapClickListener { latLng -> onClickMap(latLng) }
             }
@@ -264,8 +298,7 @@ class MapFragment : Fragment() {
                 existing.setGeoJson(json)
                 // 用户可能在设置里换了徽章色：数据没变也要把图层颜色刷一遍
                 applyVisitedColors(loaded, color)
-                return
-            }
+            } else {
             loaded.addSource(GeoJsonSource(VISITED_SOURCE, json))
             loaded.addLayer(
                 FillLayer(VISITED_FILL, VISITED_SOURCE).withProperties(
@@ -279,6 +312,7 @@ class MapFragment : Fragment() {
                     org.maplibre.android.style.layers.PropertyFactory.lineWidth(1.5f),
                 )
             )
+            }
         }
         // 面渲染不出来时不画圆点：城市名（ui/CityLabelsView）就是唯一标识，
         // 文字与边界解析无关，永远画得出来。
@@ -386,6 +420,10 @@ class MapFragment : Fragment() {
         return true
     }
 
+    private fun hideCityPanel() {
+        _binding?.cityCard?.visibility = View.GONE
+    }
+
     private fun showCity(city: String) {
         val b = binding
         b.cityCard.visibility = View.VISIBLE
@@ -412,7 +450,10 @@ class MapFragment : Fragment() {
                 })
                 return@runIo
             }
-            checkins.forEach { checkin ->
+            // 面板只列最新 3 条；查询本身按打卡时间倒序，最新的在最上面。
+            val latest = checkins.take(3)
+            latest.forEachIndexed { index, checkin ->
+                if (index > 0) b.cityList.addView(checkinDivider())
                 b.cityList.addView(checkinRow(checkin, checkin.id == firstId, tripSeqs))
             }
         }
@@ -423,11 +464,18 @@ class MapFragment : Fragment() {
      */
     private fun checkinRow(checkin: CheckinEntity, firstVisit: Boolean, tripSeqs: Map<String, Int>): View {
         val ctx = requireContext()
-        val column = LinearLayout(ctx).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(0, dp(4), 0, dp(4))
+        val root = LinearLayout(ctx).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = android.view.Gravity.CENTER_VERTICAL
+            setPadding(0, dp(10), 0, dp(10))
         }
-        val row = LinearLayout(ctx).apply {
+        val content = LinearLayout(ctx).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+        }
+
+        // 第一行：编号徽章 + 日期 + 首访
+        val first = LinearLayout(ctx).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = android.view.Gravity.CENTER_VERTICAL
         }
@@ -442,7 +490,7 @@ class MapFragment : Fragment() {
         } else {
             getString(R.string.trips_trip_seq, checkin.seqNo)
         }
-        row.addView(TextView(ctx).apply {
+        first.addView(TextView(ctx).apply {
             text = badgeText
             textSize = 11f
             typeface = android.graphics.Typeface.DEFAULT_BOLD
@@ -453,14 +501,14 @@ class MapFragment : Fragment() {
                 setColor(ContextCompat.getColor(ctx, badgeColorRes))
             }
         })
-        row.addView(TextView(ctx).apply {
+        first.addView(TextView(ctx).apply {
             text = Dates.ymd(checkin.checkinAt)
             textSize = 12f
             setTextColor(ContextCompat.getColor(ctx, R.color.text_secondary))
             setPadding(dp(8), 0, 0, 0)
         })
         if (firstVisit) {
-            row.addView(TextView(ctx).apply {
+            first.addView(TextView(ctx).apply {
                 text = getString(R.string.first_visit)
                 textSize = 11f
                 setTextColor(ContextCompat.getColor(ctx, R.color.first_visit))
@@ -472,66 +520,86 @@ class MapFragment : Fragment() {
                 ).apply { marginStart = dp(6) }
             })
         }
-        if (!checkin.note.isNullOrBlank()) {
-            row.addView(TextView(ctx).apply {
-                text = checkin.note
+        content.addView(first)
+
+        // 第二行：评分 + 停留天数
+        val second = LinearLayout(ctx).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = android.view.Gravity.CENTER_VERTICAL
+            setPadding(0, dp(6), 0, 0)
+        }
+        second.addView(iconText(
+            R.drawable.ic_star,
+            checkin.rating?.let { getString(R.string.rating_value, it) } ?: "-",
+        ))
+        second.addView(dotView())
+        second.addView(iconText(
+            R.drawable.ic_calendar,
+            checkin.stayDays?.let { getString(R.string.home_days_value, it.toString()) } ?: "-",
+        ))
+        second.addView(dotView())
+        second.addView(iconText(
+            R.drawable.ic_person,
+            checkin.companions?.takeIf { it.isNotBlank() } ?: "-",
+        ))
+        content.addView(second)
+        root.addView(content)
+
+        // 照片放右侧固定 64dp，不撑宽内容
+        if (!checkin.photoPath.isNullOrBlank()) {
+            val frame = android.widget.FrameLayout(ctx).apply {
+                layoutParams = LinearLayout.LayoutParams(dp(48), dp(48)).apply { marginStart = dp(10) }
+                setBackgroundResource(R.drawable.bg_photo_tile)
+                clipToOutline = true
+            }
+            frame.addView(ImageView(ctx).apply {
+                setImageBitmap(PhotoStore.load(checkin.photoPath, maxPx = 256))
+                scaleType = ImageView.ScaleType.CENTER_CROP
+                layoutParams = android.widget.FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                )
+            })
+            root.addView(frame)
+        }
+        return root
+    }
+
+    /** 打卡之间的分割线。 */
+    private fun checkinDivider(): View = View(requireContext()).apply {
+        setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.border))
+        layoutParams = LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            dp(1),
+        ).apply { topMargin = dp(2) }
+    }
+
+    private fun dotView(): TextView = TextView(requireContext()).apply {
+        text = "·"
+        textSize = 12f
+        setTextColor(ContextCompat.getColor(requireContext(), R.color.text_tertiary))
+        setPadding(dp(5), 0, dp(5), 0)
+    }
+
+    private fun iconText(icon: Int, text: String, marginStart: Int = 0): LinearLayout =
+        LinearLayout(requireContext()).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = android.view.Gravity.CENTER_VERTICAL
+            if (marginStart > 0) setPadding(dp(marginStart), 0, 0, 0)
+            addView(ImageView(requireContext()).apply {
+                setImageResource(icon)
+                imageTintList = android.content.res.ColorStateList.valueOf(
+                    ContextCompat.getColor(requireContext(), R.color.text_tertiary),
+                )
+                layoutParams = LinearLayout.LayoutParams(dp(13), dp(13))
+            })
+            addView(TextView(requireContext()).apply {
+                this.text = text
                 textSize = 12f
-                setTextColor(ContextCompat.getColor(ctx, R.color.text_tertiary))
-                setPadding(dp(8), 0, 0, 0)
-                maxLines = 1
-                ellipsize = android.text.TextUtils.TruncateAt.END
-                layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+                setTextColor(ContextCompat.getColor(requireContext(), R.color.text_secondary))
+                setPadding(dp(4), 0, 0, 0)
             })
         }
-        column.addView(row)
-
-        val hasExtras = checkin.photoPath != null || checkin.companions != null || checkin.rating != null
-        if (hasExtras) {
-            val extras = LinearLayout(ctx).apply {
-                orientation = LinearLayout.HORIZONTAL
-                gravity = android.view.Gravity.CENTER_VERTICAL
-                setPadding(0, dp(6), 0, 0)
-            }
-            if (checkin.photoPath != null) {
-                val bitmap = PhotoStore.load(checkin.photoPath, maxPx = 256)
-                if (bitmap != null) {
-                    extras.addView(ImageView(ctx).apply {
-                        setImageBitmap(bitmap)
-                        scaleType = ImageView.ScaleType.CENTER_CROP
-                        layoutParams = LinearLayout.LayoutParams(dp(48), dp(48)).apply { marginEnd = dp(8) }
-                        setOnClickListener { showPhotoDialog(ctx, checkin.photoPath) }
-                    })
-                }
-            }
-            val info = LinearLayout(ctx).apply {
-                orientation = LinearLayout.VERTICAL
-                layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
-            }
-            if (checkin.companions != null) {
-                info.addView(TextView(ctx).apply {
-                    text = checkin.companions
-                    textSize = 12f
-                    setTextColor(ContextCompat.getColor(ctx, R.color.text_secondary))
-                })
-            }
-            if (checkin.rating != null) {
-                val stars = LinearLayout(ctx).apply { orientation = LinearLayout.HORIZONTAL }
-                for (star in 1..5) {
-                    stars.addView(ImageView(ctx).apply {
-                        setImageResource(if (checkin.rating >= star) R.drawable.ic_star else R.drawable.ic_star_outline)
-                        imageTintList = android.content.res.ColorStateList.valueOf(
-                            ContextCompat.getColor(ctx, R.color.first_visit),
-                        )
-                        layoutParams = LinearLayout.LayoutParams(dp(13), dp(13))
-                    })
-                }
-                info.addView(stars)
-            }
-            extras.addView(info)
-            column.addView(extras)
-        }
-        return column
-    }
 
     /** 定位：判城成功就把镜头挪过去（判不到就让用户手选，与打卡页同一套）。 */
     private fun locate() {
@@ -580,6 +648,8 @@ class MapFragment : Fragment() {
         const val VISITED_SOURCE = "visited"
         const val VISITED_FILL = "visited-fill"
         const val VISITED_LINE = "visited-line"
+        const val ISLAND_SOURCE = "islands"
+        const val ISLAND_FILL = "island-fill"
         const val PROVINCE_SOURCE = "provinces"
         const val PROVINCE_LAYER = "provinces-line"
         const val MY_LOCATION_SOURCE = "my-location"

@@ -110,6 +110,13 @@
                     android:textSize="13sp" />
             </LinearLayout>
 
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginStart="16dp"
+                android:layout_marginEnd="16dp"
+                android:background="@color/border" />
+
             <LinearLayout
                 android:id="@+id/rowBadge"
                 android:layout_width="match_parent"
@@ -134,6 +141,13 @@
                     android:layout_height="20dp"
                     android:background="@drawable/bg_avatar" />
             </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginStart="16dp"
+                android:layout_marginEnd="16dp"
+                android:background="@color/border" />
 
             <LinearLayout
                 android:id="@+id/rowAppearance"
@@ -160,6 +174,13 @@
                     android:textColor="@color/text_secondary"
                     android:textSize="13sp" />
             </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginStart="16dp"
+                android:layout_marginEnd="16dp"
+                android:background="@color/border" />
 
             <LinearLayout
                 android:id="@+id/rowTheme"
@@ -219,12 +240,11 @@
             android:layout_height="wrap_content"
             android:background="@drawable/bg_card"
             android:orientation="vertical"
+            android:paddingTop="4dp"
             android:paddingBottom="4dp">
 
-
-
             <LinearLayout
-                android:id="@+id/rowCleanupPhotos"
+                android:id="@+id/rowPermissions"
                 android:layout_width="match_parent"
                 android:layout_height="52dp"
                 android:background="?attr/selectableItemBackground"
@@ -237,7 +257,72 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="@string/mine_cleanup_photos"
+                    android:text="@string/mine_permissions"
+                    android:textColor="@color/fg"
+                    android:textSize="15sp" />
+
+                <ImageView
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_arrow_right"
+                    app:tint="@color/text_tertiary" />
+            </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginStart="16dp"
+                android:layout_marginEnd="16dp"
+                android:background="@color/border" />
+
+            <LinearLayout
+                android:id="@+id/rowStorage"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:background="?attr/selectableItemBackground"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/mine_storage"
+                    android:textColor="@color/fg"
+                    android:textSize="15sp" />
+
+                <ImageView
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_arrow_right"
+                    app:tint="@color/text_tertiary" />
+            </LinearLayout>
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginStart="16dp"
+                android:layout_marginEnd="16dp"
+                android:background="@color/border" />
+
+            <LinearLayout
+                android:id="@+id/rowExportData"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:background="?attr/selectableItemBackground"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/mine_export_data"
                     android:textColor="@color/fg"
                     android:textSize="15sp" />
 
@@ -310,6 +395,13 @@
                     app:tint="@color/text_tertiary" />
             </LinearLayout>
 
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginStart="16dp"
+                android:layout_marginEnd="16dp"
+                android:background="@color/border" />
+
             <LinearLayout
                 android:id="@+id/rowCheckUpdate"
                 android:layout_width="match_parent"
@@ -335,6 +427,13 @@
                     android:src="@drawable/ic_arrow_right"
                     app:tint="@color/text_tertiary" />
             </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginStart="16dp"
+                android:layout_marginEnd="16dp"
+                android:background="@color/border" />
 
             <LinearLayout
                 android:layout_width="match_parent"

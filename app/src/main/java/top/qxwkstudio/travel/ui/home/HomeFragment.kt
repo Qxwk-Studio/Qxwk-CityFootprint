@@ -17,6 +17,7 @@ import top.qxwkstudio.travel.data.db.AppDatabase
 import top.qxwkstudio.travel.data.db.CheckinSource
 import top.qxwkstudio.travel.databinding.FragmentHomeBinding
 import top.qxwkstudio.travel.logic.Dates
+import top.qxwkstudio.travel.logic.Money
 import top.qxwkstudio.travel.logic.Stats
 import top.qxwkstudio.travel.logic.Stats.RankBy
 
@@ -137,7 +138,7 @@ class HomeFragment : Fragment() {
         b.valueCities.text = getString(R.string.home_cities_provinces, overview.cities, overview.provinces)
         b.valueMost.text = overview.mostVisitedCity ?: getString(R.string.home_dash)
         b.valueDays.text = getString(R.string.home_days_value, totalDays.toString())
-        b.valueCost.text = getString(R.string.home_cost_value, (checkinCostCents / 100).toString())
+        b.valueCost.text = getString(R.string.home_cost_value, Money.yuan(checkinCostCents))
 
         b.textEmpty.visibility = if (entries.isEmpty()) View.VISIBLE else View.GONE
         renderRank()
@@ -270,7 +271,7 @@ class HomeFragment : Fragment() {
         line.addView(TextView(ctx).apply {
             text = when (rankBy) {
                 RankBy.COUNT -> getString(R.string.home_count_value, row.count.toString())
-                RankBy.AMOUNT -> getString(R.string.home_money_value, (row.amountCents / 100).toString())
+                RankBy.AMOUNT -> getString(R.string.home_money_value, Money.yuan(row.amountCents))
                 RankBy.TIME -> getString(R.string.home_days_value, row.stayDays.toString())
                 RankBy.RATING -> getString(R.string.home_rating_value, String.format(java.util.Locale.US, "%.1f", row.rating))
             }

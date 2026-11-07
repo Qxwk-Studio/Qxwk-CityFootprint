@@ -331,31 +331,6 @@
                         android:inputType="number"
                         android:textColor="@color/fg"
                         android:textSize="14sp" />
-
-                    <LinearLayout
-                        android:layout_width="36dp"
-                        android:layout_height="48dp"
-                        android:gravity="center_vertical"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:id="@+id/btnDaysPlus"
-                            android:layout_width="match_parent"
-                            android:layout_height="20dp"
-                            android:gravity="center"
-                            android:text="+"
-                            android:textColor="?attr/colorPrimary"
-                            android:textSize="14sp" />
-
-                        <TextView
-                            android:id="@+id/btnDaysMinus"
-                            android:layout_width="match_parent"
-                            android:layout_height="20dp"
-                            android:gravity="center"
-                            android:text="-"
-                            android:textColor="?attr/colorPrimary"
-                            android:textSize="14sp" />
-                    </LinearLayout>
                 </LinearLayout>
 
                 <View
@@ -476,24 +451,6 @@
                         android:inputType="numberDecimal"
                         android:textColor="@color/fg"
                         android:textSize="14sp" />
-
-                    <TextView
-                        android:id="@+id/btnAmountMinus"
-                        android:layout_width="40dp"
-                        android:layout_height="40dp"
-                        android:gravity="center"
-                        android:text="-"
-                        android:textColor="?attr/colorPrimary"
-                        android:textSize="20sp" />
-
-                    <TextView
-                        android:id="@+id/btnAmountPlus"
-                        android:layout_width="40dp"
-                        android:layout_height="40dp"
-                        android:gravity="center"
-                        android:text="+"
-                        android:textColor="?attr/colorPrimary"
-                        android:textSize="20sp" />
                 </LinearLayout>
 
                 <View

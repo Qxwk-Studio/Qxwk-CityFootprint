@@ -91,17 +91,17 @@ interface CheckinDao {
     suspend fun softDeleteDerivedForTrip(tripUuid: String, at: Long)
 
     /** 全部活着的打卡，按时间倒序（行程页的「打卡」分段用）。 */
-    @Query("SELECT * FROM city_checkins WHERE deleted_at IS NULL ORDER BY checkin_at DESC, id DESC")
+    @Query("SELECT * FROM city_checkins WHERE deleted_at IS NULL ORDER BY checkin_at DESC, created_at DESC, id DESC")
     suspend fun list(): List<CheckinEntity>
 
     /** 全部活着的打卡，按时间正序（成就判定与统计用；顺序稳定才好回溯解锁日期）。 */
-    @Query("SELECT * FROM city_checkins WHERE deleted_at IS NULL ORDER BY checkin_at ASC, id ASC")
+    @Query("SELECT * FROM city_checkins WHERE deleted_at IS NULL ORDER BY checkin_at ASC, created_at ASC, id ASC")
     suspend fun listChronological(): List<CheckinEntity>
 
     /** 某座城市的打卡（地图城市面板用），按时间倒序。 */
     @Query(
         "SELECT * FROM city_checkins WHERE city_name = :cityName AND deleted_at IS NULL " +
-            "ORDER BY checkin_at DESC, id DESC"
+            "ORDER BY checkin_at DESC, created_at DESC, id DESC"
     )
     suspend fun listForCity(cityName: String): List<CheckinEntity>
 

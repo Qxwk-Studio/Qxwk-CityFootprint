@@ -32,6 +32,7 @@ import top.qxwkstudio.travel.data.db.TripEntity
 import top.qxwkstudio.travel.databinding.FragmentTripsBinding
 import top.qxwkstudio.travel.logic.DatePrecision
 import top.qxwkstudio.travel.logic.Dates
+import top.qxwkstudio.travel.logic.Money
 import top.qxwkstudio.travel.logic.Timeline
 
 /**
@@ -434,7 +435,7 @@ class TripsFragment : Fragment() {
     private fun costBadge(cents: Int): TextView {
         val ctx = requireContext()
         return TextView(ctx).apply {
-            text = getString(R.string.home_cost_value, (cents / 100).toString())
+            text = getString(R.string.home_cost_value, Money.yuan(cents))
             textSize = 11f
             setTypeface(typeface, android.graphics.Typeface.BOLD)
             setTextColor(ContextCompat.getColor(ctx, R.color.on_accent))

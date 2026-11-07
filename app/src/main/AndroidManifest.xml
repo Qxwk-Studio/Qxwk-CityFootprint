@@ -75,6 +75,15 @@
             android:exported="false"
             android:parentActivityName=".ui.MainActivity"
             android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".ui.mine.PermissionsActivity"
+            android:exported="false"
+            android:parentActivityName=".ui.MainActivity" />
+
+        <activity
+            android:name=".ui.mine.StorageActivity"
+            android:exported="false"
+            android:parentActivityName=".ui.MainActivity" />
     </application>
 
 </manifest>

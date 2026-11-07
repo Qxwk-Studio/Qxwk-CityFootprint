@@ -31,6 +31,7 @@ import top.qxwkstudio.travel.data.db.CheckinSource
 import top.qxwkstudio.travel.databinding.ActivityDetailBinding
 import top.qxwkstudio.travel.logic.DatePrecision
 import top.qxwkstudio.travel.logic.Dates
+import top.qxwkstudio.travel.logic.Money
 
 /**
  * 打卡详情（只读）：右上角「编辑」只对手动打卡开放 —— 派生打卡是行程的产物，改它等于改行程。
@@ -193,7 +194,7 @@ class CheckinDetailActivity : AppCompatActivity() {
             fieldCard(
                 R.drawable.ic_wallet,
                 getString(R.string.checkin_amount_label),
-                entity.amountCents?.let { getString(R.string.home_cost_value, (it / 100.0).toString()) } ?: "-",
+                entity.amountCents?.let { getString(R.string.home_cost_value, Money.yuan(it)) } ?: "-",
             ),
         )
         // 评分卡：未评分也显示 -
@@ -348,9 +349,17 @@ class CheckinDetailActivity : AppCompatActivity() {
             orientation = LinearLayout.HORIZONTAL
             setPadding(0, dp(8), 0, 0)
         }
+        val fullStars = rating / 2
+        val hasHalf = rating % 2 == 1
         for (star in 1..5) {
             row.addView(ImageView(this).apply {
-                setImageResource(if (rating >= star) R.drawable.ic_star else R.drawable.ic_star_outline)
+                setImageResource(
+                    when {
+                        star <= fullStars -> R.drawable.ic_star
+                        star == fullStars + 1 && hasHalf -> R.drawable.ic_star_half
+                        else -> R.drawable.ic_star_outline
+                    },
+                )
                 imageTintList = android.content.res.ColorStateList.valueOf(getColor(R.color.first_visit))
                 layoutParams = LinearLayout.LayoutParams(dp(16), dp(16))
             })

@@ -28,9 +28,11 @@ object Prefs {
 
     private const val KEY_APPEARANCE = "appearance"
     private const val KEY_ACCENT = "accent_key"
+    private const val KEY_NETWORK = "network_allowed"
 
     @Volatile private var appearanceValue = Appearance.SYSTEM
     @Volatile private var accentValue = ""
+    @Volatile private var networkValue = false
 
     fun init(context: Context) {
         val app = context.applicationContext
@@ -38,6 +40,7 @@ object Prefs {
         appearanceValue = Appearance.entries.firstOrNull { it.value == sp.getString(SP_APPEARANCE, null) }
             ?: Appearance.SYSTEM
         accentValue = sp.getString(SP_ACCENT, null).orEmpty()
+        networkValue = sp.getBoolean(KEY_NETWORK, false)
 
         // 后台把库里的值同步回来；若库里没有（首次迁库），把 SP 的值写进库
         Thread {
@@ -70,9 +73,19 @@ object Prefs {
 
     val accentKey: String get() = accentValue
 
+    /** 可选「网络」开关：默认关闭，只影响检查更新这类主动联网。 */
+    val networkAllowed: Boolean get() = networkValue
+
     fun saveAppearance(context: Context, appearance: Appearance) {
         appearanceValue = appearance
         write(context, KEY_APPEARANCE, appearance.value)
+    }
+
+    fun saveNetworkAllowed(context: Context, allowed: Boolean) {
+        networkValue = allowed
+        context.applicationContext
+            .getSharedPreferences(SP_NAME, Context.MODE_PRIVATE)
+            .edit().putBoolean(KEY_NETWORK, allowed).apply()
     }
 
     fun saveAccentKey(context: Context, key: String) {

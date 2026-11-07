@@ -135,10 +135,14 @@ class TripEditActivity : AppCompatActivity() {
         )
         binding.topBar.btnBack.visibility = View.VISIBLE
         binding.topBar.btnBack.setOnClickListener { confirmDiscard() }
+        binding.topBar.btnSaveIcon.visibility = View.VISIBLE
         binding.topBar.btnSaveIcon.setOnClickListener { save() }
 
         binding.btnCancel.setOnClickListener { confirmDiscard() }
         binding.btnSave.setOnClickListener { save() }
+        onBackPressedDispatcher.addCallback(this, object : androidx.activity.OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() = confirmDiscard()
+        })
         bindCounters()
 
         if (editingId != 0L) loadExisting() else {
@@ -351,6 +355,22 @@ class TripEditActivity : AppCompatActivity() {
         })
 
         // 同行人：图标 + 名称 + 输入框一行
+        val companionsCounter = fieldCounter()
+        val companionsEdit = EditText(this).apply {
+            hint = getString(R.string.companions_hint)
+            setText(item.companions.orEmpty())
+            textSize = 14f
+            maxLines = 1
+            filters = arrayOf(android.text.InputFilter.LengthFilter(Limits.SHORT))
+            background = ContextCompat.getDrawable(this@TripEditActivity, R.drawable.bg_input_box)
+            setPadding(dp(10), 0, dp(10), 0)
+            layoutParams = LinearLayout.LayoutParams(0, dp(40), 1f)
+            addTextChangedListener(object : TextWatcher {
+                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
+                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = Unit
+                override fun afterTextChanged(s: Editable) { item.companions = s.toString().trim().ifBlank { null } }
+            })
+        }
         card.addView(LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
@@ -368,22 +388,10 @@ class TripEditActivity : AppCompatActivity() {
                 setTextColor(getColor(R.color.text_secondary))
                 setPadding(dp(6), 0, dp(8), 0)
             })
-            addView(EditText(this@TripEditActivity).apply {
-                hint = getString(R.string.companions_hint)
-                setText(item.companions.orEmpty())
-                textSize = 14f
-                maxLines = 1
-                filters = arrayOf(android.text.InputFilter.LengthFilter(Limits.SHORT))
-                background = ContextCompat.getDrawable(this@TripEditActivity, R.drawable.bg_input_box)
-                setPadding(dp(10), 0, dp(10), 0)
-                layoutParams = LinearLayout.LayoutParams(0, dp(40), 1f)
-                addTextChangedListener(object : TextWatcher {
-                    override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
-                    override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = Unit
-                    override fun afterTextChanged(s: Editable) { item.companions = s.toString().trim().ifBlank { null } }
-                })
-            })
+            addView(companionsEdit)
         })
+        card.addView(companionsCounter)
+        bindCounter(companionsEdit, companionsCounter, Limits.SHORT)
 
         card.addView(ratingInline(item))
 
@@ -456,38 +464,15 @@ class TripEditActivity : AppCompatActivity() {
                 orientation = LinearLayout.HORIZONTAL
                 gravity = Gravity.CENTER_VERTICAL
                 background = ContextCompat.getDrawable(this@TripEditActivity, R.drawable.bg_input_box)
-                setPadding(dp(2), 0, dp(2), 0)
+                setPadding(dp(2), 0, dp(6), 0)
                 layoutParams = LinearLayout.LayoutParams(0, dp(40), 1f).apply { marginStart = dp(6) }
                 addView(costInput)
-                addView(LinearLayout(this@TripEditActivity).apply {
-                    orientation = LinearLayout.VERTICAL
-                    layoutParams = LinearLayout.LayoutParams(dp(18), dp(40))
-                    addView(TextView(this@TripEditActivity).apply {
-                        text = "+"; textSize = 11f; gravity = Gravity.CENTER
-                        setTextColor(Palette.accent(this@TripEditActivity))
-                        layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(20))
-                        setOnClickListener {
-                            val next = ((item.costCents ?: 0) + 100).coerceAtLeast(0)
-                            item.costCents = next
-                            costInput.setText((next / 100.0).toString())
-                        }
-                    })
-                    addView(TextView(this@TripEditActivity).apply {
-                        text = "-"; textSize = 11f; gravity = Gravity.CENTER
-                        setTextColor(Palette.accent(this@TripEditActivity))
-                        layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(20))
-                        setOnClickListener {
-                            val next = ((item.costCents ?: 0) - 100).coerceAtLeast(0)
-                            item.costCents = next
-                            costInput.setText((next / 100.0).toString())
-                        }
-                    })
-                })
             })
         })
 
         // 名称：图标 + 名称 + 输入框
-        card.addView(inlineInput(if (item.type == Timeline.Type.RIDE) R.drawable.ic_car else R.drawable.ic_flag, getString(R.string.trip_event_name), true, EditText(this).apply {
+        val nameCounter = fieldCounter()
+        val nameEdit = EditText(this).apply {
             hint = getString(
                 if (item.type == Timeline.Type.RIDE) R.string.trip_event_transport_hint
                 else R.string.trip_event_activity_hint,
@@ -505,7 +490,10 @@ class TripEditActivity : AppCompatActivity() {
                 override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = Unit
                 override fun afterTextChanged(s: Editable) { item.text = s.toString().trim() }
             })
-        }))
+        }
+        card.addView(inlineInput(if (item.type == Timeline.Type.RIDE) R.drawable.ic_car else R.drawable.ic_flag, getString(R.string.trip_event_name), true, nameEdit))
+        card.addView(nameCounter)
+        bindCounter(nameEdit, nameCounter, Limits.SHORT)
 
 
         card.addView(divider())
@@ -533,13 +521,28 @@ class TripEditActivity : AppCompatActivity() {
     private fun itemActions(index: Int): LinearLayout = LinearLayout(this).apply {
         orientation = LinearLayout.HORIZONTAL
         gravity = Gravity.CENTER_VERTICAL
-        addView(actionText("▲") { moveItem(index, index - 1) })
-        addView(actionText("▼") { moveItem(index, index + 1) })
-        addView(actionText("🗑") {
+        addView(actionIcon(R.drawable.ic_arrow_up, R.color.text_secondary, R.string.trip_move_up) {
+            moveItem(index, index - 1)
+        })
+        addView(actionIcon(R.drawable.ic_arrow_down, R.color.text_secondary, R.string.trip_move_down) {
+            moveItem(index, index + 1)
+        })
+        addView(actionIcon(R.drawable.ic_delete, R.color.destructive, R.string.common_delete) {
             items.removeAt(index)
             render()
         })
     }
+
+    private fun actionIcon(icon: Int, tintRes: Int, descRes: Int, onClick: () -> Unit): ImageView =
+        ImageView(this).apply {
+            setImageResource(icon)
+            imageTintList = android.content.res.ColorStateList.valueOf(getColor(tintRes))
+            setBackgroundResource(R.drawable.bg_icon_badge)
+            setPadding(dp(6), dp(6), dp(6), dp(6))
+            contentDescription = getString(descRes)
+            layoutParams = LinearLayout.LayoutParams(dp(28), dp(28)).apply { marginStart = dp(4) }
+            setOnClickListener { onClick() }
+        }
 
     private fun actionText(symbol: String, onClick: () -> Unit): TextView = TextView(this).apply {
         text = symbol
@@ -641,9 +644,14 @@ class TripEditActivity : AppCompatActivity() {
             setPadding(dp(16), dp(8), dp(16), 0)
         }
         val paths = item.photoPath?.split(",")?.filter { it.isNotBlank() }.orEmpty()
-        paths.take(3).forEachIndexed { i, path ->
+        val shown = paths.take(3)
+        shown.forEachIndexed { i, path ->
             val tile = android.widget.FrameLayout(this).apply {
-                layoutParams = LinearLayout.LayoutParams(dp(96), dp(96)).apply { marginEnd = dp(8) }
+                layoutParams = if (shown.size == 3) {
+                    LinearLayout.LayoutParams(0, dp(96), 1f).apply { if (i < shown.lastIndex) marginEnd = dp(8) }
+                } else {
+                    LinearLayout.LayoutParams(dp(96), dp(96)).apply { if (i < shown.lastIndex) marginEnd = dp(8) }
+                }
                 setBackgroundResource(R.drawable.bg_photo_tile)
                 clipToOutline = true
             }
@@ -734,26 +742,29 @@ class TripEditActivity : AppCompatActivity() {
     }
 
     /** 备注：第一行主题色图标 + 标题，第二行输入框。 */
-    private fun noteBlock(item: DraftItem, hintRes: Int): LinearLayout = LinearLayout(this).apply {
-        orientation = LinearLayout.VERTICAL
-        setPadding(dp(16), dp(12), dp(16), 0)
-        addView(LinearLayout(this@TripEditActivity).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            addView(ImageView(this@TripEditActivity).apply {
-                setImageResource(R.drawable.ic_note)
-                imageTintList = android.content.res.ColorStateList.valueOf(Palette.accent(this@TripEditActivity))
-                layoutParams = LinearLayout.LayoutParams(dp(16), dp(16))
+    private fun noteBlock(item: DraftItem, hintRes: Int): LinearLayout {
+        val block = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(16), dp(12), dp(16), 0)
+            addView(LinearLayout(this@TripEditActivity).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                addView(ImageView(this@TripEditActivity).apply {
+                    setImageResource(R.drawable.ic_note)
+                    imageTintList = android.content.res.ColorStateList.valueOf(Palette.accent(this@TripEditActivity))
+                    layoutParams = LinearLayout.LayoutParams(dp(16), dp(16))
+                })
+                addView(TextView(this@TripEditActivity).apply {
+                    text = getString(R.string.checkin_note)
+                    textSize = 15f
+                    setTypeface(typeface, android.graphics.Typeface.BOLD)
+                    setTextColor(getColor(R.color.fg))
+                    setPadding(dp(6), 0, 0, 0)
+                })
             })
-            addView(TextView(this@TripEditActivity).apply {
-                text = getString(R.string.checkin_note)
-                textSize = 15f
-                setTypeface(typeface, android.graphics.Typeface.BOLD)
-                setTextColor(getColor(R.color.fg))
-                setPadding(dp(6), 0, 0, 0)
-            })
-        })
-        addView(EditText(this@TripEditActivity).apply {
+        }
+        val counter = fieldCounter()
+        val edit = EditText(this).apply {
             hint = getString(hintRes)
             setText(item.note)
             textSize = 13f
@@ -773,7 +784,11 @@ class TripEditActivity : AppCompatActivity() {
                 override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = Unit
                 override fun afterTextChanged(s: Editable) { item.note = s.toString().trim() }
             })
-        })
+        }
+        block.addView(edit)
+        block.addView(counter)
+        bindCounter(edit, counter, Limits.NOTE)
+        return block
     }
 
     /** 备注：图标 + 名称 + 输入框（多行，和其他输入框同起止）。 */
@@ -1040,6 +1055,25 @@ class TripEditActivity : AppCompatActivity() {
 
     private fun showError(message: String) {
         notify(message, long = true)
+    }
+
+    private fun fieldCounter(): TextView = TextView(this).apply {
+        textSize = 11f
+        gravity = Gravity.END
+        setTextColor(getColor(R.color.text_tertiary))
+        setPadding(dp(16), dp(4), dp(16), 0)
+    }
+
+    private fun bindCounter(edit: EditText, counter: TextView, max: Int) {
+        fun sync(length: Int) {
+            counter.text = getString(R.string.trip_counter, length, max)
+        }
+        edit.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = Unit
+            override fun afterTextChanged(s: Editable) = sync(s.length)
+        })
+        sync(edit.length())
     }
 
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()

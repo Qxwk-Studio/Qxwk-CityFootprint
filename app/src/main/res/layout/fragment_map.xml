@@ -7,10 +7,25 @@
     android:layout_height="match_parent"
     android:background="@color/map_bg">
 
+    <!-- TextureView 渲染：SurfaceView 在 edge-to-edge/动画下会出现 GL 表面错位，
+         表现为地图只渲染一条、上下露底色。texture 模式没有表面层级问题。 -->
     <org.maplibre.android.maps.MapView
         android:id="@+id/mapView"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        android:layout_height="match_parent"
+        app:maplibre_renderTextureMode="true"
+        app:maplibre_renderTextureTranslucentSurface="true" />
+
+    <!-- 样式加载前的遮罩：不用 alpha 动画（SurfaceView 做 alpha 会让 GL 表面错位/出现灰带），
+         加载完成后直接 GONE。 -->
+    <View
+        android:id="@+id/mapCover"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/map_bg"
+        android:clickable="false"
+        android:focusable="false"
+        android:importantForAccessibility="no" />
 
     <!-- 去过的城市名：原生 Canvas 画（中文不用字形包），见 ui/CityLabelsView -->
     <top.qxwkstudio.travel.ui.map.CityLabelsView
@@ -73,13 +88,25 @@
 
             <TextView
                 android:id="@+id/textCity"
-                android:layout_width="0dp"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="6dp"
-                android:layout_weight="1"
                 android:textColor="@color/fg"
                 android:textSize="16sp"
                 android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/textCount"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:textColor="@color/text_tertiary"
+                android:textSize="12sp" />
+
+            <View
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1" />
 
             <ImageButton
                 android:id="@+id/btnClose"
@@ -91,14 +118,6 @@
                 android:src="@drawable/ic_close"
                 android:tint="@color/text_secondary" />
         </LinearLayout>
-
-        <TextView
-            android:id="@+id/textCount"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:textColor="@color/text_tertiary"
-            android:textSize="12sp" />
 
         <LinearLayout
             android:id="@+id/cityList"

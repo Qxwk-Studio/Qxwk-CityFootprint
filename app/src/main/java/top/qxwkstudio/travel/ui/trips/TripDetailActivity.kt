@@ -25,6 +25,7 @@ import top.qxwkstudio.travel.data.TripRepo
 import top.qxwkstudio.travel.data.db.AppDatabase
 import top.qxwkstudio.travel.databinding.ActivityDetailBinding
 import top.qxwkstudio.travel.logic.Dates
+import top.qxwkstudio.travel.logic.Money
 import top.qxwkstudio.travel.logic.Provinces
 import top.qxwkstudio.travel.logic.Timeline
 
@@ -176,7 +177,7 @@ class TripDetailActivity : AppCompatActivity() {
             fieldCard(
                 R.drawable.ic_wallet,
                 getString(R.string.checkin_amount_label),
-                if (totalCost > 0) getString(R.string.home_cost_value, (totalCost / 100).toString()) else "-",
+                if (totalCost > 0) getString(R.string.home_cost_value, Money.yuan(totalCost)) else "-",
             ),
         )
         content.addView(
@@ -452,7 +453,7 @@ class TripDetailActivity : AppCompatActivity() {
     }
 
     private fun costBadge(cents: Int): TextView = TextView(this).apply {
-        text = getString(R.string.home_cost_value, (cents / 100).toString())
+        text = getString(R.string.home_cost_value, Money.yuan(cents))
         textSize = 11f
         typeface = Typeface.DEFAULT_BOLD
         setTextColor(getColor(R.color.on_accent))

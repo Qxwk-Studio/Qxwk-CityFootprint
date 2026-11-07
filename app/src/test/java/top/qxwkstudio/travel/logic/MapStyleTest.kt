@@ -19,7 +19,7 @@ import org.junit.Test
  */
 class MapStyleTest {
 
-    private val url = "pmtiles://file:///data/user/0/top.qxwkstudio.travel.dev/files/basemap/cn-z0-6.pmtiles"
+    private val url = "pmtiles://file:///data/user/0/top.qxwkstudio.travel.dev/files/basemap/cn-z0-7.pmtiles"
 
     private val raw = MapStyle.json(
         url,

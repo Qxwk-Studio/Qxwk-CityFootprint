@@ -34,7 +34,7 @@ abstract class AppDatabase : RoomDatabase() {
 
     companion object {
         /** 改表时 +1（开发期无需写迁移）。 */
-        const val VERSION = 6
+        const val VERSION = 7
 
         private const val DB_NAME = "city_footprint.db"
 

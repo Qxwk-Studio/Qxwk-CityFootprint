@@ -31,12 +31,14 @@ object Palette {
         Preset("purple", "紫", "#7C3AED", R.style.ThemeOverlay_App_Accent_Purple),
     )
 
-    const val DEFAULT = "blue"
+    const val DEFAULT = "teal"
 
     /** 当前预设。认不出的值（换版本/手改）退回默认，别让界面卡成一片。 */
     fun selected(): Preset {
-        val key = Prefs.accentKey
-        return presets.firstOrNull { it.key == key } ?: presets.first()
+        val key = Prefs.accentKey.ifBlank { DEFAULT }
+        return presets.firstOrNull { it.key == key }
+            ?: presets.firstOrNull { it.key == DEFAULT }
+            ?: presets.first()
     }
 
     /** 代码里画强调色时用这个（与主题叠加同一个色值；跟随系统时走动态配色，失败回退青色）。 */

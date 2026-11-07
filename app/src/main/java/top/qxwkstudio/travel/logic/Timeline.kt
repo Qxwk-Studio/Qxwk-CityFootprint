@@ -175,8 +175,16 @@ data class Timeline(
         var cityNo = 0
         var eventNo = 0
         var previousTime = Long.MIN_VALUE
+        // 每座城市至少一条活动/交通：城市本身不存时间，派生打卡要用第一条活动的时间。
+        var currentCity: String? = null
+        var hasEventInCity = false
         items.forEach { item ->
             if (item.type == Type.VISIT) {
+                if (currentCity != null && !hasEventInCity) {
+                    return "「$currentCity」请至少添加一条活动或交通"
+                }
+                currentCity = item.text
+                hasEventInCity = false
                 cityNo++
                 if (item.text.isBlank()) return "第 $cityNo 座城市：请选择到访城市"
                 if (item.text.length > Limits.SHORT) {
@@ -195,6 +203,7 @@ data class Timeline(
             }
 
             eventNo++
+            if (currentCity != null) hasEventInCity = true
             if (item.text.isBlank()) {
                 return "第 $eventNo 条：请填写${when (item.type) { Type.RIDE -> "交通方式"; else -> "活动内容" }}"
             }
@@ -217,6 +226,9 @@ data class Timeline(
                 return "第 $eventNo 条：时间不能早于上一条"
             }
             previousTime = item.time
+        }
+        if (currentCity != null && !hasEventInCity) {
+            return "「$currentCity」请至少添加一条活动或交通"
         }
         return null
     }

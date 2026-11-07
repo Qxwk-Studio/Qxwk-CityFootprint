@@ -17,6 +17,7 @@ import top.qxwkstudio.travel.CityFootprintApp
 import top.qxwkstudio.travel.R
 import top.qxwkstudio.travel.data.Appearance
 import top.qxwkstudio.travel.data.PhotoJanitor
+import top.qxwkstudio.travel.data.DataExport
 import top.qxwkstudio.travel.data.Prefs
 import top.qxwkstudio.travel.data.SettingsRepo
 import top.qxwkstudio.travel.data.Update
@@ -56,6 +57,13 @@ class MineFragment : Fragment() {
 
     /** 检查更新 / 清理照片这类耗时操作在跑时，禁用入口防重复。 */
     private var working = false
+    private var exporting = false
+
+    private val exportPermission = registerForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.RequestPermission(),
+    ) { granted ->
+        if (granted) openExportConfirm() else requireContext().notify(R.string.export_permission)
+    }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentMineBinding.inflate(inflater, container, false)
@@ -70,7 +78,9 @@ class MineFragment : Fragment() {
         binding.rowBadge.setOnClickListener { chooseBadgeColor() }
         binding.rowOpenSource.setOnClickListener { showOpenSource() }
         binding.rowCheckUpdate.setOnClickListener { checkUpdate() }
-        binding.rowCleanupPhotos.setOnClickListener { confirmCleanupPhotos() }
+        binding.rowPermissions.setOnClickListener { startActivity(PermissionsActivity.intent(requireContext())) }
+        binding.rowStorage.setOnClickListener { startActivity(StorageActivity.intent(requireContext())) }
+        binding.rowExportData.setOnClickListener { startExportFlow() }
         binding.root.fadeSlideIn()
         binding.textVersion.text = BuildConfig.VERSION_NAME
         load()
@@ -115,7 +125,13 @@ class MineFragment : Fragment() {
         // 头像：主题色圆底 + 白色人像（不提供修改入口）
         b.iconAvatar.background = circle(profile.badge)
         b.colorDot.background = circle(profile.badge)
-        b.colorDotTheme.background = circle(Palette.selected().color)
+        val themeColor = if (Palette.selected().key == "system") {
+            // 跟随系统时没有固定的色值，用当前动态取色结果画圆点
+            String.format("#%06X", 0xFFFFFF and Palette.accent(requireContext()))
+        } else {
+            Palette.selected().color
+        }
+        b.colorDotTheme.background = circle(themeColor)
         currentBadge = profile.badge
         refreshLocal()
     }
@@ -137,38 +153,6 @@ class MineFragment : Fragment() {
      *
      * 删除前问一句：这是不可撤销操作，而且用户可能只是想腾空间、不想动任何在用的图。
      */
-    private fun confirmCleanupPhotos() {
-        MaterialAlertDialogBuilder(requireContext())
-            .setTitle(R.string.cleanup_confirm_title)
-            .setMessage(R.string.cleanup_confirm_message)
-            .setPositiveButton(R.string.common_confirm) { _, _ -> cleanupPhotos() }
-            .setNegativeButton(R.string.common_cancel, null)
-            .show()
-    }
-
-    private fun cleanupPhotos() {
-        if (working) return
-        working = true
-        binding.rowCleanupPhotos.isEnabled = false
-        viewLifecycleOwner.lifecycleScope.runIo({
-            PhotoJanitor.sweep(requireContext(), AppDatabase.get(requireContext()))
-        }) { result ->
-            working = false
-            binding.rowCleanupPhotos.isEnabled = true
-            val (count, bytes) = result.getOrNull() ?: (0 to 0L)
-            if (count == 0) {
-                requireContext().notify(R.string.cleanup_none)
-            } else {
-                val size = when {
-                    bytes >= 1024 * 1024 -> "%.1f MB".format(bytes / 1024.0 / 1024.0)
-                    bytes >= 1024 -> "%d KB".format(bytes / 1024)
-                    else -> "$bytes B"
-                }
-                requireContext().notify(getString(R.string.cleanup_done, count, size))
-            }
-        }
-    }
-
     /**
      * 开源项目与许可：地图页原来压在左下角的 MapLibre / © OpenStreetMap 署名，
      * 以及底图（Protomaps）与图标（Material Icons）的来源，都收在这一页。
@@ -248,11 +232,58 @@ class MineFragment : Fragment() {
             .show()
     }
 
+    private fun startExportFlow() {
+        if (exporting) return
+        if (android.os.Build.VERSION.SDK_INT <= android.os.Build.VERSION_CODES.P &&
+            androidx.core.content.ContextCompat.checkSelfPermission(
+                requireContext(), android.Manifest.permission.WRITE_EXTERNAL_STORAGE,
+            ) != android.content.pm.PackageManager.PERMISSION_GRANTED
+        ) {
+            exportPermission.launch(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
+            return
+        }
+        openExportConfirm()
+    }
+
+    private fun openExportConfirm() {
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.export_confirm_title)
+            .setMessage(R.string.export_confirm_message)
+            .setPositiveButton(R.string.common_confirm) { _, _ -> doExport() }
+            .setNegativeButton(R.string.common_cancel, null)
+            .show()
+    }
+
+    private fun doExport() {
+        if (exporting) return
+        exporting = true
+        _binding?.rowExportData?.isEnabled = false
+        viewLifecycleOwner.lifecycleScope.runIo({
+            DataExport.export(requireContext(), AppDatabase.get(requireContext()))
+        }) { result ->
+            exporting = false
+            _binding?.rowExportData?.isEnabled = true
+            val data = result.getOrNull()
+            if (data == null) {
+                requireContext().notify(R.string.export_failed, long = true)
+            } else {
+                requireContext().notify(
+                    getString(R.string.export_done, data.displayPath, data.trips, data.checkins, data.photos),
+                    long = true,
+                )
+            }
+        }
+    }
+
     /**
      * 检查更新：读后端 `GET /api/manifest`，比 `version_code`（不是版本名）。
      * 2.0 只保留这一个网络请求。
      */
     private fun checkUpdate() {
+        if (!Prefs.networkAllowed) {
+            requireContext().notify(R.string.perm_network_off)
+            return
+        }
         if (working) return
         working = true
         binding.rowCheckUpdate.isEnabled = false
