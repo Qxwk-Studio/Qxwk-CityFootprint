@@ -144,6 +144,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: Download APK
         uses: actions/download-artifact@v4
         with:
@@ -164,5 +169,7 @@ jobs:
         run: |
           gh release create "$TAG" \
             "dist/CityFootprint-$VERSION_NAME.apk" \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
             --title "City Footprint $VERSION_NAME" \
             --notes-file "release-notes/release-notes.md"
