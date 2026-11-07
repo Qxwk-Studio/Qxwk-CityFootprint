@@ -15,7 +15,24 @@ on:
         default: '20104'
 
 jobs:
+  backend-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Run backend unit tests
+        run: npm test
+        working-directory: backend
+
   build:
+    needs: backend-tests
     runs-on: ubuntu-latest
 
     steps:

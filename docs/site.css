@@ -143,13 +143,13 @@ button, input { font: inherit; }
 
 .hero h1 {
   margin: 0;
-  font-size: clamp(42px, 7vw, 78px);
+  font-size: clamp(32px, 5.6vw, 68px);
   line-height: 1.06;
   letter-spacing: -.03em;
   font-weight: 800;
 }
 
-.hero h1 span { color: #8be7f1; }
+.hero h1 span { color: #8be7f1; white-space: nowrap; }
 
 .hero .intro {
   max-width: 620px;
@@ -498,22 +498,6 @@ button, input { font: inherit; }
   border-radius: var(--radius);
 }
 
-.map-note {
-  position: absolute;
-  z-index: 500;
-  left: 14px;
-  bottom: 14px;
-  max-width: calc(100% - 28px);
-  padding: 8px 12px;
-  border: 1px solid var(--line);
-  border-radius: 7px;
-  background: color-mix(in srgb, var(--surface) 92%, transparent);
-  color: var(--muted);
-  font-size: 12px;
-  box-shadow: var(--shadow);
-  backdrop-filter: blur(8px);
-}
-
 /* ── footer ───────────────────────────────────────────── */
 .site-footer {
   padding: 30px 0;
@@ -565,45 +549,6 @@ button, input { font: inherit; }
   position: absolute;
   inset: 0;
   z-index: 0;
-}
-
-.map-overlay {
-  position: absolute;
-  z-index: 500;
-  top: 20px;
-  left: 20px;
-  max-width: min(380px, calc(100% - 40px));
-  padding: 18px 20px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: color-mix(in srgb, var(--surface) 93%, transparent);
-  box-shadow: var(--shadow);
-  backdrop-filter: blur(10px);
-}
-
-.map-kicker {
-  margin: 0 0 4px;
-  color: var(--brand);
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: .12em;
-}
-
-.map-overlay h1 {
-  margin: 0;
-  font-size: clamp(22px, 3vw, 30px);
-  letter-spacing: -.02em;
-}
-
-.map-overlay p:last-child {
-  margin: 8px 0 0;
-  color: var(--muted);
-  font-size: 13px;
-}
-
-@media (max-width: 620px) {
-  .map-overlay { top: 12px; left: 12px; padding: 14px 16px; }
-  .map-note { left: 12px; bottom: 12px; }
 }
 
 .hero-grid {

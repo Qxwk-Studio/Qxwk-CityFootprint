@@ -34,14 +34,6 @@
 
   <main class="map-page-main">
     <div id="footprintMap" class="map-canvas-full" aria-label="公开行程地图"></div>
-    <div class="map-overlay">
-      <p class="map-kicker">公开足迹</p>
-      <h1>点亮过的城市</h1>
-      <p>按城市轮廓显示公开行程与打卡。</p>
-    </div>
-    <div class="map-note">
-      公开行程接口接入后，城市会在这里点亮
-    </div>
   </main>
 
   <script src="/vendor/leaflet.js"></script>
@@ -56,7 +48,6 @@
       attribution: '&copy; <a href="https://www.amap.com/" target="_blank" rel="noopener">高德地图</a>',
     }).addTo(map);
     const layer = L.layerGroup().addTo(map);
-    const note = document.querySelector('.map-note');
     const geoCache = new Map();
 
     function escapeHtml(value) {
@@ -154,13 +145,8 @@
           }
         }
         await Promise.all(Array.from({ length: Math.min(6, points.length || 1) }, worker));
-        if (note) {
-          note.textContent = points.length
-            ? '已点亮 ' + (data.total_cities || points.length) + ' 座城市'
-            : '还没有公开行程，点亮第一座城市后会出现在这里';
-        }
       } catch {
-        if (note) note.textContent = '地图数据暂时无法加载';
+        // 数据加载失败时保留底图，不展示额外提示
       }
     }
     loadMap();

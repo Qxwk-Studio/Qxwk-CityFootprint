@@ -120,6 +120,66 @@ async function logChange(DB, userId, entityType, entityUuid, op, deviceId, chang
   ).bind(userId, entityType, entityUuid, op, deviceId, changedAt);
 }
 
+
+export function normalizeTripData(data) {
+  if (!data || typeof data !== 'object') throw badChange('invalid_trip');
+  const title = asText(data.title).trim();
+  const note = asOptionalText(data.note);
+  const timeline = asText(data.timeline);
+  const startTime = asInt(data.start_time, NaN);
+  const endTime = asInt(data.end_time, NaN);
+  const totalCost = asInt(data.total_cost_cents, 0);
+  const tripState = asInt(data.trip_state, 2);
+  const clientModified = asInt(data.client_modified_at, NaN);
+  if (!title || title.length > 23) throw badChange('invalid_title');
+  if (note && note.length > 233) throw badChange('invalid_note');
+  if (!timeline) throw badChange('invalid_timeline');
+  try {
+    const parsed = JSON.parse(timeline);
+    if (!parsed || typeof parsed !== 'object') throw new Error('not object');
+  } catch {
+    throw badChange('invalid_timeline');
+  }
+  if (!Number.isFinite(startTime) || !Number.isFinite(endTime) || endTime < startTime) {
+    throw badChange('invalid_time');
+  }
+  if (!Number.isFinite(clientModified)) throw badChange('invalid_client_modified_at');
+  if (totalCost < 0) throw badChange('invalid_cost');
+  if (tripState < 0 || tripState > 2) throw badChange('invalid_trip_state');
+  return { title, note, timeline, startTime, endTime, totalCost, tripState, clientModified };
+}
+
+export function normalizeCheckinData(data) {
+  if (!data || typeof data !== 'object') throw badChange('invalid_checkin');
+  const cityName = asText(data.city_name).trim();
+  const province = asText(data.province).trim();
+  const checkinAt = asInt(data.checkin_at, NaN);
+  const createdAt = asInt(data.created_at, NaN);
+  const clientModified = asInt(data.client_modified_at, NaN);
+  const datePrecision = asInt(data.date_precision, 2);
+  const note = asOptionalText(data.note);
+  const companions = asOptionalText(data.companions);
+  const rating = asOptionalInt(data.rating);
+  const amountCents = asOptionalInt(data.amount_cents);
+  const stayDays = asOptionalInt(data.stay_days);
+  const cityCode = asOptionalInt(data.city_code);
+  if (cityName.length < 1 || cityName.length > 30) throw badChange('invalid_city');
+  if (province.length < 1 || province.length > 30) throw badChange('invalid_province');
+  if (!Number.isFinite(checkinAt) || !Number.isFinite(createdAt) || !Number.isFinite(clientModified)) {
+    throw badChange('invalid_time');
+  }
+  if (datePrecision < 0 || datePrecision > 3) throw badChange('invalid_date_precision');
+  if (note && note.length > 233) throw badChange('invalid_note');
+  if (companions && companions.length > 23) throw badChange('invalid_companions');
+  if (rating !== null && (rating < 1 || rating > 10)) throw badChange('invalid_rating');
+  if (amountCents !== null && amountCents < 0) throw badChange('invalid_amount');
+  if (stayDays !== null && (stayDays < 1 || stayDays > 3650)) throw badChange('invalid_stay_days');
+  return {
+    cityName, province, checkinAt, createdAt, clientModified, datePrecision,
+    note, companions, rating, amountCents, stayDays, cityCode,
+  };
+}
+
 async function applyTrip(env, user, device, change) {
   const uuid = asText(change.uuid).trim();
   if (!uuid) throw badChange('missing_uuid');
@@ -146,19 +206,8 @@ async function applyTrip(env, user, device, change) {
   }
 
   if (change.op !== 'upsert') throw badChange('invalid_op');
-  const data = change.data || {};
-  const title = asText(data.title).trim();
-  const note = asOptionalText(data.note);
-  const timeline = asText(data.timeline);
-  const startTime = asInt(data.start_time, NaN);
-  const endTime = asInt(data.end_time, NaN);
-  const totalCost = asInt(data.total_cost_cents, 0);
-  const tripState = asInt(data.trip_state, 2);
-  const clientModified = asInt(data.client_modified_at, NaN);
-  if (!title || !timeline || !Number.isFinite(startTime) || !Number.isFinite(endTime) ||
-      !Number.isFinite(clientModified)) {
-    throw badChange('invalid_trip');
-  }
+  const payload = normalizeTripData(change.data || {});
+  const { title, note, timeline, startTime, endTime, totalCost, tripState, clientModified } = payload;
   if (existing && asInt(change.revision, -1) !== existing.revision) {
     return { status: 'conflict', server_revision: existing.revision, data: tripData(existing) };
   }
@@ -222,27 +271,15 @@ async function applyCheckin(env, user, device, change) {
   }
 
   if (change.op !== 'upsert') throw badChange('invalid_op');
-  const data = change.data || {};
-  const cityName = asText(data.city_name).trim();
-  const province = asText(data.province).trim();
-  const checkinAt = asInt(data.checkin_at, NaN);
-  const createdAt = asInt(data.created_at, NaN);
-  const clientModified = asInt(data.client_modified_at, NaN);
-  if (!cityName || !province || !Number.isFinite(checkinAt) ||
-      !Number.isFinite(createdAt) || !Number.isFinite(clientModified)) {
-    throw badChange('invalid_checkin');
-  }
+  const payload = normalizeCheckinData(change.data || {});
+  const {
+    cityName, province, checkinAt, createdAt, clientModified, datePrecision,
+    note, companions, rating, amountCents, stayDays, cityCode,
+  } = payload;
   if (existing && asInt(change.revision, -1) !== existing.revision) {
     return { status: 'conflict', server_revision: existing.revision, data: checkinData(existing) };
   }
 
-  const datePrecision = asInt(data.date_precision, 2);
-  const rating = asOptionalInt(data.rating);
-  const amountCents = asOptionalInt(data.amount_cents);
-  const stayDays = asOptionalInt(data.stay_days);
-  const cityCode = asOptionalInt(data.city_code);
-  const note = asOptionalText(data.note);
-  const companions = asOptionalText(data.companions);
   const now = Date.now();
   const revision = existing ? existing.revision + 1 : 1;
 

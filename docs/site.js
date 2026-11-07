@@ -8,6 +8,9 @@
     if (href === path) a.setAttribute('aria-current', 'page');
   });
 
+  const yearEl = document.getElementById('footprintYear');
+  if (yearEl) yearEl.textContent = String(new Date().getFullYear());
+
   const versionEl = document.getElementById('releaseVersion');
   const githubLink = document.getElementById('githubDownload');
   if (versionEl) {
