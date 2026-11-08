@@ -187,15 +187,15 @@ async function handlePublicGeo(request, env, adcode) {
 async function handlePublicMap(request, env) {
   if (request.method !== 'GET') return fail(405, 'method_not_allowed', '仅支持 GET');
   const users = await env.DB.prepare('SELECT id, passport_uuid, nickname, color FROM users').all();
-  const trips = await env.DB.prepare('SELECT user_id, timeline, start_time FROM trips WHERE deleted_at IS NULL').all();
+  const trips = await env.DB.prepare('SELECT user_id, timeline, start_time, client_modified_at FROM trips WHERE deleted_at IS NULL').all();
   const checkins = await env.DB.prepare(
-    'SELECT user_id, city_name, province, checkin_at, date_precision FROM checkins WHERE deleted_at IS NULL',
+    'SELECT user_id, city_name, province, checkin_at, date_precision, created_at FROM checkins WHERE deleted_at IS NULL',
   ).all();
 
   const owners = new Map((users.results || []).map((u) => [u.id, u]));
   const cities = new Map();
 
-  function add(cityName, province, userId, at, precision) {
+  function add(cityName, province, userId, at, precision, createdAt) {
     const name = String(cityName || '').trim();
     if (!name) return;
     const owner = owners.get(userId);
@@ -228,18 +228,20 @@ async function handlePublicMap(request, env) {
       // 时间不详没有真实日期：排序键按 9999-01-01 处理，排在最后（倒序时最前）。
       at: p === 3 ? 253402214400000 : (Number(at) || 0),
       precision: p,
+      // 地图最新 10 条按记录创建时间排序；旧行程没有 created_at，用 client_modified_at 兜底。
+      createdAt: Number(createdAt) || 0,
     });
   }
 
   for (const c of checkins.results || []) {
-    add(c.city_name, c.province, c.user_id, c.checkin_at, c.date_precision);
+    add(c.city_name, c.province, c.user_id, c.checkin_at, c.date_precision, c.created_at);
   }
   for (const trip of trips.results || []) {
     try {
       const timeline = typeof trip.timeline === 'string' ? JSON.parse(trip.timeline) : trip.timeline;
       for (const item of timeline?.items || []) {
         if (item?.type === 'visit' && item.text) {
-          add(item.text, null, trip.user_id, trip.start_time, 2);
+          add(item.text, null, trip.user_id, trip.start_time, 2, trip.client_modified_at);
         }
       }
     } catch {
@@ -250,7 +252,7 @@ async function handlePublicMap(request, env) {
   const points = [...cities.values()]
     .filter((c) => c.lat !== null && c.lng !== null)
     .map((c) => {
-      const latest = c.latest.sort((a, b) => b.at - a.at).slice(0, 10);
+      const latest = c.latest.sort((a, b) => b.createdAt - a.createdAt || b.at - a.at).slice(0, 10);
       return {
         city: c.city,
         province: c.province,
