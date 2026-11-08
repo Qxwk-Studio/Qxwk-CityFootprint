@@ -260,8 +260,8 @@ cd app && ./gradlew testDebugUnitTest
    `CF_KEY_ALIAS` / `CF_KEY_PASSWORD` 环境变量传给 Gradle；缺这些变量时 release 产物是
    `*-release-unsigned.apk`。
 2. 修改根目录 `release.json` 的 `versionName` / `versionCode` / `importance` / `changelog`（完整 Release 说明）/ `cfNotes`（App 更新提示）。
-   GitHub Actions → `构建和发版` → `Run workflow`（**仅手动触发，无版本输入**）。
-   只构建 debug APK 时使用 `仅构建（调试）`；该流程会恢复正式 keystore，并用 `-PuseReleaseSigningForDebug=true` 给调试包使用正式签名。
+   GitHub Actions → `Build, Release and Publish Android APK` → `Run workflow`（**仅手动触发，无版本输入**）。
+   只构建 debug APK 时使用 `Build Signed Debug APK`；该流程会恢复正式 keystore，并用 `-PuseReleaseSigningForDebug=true` 给调试包使用正式签名。
    Gradle 直接读取 release.json 获取版本号，无需修改 `app/build.gradle.kts`；跑单测 → `assembleRelease`
    → 上传 arm64-v8a 包 → 创建 `v<version>` tag 与 GitHub Release（正文取 `changelog`）
    → 写入 D1 `app_versions`（`notes` 取 `cfNotes`）。D1 步骤需要 Secrets `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID`。

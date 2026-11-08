@@ -65,8 +65,8 @@
     <string name="trip_add_city_hint">还没有到访城市，点下面的「添加城市」开始</string>
     <string name="trip_remove_city">移除这座城市</string>
     <string name="trip_segment_empty">还没有添加活动或交通</string>
-    <string name="trip_type_activity">活动</string>
-    <string name="trip_type_ride">交通</string>
+    <string name="trip_type_activity">活动记录</string>
+    <string name="trip_type_ride">交通记录</string>
     <string name="trip_note_label">备注</string>
     <string name="trip_note_hint">写点什么</string>
     <string name="trip_save">保存</string>
@@ -86,7 +86,7 @@
     <string name="trip_stats_value">%1$d 座城市 · %2$d 个时间线项目</string>
     <string name="trip_event_label">活动</string>
     <string name="trip_segment_timeline_label">时间线</string>
-    <string name="trip_type_visit">到访</string>
+    <string name="trip_type_visit">到访城市</string>
     <string name="trip_event_visit_hint">地点</string>
     <string name="trip_event_type">类型</string>
     <string name="trip_add_item">添加项目</string>
@@ -105,7 +105,13 @@
     <string name="trip_move_up">上移</string>
     <string name="trip_move_down">下移</string>
     <string name="trips_meta_counts">%1$d 城 · %2$d 项</string>
-    <string name="trip_type_place">到访地点</string>
-    <string name="trip_type_place_label">到访地点记录</string>
+    <string name="trip_type_place">地点记录</string>
+    <string name="trip_type_place_label">地点记录</string>
     <string name="trip_event_place_hint">到访地点</string>
+    <string name="detail_uuid_copied">UUID 已复制</string>
+    <string name="detail_copy_uuid">复制 UUID</string>
+    <string name="checkin_date_unknown">时间不详</string>
+    <string name="trips_search_hint">搜索城市、标题或备注</string>
+    <string name="trips_search_empty">没有匹配结果</string>
+    <string name="trips_load_more">加载更多</string>
 </resources>

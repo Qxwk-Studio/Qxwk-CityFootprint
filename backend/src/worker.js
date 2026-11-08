@@ -221,11 +221,13 @@ async function handlePublicMap(request, env) {
       nickname: owner.nickname,
       color: owner.color,
     });
+    const p = Number(precision) || 3;
     entry.latest.push({
       nickname: owner.nickname,
       color: owner.color,
-      at: Number(at) || 0,
-      precision: Number(precision) || 3,
+      // 时间不详没有真实日期：排序键按 9999-01-01 处理，排在最后（倒序时最前）。
+      at: p === 3 ? 253402214400000 : (Number(at) || 0),
+      precision: p,
     });
   }
 

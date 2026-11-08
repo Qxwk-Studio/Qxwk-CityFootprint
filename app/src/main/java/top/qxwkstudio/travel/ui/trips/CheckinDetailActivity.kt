@@ -167,11 +167,27 @@ class CheckinDetailActivity : LocalizedActivity() {
             setTextColor(getColor(R.color.text_secondary))
             setPadding(dp(12), dp(6), 0, 0)
         })
-        header.addView(TextView(this).apply {
-            text = getString(R.string.detail_uuid, entity.uuid)
-            textSize = 11f
-            setTextColor(getColor(R.color.text_tertiary))
-            setPadding(dp(12), dp(4), 0, 0)
+        header.addView(LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(12), dp(4), dp(12), 0)
+            addView(TextView(this@CheckinDetailActivity).apply {
+                text = getString(R.string.detail_uuid, entity.uuid)
+                textSize = 11f
+                setTextColor(getColor(R.color.text_tertiary))
+                layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+            })
+            addView(ImageView(this@CheckinDetailActivity).apply {
+                setImageResource(R.drawable.ic_copy)
+                imageTintList = android.content.res.ColorStateList.valueOf(getColor(R.color.text_tertiary))
+                contentDescription = getString(R.string.detail_copy_uuid)
+                setPadding(dp(4), dp(4), dp(4), dp(4))
+                layoutParams = LinearLayout.LayoutParams(dp(24), dp(24)).apply { marginStart = dp(4) }
+                setOnClickListener {
+                    copyPlainText(entity.uuid)
+                    notify(R.string.detail_uuid_copied)
+                }
+            })
         })
         headerFrame.addView(header)
         content.addView(headerFrame)
@@ -326,7 +342,7 @@ class CheckinDetailActivity : LocalizedActivity() {
     private fun dateText(entity: CheckinEntity): String = when (entity.datePrecision) {
         DatePrecision.YEAR -> Dates.year(entity.checkinAt)
         DatePrecision.MONTH -> Dates.dotMonth(entity.checkinAt)
-        DatePrecision.UNKNOWN -> Dates.year(entity.checkinAt)
+        DatePrecision.UNKNOWN -> getString(R.string.checkin_date_unknown)
         else -> Dates.ymd(entity.checkinAt)
     }
 

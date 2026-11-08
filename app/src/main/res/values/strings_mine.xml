@@ -43,4 +43,5 @@
     <string name="color_pink">粉</string>
     <string name="color_gray">灰</string>
     <string name="profile_update_force_hint">此版本为强制更新，请更新后继续使用。</string>
+    <string name="mine_sync_locked">已登录同步，昵称和徽章色由账号同步</string>
 </resources>

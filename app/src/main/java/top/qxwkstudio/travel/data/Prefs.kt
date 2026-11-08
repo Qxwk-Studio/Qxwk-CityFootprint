@@ -35,6 +35,8 @@ object Prefs {
     private const val KEY_SYNC_TOKEN = "sync_token"
     private const val KEY_SYNC_NICKNAME = "sync_nickname"
     private const val KEY_SYNC_UUID = "sync_uuid"
+    private const val KEY_SYNC_AVATAR = "sync_avatar"
+    private const val KEY_SYNC_COLOR = "sync_color"
     private const val KEY_SYNC_ENABLED = "sync_enabled"
     private const val KEY_SYNC_REVISIONS = "sync_revisions"
     private const val KEY_SYNC_SYNCED = "sync_synced"
@@ -56,6 +58,8 @@ object Prefs {
     @Volatile private var syncTokenValue = ""
     @Volatile private var syncNicknameValue = ""
     @Volatile private var syncUuidValue = ""
+    @Volatile private var syncAvatarValue = ""
+    @Volatile private var syncColorValue = ""
     @Volatile private var syncEnabledValue = false
     @Volatile private var syncRevisions = JSONObject()
     @Volatile private var syncSynced = JSONObject()
@@ -80,6 +84,8 @@ object Prefs {
         syncTokenValue = sp.getString(KEY_SYNC_TOKEN, null).orEmpty()
         syncNicknameValue = sp.getString(KEY_SYNC_NICKNAME, null).orEmpty()
         syncUuidValue = sp.getString(KEY_SYNC_UUID, null).orEmpty()
+        syncAvatarValue = sp.getString(KEY_SYNC_AVATAR, null).orEmpty()
+        syncColorValue = sp.getString(KEY_SYNC_COLOR, null).orEmpty()
         syncEnabledValue = sp.getBoolean(KEY_SYNC_ENABLED, false)
         syncRevisions = runCatching { JSONObject(sp.getString(KEY_SYNC_REVISIONS, "{}").orEmpty()) }.getOrElse { JSONObject() }
         syncSynced = runCatching { JSONObject(sp.getString(KEY_SYNC_SYNCED, "{}").orEmpty()) }.getOrElse { JSONObject() }
@@ -133,6 +139,8 @@ object Prefs {
     val syncToken: String get() = syncTokenValue
     val syncNickname: String get() = syncNicknameValue
     val syncUuid: String get() = syncUuidValue
+    val syncAvatar: String get() = syncAvatarValue
+    val syncColor: String get() = syncColorValue
     val syncEnabled: Boolean get() = syncEnabledValue
     val syncCursor: Long get() = syncCursorValue
     val syncLastAt: Long get() = syncLastAtValue
@@ -258,21 +266,34 @@ object Prefs {
     }
 
 
-    fun saveSyncSession(context: Context, token: String, uuid: String, nickname: String) {
+    fun saveSyncSession(
+        context: Context,
+        token: String,
+        uuid: String,
+        nickname: String,
+        avatar: String? = null,
+        color: String = "",
+    ) {
         syncTokenValue = token
         syncUuidValue = uuid
         syncNicknameValue = nickname
+        syncAvatarValue = avatar.orEmpty()
+        syncColorValue = color
         context.applicationContext.getSharedPreferences(SP_NAME, Context.MODE_PRIVATE)
             .edit()
             .putString(KEY_SYNC_TOKEN, token)
             .putString(KEY_SYNC_UUID, uuid)
             .putString(KEY_SYNC_NICKNAME, nickname)
+            .putString(KEY_SYNC_AVATAR, avatar.orEmpty())
+            .putString(KEY_SYNC_COLOR, color)
             .commit()
     }
 
     fun clearSyncSession(context: Context) {
         syncTokenValue = ""
         syncUuidValue = ""
+        syncAvatarValue = ""
+        syncColorValue = ""
         syncNicknameValue = ""
         context.applicationContext.getSharedPreferences(SP_NAME, Context.MODE_PRIVATE)
             .edit().remove(KEY_SYNC_TOKEN).remove(KEY_SYNC_UUID).remove(KEY_SYNC_NICKNAME).commit()

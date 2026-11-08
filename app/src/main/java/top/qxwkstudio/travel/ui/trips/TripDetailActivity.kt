@@ -19,6 +19,8 @@ import top.qxwkstudio.travel.ui.common.LocalizedActivity
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import top.qxwkstudio.travel.R
 import top.qxwkstudio.travel.data.CheckinRepo
 import top.qxwkstudio.travel.data.CityStore
@@ -39,6 +41,7 @@ import top.qxwkstudio.travel.logic.Timeline
 class TripDetailActivity : LocalizedActivity() {
 
     private lateinit var binding: ActivityDetailBinding
+    private val photoSlots = Semaphore(2)
     private var tripId = 0L
 
     /** 删除确认弹窗里显示的标题。 */
@@ -150,11 +153,27 @@ class TripDetailActivity : LocalizedActivity() {
             setTextColor(getColor(R.color.text_secondary))
             setPadding(dp(12), dp(6), 0, 0)
         })
-        header.addView(TextView(this).apply {
-            text = getString(R.string.detail_uuid, uuid)
-            textSize = 11f
-            setTextColor(getColor(R.color.text_tertiary))
-            setPadding(dp(12), dp(4), 0, 0)
+        header.addView(LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(12), dp(4), dp(12), 0)
+            addView(TextView(this@TripDetailActivity).apply {
+                text = getString(R.string.detail_uuid, uuid)
+                textSize = 11f
+                setTextColor(getColor(R.color.text_tertiary))
+                layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+            })
+            addView(ImageView(this@TripDetailActivity).apply {
+                setImageResource(R.drawable.ic_copy)
+                imageTintList = android.content.res.ColorStateList.valueOf(getColor(R.color.text_tertiary))
+                contentDescription = getString(R.string.detail_copy_uuid)
+                setPadding(dp(4), dp(4), dp(4), dp(4))
+                layoutParams = LinearLayout.LayoutParams(dp(24), dp(24)).apply { marginStart = dp(4) }
+                setOnClickListener {
+                    copyPlainText(uuid)
+                    notify(R.string.detail_uuid_copied)
+                }
+            })
         })
         content.addView(header)
 
@@ -403,15 +422,21 @@ class TripDetailActivity : LocalizedActivity() {
                     setBackgroundResource(R.drawable.bg_photo_tile)
                     clipToOutline = true
                 }
-                tile.addView(ImageView(this).apply {
-                    setImageBitmap(PhotoStore.load(path, maxPx = 512))
+                val image = ImageView(this).apply {
                     scaleType = ImageView.ScaleType.CENTER_CROP
                     layoutParams = android.widget.FrameLayout.LayoutParams(
                         ViewGroup.LayoutParams.MATCH_PARENT,
                         ViewGroup.LayoutParams.MATCH_PARENT,
                     )
                     setOnClickListener { showPhotoDialog(this@TripDetailActivity, path) }
-                })
+                }
+                tile.addView(image)
+                // 缩略图在 IO 上解码，详情页首帧不再同步读一串大图。
+                lifecycleScope.runIo({
+                    photoSlots.withPermit { PhotoStore.load(path, maxPx = 256) }
+                }) { bitmap ->
+                    bitmap.getOrNull()?.let { if (image.isAttachedToWindow) image.setImageBitmap(it) }
+                }
                 photoRow.addView(tile)
             }
             card.addView(photoRow)
@@ -497,6 +522,7 @@ class TripDetailActivity : LocalizedActivity() {
         when (type) {
             Timeline.Type.RIDE -> R.string.trip_type_ride_label
             Timeline.Type.ACTIVITY -> R.string.trip_type_activity_label
+            Timeline.Type.PLACE -> R.string.trip_type_place_label
             else -> R.string.trip_type_visit_label
         },
     )

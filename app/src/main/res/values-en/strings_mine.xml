@@ -43,4 +43,5 @@
     <string name="color_pink">Pink</string>
     <string name="color_gray">Gray</string>
     <string name="profile_update_force_hint">This is a required update. Please update to continue.</string>
+    <string name="mine_sync_locked">Signed in to sync; nickname and badge color come from the account</string>
 </resources>

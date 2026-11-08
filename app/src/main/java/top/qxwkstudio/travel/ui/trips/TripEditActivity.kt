@@ -21,6 +21,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import top.qxwkstudio.travel.ui.common.LocalizedActivity
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import top.qxwkstudio.travel.R
 import top.qxwkstudio.travel.data.CityStore
@@ -46,6 +48,7 @@ import java.util.UUID
 class TripEditActivity : LocalizedActivity() {
 
     private lateinit var binding: ActivityTripEditBinding
+    private val photoSlots = Semaphore(2)
     private val items = mutableListOf<DraftItem>()
 
     private var editingId = 0L
@@ -677,15 +680,21 @@ class TripEditActivity : LocalizedActivity() {
                 setBackgroundResource(R.drawable.bg_photo_tile)
                 clipToOutline = true
             }
-            tile.addView(ImageView(this).apply {
-                setImageBitmap(PhotoStore.load(path, maxPx = 256))
+            val image = ImageView(this).apply {
                 scaleType = ImageView.ScaleType.CENTER_CROP
                 layoutParams = android.widget.FrameLayout.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT,
                     ViewGroup.LayoutParams.MATCH_PARENT,
                 )
                 setOnClickListener { showPhotoDialog(this@TripEditActivity, path) }
-            })
+            }
+            tile.addView(image)
+            // 编辑页会频繁 render，缩略图放到 IO 上解码，首帧不阻塞输入。
+            lifecycleScope.runIo({
+                photoSlots.withPermit { PhotoStore.load(path, maxPx = 256) }
+            }) { bitmap ->
+                bitmap.getOrNull()?.let { if (image.isAttachedToWindow) image.setImageBitmap(it) }
+            }
             tile.addView(TextView(this).apply {
                 text = "×"; textSize = 13f; gravity = Gravity.CENTER
                 setTextColor(android.graphics.Color.WHITE)

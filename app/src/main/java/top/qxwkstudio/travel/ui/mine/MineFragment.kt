@@ -2,6 +2,8 @@ package top.qxwkstudio.travel.ui.mine
 
 import top.qxwkstudio.travel.ui.common.*
 
+import android.content.res.ColorStateList
+import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
@@ -24,6 +26,8 @@ import top.qxwkstudio.travel.data.Update
 import top.qxwkstudio.travel.data.db.AppDatabase
 import top.qxwkstudio.travel.logic.Timeline
 import top.qxwkstudio.travel.databinding.FragmentMineBinding
+import java.net.HttpURLConnection
+import java.net.URL
 
 /**
  * 「我的」页：本机资料 + 个性化 / 软件设置 / 关于软件三张卡片。
@@ -76,6 +80,7 @@ class MineFragment : Fragment() {
             top.qxwkstudio.travel.data.Prefs.syncEnabled
         _binding?.rowSync?.visibility = if (showSync) View.VISIBLE else View.GONE
         _binding?.dividerSync?.visibility = if (showSync) View.VISIBLE else View.GONE
+        _binding?.let { load() }
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -98,7 +103,7 @@ class MineFragment : Fragment() {
 
     override fun onHiddenChanged(hidden: Boolean) {
         super.onHiddenChanged(hidden)
-        if (!hidden) { _binding?.root?.fadeSlideIn(); refreshLocal() }
+        if (!hidden) { _binding?.root?.fadeSlideIn(); load(); refreshLocal() }
     }
 
     override fun onDestroyView() {
@@ -109,10 +114,13 @@ class MineFragment : Fragment() {
     private fun load() {
         viewLifecycleOwner.lifecycleScope.runIo({
             val db = AppDatabase.get(requireContext())
+            val synced = Prefs.syncToken.isNotBlank()
             Profile(
-                uuid = SettingsRepo.uuid(db),
-                nickname = SettingsRepo.nickname(db),
-                badge = SettingsRepo.badgeColor(db),
+                uuid = if (synced) Prefs.syncUuid else SettingsRepo.uuid(db),
+                nickname = if (synced) Prefs.syncNickname else SettingsRepo.nickname(db),
+                badge = if (synced) Prefs.syncColor.ifBlank { SettingsRepo.badgeColor(db) } else SettingsRepo.badgeColor(db),
+                avatar = if (synced) Prefs.syncAvatar else null,
+                synced = synced,
             )
         }) { result ->
             val profile = result.getOrNull() ?: return@runIo
@@ -124,6 +132,8 @@ class MineFragment : Fragment() {
         val uuid: String,
         val nickname: String?,
         val badge: String,
+        val avatar: String?,
+        val synced: Boolean,
     )
 
     private fun bindProfile(profile: Profile) {
@@ -133,7 +143,11 @@ class MineFragment : Fragment() {
         b.textNameValue.text = displayName
         b.textUuid.text = getString(R.string.mine_uuid, profile.uuid)
 
-        // 头像：主题色圆底 + 白色人像（不提供修改入口）
+        // 登录同步后，昵称、头像、徽章色都来自通行证；未登录时仍是本地资料。
+        b.rowName.isEnabled = !profile.synced
+        b.rowBadge.isEnabled = !profile.synced
+        b.rowName.alpha = if (profile.synced) 0.55f else 1f
+        b.rowBadge.alpha = if (profile.synced) 0.55f else 1f
         b.iconAvatar.background = circle(profile.badge)
         b.colorDot.background = circle(profile.badge)
         val themeColor = if (Palette.selected().key == "system") {
@@ -149,7 +163,52 @@ class MineFragment : Fragment() {
             else -> getString(R.string.language_follow_system)
         }
         currentBadge = profile.badge
+        if (profile.synced) loadSyncedAvatar(profile.avatar) else resetAvatarIcon(profile.badge)
         refreshLocal()
+    }
+
+    private fun loadSyncedAvatar(url: String?) {
+        val safeUrl = url?.takeIf { it.startsWith("https://") && Prefs.networkAllowed }
+        if (safeUrl == null) {
+            resetAvatarIcon(currentBadge)
+            return
+        }
+        viewLifecycleOwner.lifecycleScope.runIo({
+            val connection = (URL(safeUrl).openConnection() as HttpURLConnection).apply {
+                connectTimeout = 8_000
+                readTimeout = 8_000
+                instanceFollowRedirects = true
+            }
+            try {
+                connection.inputStream.use { BitmapFactory.decodeStream(it) }
+            } finally {
+                connection.disconnect()
+            }
+        }) { result ->
+            val bitmap = result.getOrNull()
+            if (bitmap == null) {
+                resetAvatarIcon(currentBadge)
+            } else {
+                _binding?.iconAvatar?.apply {
+                    setPadding(0, 0, 0, 0)
+                    scaleType = android.widget.ImageView.ScaleType.CENTER_CROP
+                    imageTintList = null
+                    clipToOutline = true
+                    setImageBitmap(bitmap)
+                }
+            }
+        }
+    }
+
+    private fun resetAvatarIcon(color: String) {
+        _binding?.iconAvatar?.apply {
+            val pad = (18 * resources.displayMetrics.density).toInt()
+            setPadding(pad, pad, pad, pad)
+            scaleType = android.widget.ImageView.ScaleType.FIT_CENTER
+            imageTintList = ColorStateList.valueOf(ContextCompat.getColor(requireContext(), R.color.on_accent))
+            setImageResource(R.drawable.ic_person)
+            background = circle(color)
+        }
     }
 
     /** 昵称预设按当前语言显示；库里始终存 canonical 中文。 */
@@ -193,6 +252,7 @@ class MineFragment : Fragment() {
     }
 
     private fun chooseBadgeColor() {
+        if (Prefs.syncToken.isNotBlank()) { requireContext().notify(R.string.mine_sync_locked); return }
         val current = badgeOptions.indexOfFirst { it.second == currentBadge }
         val names = badgeOptions.map { getString(it.first) }.toTypedArray()
         MaterialAlertDialogBuilder(requireContext())
@@ -263,6 +323,7 @@ class MineFragment : Fragment() {
 
     /** 名称：从预制选项里选一个，写入本机设置。 */
     private fun chooseName() {
+        if (Prefs.syncToken.isNotBlank()) { requireContext().notify(R.string.mine_sync_locked); return }
         val canonical = resources.getStringArray(R.array.mine_name_presets_canonical)
         val presets = resources.getStringArray(R.array.mine_name_presets)
         val current = binding.textNameValue.text?.toString().orEmpty()

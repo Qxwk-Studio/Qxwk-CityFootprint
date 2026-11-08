@@ -211,7 +211,7 @@ data class Timeline(
             if (currentCity != null) hasEventInCity = true
             if (item.text.isBlank()) {
                 return tr(
-                    "第 $eventNo 条：请填写${when (item.type) { Type.RIDE -> "交通方式"; Type.PLACE -> "到访地点"; else -> "活动内容" }}",
+                    "第 $eventNo 条：请填写${when (item.type) { Type.RIDE -> "交通方式"; Type.PLACE -> "地点记录"; else -> "活动内容" }}",
                     "Item $eventNo: enter ${when (item.type) { Type.RIDE -> "transport"; Type.PLACE -> "place"; else -> "activity" }}",
                 )
             }

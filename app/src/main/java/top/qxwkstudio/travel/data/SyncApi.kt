@@ -39,7 +39,13 @@ internal object SyncApi {
         @SerialName("supports_photo_upload") val supportsPhotoUpload: Boolean = false,
     )
 
-    data class Session(val token: String, val uuid: String, val nickname: String)
+    data class Session(
+        val token: String,
+        val uuid: String,
+        val nickname: String,
+        val avatar: String? = null,
+        val color: String = "",
+    )
 
     @Serializable
     data class DeviceResponse(@SerialName("device_id") val deviceId: Long = 0)
@@ -113,7 +119,7 @@ internal object SyncApi {
         return runCatching {
             val parsed = json.decodeFromString(LoginResponse.serializer(), result.body)
             if (parsed.accessToken.isBlank()) error("empty token")
-            Session(parsed.accessToken, parsed.user.uuid, parsed.user.nickname)
+            Session(parsed.accessToken, parsed.user.uuid, parsed.user.nickname, parsed.user.avatar, parsed.user.color)
         }
     }
 
@@ -122,7 +128,7 @@ internal object SyncApi {
         if (!result.ok) return Result.failure(IllegalStateException(result.body))
         return runCatching {
             val parsed = json.decodeFromString(MeResponse.serializer(), result.body)
-            Session(token, parsed.user.uuid, parsed.user.nickname)
+            Session(token, parsed.user.uuid, parsed.user.nickname, parsed.user.avatar, parsed.user.color)
         }
     }
 

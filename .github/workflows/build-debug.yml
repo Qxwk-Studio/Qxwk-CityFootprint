@@ -1,4 +1,4 @@
-name: 仅构建（调试）
+name: Build Signed Debug APK
 
 # 仅手动触发，只产出 debug APK，不发版、不更新 D1。
 on:

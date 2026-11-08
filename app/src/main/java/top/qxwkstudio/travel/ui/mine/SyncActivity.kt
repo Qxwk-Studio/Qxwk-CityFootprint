@@ -172,7 +172,9 @@ class SyncActivity : LocalizedActivity() {
                 SyncScheduler.cancel()
                 render()
             } else {
-                Prefs.saveSyncSession(this, session.token, session.uuid, session.nickname)
+                Prefs.saveSyncSession(
+                this, session.token, session.uuid, session.nickname, session.avatar, session.color,
+            )
                 render()
             }
         }
@@ -283,7 +285,9 @@ class SyncActivity : LocalizedActivity() {
                 Prefs.clearSyncData(this)
             }
             SyncScheduler.cancel()
-            Prefs.saveSyncSession(this, session.token, session.uuid, session.nickname)
+            Prefs.saveSyncSession(
+                this, session.token, session.uuid, session.nickname, session.avatar, session.color,
+            )
             SyncCredentials.save(this, account, password)
             credentialsLoaded = true
             binding.inputPassword.text?.clear()

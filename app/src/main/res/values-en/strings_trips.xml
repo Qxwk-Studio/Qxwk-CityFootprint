@@ -105,7 +105,13 @@
     <string name="trip_move_up">Move up</string>
     <string name="trip_move_down">Move down</string>
     <string name="trips_meta_counts">%1$d cities · %2$d items</string>
-    <string name="trip_type_place">Place</string>
-    <string name="trip_type_place_label">Visited place</string>
+    <string name="trip_type_place">Place record</string>
+    <string name="trip_type_place_label">Place record</string>
     <string name="trip_event_place_hint">Visited place</string>
+    <string name="detail_uuid_copied">UUID copied</string>
+    <string name="detail_copy_uuid">Copy UUID</string>
+    <string name="checkin_date_unknown">Unknown date</string>
+    <string name="trips_search_hint">Search city, title or note</string>
+    <string name="trips_search_empty">No matches</string>
+    <string name="trips_load_more">Load more</string>
 </resources>

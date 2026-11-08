@@ -8,7 +8,9 @@ import android.widget.FrameLayout
 
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
+import android.text.Editable
 import android.text.TextUtils
+import android.text.TextWatcher
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
@@ -58,6 +60,8 @@ class TripsFragment : Fragment() {
     private enum class Segment { CHECKINS, TRIPS }
 
     private var segment = Segment.CHECKINS
+    private var query = ""
+    private var visibleCount = PAGE_SIZE
 
     /** 胶囊容器上次的宽度：主题/配色重建后要重新摆滑块。 */
     private var segWidth = 0
@@ -70,6 +74,9 @@ class TripsFragment : Fragment() {
     /** 行程 uuid → (到访城市数, 活动数)，卡片第二行用来显示「N 城 · M 项」。 */
     private var timelineCountByUuid: Map<String, Pair<Int, Int>> = emptyMap()
     private var citiesByUuid: Map<String, List<String>> = emptyMap()
+    private var tripTitleByUuid: Map<String, String> = emptyMap()
+    private var checkinSearchById: Map<Long, String> = emptyMap()
+    private var tripSearchByUuid: Map<String, String> = emptyMap()
 
     private var seenVersion = -1
 
@@ -87,15 +94,33 @@ class TripsFragment : Fragment() {
             SyncEvents.events.collect { load() }
         }
         binding.root.fadeSlideIn()
+        binding.inputSearch.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = Unit
+            override fun afterTextChanged(s: Editable?) {
+                query = s?.toString().orEmpty()
+                visibleCount = PAGE_SIZE
+                binding.btnClearSearch.visibility = if (query.isBlank()) View.GONE else View.VISIBLE
+                render()
+            }
+        })
+        binding.btnClearSearch.setOnClickListener { binding.inputSearch.setText("") }
+        binding.btnLoadMore.setOnClickListener {
+            visibleCount += PAGE_SIZE
+            render()
+        }
+
         binding.btnSegCheckins.setOnClickListener {
             if (segment == Segment.CHECKINS) return@setOnClickListener
             segment = Segment.CHECKINS
+            visibleCount = PAGE_SIZE
             render()
             binding.segTrack.post { moveIndicator(animate = true) }
         }
         binding.btnSegTrips.setOnClickListener {
             if (segment == Segment.TRIPS) return@setOnClickListener
             segment = Segment.TRIPS
+            visibleCount = PAGE_SIZE
             render()
             binding.segTrack.post { moveIndicator(animate = true) }
         }
@@ -146,15 +171,33 @@ class TripsFragment : Fragment() {
                 .values
                 .mapNotNull { group -> group.minWithOrNull(compareBy<CheckinEntity> { it.checkinAt }.thenBy { it.id })?.id }
                 .toSet()
-            timelineCountByUuid = tripList.associate { trip ->
-                val timeline = Timeline.decode(trip.timeline)
-                trip.uuid to ((timeline?.cityCount ?: 0) to (timeline?.eventCount ?: 0))
+            val decoded = tripList.associate { trip -> trip.uuid to Timeline.decode(trip.timeline) }
+            timelineCountByUuid = decoded.mapValues { (_, timeline) ->
+                (timeline?.cityCount ?: 0) to (timeline?.eventCount ?: 0)
             }
-            citiesByUuid = tripList.associate { trip ->
-                val timeline = Timeline.decode(trip.timeline)
-                trip.uuid to timeline?.items.orEmpty()
+            citiesByUuid = decoded.mapValues { (_, timeline) ->
+                timeline?.items.orEmpty()
                     .filter { it.type == Timeline.Type.VISIT }
                     .map { it.text }
+            }
+            tripTitleByUuid = tripList.associate { it.uuid to it.title }
+            tripSearchByUuid = tripList.associate { trip ->
+                trip.uuid to listOf(
+                    trip.title,
+                    trip.note,
+                    trip.seqNo.toString(),
+                    citiesByUuid[trip.uuid].orEmpty().joinToString(" "),
+                ).joinToString(" ").lowercase()
+            }
+            checkinSearchById = checkinList.associate { checkin ->
+                checkin.id to listOf(
+                    checkin.cityName,
+                    checkin.province,
+                    checkin.note,
+                    checkin.companions,
+                    checkin.tripUuid?.let { tripTitleByUuid[it] },
+                    checkin.seqNo.toString(),
+                ).joinToString(" ").lowercase()
             }
             render()
         }
@@ -166,18 +209,36 @@ class TripsFragment : Fragment() {
         b.btnSegTrips.text = getString(R.string.trips_seg_trips, trips.size)
         updateSegColors()
 
-        b.listContainer.removeAllViews()
-        val empty = when (segment) {
-            Segment.CHECKINS -> checkins.isEmpty()
-            Segment.TRIPS -> trips.isEmpty()
+        val keyword = query.trim().lowercase()
+        val allVisible = when (segment) {
+            Segment.CHECKINS -> if (keyword.isBlank()) checkins else checkins.filter { matches(it, keyword) }
+            Segment.TRIPS -> if (keyword.isBlank()) trips else trips.filter { matches(it, keyword) }
         }
+        val shown = allVisible.take(visibleCount)
+
+        b.listContainer.removeAllViews()
+        val empty = shown.isEmpty()
+        b.textEmpty.setText(
+            if (keyword.isNotBlank() && empty) R.string.trips_search_empty else R.string.trips_empty,
+        )
         b.textEmpty.visibility = if (empty) View.VISIBLE else View.GONE
+        b.btnLoadMore.visibility = if (allVisible.size > shown.size) View.VISIBLE else View.GONE
         if (empty) return
 
         when (segment) {
-            Segment.CHECKINS -> checkins.forEach { b.listContainer.addView(checkinRow(it)) }
-            Segment.TRIPS -> trips.forEach { b.listContainer.addView(tripRow(it)) }
+            Segment.CHECKINS -> shown.forEach { b.listContainer.addView(checkinRow(it as CheckinEntity)) }
+            Segment.TRIPS -> shown.forEach { b.listContainer.addView(tripRow(it as TripEntity)) }
         }
+    }
+
+    private fun matches(checkin: CheckinEntity, keyword: String): Boolean =
+        checkinSearchById[checkin.id]?.contains(keyword) == true
+
+    private fun matches(trip: TripEntity, keyword: String): Boolean =
+        tripSearchByUuid[trip.uuid]?.contains(keyword) == true
+
+    private companion object {
+        const val PAGE_SIZE = 30
     }
 
     private fun updateSegColors() {
@@ -603,7 +664,7 @@ class TripsFragment : Fragment() {
     private fun dateText(checkin: CheckinEntity): String = when (checkin.datePrecision) {
         DatePrecision.YEAR -> Dates.year(checkin.checkinAt)
         DatePrecision.MONTH -> Dates.dotMonth(checkin.checkinAt)
-        DatePrecision.UNKNOWN -> Dates.year(checkin.checkinAt)
+        DatePrecision.UNKNOWN -> getString(R.string.checkin_date_unknown)
         else -> Dates.ymd(checkin.checkinAt)
     }
 
@@ -623,8 +684,12 @@ class TripsFragment : Fragment() {
                     TripRepo.delete(AppDatabase.get(requireContext()), trip.id)
                 }) { result ->
                     if (result.isSuccess) {
+                        trips = trips.filterNot { it.uuid == trip.uuid }
+                        checkins = checkins.filterNot { it.tripUuid == trip.uuid }
+                        render()
                         requireContext().notify(R.string.trips_deleted)
                         PhotoJanitor.sweepAsync(requireContext())
+                        load()
                     } else requireContext().notify(R.string.common_error, long = true)
                 }
             }
@@ -640,8 +705,12 @@ class TripsFragment : Fragment() {
                 viewLifecycleOwner.lifecycleScope.runIo({
                     CheckinRepo.delete(AppDatabase.get(requireContext()), checkin.id)
                 }) { result ->
-                    if (result.isSuccess) requireContext().notify(R.string.trips_deleted)
-                    else requireContext().notify(R.string.common_error, long = true)
+                    if (result.isSuccess) {
+                        checkins = checkins.filterNot { it.id == checkin.id }
+                        render()
+                        requireContext().notify(R.string.trips_deleted)
+                        load()
+                    } else requireContext().notify(R.string.common_error, long = true)
                 }
             }
             .setNegativeButton(R.string.common_cancel, null)
