@@ -10,6 +10,10 @@ import top.qxwkstudio.travel.ui.trips.CheckinEditActivity
 import top.qxwkstudio.travel.ui.trips.TripEditActivity
 
 import android.os.Bundle
+import android.text.SpannableString
+import android.text.Spanned
+import android.text.method.LinkMovementMethod
+import android.text.style.URLSpan
 import android.view.View
 import android.view.ViewGroup
 import android.view.animation.PathInterpolator
@@ -19,7 +23,10 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.doOnLayout
 import androidx.fragment.app.Fragment
 import top.qxwkstudio.travel.R
+import top.qxwkstudio.travel.data.Prefs
+import top.qxwkstudio.travel.data.SyncScheduler
 import top.qxwkstudio.travel.databinding.ActivityMainBinding
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 
 /**
  * 主壳（2.0）：底部五个 tab —— 主页 / 行程 / 地图 / 成就 / 我的。
@@ -53,7 +60,7 @@ class MainActivity : LocalizedActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         val b = binding
         // 必须在 setContentView 之前（见 ui/EdgeToEdge.kt）
-        applyEdgeToEdge(b.topBar.root, b.bottomBar)
+        applyEdgeToEdge(b.topBar.root, b.bottomBar, bottomIncludeIme = false)
         setContentView(b.root)
 
         b.bottomNav.doOnLayout { pinBottomNavLabels() }
@@ -61,6 +68,7 @@ class MainActivity : LocalizedActivity() {
         b.bottomNav.post { placeNavPill(b.bottomNav.selectedItemId, animate = false) }
         setupNavPill()
         setupAddMenu()
+        showLegalConsentIfNeeded()
 
         b.bottomNav.setOnItemSelectedListener { item ->
             show(tagOf(item.itemId))
@@ -86,6 +94,50 @@ class MainActivity : LocalizedActivity() {
      * 浮层本体在 [showIconMenu]：自绘的图标 + 文字行，宽度 wrap —— 系统 PopupMenu 的宽度
      * 按最长项 + 系统内边距算，三个中文短词会被撑成一条横带（真机上反馈「太宽」）。
      */
+    /** 首次启动必须先同意用户协议与免责声明；不同意则关闭应用。 */
+    private fun showLegalConsentIfNeeded() {
+        if (Prefs.legalAccepted) return
+        val message = getString(R.string.legal_consent_message)
+        val spannable = SpannableString(message)
+        addLink(
+            spannable,
+            message,
+            getString(R.string.legal_terms_link),
+            "https://travel.qxwkstudio.top/legal/terms",
+        )
+        addLink(
+            spannable,
+            message,
+            getString(R.string.legal_disclaimer_link),
+            "https://travel.qxwkstudio.top/legal/disclaimer",
+        )
+        val dialog = MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.legal_consent_title)
+            .setMessage(spannable)
+            .setCancelable(false)
+            .setPositiveButton(R.string.legal_consent_agree) { _, _ ->
+                Prefs.saveLegalAccepted(this)
+                SyncScheduler.request(500)
+            }
+            .setNegativeButton(R.string.legal_consent_exit) { _, _ ->
+                finishAffinity()
+            }
+            .show()
+        dialog.findViewById<TextView>(android.R.id.message)?.movementMethod =
+            LinkMovementMethod.getInstance()
+    }
+
+    private fun addLink(text: SpannableString, full: String, label: String, url: String) {
+        val start = full.indexOf(label)
+        if (start < 0) return
+        text.setSpan(
+            URLSpan(url),
+            start,
+            start + label.length,
+            Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
+        )
+    }
+
     private fun setupAddMenu() {
         binding.topBar.btnMenu.visibility = View.VISIBLE
         binding.topBar.btnMenu.setOnClickListener { anchor ->

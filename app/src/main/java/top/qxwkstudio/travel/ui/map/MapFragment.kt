@@ -33,6 +33,7 @@ import top.qxwkstudio.travel.data.TripRepo
 import top.qxwkstudio.travel.data.CityBoundaries
 import top.qxwkstudio.travel.data.CityStore
 import top.qxwkstudio.travel.data.DataVersion
+import top.qxwkstudio.travel.data.Prefs
 import top.qxwkstudio.travel.data.SettingsRepo
 import top.qxwkstudio.travel.data.db.AppDatabase
 import top.qxwkstudio.travel.data.db.CheckinEntity
@@ -169,7 +170,11 @@ class MapFragment : Fragment() {
             val cities = db.checkins().distinctCities().toSet()
             val path = BasemapStore.ensure(requireContext())
             // 点亮色 = 用户在「我的」里选的徽章色（缺失时退主题色，见 refreshVisited）
-            val badge = SettingsRepo.badgeColor(db)
+            val badge = if (Prefs.syncToken.isNotBlank() && Prefs.syncColor.isNotBlank()) {
+                Prefs.syncColor
+            } else {
+                SettingsRepo.badgeColor(db)
+            }
             // 省界（0.1MB）一并读出来，建 style 后作为线图层压在城市面下面
             provincesJson = runCatching {
                 requireContext().assets.open("data/provinces.geojson").bufferedReader().use { it.readText() }

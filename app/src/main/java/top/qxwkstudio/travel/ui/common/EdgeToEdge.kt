@@ -41,8 +41,15 @@ import androidx.core.view.updatePadding
  *               系统也就不认为输入框被挡住了、不会自动滚，需要页面自己配合 [onImeShown]。
  * @param onImeShown 键盘**弹出那一刻**回调一次（同一轮弹出只调一次，收起后再弹会再调）。
  *                   适合做「把某个输入框滚进视野」这类一次性动作。
+ * @param bottomIncludeIme 底部栏是否吃键盘高度。主壳的底部导航栏传 false，避免键盘把导航栏顶高；
+ *                         普通表单页保持默认 true，让滚动内容末端不被键盘遮住。
  */
-fun Activity.applyEdgeToEdge(topBar: View, bottom: View? = null, onImeShown: (() -> Unit)? = null) {
+fun Activity.applyEdgeToEdge(
+    topBar: View,
+    bottom: View? = null,
+    bottomIncludeIme: Boolean = true,
+    onImeShown: (() -> Unit)? = null,
+) {
     WindowCompat.setDecorFitsSystemWindows(window, false)
 
     // 原始 padding 各取一次（见文件头第 2 点）
@@ -56,7 +63,7 @@ fun Activity.applyEdgeToEdge(topBar: View, bottom: View? = null, onImeShown: (()
     // 调用发生在 setContentView 之前，此时布局层级已经建好，parent 一定有值。
     val host = topBar.parent as View
     ViewCompat.setOnApplyWindowInsetsListener(host) { _, insets ->
-        val i = insets.insetsForPadding()
+        val i = insets.insetsForPadding(bottomIncludeIme)
         topBar.updatePadding(
             left = topPad[0] + i.left,
             top = topPad[1] + i.top,
@@ -82,9 +89,9 @@ fun Activity.applyEdgeToEdge(topBar: View, bottom: View? = null, onImeShown: (()
  * 一个掩码里多条来源争同一侧时取**最大值**：键盘收起时 ime 是 0，结果就是系统栏那一份；
  * 弹出时底边换成键盘高度 —— 不必把两者相加，键盘本来就把导航栏盖住了。
  */
-private fun WindowInsetsCompat.insetsForPadding() =
+private fun WindowInsetsCompat.insetsForPadding(includeIme: Boolean) =
     getInsets(
         WindowInsetsCompat.Type.systemBars()
             or WindowInsetsCompat.Type.displayCutout()
-            or WindowInsetsCompat.Type.ime()
+            or if (includeIme) WindowInsetsCompat.Type.ime() else 0
     )

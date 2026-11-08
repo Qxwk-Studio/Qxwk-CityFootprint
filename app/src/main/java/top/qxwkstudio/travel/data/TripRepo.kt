@@ -47,6 +47,7 @@ object TripRepo {
         lookup: CityLookup,
         now: Long = System.currentTimeMillis(),
     ): Long {
+        Prefs.requireLegalAccepted()
         val id = db.withTransaction {
             validate(input)?.let { throw IllegalArgumentException(it) }
 
@@ -84,6 +85,7 @@ object TripRepo {
         lookup: CityLookup,
         now: Long = System.currentTimeMillis(),
     ) {
+        Prefs.requireLegalAccepted()
         db.withTransaction {
             val existing = db.trips().byId(id) ?: throw IllegalArgumentException("行程不存在：$id")
             validate(input)?.let { throw IllegalArgumentException(it) }
@@ -110,6 +112,7 @@ object TripRepo {
      * 而且它随时能从时间线重算，没有留痕价值。手动打卡不受影响 —— 它们与行程没有归属关系。
      */
     suspend fun delete(db: AppDatabase, id: Long, now: Long = System.currentTimeMillis()) {
+        Prefs.requireLegalAccepted()
         db.withTransaction {
             val existing = db.trips().byId(id) ?: return@withTransaction
             db.trips().softDelete(id, now)

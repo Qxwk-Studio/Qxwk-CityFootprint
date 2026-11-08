@@ -38,6 +38,7 @@ object CheckinRepo {
         stayDays: Int? = null,
         now: Long = System.currentTimeMillis(),
     ): Long {
+        Prefs.requireLegalAccepted()
         require(note.orEmpty().length <= Limits.NOTE) { "备注不能超过 ${Limits.NOTE} 字" }
         require(datePrecision in DatePrecision.YEAR..DatePrecision.UNKNOWN) { "日期精度不合法：$datePrecision" }
         require(rating == null || rating in 1..10) { "评分需在 1–10 之间" }
@@ -77,6 +78,7 @@ object CheckinRepo {
         checkin: CheckinEntity,
         now: Long = System.currentTimeMillis(),
     ) {
+        Prefs.requireLegalAccepted()
         require(checkin.source == CheckinSource.MANUAL) { "派生打卡不能单独编辑，请修改对应的行程" }
         db.checkins().update(checkin.copy(modifiedAt = now))
         DataVersion.bump()
@@ -84,6 +86,7 @@ object CheckinRepo {
 
     /** 软删一条打卡。派生打卡的删除走 [TripRepo.delete]/[TripRepo.update] 的重算。 */
     suspend fun delete(db: AppDatabase, id: Long, now: Long = System.currentTimeMillis()) {
+        Prefs.requireLegalAccepted()
         db.checkins().softDelete(id, now)
         DataVersion.bump()
     }
