@@ -365,8 +365,13 @@ class MineFragment : Fragment() {
             val forced = info.importance >= 2
             val message = buildString {
                 append(getString(R.string.profile_update_new_message, info.versionName))
-                if (forced) {
+                val notes = info.notes.filter { it.isNotBlank() }
+                if (notes.isNotEmpty()) {
                     append("\n\n")
+                    notes.forEach { append("• ").append(it).append("\n") }
+                }
+                if (forced) {
+                    append("\n")
                     append(getString(R.string.profile_update_force_hint))
                 }
             }

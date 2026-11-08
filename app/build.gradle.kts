@@ -77,6 +77,11 @@ android {
             // （否则正式签名与 debug 签名冲突，得先卸载 1.x）。release 包名不受影响，
             // 2.0 正式顶替时仍是 `top.qxwkstudio.travel`（见 2.0 工程口径文档 §2）。
             applicationIdSuffix = ".dev"
+            // CI 的「仅构建（调试）」传 -PuseReleaseSigningForDebug=true，
+            // 让调试包也使用正式 keystore；本地普通 debug 构建不受影响。
+            signingConfig = if (
+                keystorePath != null && project.hasProperty("useReleaseSigningForDebug")
+            ) signingConfigs.findByName("release") else null
         }
         release {
             // R8 压缩 + 混淆：省体积，也是最基本的反编译门槛。

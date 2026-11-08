@@ -120,7 +120,7 @@ class AchievementsFragment : Fragment() {
     private fun buildChips() {
         val container = binding.chipContainer
         container.removeAllViews()
-        Achievements.categories.forEachIndexed { index, category ->
+        Achievements.categories.forEachIndexed { index, _ ->
             val chip = TextView(requireContext()).apply {
                 text = categoryTitle(index)
                 textSize = 12f

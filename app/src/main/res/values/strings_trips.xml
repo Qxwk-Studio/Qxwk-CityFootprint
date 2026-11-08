@@ -72,7 +72,7 @@
     <string name="trip_save">保存</string>
     <string name="trip_cancel">取消</string>
     <string name="trip_event_transport_hint">交通方式</string>
-    <string name="trip_event_activity_hint">做了什么</string>
+    <string name="trip_event_activity_hint">吃饭/购物/参观等</string>
     <string name="trip_event_cost_hint">花费</string>
     <string name="trip_counter">%1$d/%2$d</string>
     <string name="trip_saved">已保存</string>
@@ -105,4 +105,7 @@
     <string name="trip_move_up">上移</string>
     <string name="trip_move_down">下移</string>
     <string name="trips_meta_counts">%1$d 城 · %2$d 项</string>
+    <string name="trip_type_place">到访地点</string>
+    <string name="trip_type_place_label">到访地点记录</string>
+    <string name="trip_event_place_hint">到访地点</string>
 </resources>

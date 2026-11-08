@@ -81,8 +81,8 @@ object Prefs {
         syncNicknameValue = sp.getString(KEY_SYNC_NICKNAME, null).orEmpty()
         syncUuidValue = sp.getString(KEY_SYNC_UUID, null).orEmpty()
         syncEnabledValue = sp.getBoolean(KEY_SYNC_ENABLED, false)
-        syncRevisions = runCatching { JSONObject(sp.getString(KEY_SYNC_REVISIONS, "{}")) }.getOrElse { JSONObject() }
-        syncSynced = runCatching { JSONObject(sp.getString(KEY_SYNC_SYNCED, "{}")) }.getOrElse { JSONObject() }
+        syncRevisions = runCatching { JSONObject(sp.getString(KEY_SYNC_REVISIONS, "{}").orEmpty()) }.getOrElse { JSONObject() }
+        syncSynced = runCatching { JSONObject(sp.getString(KEY_SYNC_SYNCED, "{}").orEmpty()) }.getOrElse { JSONObject() }
         syncCursorValue = sp.getLong(KEY_SYNC_CURSOR, 0L)
         syncLastAtValue = sp.getLong(KEY_SYNC_LAST_AT, 0L)
         syncServerValue = sp.getString(KEY_SYNC_SERVER, DEFAULT_SYNC_SERVER).orEmpty().ifBlank { DEFAULT_SYNC_SERVER }

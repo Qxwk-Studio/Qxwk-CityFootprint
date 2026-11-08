@@ -19,7 +19,7 @@ object ValidationText {
             Regex("^派生打卡不能单独编辑，请修改对应的行程$") to "Derived check-ins cannot be edited directly; edit the trip instead",
         )
         patterns.forEach { (regex, replacement) ->
-            val match = regex.matchEntire(message) ?: return@forEach
+            if (regex.matchEntire(message) == null) return@forEach
             return regex.replace(message, replacement)
         }
         return message

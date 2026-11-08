@@ -47,14 +47,14 @@ internal object SyncEngine {
             val syncedAt = Prefs.syncSyncedAt("trip", trip.uuid)
             if (!SyncRules.shouldPush(trip.modifiedAt, syncedAt)) return@forEach
             if (("trip:" + trip.uuid) in pendingKeys) return@forEach
-            changes += "trip" to buildChange("trip", trip.uuid, trip.deletedAt != null, trip.modifiedAt, tripJson(trip))
+            changes += "trip" to buildChange("trip", trip.uuid, trip.deletedAt != null, tripJson(trip))
         }
         checkins.forEach { checkin ->
             val syncedAt = Prefs.syncSyncedAt("checkin", checkin.uuid)
             if (!SyncRules.shouldPush(checkin.modifiedAt, syncedAt)) return@forEach
             if (("checkin:" + checkin.uuid) in pendingKeys) return@forEach
             changes += "checkin" to buildChange(
-                "checkin", checkin.uuid, checkin.deletedAt != null, checkin.modifiedAt, checkinJson(checkin),
+                "checkin", checkin.uuid, checkin.deletedAt != null, checkinJson(checkin),
             )
         }
 
@@ -99,7 +99,7 @@ internal object SyncEngine {
         return Report(pushed, pulled, conflicts)
     }
 
-    private fun buildChange(type: String, uuid: String, deleted: Boolean, modified: Long, data: JsonObject): JsonObject =
+    private fun buildChange(type: String, uuid: String, deleted: Boolean, data: JsonObject): JsonObject =
         buildJsonObject {
             put("entity_type", type)
             put("uuid", uuid)
@@ -144,7 +144,7 @@ internal object SyncEngine {
         })
     }
 
-    suspend fun resolveWithLocal(context: Context, db: AppDatabase, conflict: SyncConflict): Boolean {
+    suspend fun resolveWithLocal(db: AppDatabase, conflict: SyncConflict): Boolean {
         val token = Prefs.syncToken
         val server = Prefs.syncServer
         if (token.isBlank() || server.isBlank()) return false

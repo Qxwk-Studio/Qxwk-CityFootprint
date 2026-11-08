@@ -85,7 +85,7 @@ class TimelineTest {
     @Test
     fun `city without events rejected`() {
         val error = timeline(segment("北京")).validate()
-        assertTrue(error!!.contains("请至少添加一条活动或交通"))
+        assertTrue(error!!.contains("请至少添加一条活动、交通或到访地点"))
     }
 
     @Test
@@ -183,6 +183,16 @@ class TimelineTest {
         assertEquals(3, decoded.eventCount)
         assertEquals("高铁", decoded.segments[0].events[1].text)
         assertEquals(9900, decoded.segments[0].events[0].costCents)
+    }
+
+    @Test
+    fun `place item round trips`() {
+        val t = timeline(segment("北京", event("p", 100, Timeline.Type.PLACE, "故宫")))
+        assertNull(t.validate())
+        val decoded = Timeline.decode(t.encode())
+        assertNotNull(decoded)
+        assertEquals(Timeline.Type.PLACE, decoded!!.segments[0].events[0].type)
+        assertEquals("故宫", decoded.segments[0].events[0].text)
     }
 
     @Test

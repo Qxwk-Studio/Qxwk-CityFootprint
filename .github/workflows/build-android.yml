@@ -1,4 +1,4 @@
-name: Build Android APK
+name: 构建和发版
 
 # 仅手动触发：版本号和更新日志统一从根目录 release.json 读取。
 # 触发后在 Actions 页面点「Run workflow」即可，不需要填写版本参数。

@@ -166,7 +166,8 @@ npx.cmd -y serve docs
 }
 ```
 
-2. 在 GitHub Actions → `Build Android APK` → `Run workflow` 手动触发。
+2. 在 GitHub Actions → `构建和发版` → `Run workflow` 手动触发。
+   只调试构建时使用 `仅构建（调试）`，不会发版或更新 D1；该流程也会恢复正式 keystore，调试包使用正式签名。
 
 - `changelog`：GitHub Release 的完整更新日志
 - `cfNotes`：写入 D1 `app_versions.notes` 的简短说明，用于 App 更新提示

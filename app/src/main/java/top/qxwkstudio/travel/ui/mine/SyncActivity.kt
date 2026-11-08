@@ -304,7 +304,7 @@ class SyncActivity : LocalizedActivity() {
             .setMessage(getString(R.string.sync_conflict_message, local, remote))
             .setPositiveButton(R.string.sync_use_local) { _, _ ->
                 lifecycleScope.runIo({
-                    SyncEngine.resolveWithLocal(this, AppDatabase.get(this), conflict)
+                    SyncEngine.resolveWithLocal(AppDatabase.get(this), conflict)
                 }) { ok ->
                     showingConflict = false
                     render()

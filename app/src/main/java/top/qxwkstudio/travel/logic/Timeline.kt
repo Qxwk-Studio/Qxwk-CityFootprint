@@ -96,6 +96,10 @@ data class Timeline(
         /** 到访城市（扁平时间线里的城市项）。 */
         @SerialName("visit")
         VISIT,
+
+        /** 到访地点：城市内具体地点，与活动/交通同级。 */
+        @SerialName("place")
+        PLACE,
     }
 
     /** 按到访城市切出来的城市段；第一个城市之前的事件不属于任何段。 */
@@ -171,7 +175,7 @@ data class Timeline(
     fun validate(requireSegments: Boolean = true, english: Boolean = false): String? {
         fun tr(zh: String, en: String): String = if (english) en else zh
         if (cityCount == 0) return if (requireSegments) tr("至少添加一座到访城市", "Add at least one city") else null
-        if (events.isEmpty()) return tr("请至少添加一条活动或交通", "Add at least one activity or transport")
+        if (events.isEmpty()) return tr("请至少添加一条活动、交通或到访地点", "Add at least one activity or transport")
 
         var cityNo = 0
         var eventNo = 0
@@ -182,7 +186,7 @@ data class Timeline(
         items.forEach { item ->
             if (item.type == Type.VISIT) {
                 if (currentCity != null && !hasEventInCity) {
-                    return tr("「$currentCity」请至少添加一条活动或交通", "\"$currentCity\": add at least one activity or transport")
+                    return tr("「$currentCity」请至少添加一条活动、交通或到访地点", "\"$currentCity\": add at least one activity, transport or place")
                 }
                 currentCity = item.text
                 hasEventInCity = false
@@ -207,8 +211,8 @@ data class Timeline(
             if (currentCity != null) hasEventInCity = true
             if (item.text.isBlank()) {
                 return tr(
-                    "第 $eventNo 条：请填写${when (item.type) { Type.RIDE -> "交通方式"; else -> "活动内容" }}",
-                    "Item $eventNo: enter ${when (item.type) { Type.RIDE -> "transport"; else -> "activity" }}",
+                    "第 $eventNo 条：请填写${when (item.type) { Type.RIDE -> "交通方式"; Type.PLACE -> "到访地点"; else -> "活动内容" }}",
+                    "Item $eventNo: enter ${when (item.type) { Type.RIDE -> "transport"; Type.PLACE -> "place"; else -> "activity" }}",
                 )
             }
             if (item.text.length > Limits.SHORT) {
@@ -232,7 +236,7 @@ data class Timeline(
             previousTime = item.time
         }
         if (currentCity != null && !hasEventInCity) {
-            return tr("「$currentCity」请至少添加一条活动或交通", "\"$currentCity\": add at least one activity or transport")
+            return tr("「$currentCity」请至少添加一条活动、交通或到访地点", "\"$currentCity\": add at least one activity, transport or place")
         }
         return null
     }

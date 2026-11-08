@@ -261,6 +261,7 @@ class TripEditActivity : LocalizedActivity() {
             getString(R.string.trip_add_city_item),
             getString(R.string.trip_type_activity_label),
             getString(R.string.trip_type_ride_label),
+            getString(R.string.trip_type_place_label),
         )
         MaterialAlertDialogBuilder(this)
             .setTitle(R.string.trip_add_item)
@@ -268,7 +269,8 @@ class TripEditActivity : LocalizedActivity() {
                 when (which) {
                     0 -> startPickCity(-1)
                     1 -> addActivity(Timeline.Type.ACTIVITY)
-                    else -> addActivity(Timeline.Type.RIDE)
+                    2 -> addActivity(Timeline.Type.RIDE)
+                    else -> addActivity(Timeline.Type.PLACE)
                 }
             }
             .show()
@@ -397,7 +399,7 @@ class TripEditActivity : LocalizedActivity() {
 
         card.addView(divider())
         card.addView(photoHeader(index, item))
-        card.addView(photoRow(index, item))
+        card.addView(photoRow(item))
         card.addView(photoHint())
 
         card.addView(divider())
@@ -414,7 +416,13 @@ class TripEditActivity : LocalizedActivity() {
             setPadding(dp(16), dp(10), dp(16), 0)
         }
         header.addView(ImageView(this).apply {
-            setImageResource(if (item.type == Timeline.Type.RIDE) R.drawable.ic_car else R.drawable.ic_flag)
+            setImageResource(
+                when (item.type) {
+                    Timeline.Type.RIDE -> R.drawable.ic_car
+                    Timeline.Type.PLACE -> R.drawable.ic_locate
+                    else -> R.drawable.ic_flag
+                },
+            )
             imageTintList = android.content.res.ColorStateList.valueOf(Palette.accent(this@TripEditActivity))
             layoutParams = LinearLayout.LayoutParams(dp(16), dp(16))
         })
@@ -435,10 +443,10 @@ class TripEditActivity : LocalizedActivity() {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
             setPadding(dp(16), dp(8), dp(16), 0)
-            addView(dateTimeBox(Dates.ymd(item.time)) { pickDate(index, item) }.apply {
+            addView(dateTimeBox(Dates.ymd(item.time)) { pickDate(item) }.apply {
                 layoutParams = LinearLayout.LayoutParams(0, dp(40), 1f)
             })
-            addView(dateTimeBox(hm(item.time)) { pickTime(index, item) }.apply {
+            addView(dateTimeBox(hm(item.time)) { pickTime(item) }.apply {
                 layoutParams = LinearLayout.LayoutParams(0, dp(40), 1f).apply { marginStart = dp(6) }
             })
             val costInput = EditText(this@TripEditActivity).apply {
@@ -474,8 +482,11 @@ class TripEditActivity : LocalizedActivity() {
         val nameCounter = fieldCounter()
         val nameEdit = EditText(this).apply {
             hint = getString(
-                if (item.type == Timeline.Type.RIDE) R.string.trip_event_transport_hint
-                else R.string.trip_event_activity_hint,
+                when (item.type) {
+                    Timeline.Type.RIDE -> R.string.trip_event_transport_hint
+                    Timeline.Type.PLACE -> R.string.trip_event_place_hint
+                    else -> R.string.trip_event_activity_hint
+                },
             )
             setText(item.text)
             textSize = 14f
@@ -491,14 +502,25 @@ class TripEditActivity : LocalizedActivity() {
                 override fun afterTextChanged(s: Editable) { item.text = s.toString().trim() }
             })
         }
-        card.addView(inlineInput(if (item.type == Timeline.Type.RIDE) R.drawable.ic_car else R.drawable.ic_flag, getString(R.string.trip_event_name), true, nameEdit))
+        card.addView(
+            inlineInput(
+                when (item.type) {
+                    Timeline.Type.RIDE -> R.drawable.ic_car
+                    Timeline.Type.PLACE -> R.drawable.ic_locate
+                    else -> R.drawable.ic_flag
+                },
+                getString(R.string.trip_event_name),
+                true,
+                nameEdit,
+            ),
+        )
         card.addView(nameCounter)
         bindCounter(nameEdit, nameCounter, Limits.SHORT)
 
 
         card.addView(divider())
         card.addView(photoHeader(index, item))
-        card.addView(photoRow(index, item))
+        card.addView(photoRow(item))
         card.addView(photoHint())
 
         card.addView(divider())
@@ -638,7 +660,7 @@ class TripEditActivity : LocalizedActivity() {
         setPadding(dp(16), dp(6), dp(16), 0)
     }
 
-    private fun photoRow(index: Int, item: DraftItem): LinearLayout {
+    private fun photoRow(item: DraftItem): LinearLayout {
         val row = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             setPadding(dp(16), dp(8), dp(16), 0)
@@ -901,8 +923,12 @@ class TripEditActivity : LocalizedActivity() {
     // ────────────────────────── 事件交互 ──────────────────────────
 
     private fun chooseType(item: DraftItem) {
-        val types = arrayOf(Timeline.Type.ACTIVITY, Timeline.Type.RIDE)
-        val labels = arrayOf(getString(R.string.trip_type_activity), getString(R.string.trip_type_ride))
+        val types = arrayOf(Timeline.Type.ACTIVITY, Timeline.Type.RIDE, Timeline.Type.PLACE)
+        val labels = arrayOf(
+            getString(R.string.trip_type_activity),
+            getString(R.string.trip_type_ride),
+            getString(R.string.trip_type_place),
+        )
         MaterialAlertDialogBuilder(this)
             .setTitle(R.string.trip_event_type)
             .setSingleChoiceItems(labels, types.indexOf(item.type)) { dialog, which ->
@@ -913,7 +939,7 @@ class TripEditActivity : LocalizedActivity() {
             .show()
     }
 
-    private fun pickDate(index: Int, item: DraftItem) {
+    private fun pickDate(item: DraftItem) {
         val calendar = Calendar.getInstance().apply { timeInMillis = item.time }
         DatePickerDialog(
             this,
@@ -929,7 +955,7 @@ class TripEditActivity : LocalizedActivity() {
         ).show()
     }
 
-    private fun pickTime(index: Int, item: DraftItem) {
+    private fun pickTime(item: DraftItem) {
         val calendar = Calendar.getInstance().apply { timeInMillis = item.time }
         TimePickerDialog(
             this,
@@ -950,6 +976,7 @@ class TripEditActivity : LocalizedActivity() {
         when (type) {
             Timeline.Type.RIDE -> R.string.trip_type_ride_label
             Timeline.Type.VISIT -> R.string.trip_type_visit_label
+            Timeline.Type.PLACE -> R.string.trip_type_place_label
             else -> R.string.trip_type_activity_label
         },
     )
@@ -958,6 +985,7 @@ class TripEditActivity : LocalizedActivity() {
         when (type) {
             Timeline.Type.RIDE -> R.string.trip_type_ride
             Timeline.Type.VISIT -> R.string.trip_type_visit
+            Timeline.Type.PLACE -> R.string.trip_type_place
             else -> R.string.trip_type_activity
         },
     )
