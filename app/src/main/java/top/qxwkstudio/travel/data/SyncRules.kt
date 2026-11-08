@@ -8,5 +8,9 @@ internal object SyncRules {
     /** 游标只前进，不回退。 */
     fun nextCursor(current: Long, seq: Long): Long = maxOf(current, seq)
 
+    /** 本地修改比远端新时不要用远端覆盖；force 用于用户明确选择“使用远端”。 */
+    fun shouldApplyRemote(localModified: Long, remoteModified: Long, force: Boolean = false): Boolean =
+        force || localModified <= remoteModified
+
     fun isConflict(status: String): Boolean = status == "conflict"
 }

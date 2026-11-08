@@ -100,6 +100,15 @@ npm.cmd test
 - 同步参数校验（行程、打卡）
 - 新设备 `since=0` 快照
 
+## 发布时更新 app_versions
+
+根目录 `release.json` 的 `cfNotes` 会由 CI 写成 `app_versions.notes`，`importance` 写入重要级别（0/1/2），`download_url` 指向 GitHub Release 的 APK。
+
+需要 Secrets：
+
+- `CLOUDFLARE_API_TOKEN`
+- `CLOUDFLARE_ACCOUNT_ID`
+
 ## 部署
 
 ```powershell

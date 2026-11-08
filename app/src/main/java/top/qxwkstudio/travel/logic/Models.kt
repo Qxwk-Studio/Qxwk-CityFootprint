@@ -30,4 +30,5 @@ data class ReleaseInfo(
     @SerialName("version_code") val versionCode: Int = 0,
     @SerialName("download_url") val downloadUrl: String = "",
     val notes: List<String> = emptyList(),
+    val importance: Int = 0,
 )

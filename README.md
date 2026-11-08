@@ -146,6 +146,38 @@ npx.cmd wrangler deploy
 npx.cmd -y serve docs
 ```
 
+## 📦 发版
+
+1. 修改根目录 `release.json`：
+
+```json
+{
+  "versionName": "2.2.1",
+  "versionCode": 20201,
+  "importance": 0,
+  "changelog": [
+    "### 新增",
+    "- 完整的发布说明"
+  ],
+  "cfNotes": [
+    "用户能感知到的一条更新",
+    "另一条简短说明"
+  ]
+}
+```
+
+2. 在 GitHub Actions → `Build Android APK` → `Run workflow` 手动触发。
+
+- `changelog`：GitHub Release 的完整更新日志
+- `cfNotes`：写入 D1 `app_versions.notes` 的简短说明，用于 App 更新提示
+- `importance`：0 普通 / 1 重要 / 2 强制，写入 `app_versions.importance`
+- Gradle 直接读取版本号
+- Workflow 创建 tag、GitHub Release，并把新版本写入 D1
+
+D1 更新需要仓库 Secrets：`CLOUDFLARE_API_TOKEN`、`CLOUDFLARE_ACCOUNT_ID`。
+
+`release.json` 只保存当前要发布的版本，不保留历史 CHANGELOG。
+
 ## 🌐 在线地址
 
 - 网页：<https://travel.qxwkstudio.top>

@@ -75,4 +75,5 @@
     <string name="sync_local_deleted">本地已删除</string>
     <string name="sync_retry_failed">同步多次失败，请检查网络或凭证</string>
     <string name="sync_auto_note">开启后，启动应用或行程、打卡变化时会自动同步。</string>
+    <string name="sync_one_tap_login">一键登录</string>
 </resources>

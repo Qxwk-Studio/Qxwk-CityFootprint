@@ -13,6 +13,7 @@ import kotlinx.serialization.json.jsonPrimitive
 import top.qxwkstudio.travel.R
 import top.qxwkstudio.travel.data.LocalData
 import top.qxwkstudio.travel.data.Prefs
+import top.qxwkstudio.travel.data.SyncCredentials
 import top.qxwkstudio.travel.data.db.AppDatabase
 import top.qxwkstudio.travel.data.SyncConflict
 import top.qxwkstudio.travel.data.SyncEngine
@@ -31,6 +32,7 @@ class SyncActivity : LocalizedActivity() {
 
     private lateinit var binding: ActivitySyncBinding
     private var showingConflict = false
+    private var credentialsLoaded = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -95,7 +97,21 @@ class SyncActivity : LocalizedActivity() {
         if (loggedIn) {
             binding.textSyncUser.text = Prefs.syncNickname.ifBlank { getString(R.string.sync_logged_in) }
             binding.textSyncUuid.text = getString(R.string.sync_uuid, Prefs.syncUuid)
+        } else if (!credentialsLoaded) {
+            applySavedCredentials()
         }
+    }
+
+    private fun applySavedCredentials() {
+        val saved = SyncCredentials.load(this)
+        if (saved == null) {
+            binding.btnLogin.setText(R.string.sync_credential_save)
+            return
+        }
+        binding.inputAccount.setText(saved.first)
+        binding.inputPassword.setText(saved.second)
+        binding.btnLogin.setText(R.string.sync_one_tap_login)
+        credentialsLoaded = true
     }
 
     private fun fetchServer() {
@@ -149,9 +165,10 @@ class SyncActivity : LocalizedActivity() {
         lifecycleScope.runIo({ SyncApi.me(Prefs.syncServer, token) }) { result ->
             val session = result.getOrNull()?.getOrNull()
             if (session == null) {
+                // Token 过期只清 token，保留开关、同步数据和本地加密凭证。
                 Prefs.clearSyncSession(this)
-                Prefs.clearSyncData(this)
-                Prefs.saveSyncEnabled(this, false)
+                Prefs.saveSyncResult(this, 0, 0, 0, false, "auth")
+                credentialsLoaded = false
                 SyncScheduler.cancel()
                 render()
             } else {
@@ -177,13 +194,15 @@ class SyncActivity : LocalizedActivity() {
         binding.btnLogin.setText(R.string.sync_logging_in)
         lifecycleScope.runIo({ SyncApi.login(server, account, password) }) { result ->
             binding.btnLogin.isEnabled = true
-            binding.btnLogin.setText(R.string.sync_credential_save)
+            binding.btnLogin.setText(
+                if (credentialsLoaded) R.string.sync_one_tap_login else R.string.sync_credential_save,
+            )
             val session = result.getOrNull()?.getOrNull()
             if (session == null) {
                 notify(R.string.sync_login_failed, long = true)
                 return@runIo
             }
-            confirmLogin(session)
+            confirmLogin(session, account, password)
         }
     }
 
@@ -225,13 +244,13 @@ class SyncActivity : LocalizedActivity() {
         }
     }
 
-    private fun confirmLogin(session: SyncApi.Session) {
+    private fun confirmLogin(session: SyncApi.Session, account: String, password: String) {
         val different = Prefs.syncUuid.isNotBlank() && Prefs.syncUuid != session.uuid
         if (!different) {
             MaterialAlertDialogBuilder(this)
                 .setTitle(R.string.sync_login_confirm_title)
                 .setMessage(getString(R.string.sync_login_confirm_message, session.nickname))
-                .setPositiveButton(R.string.sync_login) { _, _ -> commitLogin(session, wipeLocal = false) }
+                .setPositiveButton(R.string.sync_login) { _, _ -> commitLogin(session, wipeLocal = false, account, password) }
                 .setNegativeButton(R.string.common_cancel, null)
                 .show()
             return
@@ -239,21 +258,21 @@ class SyncActivity : LocalizedActivity() {
         MaterialAlertDialogBuilder(this)
             .setTitle(R.string.sync_login_confirm_title)
             .setMessage(R.string.sync_login_switch_message)
-            .setPositiveButton(R.string.sync_login_keep) { _, _ -> commitLogin(session, wipeLocal = false) }
-            .setNeutralButton(R.string.sync_login_wipe) { _, _ -> confirmWipeThenLogin(session) }
+            .setPositiveButton(R.string.sync_login_keep) { _, _ -> commitLogin(session, wipeLocal = false, account, password) }
+            .setNeutralButton(R.string.sync_login_wipe) { _, _ -> confirmWipeThenLogin(session, account, password) }
             .setNegativeButton(R.string.common_cancel, null)
             .show()
     }
 
-    private fun confirmWipeThenLogin(session: SyncApi.Session) {
+    private fun confirmWipeThenLogin(session: SyncApi.Session, account: String, password: String) {
         MaterialAlertDialogBuilder(this)
             .setMessage(R.string.sync_wipe_warning)
-            .setPositiveButton(R.string.sync_login_wipe) { _, _ -> commitLogin(session, wipeLocal = true) }
+            .setPositiveButton(R.string.sync_login_wipe) { _, _ -> commitLogin(session, wipeLocal = true, account, password) }
             .setNegativeButton(R.string.common_cancel, null)
             .show()
     }
 
-    private fun commitLogin(session: SyncApi.Session, wipeLocal: Boolean) {
+    private fun commitLogin(session: SyncApi.Session, wipeLocal: Boolean, account: String, password: String) {
         lifecycleScope.runIo({
             if (wipeLocal) LocalData.wipe(AppDatabase.get(this))
         }) {
@@ -265,6 +284,8 @@ class SyncActivity : LocalizedActivity() {
             }
             SyncScheduler.cancel()
             Prefs.saveSyncSession(this, session.token, session.uuid, session.nickname)
+            SyncCredentials.save(this, account, password)
+            credentialsLoaded = true
             binding.inputPassword.text?.clear()
             render()
             notify(R.string.sync_login_success)
@@ -332,6 +353,9 @@ class SyncActivity : LocalizedActivity() {
         Prefs.clearSyncSession(this)
         Prefs.clearSyncData(this)
         Prefs.saveSyncEnabled(this, false)
+        SyncCredentials.clear(this)
+        credentialsLoaded = false
+        binding.inputPassword.text?.clear()
         if (wipeLocal) {
             lifecycleScope.runIo({ LocalData.wipe(AppDatabase.get(this)) }) {
                 render()

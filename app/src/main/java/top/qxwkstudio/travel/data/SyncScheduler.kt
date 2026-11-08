@@ -75,9 +75,9 @@ internal object SyncScheduler {
                     } catch (e: Exception) {
                         last = e
                         if (classify(e) == "auth") {
+                            // 只清 token，保留同步开关、数据和本地凭证，用户可直接一键重登。
                             Prefs.clearSyncSession(context)
-                            Prefs.clearSyncData(context)
-                            Prefs.saveSyncEnabled(context, false)
+                            Prefs.saveSyncResult(context, 0, 0, 0, false, "auth")
                             cancel()
                             return@withLock Result.failure(e)
                         }

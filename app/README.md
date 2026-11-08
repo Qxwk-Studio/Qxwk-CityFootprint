@@ -2,7 +2,7 @@
 
 把去过的城市记下来、在地图上点亮它们的应用。默认是离线单机：数据保存在本机 SQLite，不登录、不上传。
 
-当前版本：**2.2.0**（versionCode 20200）。
+当前版本：**2.2.1**（versionCode 20201）。
 
 2.2.0 起提供**可选同步**：默认关闭，在「权限管理 → 网络 → 可选同步」开启后，才会登录通行证账号并同步行程、手动打卡。
 
@@ -180,6 +180,7 @@ cd app
 - 服务器地址：默认空，只接受 HTTPS
 - 读取服务器名称与照片上传能力
 - 同步凭证：凭证（账号）+ 密钥（密码）
+- 登录成功后用 Android Keystore 加密保存凭证；Token 过期后自动填充，按钮变为「一键登录」；退出登录会清除凭证
 - 上次同步时间、上传/拉取/冲突数
 - 立即同步
 
@@ -258,10 +259,11 @@ cd app && ./gradlew testDebugUnitTest
    `KEY_PASSWORD`。本地验证签名时按 `CF_KEYSTORE_FILE` / `CF_KEYSTORE_PASSWORD` /
    `CF_KEY_ALIAS` / `CF_KEY_PASSWORD` 环境变量传给 Gradle；缺这些变量时 release 产物是
    `*-release-unsigned.apk`。
-2. 在根目录 `CHANGELOG.md` 增加新版本段落，例如 `## 2.2.0 - 2026-11-08`，下面写更新日志。
+2. 修改根目录 `release.json` 的 `versionName` / `versionCode` / `importance` / `changelog`（完整 Release 说明）/ `cfNotes`（App 更新提示）。
    GitHub Actions → `Build Android APK` → `Run workflow`（**仅手动触发，无版本输入**）。
-   CI 读取最新版本与日志，覆盖 `app/build.gradle.kts` 的版本行，跑单测 → `assembleRelease`
-   → 上传 arm64-v8a 包 → 创建 `v<version>` tag 与 GitHub Release，Release 正文取自 CHANGELOG。
+   Gradle 直接读取 release.json 获取版本号，无需修改 `app/build.gradle.kts`；跑单测 → `assembleRelease`
+   → 上传 arm64-v8a 包 → 创建 `v<version>` tag 与 GitHub Release（正文取 `changelog`）
+   → 写入 D1 `app_versions`（`notes` 取 `cfNotes`）。D1 步骤需要 Secrets `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID`。
    缺 keystore 或签名未生效会直接失败。
 3. 按 ABI 拆包：产物名为 `CityFootprint-<abi>-release.apk`，CI 取 **arm64-v8a**；
    debug 也拆包，本机安装取 `app/build/outputs/apk/debug/CityFootprint-arm64-v8a-debug.apk`。

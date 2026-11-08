@@ -1,14 +1,13 @@
 #!/usr/bin/env node
 /**
- * 从根目录 CHANGELOG.md 读取最新版本和该版本的更新日志。
- * 版本号格式：## 2.2.0 - 2026-11-08
- * versionCode 由语义版本推导：major * 10000 + minor * 100 + patch。
+ * 从根目录 release.json 读取当前版本的版本号和更新日志。
+ * release.json 只保存「当前要发布」的版本，历史日志由 GitHub Release 自己保存。
  *
  * 输出到 GITHUB_OUTPUT，并写 release-notes.md 供 gh release 使用。
  */
 import { readFileSync, writeFileSync, appendFileSync } from 'node:fs';
 
-const changelogPath = 'CHANGELOG.md';
+const releasePath = 'release.json';
 const notesPath = 'release-notes.md';
 
 function fail(message) {
@@ -16,20 +15,38 @@ function fail(message) {
   process.exit(1);
 }
 
-const text = readFileSync(changelogPath, 'utf8');
-const heading = /^##[ \t]+\[?v?([0-9]+\.[0-9]+\.[0-9]+)\]?/m.exec(text);
-if (!heading) fail('CHANGELOG.md 没有找到最新版本标题，例如：## 2.2.0 - 2026-11-08');
+let release;
+try {
+  release = JSON.parse(readFileSync(releasePath, 'utf8'));
+} catch (error) {
+  fail(`无法读取或解析 ${releasePath}: ${error.message}`);
+}
 
-const versionName = heading[1];
-const [major, minor, patch] = versionName.split('.').map(Number);
-const versionCode = major * 10000 + minor * 100 + patch;
-if (!Number.isSafeInteger(versionCode) || versionCode <= 0) fail(`无法从 ${versionName} 推导 versionCode`);
+const versionName = String(release.versionName || '').trim();
+if (!/^[0-9]+\.[0-9]+\.[0-9]+$/.test(versionName)) {
+  fail(`versionName 必须是 x.y.z，收到：${versionName || '(空)'}`);
+}
 
-const bodyStart = text.indexOf('\n', heading.index) + 1;
-const nextHeading = /^##[ \t]+/m.exec(text.slice(bodyStart));
-const bodyEnd = nextHeading ? bodyStart + nextHeading.index : text.length;
-const body = text.slice(bodyStart, bodyEnd).trim();
-if (!body) fail(`${versionName} 的更新日志为空`);
+const versionCode = Number(release.versionCode);
+if (!Number.isSafeInteger(versionCode) || versionCode <= 0) {
+  fail(`versionCode 必须是正整数，收到：${release.versionCode}`);
+}
+const importance = Number(release.importance ?? 0);
+if (![0, 1, 2].includes(importance)) {
+  fail('importance 只能是 0 / 1 / 2');
+}
+
+const lines = Array.isArray(release.changelog) ? release.changelog : [];
+if (lines.length === 0 || lines.some((line) => typeof line !== 'string')) {
+  fail('changelog 必须是非空字符串数组');
+}
+const body = lines.join('\n').trim();
+if (!body) fail('changelog 不能为空');
+
+const cfNotes = Array.isArray(release.cfNotes) ? release.cfNotes : [];
+if (cfNotes.length === 0 || cfNotes.some((line) => typeof line !== 'string' || !line.trim())) {
+  fail('cfNotes 必须是非空字符串数组，用于 App 更新提示');
+}
 
 const tag = `v${versionName}`;
 writeFileSync(notesPath, body + '\n', 'utf8');

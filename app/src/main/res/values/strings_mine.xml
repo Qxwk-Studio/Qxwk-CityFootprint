@@ -42,4 +42,5 @@
     <string name="color_purple">紫</string>
     <string name="color_pink">粉</string>
     <string name="color_gray">灰</string>
+    <string name="profile_update_force_hint">此版本为强制更新，请更新后继续使用。</string>
 </resources>

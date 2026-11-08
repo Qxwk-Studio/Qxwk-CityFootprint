@@ -205,12 +205,18 @@ internal object SyncEngine {
         if (!force && Prefs.syncConflicts().any {
                 it.entityType == type && it.uuid == data["uuid"]?.jsonPrimitive?.contentOrNull
             }) return
-        if (type == "trip") applyTrip(context, db, data) else if (type == "checkin") applyCheckin(db, data)
+        if (type == "trip") applyTrip(context, db, data, force) else if (type == "checkin") applyCheckin(db, data, force)
     }
 
-    private suspend fun applyTrip(context: Context, db: AppDatabase, data: JsonObject) {
+    private suspend fun applyTrip(context: Context, db: AppDatabase, data: JsonObject, force: Boolean) {
         val uuid = data["uuid"]?.jsonPrimitive?.contentOrNull ?: return
         val existing = db.trips().byUuidAny(uuid)
+        val remoteModified = data["client_modified_at"]?.jsonPrimitive?.longOrNull ?: 0L
+        // 先拉后推时，不能用服务端旧快照覆盖本地尚未推送的修改。
+        // 除了比较修改时间，还要看本地是否仍有未同步修改，避免两端时钟差导致误覆盖。
+        if (!force && existing != null &&
+            SyncRules.shouldPush(existing.modifiedAt, Prefs.syncSyncedAt("trip", uuid))) return
+        if (!SyncRules.shouldApplyRemote(existing?.modifiedAt ?: 0L, remoteModified, force)) return
         val deletedAt = data["deleted_at"]?.jsonPrimitive?.longOrNull
         if (deletedAt != null) {
             existing?.let {
@@ -253,9 +259,11 @@ internal object SyncEngine {
         Prefs.saveSyncEntity("trip", uuid, data["revision"]?.jsonPrimitive?.intOrNull ?: Prefs.syncRevision("trip", uuid), modified)
     }
 
-    private suspend fun applyCheckin(db: AppDatabase, data: JsonObject) {
+    private suspend fun applyCheckin(db: AppDatabase, data: JsonObject, force: Boolean) {
         val uuid = data["uuid"]?.jsonPrimitive?.contentOrNull ?: return
         val existing = db.checkins().byUuidAny(uuid)
+        val remoteModified = data["client_modified_at"]?.jsonPrimitive?.longOrNull ?: 0L
+        if (!force && existing != null && existing.modifiedAt > remoteModified) return
         val deletedAt = data["deleted_at"]?.jsonPrimitive?.longOrNull
         if (deletedAt != null) {
             existing?.let { db.checkins().update(it.copy(deletedAt = deletedAt, modifiedAt = deletedAt)) }

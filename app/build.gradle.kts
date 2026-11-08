@@ -1,7 +1,18 @@
+import groovy.json.JsonSlurper
+
 // City Footprint · 安卓端构建文件。
 // 这是**根项目**的 build 文件（见 settings.gradle.kts 的说明）：application 插件挂在这里，
 // 源集就是同级的 src/main。技术栈跟同工作室的 Class-Assistant/android 对齐：
 // AGP 8.2.2 + Kotlin 1.9.22 + Gradle 8.2，compileSdk/targetSdk 34、minSdk 24、Java 17、XML View（viewBinding）。
+// 版本号唯一来源：仓库根目录 release.json（CI 与本地构建都读它，不再手改本文件）。
+val releaseInfo = JsonSlurper().parse(file("../release.json")) as Map<*, *>
+val releaseVersionName = releaseInfo["versionName"] as String
+val releaseVersionCode = (releaseInfo["versionCode"] as Number).toInt()
+require(releaseVersionName.matches(Regex("""[0-9]+\.[0-9]+\.[0-9]+"""))) {
+    "release.json 的 versionName 必须是 x.y.z"
+}
+require(releaseVersionCode > 0) { "release.json 的 versionCode 必须是正整数" }
+
 plugins {
     id("com.android.application") version "8.2.2"
     id("org.jetbrains.kotlin.android") version "1.9.22"
@@ -21,13 +32,9 @@ android {
         applicationId = "top.qxwkstudio.travel"
         minSdk = 24
         targetSdk = 34
-        // 这两行由 CI 用 sed 覆盖（.github/workflows/build-android.yml 的 Inject version 一步），
-        // 本地手改也行；改完记得两边一致，否则发出来的包版本号与 Release 标签对不上。
-        //
-        // 2.0 的首发版本号刻意取 **20000 起跳**（不是 1）：1.x 线上最高是 103xx，
-        // 覆盖安装要求 versionCode 严格大于线上值；直接从 20000 起跳也顺手给 2.0 划了版本段。
-        versionCode = 20200
-        versionName = "2.2.0"
+        // 来自仓库根目录 release.json；发版只改 JSON，不再改本文件。
+        versionCode = releaseVersionCode
+        versionName = releaseVersionName
 
         // MapLibre 的原生库四个 ABI 各 12 MB 左右，全打进去 APK 会从 8 MB 涨到 50 MB。
         // ABI 的取舍写在下面的 `splits { abi { include(...) } }` 里 —— 那里已经限定了

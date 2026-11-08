@@ -8,3 +8,6 @@ wrangler.jsonc
 
 # 本地生成的 Release 正文（CI 每次生成）
 release-notes.md
+
+# CI 生成的 D1 发版 SQL
+backend/.release-version.sql

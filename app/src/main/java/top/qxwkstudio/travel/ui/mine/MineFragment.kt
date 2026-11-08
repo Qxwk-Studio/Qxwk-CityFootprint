@@ -362,9 +362,17 @@ class MineFragment : Fragment() {
                 requireContext().notify(R.string.profile_update_latest)
                 return@runIo
             }
-            MaterialAlertDialogBuilder(requireContext())
+            val forced = info.importance >= 2
+            val message = buildString {
+                append(getString(R.string.profile_update_new_message, info.versionName))
+                if (forced) {
+                    append("\n\n")
+                    append(getString(R.string.profile_update_force_hint))
+                }
+            }
+            val dialog = MaterialAlertDialogBuilder(requireContext())
                 .setTitle(getString(R.string.profile_update_new_title))
-                .setMessage(getString(R.string.profile_update_new_message, info.versionName))
+                .setMessage(message)
                 .setPositiveButton(R.string.profile_update_go) { _, _ ->
                     val url = info.downloadUrl
                     val safeUri = android.net.Uri.parse(url.ifBlank { "" })
@@ -383,8 +391,9 @@ class MineFragment : Fragment() {
                         }
                     }
                 }
-                .setNegativeButton(R.string.common_cancel, null)
-                .show()
+            if (!forced) dialog.setNegativeButton(R.string.common_cancel, null)
+            dialog.setCancelable(!forced)
+            dialog.show()
         }
     }
 

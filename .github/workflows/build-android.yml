@@ -1,6 +1,6 @@
 name: Build Android APK
 
-# 仅手动触发：版本号和更新日志统一从根目录 CHANGELOG.md 读取。
+# 仅手动触发：版本号和更新日志统一从根目录 release.json 读取。
 # 触发后在 Actions 页面点「Run workflow」即可，不需要填写版本参数。
 on:
   workflow_dispatch:
@@ -48,7 +48,7 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Read version from CHANGELOG
+      - name: Read version from release.json
         id: release
         run: node scripts/release-info.mjs
 
@@ -58,7 +58,7 @@ jobs:
         run: |
           git fetch --tags --force
           if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
-            echo "::error::tag $TAG 已存在，请先在 CHANGELOG.md 写新版本号"
+            echo "::error::tag $TAG 已存在，请先在 release.json 写新版本号"
             exit 1
           fi
 
@@ -77,20 +77,6 @@ jobs:
 
       - name: Grant execute permission for gradlew
         run: chmod +x app/gradlew
-
-      - name: Inject version into build.gradle.kts
-        env:
-          VERSION_CODE: ${{ steps.release.outputs.version_code }}
-          VERSION_NAME: ${{ steps.release.outputs.version_name }}
-        run: |
-          if ! [[ "$VERSION_CODE" =~ ^[0-9]+$ ]]; then
-            echo "::error::versionCode 必须由 CHANGELOG 推导出纯数字，收到：$VERSION_CODE"
-            exit 1
-          fi
-          VERSION_CODE=$((10#$VERSION_CODE))
-          sed -i -E "s/versionCode = .*/versionCode = $VERSION_CODE/" app/build.gradle.kts
-          sed -i -E "s/versionName = .*/versionName = \"$VERSION_NAME\"/" app/build.gradle.kts
-          grep -nE "versionCode|versionName" app/build.gradle.kts
 
       - name: Restore keystore
         env:
@@ -173,3 +159,16 @@ jobs:
             --target "$GITHUB_SHA" \
             --title "City Footprint $VERSION_NAME" \
             --notes-file "release-notes/release-notes.md"
+
+      - name: Generate D1 version SQL
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: node scripts/d1-release-sql.mjs
+
+      - name: Update D1 app_versions
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: backend
+          command: d1 execute qxwk-cityfootprint --remote --file=.release-version.sql

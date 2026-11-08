@@ -20,6 +20,13 @@ class SyncRulesTest {
     }
 
     @Test
+    fun `remote older than local must not overwrite local`() {
+        assertFalse(SyncRules.shouldApplyRemote(localModified = 200, remoteModified = 100))
+        assertTrue(SyncRules.shouldApplyRemote(localModified = 100, remoteModified = 200))
+        assertTrue(SyncRules.shouldApplyRemote(localModified = 200, remoteModified = 100, force = true))
+    }
+
+    @Test
     fun `cursor only moves forward`() {
         assertEquals(7, SyncRules.nextCursor(3, 7))
         assertEquals(7, SyncRules.nextCursor(7, 3))

@@ -75,4 +75,5 @@ Remote: %2$s</string>
     <string name="sync_local_deleted">Deleted locally</string>
     <string name="sync_retry_failed">Sync failed repeatedly. Check network or credentials</string>
     <string name="sync_auto_note">When enabled, sync runs on app start and after trip or check-in changes.</string>
+    <string name="sync_one_tap_login">One-tap sign in</string>
 </resources>
