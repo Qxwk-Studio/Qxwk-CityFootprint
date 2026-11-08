@@ -78,6 +78,7 @@ City Footprint 由三部分组成：
 │   ├── map/
 │   ├── user/
 │   ├── trip/
+│   ├── legal/            # 用户协议与免责声明
 │   ├── site.css
 │   └── site.js
 ├── scripts/                # 城市数据生成脚本

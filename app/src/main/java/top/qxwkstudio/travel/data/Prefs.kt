@@ -49,6 +49,7 @@ object Prefs {
     private const val KEY_SYNC_LAST_ERROR = "sync_last_error"
     private const val KEY_SYNC_CONFLICTS = "sync_conflicts"
     private const val KEY_SYNC_SERVER = "sync_server"
+    private const val KEY_LEGAL_ACCEPTED = "legal_accepted"
     const val DEFAULT_SYNC_SERVER = ""
 
     @Volatile private var appearanceValue = Appearance.SYSTEM
@@ -66,6 +67,7 @@ object Prefs {
     @Volatile private var syncCursorValue = 0L
     @Volatile private var syncLastAtValue = 0L
     @Volatile private var syncServerValue = DEFAULT_SYNC_SERVER
+    @Volatile private var legalAcceptedValue = false
     @Volatile private var syncLastPushedValue = 0
     @Volatile private var syncLastPulledValue = 0
     @Volatile private var syncLastConflictsValue = 0
@@ -92,6 +94,7 @@ object Prefs {
         syncCursorValue = sp.getLong(KEY_SYNC_CURSOR, 0L)
         syncLastAtValue = sp.getLong(KEY_SYNC_LAST_AT, 0L)
         syncServerValue = sp.getString(KEY_SYNC_SERVER, DEFAULT_SYNC_SERVER).orEmpty().ifBlank { DEFAULT_SYNC_SERVER }
+        legalAcceptedValue = sp.getBoolean(KEY_LEGAL_ACCEPTED, false)
         syncLastPushedValue = sp.getInt(KEY_SYNC_LAST_PUSHED, 0)
         syncLastPulledValue = sp.getInt(KEY_SYNC_LAST_PULLED, 0)
         syncLastConflictsValue = sp.getInt(KEY_SYNC_LAST_CONFLICTS, 0)
@@ -145,6 +148,7 @@ object Prefs {
     val syncCursor: Long get() = syncCursorValue
     val syncLastAt: Long get() = syncLastAtValue
     val syncServer: String get() = syncServerValue
+    val legalAccepted: Boolean get() = legalAcceptedValue
     val syncLastPushed: Int get() = syncLastPushedValue
     val syncLastPulled: Int get() = syncLastPulledValue
     val syncLastConflicts: Int get() = syncLastConflictsValue
@@ -165,6 +169,16 @@ object Prefs {
             .putString(KEY_SYNC_REVISIONS, syncRevisions.toString())
             .putString(KEY_SYNC_SYNCED, syncSynced.toString())
             .commit()
+    }
+
+    fun requireLegalAccepted() {
+        check(legalAcceptedValue) { "请先阅读并同意用户协议和免责声明" }
+    }
+
+    fun saveLegalAccepted(context: Context) {
+        legalAcceptedValue = true
+        context.applicationContext.getSharedPreferences(SP_NAME, Context.MODE_PRIVATE)
+            .edit().putBoolean(KEY_LEGAL_ACCEPTED, true).commit()
     }
 
     fun saveSyncServer(context: Context, server: String) {
@@ -274,10 +288,15 @@ object Prefs {
         avatar: String? = null,
         color: String = "",
     ) {
+        val avatarValue = avatar.orEmpty()
+        val profileChanged = syncUuidValue != uuid ||
+            syncNicknameValue != nickname ||
+            syncAvatarValue != avatarValue ||
+            syncColorValue != color
         syncTokenValue = token
         syncUuidValue = uuid
         syncNicknameValue = nickname
-        syncAvatarValue = avatar.orEmpty()
+        syncAvatarValue = avatarValue
         syncColorValue = color
         context.applicationContext.getSharedPreferences(SP_NAME, Context.MODE_PRIVATE)
             .edit()
@@ -287,16 +306,25 @@ object Prefs {
             .putString(KEY_SYNC_AVATAR, avatar.orEmpty())
             .putString(KEY_SYNC_COLOR, color)
             .commit()
+        if (profileChanged) DataVersion.bump()
     }
 
     fun clearSyncSession(context: Context) {
+        val hadSession = syncTokenValue.isNotBlank()
         syncTokenValue = ""
         syncUuidValue = ""
         syncAvatarValue = ""
         syncColorValue = ""
         syncNicknameValue = ""
         context.applicationContext.getSharedPreferences(SP_NAME, Context.MODE_PRIVATE)
-            .edit().remove(KEY_SYNC_TOKEN).remove(KEY_SYNC_UUID).remove(KEY_SYNC_NICKNAME).commit()
+            .edit()
+            .remove(KEY_SYNC_TOKEN)
+            .remove(KEY_SYNC_UUID)
+            .remove(KEY_SYNC_AVATAR)
+            .remove(KEY_SYNC_COLOR)
+            .remove(KEY_SYNC_NICKNAME)
+            .commit()
+        if (hadSession) DataVersion.bump()
     }
 
     fun saveSyncEnabled(context: Context, enabled: Boolean) {

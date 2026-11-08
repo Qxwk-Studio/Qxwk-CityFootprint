@@ -44,7 +44,8 @@ internal object SyncScheduler {
 
     fun request(delayMs: Long = 2500) {
         val app = appContext ?: return
-        if (!Prefs.networkAllowed || !Prefs.syncEnabled || Prefs.syncToken.isBlank() || Prefs.syncServer.isBlank()) return
+        if (!Prefs.legalAccepted || !Prefs.networkAllowed || !Prefs.syncEnabled ||
+            Prefs.syncToken.isBlank() || Prefs.syncServer.isBlank()) return
         if (System.currentTimeMillis() < ignoreUntil) return
         debounce?.cancel()
         debounce = scope.launch {
@@ -60,7 +61,8 @@ internal object SyncScheduler {
     }
 
     suspend fun runNow(context: Context, force: Boolean): Result<SyncEngine.Report>? {
-        if (!force && (!Prefs.networkAllowed || !Prefs.syncEnabled || Prefs.syncToken.isBlank())) return null
+        if (!Prefs.legalAccepted) return null
+        if (!force && (!Prefs.legalAccepted || !Prefs.networkAllowed || !Prefs.syncEnabled || Prefs.syncToken.isBlank())) return null
         if (Prefs.syncToken.isBlank() || Prefs.syncServer.isBlank()) return null
         return mutex.withLock {
             ignoreUntil = System.currentTimeMillis() + 5000
