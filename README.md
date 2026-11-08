@@ -152,8 +152,8 @@ npx.cmd -y serve docs
 
 ```json
 {
-  "versionName": "2.2.2",
-  "versionCode": 20202,
+  "versionName": "2.3.0",
+  "versionCode": 20300,
   "importance": 0,
   "changelog": [
     "### 新增",
