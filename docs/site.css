@@ -442,6 +442,33 @@ button, input { font: inherit; }
   font-size: 12px;
 }
 
+/* 手机端查询框：整行宽，不跟按钮挤在一条 flex 行里 */
+@media (max-width: 720px) {
+  .lookup-page {
+    width: calc(100% - 24px);
+    padding-top: 36px;
+  }
+
+  .lookup-form {
+    padding: 16px;
+  }
+
+  .input-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .input-row input,
+  .input-row button {
+    width: 100%;
+    flex: none;
+  }
+
+  .input-row button {
+    min-width: 0;
+  }
+}
+
 .result-state {
   margin-top: 22px;
   padding: 20px;
