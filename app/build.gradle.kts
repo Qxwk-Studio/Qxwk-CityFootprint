@@ -24,6 +24,13 @@ plugins {
     id("com.google.devtools.ksp") version "1.9.22-1.0.18"
 }
 
+// 仅供调试 Action 使用的可选版本覆盖；正式 release 不读取这两个参数。
+val debugVersionNameOverride = (project.findProperty("debugVersionName") as String?)
+    ?.takeIf { it.isNotBlank() }
+val debugVersionCodeOverride = (project.findProperty("debugVersionCode") as String?)
+    ?.toIntOrNull()
+    ?.takeIf { it > 0 }
+
 android {
     namespace = "top.qxwkstudio.travel"
     compileSdk = 34
@@ -112,6 +119,17 @@ android {
         // 「我的」页要显示 App 版本号（BuildConfig.VERSION_NAME）；
         // AGP 8 起 buildConfig 默认关闭，不显式打开就没有这个类
         buildConfig = true
+    }
+}
+
+androidComponents {
+    onVariants(selector().withBuildType("debug")) { variant ->
+        if (debugVersionNameOverride != null) {
+            variant.outputs.forEach { it.versionName.set(debugVersionNameOverride) }
+        }
+        if (debugVersionCodeOverride != null) {
+            variant.outputs.forEach { it.versionCode.set(debugVersionCodeOverride) }
+        }
     }
 }
 
