@@ -81,7 +81,6 @@ object DataExport {
                     trips.forEach { trip ->
                         put(JSONObject()
                             .put("uuid", trip.uuid)
-                            .put("seqNo", trip.seqNo)
                             .put("title", trip.title)
                             .put("note", trip.note)
                             .put("timeline", trip.timeline)
@@ -110,7 +109,6 @@ object DataExport {
                             .put("segmentIndex", checkin.segmentIndex)
                             .put("amountCents", checkin.amountCents)
                             .put("stayDays", checkin.stayDays)
-                            .put("seqNo", checkin.seqNo)
                             .put("modifiedAt", checkin.modifiedAt))
                     }
                 })

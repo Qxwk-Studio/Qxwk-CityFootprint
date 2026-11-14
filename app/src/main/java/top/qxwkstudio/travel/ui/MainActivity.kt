@@ -23,8 +23,11 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.doOnLayout
 import androidx.fragment.app.Fragment
 import top.qxwkstudio.travel.R
+import top.qxwkstudio.travel.data.db.AppDatabase
 import top.qxwkstudio.travel.data.Prefs
+import top.qxwkstudio.travel.data.RenumberRepo
 import top.qxwkstudio.travel.data.SyncScheduler
+import androidx.lifecycle.lifecycleScope
 import top.qxwkstudio.travel.databinding.ActivityMainBinding
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 
@@ -76,6 +79,7 @@ class MainActivity : LocalizedActivity() {
             // 落点用回调参数 itemId，不能读 selectedItemId：选中状态比这个回调晚一步更新
             // （时序说明见 1.x 的同一段注释，结论没变）
             placeNavPill(item.itemId, animate = true)
+            updateTopMenuIcon()
             true
         }
 
@@ -84,6 +88,7 @@ class MainActivity : LocalizedActivity() {
         } else {
             b.topBar.title.text = getString(titleOf(b.bottomNav.selectedItemId))
         }
+        updateTopMenuIcon()
     }
 
     // ────────────────────────── 右上角「+」 ──────────────────────────
@@ -141,17 +146,39 @@ class MainActivity : LocalizedActivity() {
     private fun setupAddMenu() {
         binding.topBar.btnMenu.visibility = View.VISIBLE
         binding.topBar.btnMenu.setOnClickListener { anchor ->
-            showIconMenu(
-                anchor,
-                listOf(
-                    MenuAction(R.drawable.ic_locate, R.string.menu_checkin) {
-                        startActivity(CheckinEditActivity.intent(this))
-                    },
-                    MenuAction(R.drawable.ic_luggage, R.string.menu_trip) {
-                        startActivity(TripEditActivity.intent(this))
-                    }
-                ),
+            val actions = mutableListOf(
+                MenuAction(R.drawable.ic_locate, R.string.menu_checkin) {
+                    startActivity(CheckinEditActivity.intent(this))
+                },
+                MenuAction(R.drawable.ic_luggage, R.string.menu_trip) {
+                    startActivity(TripEditActivity.intent(this))
+                },
             )
+            if (binding.bottomNav.selectedItemId == R.id.tab_trips) {
+                actions += MenuAction(R.drawable.ic_sync, R.string.menu_renumber) {
+                    renumber()
+                }
+            }
+            showIconMenu(anchor, actions)
+        }
+        updateTopMenuIcon()
+    }
+
+    private fun updateTopMenuIcon() {
+        val onTrips = binding.bottomNav.selectedItemId == R.id.tab_trips
+        binding.topBar.btnMenu.setImageResource(if (onTrips) R.drawable.ic_more else R.drawable.ic_add)
+        binding.topBar.btnMenu.contentDescription = getString(
+            if (onTrips) R.string.menu_renumber else R.string.common_add,
+        )
+    }
+
+    private fun renumber() {
+        lifecycleScope.runIo({ RenumberRepo.renumber(AppDatabase.get(this)) }) { result ->
+            if (result.isSuccess) {
+                notify(R.string.renumber_done)
+            } else {
+                notify(R.string.renumber_failed, long = true)
+            }
         }
     }
     // ────────────────────────── tab 路由 ──────────────────────────

@@ -25,4 +25,7 @@
     <string name="menu_trip">添加足迹</string>
     <string name="common_add">添加</string>
     <string name="top_save">保存</string>
+    <string name="menu_renumber">重新编号</string>
+    <string name="renumber_done">编号已更新</string>
+    <string name="renumber_failed">重新编号失败</string>
 </resources>
