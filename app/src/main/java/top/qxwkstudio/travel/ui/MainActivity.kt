@@ -79,7 +79,7 @@ class MainActivity : LocalizedActivity() {
             // 落点用回调参数 itemId，不能读 selectedItemId：选中状态比这个回调晚一步更新
             // （时序说明见 1.x 的同一段注释，结论没变）
             placeNavPill(item.itemId, animate = true)
-            updateTopMenuIcon()
+            updateTopMenuIcon(item.itemId == R.id.tab_trips)
             true
         }
 
@@ -164,8 +164,9 @@ class MainActivity : LocalizedActivity() {
         updateTopMenuIcon()
     }
 
-    private fun updateTopMenuIcon() {
-        val onTrips = binding.bottomNav.selectedItemId == R.id.tab_trips
+    private fun updateTopMenuIcon(
+        onTrips: Boolean = binding.bottomNav.selectedItemId == R.id.tab_trips,
+    ) {
         binding.topBar.btnMenu.setImageResource(if (onTrips) R.drawable.ic_more else R.drawable.ic_add)
         binding.topBar.btnMenu.contentDescription = getString(
             if (onTrips) R.string.menu_renumber else R.string.common_add,

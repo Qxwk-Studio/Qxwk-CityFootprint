@@ -120,7 +120,6 @@ class TripsFragment : Fragment() {
         binding.btnSegTrips.setOnClickListener { selectSegment(Segment.TRIPS) }
         binding.scroll.onHorizontalSwipe(
             canSwipe = { !binding.inputSearch.hasFocus() },
-            onDrag = ::dragTabs,
             onSwipeLeft = { swipeToSegment(1) },
             onSwipeRight = { swipeToSegment(-1) },
         )
@@ -262,24 +261,9 @@ class TripsFragment : Fragment() {
         binding.btnSegTrips.setTextColor(if (segment == Segment.TRIPS) on else off)
     }
 
-    private fun dragTabs(dx: Float) {
-        if (dx == 0f) {
-            settleTabs()
-        } else {
-            binding.listContainer.translationX = dx
-        }
-    }
-
-    private fun settleTabs() {
-        binding.listContainer.animate().translationX(0f).alpha(1f).setDuration(160).start()
-    }
-
     private fun swipeToSegment(direction: Int) {
         val target = if (direction > 0) Segment.TRIPS else Segment.CHECKINS
-        if (target == segment) {
-            settleTabs()
-            return
-        }
+        if (target == segment) return
         val width = binding.scroll.width.toFloat().coerceAtLeast(1f)
         val out = if (direction > 0) -width * 0.22f else width * 0.22f
         binding.listContainer.animate()
@@ -524,7 +508,6 @@ class TripsFragment : Fragment() {
         root.addView(frame)
         root.onHorizontalSwipe(
             canSwipe = { !binding.inputSearch.hasFocus() },
-            onDrag = ::dragTabs,
             onSwipeLeft = { swipeToSegment(1) },
             onSwipeRight = { swipeToSegment(-1) },
         )

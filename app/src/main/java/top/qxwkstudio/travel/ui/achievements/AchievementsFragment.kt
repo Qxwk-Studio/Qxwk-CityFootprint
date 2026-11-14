@@ -63,7 +63,6 @@ class AchievementsFragment : Fragment() {
         binding.list.layoutManager = LinearLayoutManager(requireContext())
         binding.list.adapter = adapter
         binding.list.onHorizontalSwipe(
-            onDrag = ::dragCategories,
             onSwipeLeft = { swipeCategory(1) },
             onSwipeRight = { swipeCategory(-1) },
         )
@@ -145,24 +144,9 @@ class AchievementsFragment : Fragment() {
         container.post { moveIndicator(animate = false) }
     }
 
-    private fun dragCategories(dx: Float) {
-        if (dx == 0f) {
-            settleCategories()
-        } else {
-            binding.list.translationX = dx
-        }
-    }
-
-    private fun settleCategories() {
-        binding.list.animate().translationX(0f).alpha(1f).setDuration(160).start()
-    }
-
     private fun swipeCategory(direction: Int) {
         val target = selectedCategory + direction
-        if (target !in Achievements.categories.indices) {
-            settleCategories()
-            return
-        }
+        if (target !in Achievements.categories.indices) return
         val width = binding.list.width.toFloat().coerceAtLeast(1f)
         val out = if (direction > 0) -width * 0.22f else width * 0.22f
         binding.list.animate()
