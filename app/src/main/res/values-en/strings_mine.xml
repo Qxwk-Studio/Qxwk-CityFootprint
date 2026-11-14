@@ -2,7 +2,10 @@
 <!-- 我的与个性化 (English) -->
 <resources>
     <string name="profile_update_new_title">Update available</string>
-    <string name="profile_update_new_message">Latest version v%1$s</string>
+    <string name="profile_update_small_title">Minor update</string>
+    <string name="profile_update_normal_title">Standard update</string>
+    <string name="profile_update_force_title">Major update</string>
+<string name="profile_update_new_message">Latest version v%1$s</string>
     <string name="profile_update_go">Download</string>
     <string name="profile_update_latest">You are on the latest version</string>
     <string name="profile_update_failed">Update check failed. Try again later</string>

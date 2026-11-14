@@ -1060,6 +1060,7 @@ class TripEditActivity : LocalizedActivity() {
                 showError(error.message ?: getString(R.string.common_error))
                 return@runIo
             }
+            notify(R.string.trip_saved)
             setResult(Activity.RESULT_OK)
             finish()
         }
@@ -1073,7 +1074,7 @@ class TripEditActivity : LocalizedActivity() {
         items.forEach { item ->
             append(item.id).append(':').append(item.type).append(':').append(item.time)
                 .append(':').append(item.text).append(':').append(item.note)
-                .append(':').append(item.rating).append(':').append(item.photoPath)
+                .append(':').append(item.costCents).append(':').append(item.rating).append(':').append(item.photoPath)
                 .append(':').append(item.companions).append(';')
         }
     }

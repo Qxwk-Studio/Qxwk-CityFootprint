@@ -436,8 +436,13 @@ class MineFragment : Fragment() {
                     append(getString(R.string.profile_update_force_hint))
                 }
             }
+            val titleRes = when (info.importance.coerceIn(0, 2)) {
+                0 -> R.string.profile_update_small_title
+                1 -> R.string.profile_update_normal_title
+                else -> R.string.profile_update_force_title
+            }
             val dialog = MaterialAlertDialogBuilder(requireContext())
-                .setTitle(getString(R.string.profile_update_new_title))
+                .setTitle(getString(titleRes))
                 .setMessage(message)
                 .setPositiveButton(R.string.profile_update_go) { _, _ ->
                     val url = info.downloadUrl

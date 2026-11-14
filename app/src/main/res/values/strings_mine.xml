@@ -2,7 +2,10 @@
 <!-- 我的与个性化（简体中文） -->
 <resources>
     <string name="profile_update_new_title">发现新版本</string>
-    <string name="profile_update_new_message">最新版本 v%1$s</string>
+    <string name="profile_update_small_title">小型更新</string>
+    <string name="profile_update_normal_title">普通更新</string>
+    <string name="profile_update_force_title">重大更新</string>
+<string name="profile_update_new_message">最新版本 v%1$s</string>
     <string name="profile_update_go">前往下载</string>
     <string name="profile_update_latest">已是最新版本</string>
     <string name="profile_update_failed">检查更新失败，请稍后重试</string>

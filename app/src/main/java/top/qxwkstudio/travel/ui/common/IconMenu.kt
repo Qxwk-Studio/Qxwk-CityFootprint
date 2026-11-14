@@ -93,10 +93,18 @@ internal fun showIconMenu(anchor: View, actions: List<MenuAction>) {
         index += 2
     }
 
+    // 量出含分隔线后的真实高度：底部卡片的三点菜单要据此决定向上还是向下弹，
+    // 否则靠近屏幕底部时菜单会被裁掉。
+    content.measure(
+        View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
+        View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
+    )
+    val height = content.measuredHeight
+
     popup = PopupWindow(
         content,
         width,
-        ViewGroup.LayoutParams.WRAP_CONTENT,
+        height,
         true,
     ).apply {
         isOutsideTouchable = true
@@ -115,6 +123,13 @@ internal fun showIconMenu(anchor: View, actions: List<MenuAction>) {
     val xoff = (anchor.width - width)
         .coerceAtMost(screenWidth - gap - anchorLeft - width)
         .coerceAtLeast(gap - anchorLeft)
-    // 向上贴近三点按钮（按钮本身有 8dp padding，菜单顶边对齐图标底边）
-    popup.showAsDropDown(anchor, xoff, -dp(8))
+    // 默认向下贴近三点按钮；下方空间不够时改为向上弹，避免被屏幕底部裁断。
+    val screenHeight = anchor.resources.displayMetrics.heightPixels
+    val anchorTop = location[1]
+    val anchorBottom = anchorTop + anchor.height
+    val spaceBelow = screenHeight - anchorBottom
+    val spaceAbove = anchorTop
+    val showAbove = spaceBelow < height + gap && spaceAbove >= height + gap
+    val yoff = if (showAbove) -(anchor.height + height + gap) else -dp(8)
+    popup.showAsDropDown(anchor, xoff, yoff)
 }
