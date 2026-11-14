@@ -2476,3 +2476,30 @@ body.legal .legal-page a {
     height: 370px;
   }
 }
+
+/* keep the first scroll cheap: opaque header, no live blur over the hero */
+.home .site-header {
+  background: rgba(248, 253, 251, .98);
+  backdrop-filter: none;
+}
+
+/* the hero's large SVG should be able to stay on its own layer while scrolling */
+.home-hero .hero-signature {
+  will-change: transform;
+}
+
+/* desktop navigation is driven by home.js; avoid CSS snap fighting the smooth scroll */
+@media (min-width: 1024px) {
+  html.snap-home {
+    scroll-snap-type: none;
+  }
+}
+
+/* pages 02–04 sit a little higher in the viewport */
+@media (min-width: 621px) {
+  #feature-map,
+  #feature-timeline,
+  #feature-achievements {
+    padding-top: clamp(48px, 6vh, 84px);
+  }
+}
