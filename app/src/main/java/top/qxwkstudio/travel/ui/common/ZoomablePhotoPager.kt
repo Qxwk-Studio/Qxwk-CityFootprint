@@ -30,6 +30,14 @@ internal class ZoomablePhotoPager(
         isClickable = false
     }
 
+    /** 上一张/下一张的预加载层；拖动时和当前图一起移动。 */
+    private val incoming = ImageView(context).apply {
+        scaleType = ImageView.ScaleType.FIT_CENTER
+        setBackgroundColor(Color.BLACK)
+        isClickable = false
+        alpha = 0f
+    }
+
     private var index = startIndex.coerceIn(0, (paths.size - 1).coerceAtLeast(0))
     private var bitmap: Bitmap? = null
     private var scale = 1f
@@ -38,6 +46,7 @@ internal class ZoomablePhotoPager(
     private var dragX = 0f
     private var swipeHandled = false
     private var switching = false
+    private var incomingIndex = -1
 
     private val scaleDetector = ScaleGestureDetector(context, object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
         override fun onScale(detector: ScaleGestureDetector): Boolean {
@@ -81,6 +90,15 @@ internal class ZoomablePhotoPager(
             if (scale <= 1.01f) {
                 dragX += (e1?.x ?: e2.x) - e2.x
                 image.translationX = -dragX
+                if (abs(dragX) > dp(4)) {
+                    val direction = if (dragX > 0) 1 else -1
+                    prepareIncoming(direction)
+                    incoming.translationX =
+                        (if (direction > 0) width.toFloat() else -width.toFloat()) - dragX
+                    incoming.alpha = 1f
+                } else {
+                    incoming.alpha = 0f
+                }
             } else {
                 offsetX -= dx
                 offsetY -= dy
@@ -101,6 +119,10 @@ internal class ZoomablePhotoPager(
 
     init {
         addView(
+            incoming,
+            LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT),
+        )
+        addView(
             image,
             LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT),
         )
@@ -113,16 +135,19 @@ internal class ZoomablePhotoPager(
         if (event.actionMasked == MotionEvent.ACTION_DOWN) {
             dragX = 0f
             swipeHandled = false
+            incomingIndex = -1
+            incoming.alpha = 0f
+            incoming.translationX = 0f
         }
         if (switching) return true
         scaleDetector.onTouchEvent(event)
         gestureDetector.onTouchEvent(event)
         if (event.actionMasked == MotionEvent.ACTION_UP || event.actionMasked == MotionEvent.ACTION_CANCEL) {
             if (!swipeHandled && scale <= 1.01f) {
-                if (abs(dragX) > width * 0.16f) {
-                    slideTo(if (dragX > 0) 1 else -1)
+                if (abs(dragX) > width * 0.16f && incomingIndex >= 0) {
+                    commitSlide(if (dragX > 0) 1 else -1)
                 } else if (dragX != 0f) {
-                    image.animate().translationX(0f).setDuration(140).start()
+                    settleBack()
                 }
             }
             dragX = 0f
@@ -131,29 +156,65 @@ internal class ZoomablePhotoPager(
         return true
     }
 
-    private fun slideTo(direction: Int) {
+    private fun prepareIncoming(direction: Int) {
+        val next = index + direction
+        if (next !in paths.indices) {
+            incomingIndex = -1
+            incoming.alpha = 0f
+            return
+        }
+        if (incomingIndex == next) return
+        incomingIndex = next
+        incoming.setImageBitmap(PhotoStore.load(paths[next], maxPx = 2048))
+        incoming.alpha = 1f
+    }
+
+    private fun settleBack() {
+        image.animate().translationX(0f).setDuration(140).start()
+        incoming.animate().translationX(0f).alpha(0f).setDuration(140).start()
+        incomingIndex = -1
+    }
+
+    private fun commitSlide(direction: Int) {
         if (switching) return
         val next = index + direction
         if (next !in paths.indices) {
-            image.animate().translationX(0f).setDuration(140).start()
+            settleBack()
             return
+        }
+        if (incomingIndex != next) {
+            prepareIncoming(direction)
+            incoming.translationX = if (direction > 0) width.toFloat() else -width.toFloat()
         }
         switching = true
         val outX = if (direction > 0) -width.toFloat() else width.toFloat()
-        image.animate().translationX(outX).setDuration(170).withEndAction {
+        image.animate().translationX(outX).setDuration(180).withEndAction {
             index = next
             loadCurrent()
-            image.translationX = -outX
-            image.animate().translationX(0f).setDuration(190).withEndAction {
-                switching = false
-            }.start()
+            switching = false
         }.start()
+        incoming.animate().translationX(0f).setDuration(180).start()
+    }
+
+    private fun slideTo(direction: Int) {
+        if (switching) return
+        if (index + direction !in paths.indices) {
+            settleBack()
+            return
+        }
+        prepareIncoming(direction)
+        incoming.translationX = if (direction > 0) width.toFloat() else -width.toFloat()
+        incoming.alpha = 1f
+        commitSlide(direction)
     }
 
     private fun loadCurrent() {
         resetZoom(false)
         bitmap = PhotoStore.load(paths.getOrNull(index), maxPx = 2048)
         image.setImageBitmap(bitmap)
+        incomingIndex = -1
+        incoming.alpha = 0f
+        incoming.translationX = 0f
         onPageChanged(index, paths.size)
     }
 

@@ -63,8 +63,9 @@ class AchievementsFragment : Fragment() {
         binding.list.layoutManager = LinearLayoutManager(requireContext())
         binding.list.adapter = adapter
         binding.list.onHorizontalSwipe(
-            onSwipeLeft = { selectCategory(selectedCategory + 1) },
-            onSwipeRight = { selectCategory(selectedCategory - 1) },
+            onDrag = ::dragCategories,
+            onSwipeLeft = { swipeCategory(1) },
+            onSwipeRight = { swipeCategory(-1) },
         )
         buildChips()
     }
@@ -142,6 +143,37 @@ class AchievementsFragment : Fragment() {
             container.addView(chip)
         }
         container.post { moveIndicator(animate = false) }
+    }
+
+    private fun dragCategories(dx: Float) {
+        if (dx == 0f) {
+            settleCategories()
+        } else {
+            binding.list.translationX = dx
+        }
+    }
+
+    private fun settleCategories() {
+        binding.list.animate().translationX(0f).alpha(1f).setDuration(160).start()
+    }
+
+    private fun swipeCategory(direction: Int) {
+        val target = selectedCategory + direction
+        if (target !in Achievements.categories.indices) {
+            settleCategories()
+            return
+        }
+        val width = binding.list.width.toFloat().coerceAtLeast(1f)
+        val out = if (direction > 0) -width * 0.22f else width * 0.22f
+        binding.list.animate()
+            .translationX(out).alpha(0.35f).setDuration(120)
+            .withEndAction {
+                binding.list.translationX = -out
+                binding.list.alpha = 1f
+                selectCategory(target)
+                binding.list.animate().translationX(0f).setDuration(180).start()
+            }
+            .start()
     }
 
     private fun selectCategory(index: Int) {
