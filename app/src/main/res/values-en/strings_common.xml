@@ -25,4 +25,7 @@
     <string name="menu_trip">Add trip</string>
     <string name="common_add">Add</string>
     <string name="top_save">Save</string>
+    <string name="menu_renumber">Renumber</string>
+    <string name="renumber_done">Numbering updated</string>
+    <string name="renumber_failed">Renumber failed</string>
 </resources>

@@ -15,7 +15,7 @@ City Footprint 由三部分组成：
 - 行程编辑：时间线、到访城市、交通、花销、备注、评分、照片
 - 手动打卡：年 / 年月 / 年月日 / 时间不详四档日期精度
 - 足迹地图：MapLibre + 本地 PMTiles 离线底图、城市边界、中文地名
-- 成就：88 条，四大分类，按本地打卡回溯解锁
+- 成就：四大分类，按本地打卡回溯解锁
 - 统计：城市、省份、次数、花销、城市排名
 - 导出：ZIP（`data.json` + `photos/`）
 - **可选同步**：不登录也能完整使用；登录后同步行程与手动打卡
@@ -149,23 +149,7 @@ npx.cmd -y serve docs
 
 ## 📦 发版
 
-1. 修改根目录 `release.json`：
-
-```json
-{
-  "versionName": "2.3.2",
-  "versionCode": 20302,
-  "importance": 0,
-  "changelog": [
-    "### 新增",
-    "- 完整的发布说明"
-  ],
-  "cfNotes": [
-    "用户能感知到的一条更新",
-    "另一条简短说明"
-  ]
-}
-```
+1. 修改根目录 `release.json` 的 `versionName`、`versionCode`、`importance`、`changelog`、`cfNotes`。
 
 2. 在 GitHub Actions → `Build, Release and Publish Android APK` → `Run workflow` 手动触发。
    只调试构建时使用 `Build Signed Debug APK`，不会发版或更新 D1；该流程也会恢复正式 keystore，调试包使用正式签名。

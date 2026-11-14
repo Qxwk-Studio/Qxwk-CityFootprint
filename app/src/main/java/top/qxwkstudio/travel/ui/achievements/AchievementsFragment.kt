@@ -62,6 +62,11 @@ class AchievementsFragment : Fragment() {
         binding.root.fadeSlideIn()
         binding.list.layoutManager = LinearLayoutManager(requireContext())
         binding.list.adapter = adapter
+        binding.list.onHorizontalSwipe(
+            onDrag = ::dragCategories,
+            onSwipeLeft = { swipeCategory(1) },
+            onSwipeRight = { swipeCategory(-1) },
+        )
         buildChips()
     }
 
@@ -133,19 +138,52 @@ class AchievementsFragment : Fragment() {
                     ),
                 )
                 isClickable = true
-                setOnClickListener {
-                    if (selectedCategory == index) return@setOnClickListener
-                    selectedCategory = index
-                    refreshChipColors()
-                    moveIndicator(animate = true)
-                    refreshEmptyState()
-                    adapter.submit(buildRows())
-                    binding.list.scrollToPosition(0)
-                }
+                setOnClickListener { selectCategory(index) }
             }
             container.addView(chip)
         }
         container.post { moveIndicator(animate = false) }
+    }
+
+    private fun dragCategories(dx: Float) {
+        if (dx == 0f) {
+            settleCategories()
+        } else {
+            binding.list.translationX = dx
+        }
+    }
+
+    private fun settleCategories() {
+        binding.list.animate().translationX(0f).alpha(1f).setDuration(160).start()
+    }
+
+    private fun swipeCategory(direction: Int) {
+        val target = selectedCategory + direction
+        if (target !in Achievements.categories.indices) {
+            settleCategories()
+            return
+        }
+        val width = binding.list.width.toFloat().coerceAtLeast(1f)
+        val out = if (direction > 0) -width * 0.22f else width * 0.22f
+        binding.list.animate()
+            .translationX(out).alpha(0.35f).setDuration(120)
+            .withEndAction {
+                binding.list.translationX = -out
+                binding.list.alpha = 1f
+                selectCategory(target)
+                binding.list.animate().translationX(0f).setDuration(180).start()
+            }
+            .start()
+    }
+
+    private fun selectCategory(index: Int) {
+        if (index !in Achievements.categories.indices || index == selectedCategory) return
+        selectedCategory = index
+        refreshChipColors()
+        moveIndicator(animate = true)
+        refreshEmptyState()
+        adapter.submit(buildRows())
+        binding.list.scrollToPosition(0)
     }
 
     private fun refreshChipColors() {

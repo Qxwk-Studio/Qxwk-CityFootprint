@@ -17,7 +17,7 @@ import org.junit.Test
 class AchievementsTest {
 
     @Test
-    fun `定义共89条 分4类 且 code 唯一`() {
+    fun `定义数量、分类与 code 唯一`() {
         val all = Achievements.all()
         assertEquals(89, all.size)
         assertEquals(4, Achievements.categories.size)

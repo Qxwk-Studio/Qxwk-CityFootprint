@@ -1,15 +1,15 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" class="home">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>City Footprint · 把走过的城市点亮成地图</title>
-  <meta name="description" content="City Footprint 足迹：离线记录去过的城市、行程与打卡，把每一段旅程点亮成自己的地图。">
+  <title>City Footprint · 旅行记录与足迹地图</title>
+  <meta name="description" content="记录去过的城市、行程和花费，支持离线使用与 ZIP 导出。">
   <meta name="theme-color" content="#0891b2">
   <link rel="icon" type="image/webp" href="/favicon.webp">
   <link rel="stylesheet" href="/site.css">
 </head>
-<body>
+<body class="home">
   <header class="site-header">
     <a class="brand" href="/" aria-label="City Footprint 首页">
       <img src="/favicon.webp" alt="">
@@ -28,83 +28,132 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h16v11H4z"/><path d="M8 7V4h8v3M8 12h8"/></svg>
         <span>行程查询</span>
       </a>
+      <a href="#download">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></svg>
+        <span>下载</span>
+      </a>
     </nav>
   </header>
 
-  <main>
-    <section class="hero">
-      <div class="hero-inner">
-        <div class="hero-grid">
-          <div class="hero-copy">
-            <p class="eyebrow">CITY FOOTPRINT · 足迹</p>
-            <h1>把走过的城市<br><span>点亮成自己的地图</span></h1>
-            <p class="intro">
-              记录去过的城市、每一段行程和每次打卡。离线保存在本机，
-              用一张地图回看自己的足迹。
-            </p>
-            <div class="hero-actions">
-              <a class="btn-primary" href="#download">
-                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></svg>
-                下载 Android 版
-              </a>
-              <a class="btn-ghost" href="/map">先看看足迹地图</a>
-            </div>
-            <p class="hero-note">Android 7.0+ · arm64-v8a · 离线可用</p>
-          </div>
+  <div class="home-background" aria-hidden="true">
+    <span class="orb orb-1"></span>
+    <span class="orb orb-2"></span>
+    <span class="orb orb-3"></span>
+  </div>
 
-          <div class="hero-art" aria-hidden="true">
-            <div class="footprint-card">
-              <div class="footprint-card-head">
-                <span>我的足迹</span>
-                <span class="footprint-year" id="footprintYear">2026</span>
-              </div>
-              <svg viewBox="0 0 420 300" class="footprint-map">
-                <defs>
-                  <pattern id="mapGrid" width="28" height="28" patternUnits="userSpaceOnUse">
-                    <path d="M28 0H0V28" fill="none" stroke="currentColor" stroke-opacity=".14" stroke-width="1"/>
-                  </pattern>
-                </defs>
-                <rect x="0" y="0" width="420" height="300" fill="url(#mapGrid)"/>
-                <path d="M46 202c30-45 50-83 92-94 28-7 41 12 72 2 35-11 47-47 88-39 24 5 34 26 31 54-5 45-40 58-63 83-25 27-43 54-88 51-39-3-58-13-88-22-24-7-49-4-44-35Z"
-                      fill="currentColor" fill-opacity=".08" stroke="currentColor" stroke-opacity=".35" stroke-width="1.5"/>
-                <path d="M82 190c26-28 40-56 71-62 26-5 43 8 69 1 29-8 43-27 70-21 18 4 25 19 22 36-4 26-26 35-43 52-17 16-29 33-58 30-28-2-43-8-64-14-18-5-39-1-67-22Z"
-                      fill="currentColor" fill-opacity=".08" stroke="currentColor" stroke-opacity=".25" stroke-width="1"/>
-                <g fill="currentColor">
-                  <circle cx="150" cy="128" r="5"/>
-                  <circle cx="258" cy="118" r="4"/>
-                  <circle cx="310" cy="168" r="5"/>
-                  <circle cx="196" cy="196" r="4"/>
-                  <circle cx="112" cy="176" r="4"/>
-                </g>
-                <g fill="none" stroke="currentColor" stroke-opacity=".5" stroke-width="1">
-                  <circle cx="150" cy="128" r="13"/>
-                  <circle cx="310" cy="168" r="13"/>
-                </g>
-                <g fill="currentColor" font-size="11" font-family="inherit" font-weight="600">
-                  <text x="160" y="123">北京</text>
-                  <text x="320" y="164">上海</text>
-                  <text x="206" y="201">成都</text>
-                  <text x="122" y="181">西安</text>
-                </g>
-              </svg>
-              <div class="footprint-stats">
-                <div><strong>24</strong><span>城市</span></div>
-                <div><strong>8</strong><span>省份</span></div>
-                <div><strong>16</strong><span>行程</span></div>
-              </div>
-            </div>
+  <main>
+    <section class="hero home-hero" id="top">
+      <div class="home-hero-inner">
+        <div class="hero-signature hero-signature-full" aria-label="City Footprint">
+          <object data="/assets/city-footprint-signature.svg" type="image/svg+xml">
+            <img src="/assets/city-footprint-signature-still.svg" alt="City Footprint">
+          </object>
+        </div>
+        <p class="home-hero-line">把走过的城市，点亮成自己的地图</p>
+        <a class="scroll-cue" href="#feature-cards">
+          <span>向下浏览</span>
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 4v16M6 14l6 6 6-6"/></svg>
+        </a>
+      </div>
+    </section>
+
+    <section class="section feature-page feature-page-alt" id="feature-cards" data-num="01">
+      <div class="wrap feature-layout">
+        <div class="feature-copy">
+          <p class="feature-index">01 / CHECK-INS</p>
+          <h2>每次打卡，<br><span>都留成一张卡片</span></h2>
+          <p class="feature-lead">城市、时间、花费、评分和同行人放在同一张卡片里。记录多了按时间排好，需要时连照片一起导出成 ZIP。</p>
+          <ul class="feature-points">
+            <li>城市、时间、花费一张卡</li>
+            <li>评分、同行人、照片一起留</li>
+            <li>需要时整包导出</li>
+          </ul>
+        </div>
+        <div class="feature-visual export-visual">
+          <div class="visual-halo"></div>
+          <div class="record-stack">
+            <img class="record-card" style="--i:0" src="/assets/promo/card-01.webp" alt="" width="1152" height="298" loading="lazy">
+            <img class="record-card" style="--i:1" src="/assets/promo/card-02.webp" alt="" width="1152" height="298" loading="lazy">
+            <img class="record-card" style="--i:2" src="/assets/promo/card-03.webp" alt="" width="1152" height="298" loading="lazy">
+            <img class="record-card" style="--i:3" src="/assets/promo/card-04.webp" alt="" width="1152" height="298" loading="lazy">
+            <img class="record-card" style="--i:4" src="/assets/promo/card-05.webp" alt="" width="1152" height="298" loading="lazy">
           </div>
+          <p class="visual-caption">卡片按时间叠好，随时能翻</p>
         </div>
       </div>
     </section>
 
-    <section class="section" id="download">
-      <div class="wrap">
-        <div class="section-head">
-          <div>
-            <p class="kicker">DOWNLOAD</p>
-            <h2>下载 City Footprint</h2>
+    <section class="section feature-page" id="feature-map" data-num="02">
+      <div class="wrap feature-layout">
+        <div class="feature-copy">
+          <p class="feature-index">02 / CITY MAP</p>
+          <h2>去过的城市，<br><span>地图上见</span></h2>
+          <p class="feature-lead">每座城市按到访次数亮起，省内的城市单独统计。颜色跟着账号徽章走，不联网也能打开。</p>
+          <ul class="feature-points">
+            <li>城市、到访次数分开算</li>
+            <li>省内城市单独看</li>
+            <li>断网也能打开</li>
+          </ul>
+        </div>
+        <div class="feature-visual map-visual">
+          <div class="visual-halo"></div>
+          <div class="phone-frame">
+            <img src="/assets/promo/phone-04.webp" alt="City Footprint 城市足迹地图" loading="lazy">
           </div>
+          <p class="visual-caption">去过几次，地图上都标着</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section feature-page feature-page-alt" id="feature-timeline" data-num="03">
+      <div class="wrap feature-layout">
+        <div class="feature-copy">
+          <p class="feature-index">03 / TIMELINE</p>
+          <h2>路上的花费，<br><span>回来还能对上</span></h2>
+          <p class="feature-lead">活动、车票、门票、饭钱记在当天。照片和同行人跟着那条记录走，不用再翻相册猜日期。</p>
+          <ul class="feature-points">
+            <li>活动、交通、住宿分开记</li>
+            <li>金额按行程自动汇总</li>
+            <li>照片挂在当天记录下</li>
+          </ul>
+        </div>
+        <div class="feature-visual timeline-visual">
+          <div class="visual-halo"></div>
+          <div class="phone-frame">
+            <img src="/assets/promo/phone-03.webp" alt="City Footprint 行程时间线" loading="lazy">
+          </div>
+          <p class="visual-caption">日期、金额、照片，都留在同一条记录里</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section feature-page" id="feature-achievements" data-num="04">
+      <div class="wrap feature-layout">
+        <div class="feature-copy">
+          <p class="feature-index">04 / ACHIEVEMENTS</p>
+          <h2>去过的地方，<br><span>会留下记号</span></h2>
+          <p class="feature-lead">按城市、行程和主题路线判定，解锁日期从第一条相关记录算起。全部在本地完成，断网也能看。</p>
+          <ul class="feature-points">
+            <li>记录够了自动解锁</li>
+            <li>日期按历史记录回溯</li>
+            <li>中英文界面都支持</li>
+          </ul>
+        </div>
+        <div class="feature-visual achievement-visual">
+          <div class="visual-halo"></div>
+          <div class="phone-frame">
+            <img src="/assets/promo/phone-05.webp" alt="City Footprint 成就页面" loading="lazy">
+          </div>
+          <p class="visual-caption">不用手动领，到了就会亮</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section download-final" id="download" data-num="05">
+      <div class="wrap">
+        <div class="download-head">
+          <p class="feature-index">05 / DOWNLOAD</p>
+          <h2>装到手机上，<br><span>出发就能用</span></h2>
           <p>离线单机应用，数据保存在本机；安装前请确认系统版本与架构。</p>
         </div>
 
@@ -114,7 +163,7 @@
               <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M10 18.5h4"/></svg>
               Android
             </h3>
-            <p>选择国内网盘或 GitHub 下载最新版本 APK。<span id="releaseVersion">最新版本</span></p>
+            <p>国内网盘或 GitHub 都能下，版本号以发布记录为准。<span id="releaseVersion">最新版本</span></p>
             <div class="meta">
               <span class="tag">Android 7.0+</span>
               <span class="tag">arm64-v8a</span>
@@ -130,62 +179,22 @@
                 <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
               </a>
             </div>
-            <p class="download-password">密码：<strong>CtFp</strong></p>
+            <p class="download-password">国内网盘密码：<strong>CtFp</strong></p>
           </article>
 
           <aside class="download-card">
             <h3>下载说明</h3>
             <ul class="release-notes">
-              <li>国内网盘：适合国内网络环境</li>
+              <li>国内网盘：适合国内网络环境，密码 CtFp</li>
               <li>GitHub：始终指向最新 Release</li>
-              <li>版本信息与更新说明由下载页自动读取</li>
+              <li>Android 7.0+，arm64-v8a</li>
             </ul>
           </aside>
         </div>
       </div>
     </section>
-
-    <section class="section low">
-      <div class="wrap">
-        <div class="section-head">
-          <div>
-            <p class="kicker">FEATURES</p>
-            <h2>轻量、离线、只属于你的足迹</h2>
-          </div>
-        </div>
-        <div class="feature-grid">
-          <article class="feature">
-            <div class="icon">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m9 18-6 3V6l6-3 6 3 6-3v15l-6 3-6-3Z"/><path d="M9 3v15M15 6v15"/></svg>
-            </div>
-            <h3>城市点亮</h3>
-            <p>去过的城市在地图上点亮，颜色跟着你的徽章色走。</p>
-          </article>
-          <article class="feature">
-            <div class="icon">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 19h16M6 16V8M12 16V4M18 16v-6"/></svg>
-            </div>
-            <h3>行程时间线</h3>
-            <p>按城市记录活动、交通、花费与照片，回看每一段路。</p>
-          </article>
-          <article class="feature">
-            <div class="icon">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m12 3 2.7 5.5 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1L3.2 9.4l6.1-.9L12 3Z"/></svg>
-            </div>
-            <h3>88 条成就</h3>
-            <p>城市、行程、主题路线与极限挑战，记录会自动判定。</p>
-          </article>
-          <article class="feature">
-            <div class="icon">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></svg>
-            </div>
-            <h3>数据导出</h3>
-            <p>行程、打卡和照片可导出 ZIP，保存到系统下载目录。</p>
-          </article>
-        </div>
-      </div>
-    </section>
   </main>
+
 
   <footer class="site-footer">
     <div class="wrap footer-inner">
@@ -201,5 +210,6 @@
   </footer>
 
   <script src="/site.js"></script>
+  <script src="/home.js" defer></script>
 </body>
 </html>

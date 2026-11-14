@@ -1,0 +1,72 @@
+{
+  "format": "webp",
+  "purpose": "City Footprint website promotional fallback",
+  "items": [
+    {
+      "file": "phone-01.webp",
+      "kind": "phone",
+      "width": 1264,
+      "height": 2632
+    },
+    {
+      "file": "phone-02.webp",
+      "kind": "phone",
+      "width": 1264,
+      "height": 2632
+    },
+    {
+      "file": "phone-03.webp",
+      "kind": "phone",
+      "width": 1264,
+      "height": 2632
+    },
+    {
+      "file": "phone-04.webp",
+      "kind": "phone",
+      "width": 1264,
+      "height": 2632
+    },
+    {
+      "file": "phone-05.webp",
+      "kind": "phone",
+      "width": 1264,
+      "height": 2632
+    },
+    {
+      "file": "card-01.webp",
+      "kind": "card",
+      "width": 1152,
+      "height": 298
+    },
+    {
+      "file": "card-02.webp",
+      "kind": "card",
+      "width": 1152,
+      "height": 298
+    },
+    {
+      "file": "card-03.webp",
+      "kind": "card",
+      "width": 1152,
+      "height": 298
+    },
+    {
+      "file": "card-04.webp",
+      "kind": "card",
+      "width": 1152,
+      "height": 298
+    },
+    {
+      "file": "card-05.webp",
+      "kind": "card",
+      "width": 1152,
+      "height": 298
+    },
+    {
+      "file": "card-06.webp",
+      "kind": "card",
+      "width": 1152,
+      "height": 298
+    }
+  ]
+}

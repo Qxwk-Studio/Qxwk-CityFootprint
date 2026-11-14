@@ -116,20 +116,14 @@ class TripsFragment : Fragment() {
             render()
         }
 
-        binding.btnSegCheckins.setOnClickListener {
-            if (segment == Segment.CHECKINS) return@setOnClickListener
-            segment = Segment.CHECKINS
-            visibleCount = PAGE_SIZE
-            render()
-            binding.segTrack.post { moveIndicator(animate = true) }
-        }
-        binding.btnSegTrips.setOnClickListener {
-            if (segment == Segment.TRIPS) return@setOnClickListener
-            segment = Segment.TRIPS
-            visibleCount = PAGE_SIZE
-            render()
-            binding.segTrack.post { moveIndicator(animate = true) }
-        }
+        binding.btnSegCheckins.setOnClickListener { selectSegment(Segment.CHECKINS) }
+        binding.btnSegTrips.setOnClickListener { selectSegment(Segment.TRIPS) }
+        binding.scroll.onHorizontalSwipe(
+            canSwipe = { !binding.inputSearch.hasFocus() },
+            onDrag = ::dragTabs,
+            onSwipeLeft = { swipeToSegment(1) },
+            onSwipeRight = { swipeToSegment(-1) },
+        )
         load()
         // 主题/深浅色切换会重建页面：宽度可能还是 0，等真正布局完再摆滑块
         binding.chipContainer.addOnLayoutChangeListener { _, l, _, r, _, _, _, _, _ ->
@@ -266,6 +260,45 @@ class TripsFragment : Fragment() {
         val off = ContextCompat.getColor(requireContext(), R.color.text_secondary)
         binding.btnSegCheckins.setTextColor(if (segment == Segment.CHECKINS) on else off)
         binding.btnSegTrips.setTextColor(if (segment == Segment.TRIPS) on else off)
+    }
+
+    private fun dragTabs(dx: Float) {
+        if (dx == 0f) {
+            settleTabs()
+        } else {
+            binding.listContainer.translationX = dx
+        }
+    }
+
+    private fun settleTabs() {
+        binding.listContainer.animate().translationX(0f).alpha(1f).setDuration(160).start()
+    }
+
+    private fun swipeToSegment(direction: Int) {
+        val target = if (direction > 0) Segment.TRIPS else Segment.CHECKINS
+        if (target == segment) {
+            settleTabs()
+            return
+        }
+        val width = binding.scroll.width.toFloat().coerceAtLeast(1f)
+        val out = if (direction > 0) -width * 0.22f else width * 0.22f
+        binding.listContainer.animate()
+            .translationX(out).alpha(0.35f).setDuration(120)
+            .withEndAction {
+                binding.listContainer.translationX = -out
+                binding.listContainer.alpha = 1f
+                selectSegment(target)
+                binding.listContainer.animate().translationX(0f).setDuration(180).start()
+            }
+            .start()
+    }
+
+    private fun selectSegment(target: Segment) {
+        if (segment == target) return
+        segment = target
+        visibleCount = PAGE_SIZE
+        render()
+        binding.segTrack.post { moveIndicator(animate = true) }
     }
 
     /** 两等分滑块：宽度取容器一半，按当前分段平移。 */
@@ -489,6 +522,12 @@ class TripsFragment : Fragment() {
         }
         frame.addView(content)
         root.addView(frame)
+        root.onHorizontalSwipe(
+            canSwipe = { !binding.inputSearch.hasFocus() },
+            onDrag = ::dragTabs,
+            onSwipeLeft = { swipeToSegment(1) },
+            onSwipeRight = { swipeToSegment(-1) },
+        )
         return root to content
     }
 
