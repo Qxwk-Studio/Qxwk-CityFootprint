@@ -37,6 +37,7 @@ internal object SyncApi {
     data class ServerInfo(
         @SerialName("server_name") val serverName: String = "",
         @SerialName("supports_photo_upload") val supportsPhotoUpload: Boolean = false,
+        @SerialName("supported_versions") val supportedVersions: List<Int> = emptyList(),
     )
 
     data class Session(

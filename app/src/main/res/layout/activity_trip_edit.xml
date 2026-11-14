@@ -67,7 +67,7 @@
                 <EditText
                     android:id="@+id/inputTitle"
                     android:layout_width="match_parent"
-                    android:layout_height="40dp"
+                    android:layout_height="36dp"
                     android:layout_marginTop="8dp"
                     android:background="@drawable/bg_input_box"
                     android:hint="@string/trip_title_hint"

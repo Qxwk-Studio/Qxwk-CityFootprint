@@ -65,7 +65,7 @@
             <LinearLayout
                 android:id="@+id/searchCard"
                 android:layout_width="match_parent"
-                android:layout_height="52dp"
+                android:layout_height="44dp"
                 android:layout_marginBottom="10dp"
                 android:background="@drawable/bg_card"
                 android:gravity="center_vertical"

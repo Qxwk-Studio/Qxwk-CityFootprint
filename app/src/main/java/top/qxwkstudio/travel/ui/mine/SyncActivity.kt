@@ -129,11 +129,13 @@ class SyncActivity : LocalizedActivity() {
             if (info == null) {
                 binding.textServerName.setText(R.string.sync_server_fetch_failed)
                 binding.textPhotoSupport.text = "—"
+                binding.textVersionSupport.text = "—"
             } else {
                 binding.textServerName.text = info.serverName.ifBlank { "City Footprint" }
                 binding.textPhotoSupport.setText(
                     if (info.supportsPhotoUpload) R.string.sync_photo_yes else R.string.sync_photo_no,
                 )
+                binding.textVersionSupport.text = versionLabel(info)
             }
         }
     }
@@ -143,6 +145,7 @@ class SyncActivity : LocalizedActivity() {
         if (server == null) {
             binding.textServerName.text = "—"
             binding.textPhotoSupport.text = "—"
+            binding.textVersionSupport.text = "—"
             return
         }
         lifecycleScope.runIo({ SyncApi.server(server) }) { result ->
@@ -150,13 +153,20 @@ class SyncActivity : LocalizedActivity() {
             if (info == null) {
                 binding.textServerName.setText(R.string.sync_network_failed)
                 binding.textPhotoSupport.text = "—"
+                binding.textVersionSupport.text = "—"
             } else {
                 binding.textServerName.text = info.serverName.ifBlank { "City Footprint" }
                 binding.textPhotoSupport.setText(
                     if (info.supportsPhotoUpload) R.string.sync_photo_yes else R.string.sync_photo_no,
                 )
+                binding.textVersionSupport.text = versionLabel(info)
             }
         }
+    }
+
+    private fun versionLabel(info: SyncApi.ServerInfo): String {
+        val range = info.supportedVersions
+        return if (range.size >= 2) "[${range[0]},${range[1]}]" else "—"
     }
 
     private fun validateSession() {

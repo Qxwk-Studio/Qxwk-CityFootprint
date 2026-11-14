@@ -417,14 +417,36 @@ async function handleMe(request, env) {
   return json({ user: publicUser(user) });
 }
 
+function supportedVersions(raw) {
+  try {
+    const parsed = JSON.parse(String(raw || ''));
+    if (Array.isArray(parsed)) {
+      const values = parsed.map(Number).filter(Number.isFinite);
+      if (values.length >= 2) return [values[0], values[1]];
+    }
+  } catch {
+    // 旧数据或手工填写错误时回退到未知范围，避免 /api/server 整体失败。
+  }
+  return [0, 0];
+}
+
 async function handleServer(request, env) {
   if (request.method !== 'GET') return fail(405, 'method_not_allowed', '仅支持 GET');
-  const row = await env.DB.prepare(
-    'SELECT server_name, supports_photo_upload FROM server_info WHERE id = 1',
-  ).first();
+  let row;
+  try {
+    row = await env.DB.prepare(
+      'SELECT server_name, supports_photo_upload, supported_versions FROM server_info WHERE id = 1',
+    ).first();
+  } catch {
+    // 迁移尚未执行时仍保持接口可用；补上迁移后会返回数据库配置。
+    row = await env.DB.prepare(
+      'SELECT server_name, supports_photo_upload FROM server_info WHERE id = 1',
+    ).first();
+  }
   return json({
     server_name: row?.server_name || 'City Footprint',
     supports_photo_upload: !!row?.supports_photo_upload,
+    supported_versions: supportedVersions(row?.supported_versions),
   });
 }
 

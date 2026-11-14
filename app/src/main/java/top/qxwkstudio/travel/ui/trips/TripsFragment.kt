@@ -63,6 +63,12 @@ class TripsFragment : Fragment() {
     private var query = ""
     private var visibleCount = PAGE_SIZE
 
+    /** 两个分段各自缓存已铺好的卡片，来回切换时不重复 inflate 前 30 条。 */
+    private var checkinRowsKey = ""
+    private var checkinRowsCache: List<View> = emptyList()
+    private var tripRowsKey = ""
+    private var tripRowsCache: List<View> = emptyList()
+
     /** 胶囊容器上次的宽度：主题/配色重建后要重新摆滑块。 */
     private var segWidth = 0
     private var trips: List<TripEntity> = emptyList()
@@ -225,10 +231,24 @@ class TripsFragment : Fragment() {
         b.btnLoadMore.visibility = if (allVisible.size > shown.size) View.VISIBLE else View.GONE
         if (empty) return
 
-        when (segment) {
-            Segment.CHECKINS -> shown.forEach { b.listContainer.addView(checkinRow(it as CheckinEntity)) }
-            Segment.TRIPS -> shown.forEach { b.listContainer.addView(tripRow(it as TripEntity)) }
+        val rowsKey = "$keyword|$visibleCount|$seenVersion"
+        val rows = when (segment) {
+            Segment.CHECKINS -> {
+                if (rowsKey == checkinRowsKey) checkinRowsCache
+                else shown.map { checkinRow(it as CheckinEntity) }.also {
+                    checkinRowsKey = rowsKey
+                    checkinRowsCache = it
+                }
+            }
+            Segment.TRIPS -> {
+                if (rowsKey == tripRowsKey) tripRowsCache
+                else shown.map { tripRow(it as TripEntity) }.also {
+                    tripRowsKey = rowsKey
+                    tripRowsCache = it
+                }
+            }
         }
+        rows.forEach { b.listContainer.addView(it) }
     }
 
     private fun matches(checkin: CheckinEntity, keyword: String): Boolean =
@@ -576,14 +596,21 @@ class TripsFragment : Fragment() {
             setPadding(0, dp(8), 0, 0)
         }
         if (hasPhoto) {
-            val bitmap = PhotoStore.load(checkin.photoPath, maxPx = 256)
-            if (bitmap != null) {
-                row.addView(ImageView(ctx).apply {
-                    setImageBitmap(bitmap)
-                    scaleType = ImageView.ScaleType.CENTER_CROP
-                    layoutParams = LinearLayout.LayoutParams(dp(64), dp(64)).apply { marginEnd = dp(10) }
-                    setOnClickListener { showPhotoDialog(ctx, checkin.photoPath) }
-                })
+            val thumb = ImageView(ctx).apply {
+                setBackgroundResource(R.drawable.bg_photo_tile)
+                scaleType = ImageView.ScaleType.CENTER_CROP
+                layoutParams = LinearLayout.LayoutParams(dp(64), dp(64)).apply { marginEnd = dp(10) }
+                setOnClickListener {
+                    val photos = checkin.photoPath?.split(",")?.filter { it.isNotBlank() }.orEmpty()
+                    showPhotoDialog(ctx, photos)
+                }
+            }
+            row.addView(thumb)
+            // 列表可能一次铺 30 张卡片；缩略图不能在主线程同步解码。
+            viewLifecycleOwner.lifecycleScope.runIo({
+                PhotoStore.load(checkin.photoPath, maxPx = 256)
+            }) { result ->
+                result.getOrNull()?.let { if (thumb.isAttachedToWindow) thumb.setImageBitmap(it) }
             }
         }
         val info = LinearLayout(ctx).apply {

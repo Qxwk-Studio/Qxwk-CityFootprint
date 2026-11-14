@@ -22,6 +22,8 @@
     <string name="cleanup_confirm_message">只删除没有任何打卡或行程引用的照片文件，正在使用的照片不受影响。</string>
     <string name="cleanup_done">已清理 %1$d 张照片，释放 %2$s</string>
     <string name="cleanup_none">没有可清理的照片</string>
+    <string name="mine_terms">用户协议</string>
+    <string name="mine_disclaimer">免责声明</string>
     <string name="mine_version">版本</string>
     <string name="mine_check_update">检查更新</string>
     <string name="mine_group_personal">个性化</string>

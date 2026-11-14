@@ -17,9 +17,9 @@ import org.junit.Test
 class AchievementsTest {
 
     @Test
-    fun `定义共88条 分4类 且 code 唯一`() {
+    fun `定义共89条 分4类 且 code 唯一`() {
         val all = Achievements.all()
-        assertEquals(88, all.size)
+        assertEquals(89, all.size)
         assertEquals(4, Achievements.categories.size)
         assertEquals(all.size, all.map { it.code }.toSet().size)
         // 分类标题不带 emoji（口径 6/7）。注意只能判 emoji 区段：
@@ -30,10 +30,27 @@ class AchievementsTest {
     @Test
     fun `没有打卡时全部未达成`() {
         val states = Achievements.evaluate(emptyList())
-        assertEquals(88, states.size)
+        assertEquals(89, states.size)
         assertTrue(states.values.none { it.done })
         assertTrue(states.values.all { it.unlockedAt == null })
         assertTrue(states.values.all { it.progress == 0 })
+    }
+
+    @Test
+    fun `山河四省需要四座省会全部到访`() {
+        val three = listOf(
+            Achievements.Sample("太原", 100),
+            Achievements.Sample("济南", 200),
+            Achievements.Sample("郑州", 300),
+        )
+        assertFalse(Achievements.evaluate(three).getValue("shanhe_four").done)
+
+        val four = three + Achievements.Sample("石家庄", 400)
+        val state = Achievements.evaluate(four).getValue("shanhe_four")
+        assertTrue(state.done)
+        assertEquals(4, state.progress)
+        assertEquals(4, state.target)
+        assertEquals(400L, state.unlockedAt)
     }
 
     @Test

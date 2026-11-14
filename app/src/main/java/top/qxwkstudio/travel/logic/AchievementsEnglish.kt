@@ -80,6 +80,7 @@ object AchievementsEnglish {
         "prov_capitals_all" to ("Provincial Capitals" to "Visit all provincial capitals"),
         "hk_macau" to ("HK & Macau" to "Visit Hong Kong and Macau"),
         "ancient_capitals" to ("Eight Ancient Capitals" to "Visit all eight ancient capitals"),
+        "shanhe_four" to ("Four Provinces of Shanhe" to "Visit the capitals of Shanxi, Shandong, Henan and Hebei: Taiyuan, Jinan, Zhengzhou and Shijiazhuang"),
         "northeast_all" to ("Northeast Three" to "Visit Shenyang, Changchun and Harbin"),
         "five_mountains" to ("Five Great Mountains" to "Visit all five sacred mountains"),
         "four_grottoes" to ("Four Grottoes" to "Visit all four grottoes"),

@@ -495,7 +495,7 @@ class CheckinEditActivity : LocalizedActivity() {
                     ViewGroup.LayoutParams.MATCH_PARENT,
                     ViewGroup.LayoutParams.MATCH_PARENT,
                 )
-                setOnClickListener { showPhotoDialog(this@CheckinEditActivity, path) }
+                setOnClickListener { showPhotoDialog(this@CheckinEditActivity, photoPaths, index) }
                 setOnLongClickListener { v ->
                     dragHandled = false
                     v.startDragAndDrop(

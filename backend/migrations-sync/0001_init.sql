@@ -122,6 +122,7 @@ CREATE TABLE IF NOT EXISTS server_info (
   id                   INTEGER PRIMARY KEY CHECK (id = 1),
   server_name          TEXT    NOT NULL,
   supports_photo_upload INTEGER NOT NULL DEFAULT 0,
+  supported_versions   TEXT    NOT NULL DEFAULT '[20301,20303]',
   updated_at           TEXT    NOT NULL DEFAULT (datetime('now')),
   CHECK (supports_photo_upload IN (0, 1))
 );
@@ -137,8 +138,8 @@ CREATE TABLE IF NOT EXISTS app_versions (
   CHECK (importance IN (0, 1, 2))
 );
 
-INSERT OR IGNORE INTO server_info (id, server_name, supports_photo_upload)
-VALUES (1, 'City Footprint', 0);
+INSERT OR IGNORE INTO server_info (id, server_name, supports_photo_upload, supported_versions)
+VALUES (1, 'City Footprint', 0, '[20301,20303]');
 
 INSERT OR IGNORE INTO app_versions (version_name, version_code, download_url, notes, importance)
 VALUES ('2.1.4', 20104, 'https://github.com/Qxwk-Studio/Qxwk-CityFootprint/releases/download/v2.1.4/CityFootprint-2.1.4.apk',

@@ -3,6 +3,7 @@ package top.qxwkstudio.travel.ui.common
 import android.content.Context
 import android.content.res.Configuration
 import android.content.res.Resources
+import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import top.qxwkstudio.travel.data.Prefs
 import java.util.Locale
@@ -15,6 +16,11 @@ import java.util.Locale
  * 对显式语言取 Prefs 里的标签，保证每次都从 Context 层覆盖。
  */
 open class LocalizedActivity : AppCompatActivity() {
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        AdaptiveRefreshRate.apply(this)
+    }
 
     override fun attachBaseContext(newBase: Context) {
         val tag = Prefs.languageTag

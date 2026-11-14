@@ -48,7 +48,7 @@
     <string name="photo_label">照片</string>
     <string name="photo_failed">照片读取失败</string>
     <string name="companions_label">同行人</string>
-    <string name="companions_hint">独自 / 朋友 / 情侣 / 家人…</string>
+    <string name="companions_hint">自己 / 朋友 / 情侣 / 家人…</string>
     <string name="checkin_city_label">到访城市</string>
     <string name="checkin_days_label">停留天数</string>
     <string name="checkin_amount_label">总花费</string>

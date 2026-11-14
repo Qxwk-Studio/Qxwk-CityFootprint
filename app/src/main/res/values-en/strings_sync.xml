@@ -23,6 +23,7 @@
     <string name="sync_server_title">Sync server</string>
     <string name="sync_server_loading">Reading server info…</string>
     <string name="sync_server_name">Server</string>
+    <string name="sync_server_versions">Supported versions</string>
     <string name="sync_photo_support">Photo upload</string>
     <string name="sync_photo_yes">Supported</string>
     <string name="sync_photo_no">Not supported</string>
