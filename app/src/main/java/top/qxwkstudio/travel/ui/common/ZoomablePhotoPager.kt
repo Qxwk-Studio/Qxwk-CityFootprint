@@ -37,6 +37,7 @@ internal class ZoomablePhotoPager(
     private var offsetY = 0f
     private var dragX = 0f
     private var swipeHandled = false
+    private var switching = false
 
     private val scaleDetector = ScaleGestureDetector(context, object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
         override fun onScale(detector: ScaleGestureDetector): Boolean {
@@ -79,6 +80,7 @@ internal class ZoomablePhotoPager(
         override fun onScroll(e1: MotionEvent?, e2: MotionEvent, dx: Float, dy: Float): Boolean {
             if (scale <= 1.01f) {
                 dragX += (e1?.x ?: e2.x) - e2.x
+                image.translationX = -dragX
             } else {
                 offsetX -= dx
                 offsetY -= dy
@@ -91,7 +93,7 @@ internal class ZoomablePhotoPager(
         override fun onFling(e1: MotionEvent?, e2: MotionEvent, velocityX: Float, velocityY: Float): Boolean {
             if (scale <= 1.01f && abs(velocityX) > dp(220)) {
                 swipeHandled = true
-                switchPage(if (velocityX < 0) 1 else -1)
+                slideTo(if (velocityX < 0) 1 else -1)
             }
             return true
         }
@@ -108,11 +110,20 @@ internal class ZoomablePhotoPager(
     fun currentBitmap(): Bitmap? = bitmap
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
+        if (event.actionMasked == MotionEvent.ACTION_DOWN) {
+            dragX = 0f
+            swipeHandled = false
+        }
+        if (switching) return true
         scaleDetector.onTouchEvent(event)
         gestureDetector.onTouchEvent(event)
         if (event.actionMasked == MotionEvent.ACTION_UP || event.actionMasked == MotionEvent.ACTION_CANCEL) {
-            if (!swipeHandled && scale <= 1.01f && abs(dragX) > width * 0.16f) {
-                switchPage(if (dragX > 0) 1 else -1)
+            if (!swipeHandled && scale <= 1.01f) {
+                if (abs(dragX) > width * 0.16f) {
+                    slideTo(if (dragX > 0) 1 else -1)
+                } else if (dragX != 0f) {
+                    image.animate().translationX(0f).setDuration(140).start()
+                }
             }
             dragX = 0f
             swipeHandled = false
@@ -120,11 +131,23 @@ internal class ZoomablePhotoPager(
         return true
     }
 
-    private fun switchPage(direction: Int) {
+    private fun slideTo(direction: Int) {
+        if (switching) return
         val next = index + direction
-        if (next !in paths.indices) return
-        index = next
-        loadCurrent()
+        if (next !in paths.indices) {
+            image.animate().translationX(0f).setDuration(140).start()
+            return
+        }
+        switching = true
+        val outX = if (direction > 0) -width.toFloat() else width.toFloat()
+        image.animate().translationX(outX).setDuration(170).withEndAction {
+            index = next
+            loadCurrent()
+            image.translationX = -outX
+            image.animate().translationX(0f).setDuration(190).withEndAction {
+                switching = false
+            }.start()
+        }.start()
     }
 
     private fun loadCurrent() {

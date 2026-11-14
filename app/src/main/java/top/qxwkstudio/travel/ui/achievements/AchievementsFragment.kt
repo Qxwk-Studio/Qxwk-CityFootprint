@@ -62,6 +62,10 @@ class AchievementsFragment : Fragment() {
         binding.root.fadeSlideIn()
         binding.list.layoutManager = LinearLayoutManager(requireContext())
         binding.list.adapter = adapter
+        binding.list.onHorizontalSwipe(
+            onSwipeLeft = { selectCategory(selectedCategory + 1) },
+            onSwipeRight = { selectCategory(selectedCategory - 1) },
+        )
         buildChips()
     }
 
@@ -133,19 +137,21 @@ class AchievementsFragment : Fragment() {
                     ),
                 )
                 isClickable = true
-                setOnClickListener {
-                    if (selectedCategory == index) return@setOnClickListener
-                    selectedCategory = index
-                    refreshChipColors()
-                    moveIndicator(animate = true)
-                    refreshEmptyState()
-                    adapter.submit(buildRows())
-                    binding.list.scrollToPosition(0)
-                }
+                setOnClickListener { selectCategory(index) }
             }
             container.addView(chip)
         }
         container.post { moveIndicator(animate = false) }
+    }
+
+    private fun selectCategory(index: Int) {
+        if (index !in Achievements.categories.indices || index == selectedCategory) return
+        selectedCategory = index
+        refreshChipColors()
+        moveIndicator(animate = true)
+        refreshEmptyState()
+        adapter.submit(buildRows())
+        binding.list.scrollToPosition(0)
     }
 
     private fun refreshChipColors() {

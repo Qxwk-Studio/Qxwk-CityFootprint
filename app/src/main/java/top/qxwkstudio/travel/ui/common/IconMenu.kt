@@ -101,16 +101,26 @@ internal fun showIconMenu(anchor: View, actions: List<MenuAction>) {
     )
     val height = content.measuredHeight
 
+    // bg_popup_menu 是一张带 8dp inset 的九宫格底：PopupWindow 会把这圈 inset
+    // 作为内容内边距吃掉。窗口尺寸必须把 padding 加回去，否则文字/末行会被裁切。
+    val background = ContextCompat.getDrawable(context, R.drawable.bg_popup_menu)
+    val bgPadding = android.graphics.Rect()
+    background?.getPadding(bgPadding)
+    val bgHorizontal = bgPadding.left + bgPadding.right
+    val bgVertical = bgPadding.top + bgPadding.bottom
+    val windowWidth = width + bgHorizontal
+    val windowHeight = height + bgVertical
+
     popup = PopupWindow(
         content,
-        width,
-        height,
+        windowWidth,
+        windowHeight,
         true,
     ).apply {
         isOutsideTouchable = true
         elevation = dp(8).toFloat()
         // 透明背景时 elevation 阴影不绘制；换成卡片底，阴影围绕圆角弹层
-        setBackgroundDrawable(ContextCompat.getDrawable(context, R.drawable.bg_popup_menu))
+        setBackgroundDrawable(background)
     }
     // 右边缘对齐到锚点、下方留 4dp：菜单右上两侧的留白一致，不会一边宽一边贴边
     // 右对齐**屏幕边缘**（不是锚点），上方与右侧都留 6dp
@@ -120,8 +130,8 @@ internal fun showIconMenu(anchor: View, actions: List<MenuAction>) {
     val screenWidth = anchor.resources.displayMetrics.widthPixels
     val anchorLeft = location[0]
     // 右缘对齐三点按钮本身（不是屏幕边缘），左边至少留 6dp
-    val xoff = (anchor.width - width)
-        .coerceAtMost(screenWidth - gap - anchorLeft - width)
+    val xoff = (anchor.width - windowWidth)
+        .coerceAtMost(screenWidth - gap - anchorLeft - windowWidth)
         .coerceAtLeast(gap - anchorLeft)
     // 默认向下贴近三点按钮；下方空间不够时改为向上弹，避免被屏幕底部裁断。
     val screenHeight = anchor.resources.displayMetrics.heightPixels
@@ -129,7 +139,7 @@ internal fun showIconMenu(anchor: View, actions: List<MenuAction>) {
     val anchorBottom = anchorTop + anchor.height
     val spaceBelow = screenHeight - anchorBottom
     val spaceAbove = anchorTop
-    val showAbove = spaceBelow < height + gap && spaceAbove >= height + gap
-    val yoff = if (showAbove) -(anchor.height + height + gap) else -dp(8)
+    val showAbove = spaceBelow < windowHeight + gap && spaceAbove >= windowHeight + gap
+    val yoff = if (showAbove) -(anchor.height + windowHeight + gap) else -dp(8)
     popup.showAsDropDown(anchor, xoff, yoff)
 }
