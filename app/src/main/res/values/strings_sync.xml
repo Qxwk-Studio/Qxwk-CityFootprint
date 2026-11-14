@@ -23,6 +23,7 @@
     <string name="sync_server_title">同步服务器</string>
     <string name="sync_server_loading">正在读取服务器信息…</string>
     <string name="sync_server_name">服务器</string>
+    <string name="sync_server_versions">支持版本</string>
     <string name="sync_photo_support">照片上传</string>
     <string name="sync_photo_yes">支持</string>
     <string name="sync_photo_no">不支持</string>

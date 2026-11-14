@@ -440,6 +440,7 @@ class AchievementsFragment : Fragment() {
         "prov_capitals_all" to R.drawable.ic_palace,
         "hk_macau" to R.drawable.ic_city,
         "ancient_capitals" to R.drawable.ic_palace,
+        "shanhe_four" to R.drawable.ic_palace,
         "northeast_all" to R.drawable.ic_snow,
         "five_mountains" to R.drawable.ic_mountain,
         "four_grottoes" to R.drawable.ic_temple,

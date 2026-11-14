@@ -92,6 +92,8 @@ class MineFragment : Fragment() {
         binding.rowBadge.setOnClickListener { chooseBadgeColor() }
         binding.rowOpenSource.setOnClickListener { showOpenSource() }
         binding.rowCheckUpdate.setOnClickListener { checkUpdate() }
+        binding.rowTerms.setOnClickListener { openLegal("https://travel.qxwkstudio.top/legal/terms") }
+        binding.rowDisclaimer.setOnClickListener { openLegal("https://travel.qxwkstudio.top/legal/disclaimer") }
         binding.rowPermissions.setOnClickListener { startActivity(PermissionsActivity.intent(requireContext())) }
         binding.rowStorage.setOnClickListener { startActivity(StorageActivity.intent(requireContext())) }
         binding.rowExportData.setOnClickListener { startExportFlow() }
@@ -436,8 +438,13 @@ class MineFragment : Fragment() {
                     append(getString(R.string.profile_update_force_hint))
                 }
             }
+            val titleRes = when (info.importance.coerceIn(0, 2)) {
+                0 -> R.string.profile_update_small_title
+                1 -> R.string.profile_update_normal_title
+                else -> R.string.profile_update_force_title
+            }
             val dialog = MaterialAlertDialogBuilder(requireContext())
-                .setTitle(getString(R.string.profile_update_new_title))
+                .setTitle(getString(titleRes))
                 .setMessage(message)
                 .setPositiveButton(R.string.profile_update_go) { _, _ ->
                     val url = info.downloadUrl
@@ -460,6 +467,14 @@ class MineFragment : Fragment() {
             if (!forced) dialog.setNegativeButton(R.string.common_cancel, null)
             dialog.setCancelable(!forced)
             dialog.show()
+        }
+    }
+
+    private fun openLegal(url: String) {
+        runCatching {
+            startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url)))
+        }.onFailure {
+            requireContext().notify(R.string.common_open_url_failed, long = true)
         }
     }
 

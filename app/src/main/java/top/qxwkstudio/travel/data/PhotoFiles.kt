@@ -14,7 +14,7 @@ import java.io.File
  */
 object PhotoFiles {
 
-    /** 最长边上限：手机上展示够用，文件也就百来 KB～1MB。 */
+    /** 最长边上限 2560px；JPEG 质量 85，兼顾清晰度与体积。 */
     private const val MAX_PX = 2560
 
     private const val DIR = "photos"
@@ -47,7 +47,7 @@ object PhotoFiles {
         }
         val folder = dir(context).apply { mkdirs() }
         val file = File(folder, "$name.jpg")
-        runCatching { file.outputStream().use { scaled.compress(Bitmap.CompressFormat.JPEG, 90, it) } }
+        runCatching { file.outputStream().use { scaled.compress(Bitmap.CompressFormat.JPEG, 85, it) } }
             .onFailure { return null }
         if (scaled !== bitmap) scaled.recycle()
         bitmap.recycle()

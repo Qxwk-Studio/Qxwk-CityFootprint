@@ -416,7 +416,7 @@ class TripDetailActivity : LocalizedActivity() {
                 orientation = LinearLayout.HORIZONTAL
                 setPadding(0, dp(8), 0, 0)
             }
-            photos.take(3).forEach { path ->
+            photos.take(3).forEachIndexed { index, path ->
                 val tile = android.widget.FrameLayout(this).apply {
                     layoutParams = LinearLayout.LayoutParams(0, dp(84), 1f).apply { marginEnd = dp(6) }
                     setBackgroundResource(R.drawable.bg_photo_tile)
@@ -428,7 +428,7 @@ class TripDetailActivity : LocalizedActivity() {
                         ViewGroup.LayoutParams.MATCH_PARENT,
                         ViewGroup.LayoutParams.MATCH_PARENT,
                     )
-                    setOnClickListener { showPhotoDialog(this@TripDetailActivity, path) }
+                    setOnClickListener { showPhotoDialog(this@TripDetailActivity, photos, index) }
                 }
                 tile.addView(image)
                 // 缩略图在 IO 上解码，详情页首帧不再同步读一串大图。

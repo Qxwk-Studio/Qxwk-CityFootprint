@@ -2,7 +2,10 @@
 <!-- 我的与个性化 (English) -->
 <resources>
     <string name="profile_update_new_title">Update available</string>
-    <string name="profile_update_new_message">Latest version v%1$s</string>
+    <string name="profile_update_small_title">Minor update</string>
+    <string name="profile_update_normal_title">Standard update</string>
+    <string name="profile_update_force_title">Major update</string>
+<string name="profile_update_new_message">Latest version v%1$s</string>
     <string name="profile_update_go">Download</string>
     <string name="profile_update_latest">You are on the latest version</string>
     <string name="profile_update_failed">Update check failed. Try again later</string>
@@ -19,6 +22,8 @@
     <string name="cleanup_confirm_message">Deletes only photos not referenced by any check-in or trip. Photos in use are kept.</string>
     <string name="cleanup_done">Cleaned %1$d photos, freed %2$s</string>
     <string name="cleanup_none">No photos to clean</string>
+    <string name="mine_terms">Terms of Service</string>
+    <string name="mine_disclaimer">Disclaimer</string>
     <string name="mine_version">Version</string>
     <string name="mine_check_update">Check for updates</string>
     <string name="mine_group_personal">Personalization</string>

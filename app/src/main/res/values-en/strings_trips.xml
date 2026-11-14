@@ -48,7 +48,7 @@
     <string name="photo_label">Photos</string>
     <string name="photo_failed">Could not load photo</string>
     <string name="companions_label">Companions</string>
-    <string name="companions_hint">Solo / friends / couple / family…</string>
+    <string name="companions_hint">Myself / friends / couple / family…</string>
     <string name="checkin_city_label">City</string>
     <string name="checkin_days_label">Days stayed</string>
     <string name="checkin_amount_label">Total cost</string>

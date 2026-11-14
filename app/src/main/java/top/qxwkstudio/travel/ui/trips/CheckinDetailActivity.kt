@@ -272,7 +272,7 @@ class CheckinDetailActivity : LocalizedActivity() {
                         ViewGroup.LayoutParams.MATCH_PARENT,
                         ViewGroup.LayoutParams.MATCH_PARENT,
                     )
-                    setOnClickListener { showPhotoDialog(this@CheckinDetailActivity, path) }
+                    setOnClickListener { showPhotoDialog(this@CheckinDetailActivity, paths, slot) }
                 })
                 row.addView(tile)
             }

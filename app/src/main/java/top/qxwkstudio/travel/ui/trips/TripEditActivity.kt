@@ -233,7 +233,7 @@ class TripEditActivity : LocalizedActivity() {
     private fun addRailRow(): LinearLayout = LinearLayout(this).apply {
         orientation = LinearLayout.HORIZONTAL
         addView(android.widget.FrameLayout(this@TripEditActivity).apply {
-            layoutParams = LinearLayout.LayoutParams(dp(28), dp(40))
+            layoutParams = LinearLayout.LayoutParams(dp(28), dp(36))
             addView(View(this@TripEditActivity).apply {
                 setBackgroundColor(getColor(R.color.border))
                 layoutParams = android.widget.FrameLayout.LayoutParams(
@@ -354,7 +354,7 @@ class TripEditActivity : LocalizedActivity() {
                 gravity = Gravity.CENTER_VERTICAL
                 background = ContextCompat.getDrawable(this@TripEditActivity, R.drawable.bg_input_box)
                 setPadding(dp(10), 0, dp(10), 0)
-                layoutParams = LinearLayout.LayoutParams(0, dp(40), 1f)
+                layoutParams = LinearLayout.LayoutParams(0, dp(36), 1f)
                 setOnClickListener { startPickCity(index) }
             })
         })
@@ -369,7 +369,7 @@ class TripEditActivity : LocalizedActivity() {
             filters = arrayOf(android.text.InputFilter.LengthFilter(Limits.SHORT))
             background = ContextCompat.getDrawable(this@TripEditActivity, R.drawable.bg_input_box)
             setPadding(dp(10), 0, dp(10), 0)
-            layoutParams = LinearLayout.LayoutParams(0, dp(40), 1f)
+            layoutParams = LinearLayout.LayoutParams(0, dp(36), 1f)
             addTextChangedListener(object : TextWatcher {
                 override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
                 override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = Unit
@@ -447,10 +447,10 @@ class TripEditActivity : LocalizedActivity() {
             gravity = Gravity.CENTER_VERTICAL
             setPadding(dp(16), dp(8), dp(16), 0)
             addView(dateTimeBox(Dates.ymd(item.time)) { pickDate(item) }.apply {
-                layoutParams = LinearLayout.LayoutParams(0, dp(40), 1f)
+                layoutParams = LinearLayout.LayoutParams(0, dp(36), 1f)
             })
             addView(dateTimeBox(hm(item.time)) { pickTime(item) }.apply {
-                layoutParams = LinearLayout.LayoutParams(0, dp(40), 1f).apply { marginStart = dp(6) }
+                layoutParams = LinearLayout.LayoutParams(0, dp(36), 1f).apply { marginStart = dp(6) }
             })
             val costInput = EditText(this@TripEditActivity).apply {
                 hint = getString(R.string.trip_event_cost_hint)
@@ -460,7 +460,7 @@ class TripEditActivity : LocalizedActivity() {
                 maxLines = 1
                 background = null
                 setPadding(dp(6), 0, 0, 0)
-                layoutParams = LinearLayout.LayoutParams(0, dp(40), 1f)
+                layoutParams = LinearLayout.LayoutParams(0, dp(36), 1f)
                 addTextChangedListener(object : TextWatcher {
                     override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
                     override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = Unit
@@ -476,7 +476,7 @@ class TripEditActivity : LocalizedActivity() {
                 gravity = Gravity.CENTER_VERTICAL
                 background = ContextCompat.getDrawable(this@TripEditActivity, R.drawable.bg_input_box)
                 setPadding(dp(2), 0, dp(6), 0)
-                layoutParams = LinearLayout.LayoutParams(0, dp(40), 1f).apply { marginStart = dp(6) }
+                layoutParams = LinearLayout.LayoutParams(0, dp(36), 1f).apply { marginStart = dp(6) }
                 addView(costInput)
             })
         })
@@ -498,7 +498,7 @@ class TripEditActivity : LocalizedActivity() {
             filters = arrayOf(android.text.InputFilter.LengthFilter(Limits.SHORT))
             background = ContextCompat.getDrawable(this@TripEditActivity, R.drawable.bg_input_box)
             setPadding(dp(10), 0, dp(10), 0)
-            layoutParams = LinearLayout.LayoutParams(0, dp(40), 1f)
+            layoutParams = LinearLayout.LayoutParams(0, dp(36), 1f)
             addTextChangedListener(object : TextWatcher {
                 override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
                 override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = Unit
@@ -686,7 +686,7 @@ class TripEditActivity : LocalizedActivity() {
                     ViewGroup.LayoutParams.MATCH_PARENT,
                     ViewGroup.LayoutParams.MATCH_PARENT,
                 )
-                setOnClickListener { showPhotoDialog(this@TripEditActivity, path) }
+                setOnClickListener { showPhotoDialog(this@TripEditActivity, paths, i) }
             }
             tile.addView(image)
             // 编辑页会频繁 render，缩略图放到 IO 上解码，首帧不阻塞输入。
@@ -1060,6 +1060,7 @@ class TripEditActivity : LocalizedActivity() {
                 showError(error.message ?: getString(R.string.common_error))
                 return@runIo
             }
+            notify(R.string.trip_saved)
             setResult(Activity.RESULT_OK)
             finish()
         }
@@ -1073,7 +1074,7 @@ class TripEditActivity : LocalizedActivity() {
         items.forEach { item ->
             append(item.id).append(':').append(item.type).append(':').append(item.time)
                 .append(':').append(item.text).append(':').append(item.note)
-                .append(':').append(item.rating).append(':').append(item.photoPath)
+                .append(':').append(item.costCents).append(':').append(item.rating).append(':').append(item.photoPath)
                 .append(':').append(item.companions).append(';')
         }
     }

@@ -102,6 +102,7 @@ object Achievements {
         "北京", "秦皇岛", "酒泉", "张家口", "忻州", "榆林", "承德", "嘉峪关", "天津", "丹东", "阳泉",
     )
     private val JIANGNAN = listOf("苏州", "杭州", "无锡", "嘉兴", "湖州")
+    private val SHANHE = listOf("太原", "济南", "郑州", "石家庄")
     private val NORTHEAST = listOf("沈阳", "长春", "哈尔滨")
     private val SILK_ROAD = listOf("西安", "兰州", "酒泉", "吐鲁番", "乌鲁木齐", "喀什")
     private val GRAND_CANAL = listOf("北京", "天津", "济宁", "徐州", "淮安", "扬州", "无锡", "杭州")
@@ -213,6 +214,11 @@ object Achievements {
                     "ancient_capitals", "八大古都",
                     "走遍八大古都：西安、洛阳、北京、南京、开封、杭州、安阳、郑州，全部到访",
                     Rule.AllOf(ANCIENT),
+                ),
+                def(
+                    "shanhe_four", "山河四省",
+                    "走遍山河四省省会：太原、济南、郑州、石家庄，全部到访",
+                    Rule.AllOf(SHANHE),
                 ),
                 def("northeast_all", "东北三省", "走遍东北三省省会：沈阳、长春、哈尔滨，全部到访", Rule.AllOf(NORTHEAST)),
                 def(
