@@ -404,6 +404,9 @@ class MineFragment : Fragment() {
     /**
      * 检查更新：读后端 `GET /api/manifest`，比 `version_code`（不是版本名）。
      * 2.0 只保留这一个网络请求。
+     *
+     * 三种结果：线上更新 → 弹更新对话框；版本相同 → 已是最新；**本地比线上还新 → 内测包**，
+     * 既不提示「发现新版本」也不给下载入口。
      */
     private fun checkUpdate() {
         if (!Prefs.networkAllowed) {
@@ -421,7 +424,11 @@ class MineFragment : Fragment() {
                 requireContext().notify(R.string.profile_update_failed)
                 return@runIo
             }
-            if (info.versionCode <= BuildConfig.VERSION_CODE) {
+            if (info.versionCode < BuildConfig.VERSION_CODE) {
+                requireContext().notify(R.string.profile_update_beta)
+                return@runIo
+            }
+            if (info.versionCode == BuildConfig.VERSION_CODE) {
                 requireContext().notify(R.string.profile_update_latest)
                 return@runIo
             }

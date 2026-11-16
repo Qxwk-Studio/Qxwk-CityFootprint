@@ -8,6 +8,7 @@
 <string name="profile_update_new_message">Latest version v%1$s</string>
     <string name="profile_update_go">Download</string>
     <string name="profile_update_latest">You are on the latest version</string>
+    <string name="profile_update_beta">You are on a beta build</string>
     <string name="profile_update_failed">Update check failed. Try again later</string>
     <string name="profile_update_no_url">Download link unavailable</string>
     <string name="mine_nickname_default">Traveler</string>
