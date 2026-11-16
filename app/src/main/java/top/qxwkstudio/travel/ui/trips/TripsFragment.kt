@@ -1,10 +1,7 @@
 package top.qxwkstudio.travel.ui.trips
 
 import top.qxwkstudio.travel.ui.common.*
-import android.view.animation.PathInterpolator
-import top.qxwkstudio.travel.ui.common.Palette
 import top.qxwkstudio.travel.logic.Provinces
-import android.widget.FrameLayout
 
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
@@ -17,10 +14,14 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.ScrollView
 import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.RecyclerView
+import androidx.viewpager2.widget.ViewPager2
+import com.google.android.material.button.MaterialButton
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -42,7 +43,11 @@ import top.qxwkstudio.travel.logic.Money
 import top.qxwkstudio.travel.logic.Timeline
 
 /**
- * 行程页（2.0）：分段控件「打卡 (N) / 足迹 (N)」+ 卡片列表。
+ * 行程页（2.0）：分段控件「打卡 (N) / 足迹 (N)」+ ViewPager2 分页列表。
+ *
+ * 左右滑动是**跟手翻页**：两页常驻（offscreenPageLimit = 1），拖动时相邻页一起位移，
+ * 顶部滑块按 `position + positionOffset` 同步，松手按速度吸附；点标签则是平滑滚过去。
+ * 列表自己不再识别横滑，也就不会出现「松手后卡片又触发点击进详情」。
  *
  * 卡片结构（两种卡共用一套读法：左边一条类别色竖条 → 第一行是「编号徽章 + 标题 + 右侧菜单」，
  * 第二行是「备注 / 时间」这类次要信息）：
@@ -59,18 +64,28 @@ class TripsFragment : Fragment() {
 
     private enum class Segment { CHECKINS, TRIPS }
 
-    private var segment = Segment.CHECKINS
+    /** 页序即标签顺序：0 = 打卡，1 = 足迹。ViewPager2 的页码直接当这里的下标用。 */
+    private val segments = listOf(Segment.CHECKINS, Segment.TRIPS)
+
     private var query = ""
-    private var visibleCount = PAGE_SIZE
+
+    /** 每个分段各自记住「加载更多」展开到第几条：翻页来回不该把另一段的展开量改掉。 */
+    private val visibleCount = mutableMapOf<Segment, Int>()
+
+    /** 已经创建出来的页（页面本身由 ViewPager2 的 RecyclerView 持有，这里只为数据变化时重铺）。 */
+    private val pages = mutableMapOf<Segment, Page>()
+
+    /** 滑块与标签颜色的连续联动，见 [PagerSegments]。 */
+    private lateinit var tracker: PagerSegments
+
+    /** 一页的滚动容器 + 卡片列；两页各自独立滚动，翻页后回到原位置。 */
+    private class Page(val scroll: ScrollView, val column: LinearLayout)
 
     /** 两个分段各自缓存已铺好的卡片，来回切换时不重复 inflate 前 30 条。 */
     private var checkinRowsKey = ""
     private var checkinRowsCache: List<View> = emptyList()
     private var tripRowsKey = ""
     private var tripRowsCache: List<View> = emptyList()
-
-    /** 胶囊容器上次的宽度：主题/配色重建后要重新摆滑块。 */
-    private var segWidth = 0
     private var trips: List<TripEntity> = emptyList()
     private var checkins: List<CheckinEntity> = emptyList()
 
@@ -105,37 +120,38 @@ class TripsFragment : Fragment() {
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = Unit
             override fun afterTextChanged(s: Editable?) {
                 query = s?.toString().orEmpty()
-                visibleCount = PAGE_SIZE
+                // 换了关键字，两段的「已展开条数」都回到第一屏
+                visibleCount.clear()
                 binding.btnClearSearch.visibility = if (query.isBlank()) View.GONE else View.VISIBLE
                 render()
             }
         })
         binding.btnClearSearch.setOnClickListener { binding.inputSearch.setText("") }
-        binding.btnLoadMore.setOnClickListener {
-            visibleCount += PAGE_SIZE
-            render()
-        }
 
-        binding.btnSegCheckins.setOnClickListener { selectSegment(Segment.CHECKINS) }
-        binding.btnSegTrips.setOnClickListener { selectSegment(Segment.TRIPS) }
-        binding.scroll.onHorizontalSwipe(
-            canSwipe = { !binding.inputSearch.hasFocus() },
-            onSwipeLeft = { swipeToSegment(1) },
-            onSwipeRight = { swipeToSegment(-1) },
-        )
-        load()
-        // 主题/深浅色切换会重建页面：宽度可能还是 0，等真正布局完再摆滑块
-        binding.chipContainer.addOnLayoutChangeListener { _, l, _, r, _, _, _, _, _ ->
-            val w = r - l
-            if (w > 0 && w != segWidth) {
-                segWidth = w
-                moveIndicator(animate = false)
+        tracker = PagerSegments(binding.segTrack, binding.chipIndicator, binding.chipContainer)
+        binding.pager.adapter = PageAdapter()
+        // 相邻页提前铺好：拖动时看到的是真内容在平移，而不是松手后才出现
+        binding.pager.offscreenPageLimit = 1
+        binding.pager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
+            // 拖动、惯性、吸附都是同一条逐像素回调：滑块和标签色只在这一处更新
+            override fun onPageScrolled(position: Int, positionOffset: Float, positionOffsetPixels: Int) {
+                tracker.update(position + positionOffset)
             }
-        }
-        binding.segTrack.post { moveIndicator(animate = false) }
+        })
+        binding.btnSegCheckins.setOnClickListener { binding.pager.setCurrentItem(0, true) }
+        binding.btnSegTrips.setOnClickListener { binding.pager.setCurrentItem(1, true) }
+        load()
+        binding.pager.post { tracker.update(binding.pager.currentItem.toFloat()) }
     }
 
     override fun onDestroyView() {
+        // 页面和行缓存都绑在旧视图上（换主题/尺寸会整页重建），留着会被下一份视图复用成僵尸 View
+        pages.clear()
+        checkinRowsKey = ""
+        checkinRowsCache = emptyList()
+        tripRowsKey = ""
+        tripRowsCache = emptyList()
+        _binding?.pager?.adapter = null
         _binding = null
         super.onDestroyView()
     }
@@ -206,26 +222,36 @@ class TripsFragment : Fragment() {
         val b = binding
         b.btnSegCheckins.text = getString(R.string.trips_seg_checkins, checkins.size)
         b.btnSegTrips.text = getString(R.string.trips_seg_trips, trips.size)
-        updateSegColors()
+        // 两页都重铺：相邻页常驻在屏幕外，不刷新的话翻过去会看到旧数据
+        pages.forEach { (target, page) -> bindPage(page, target) }
+    }
 
+    /**
+     * 把某个分段的卡片铺进它自己那一页。
+     *
+     * 两页各有一份滚动位置，「加载更多」也按分段单独记 —— 翻页来回不会互相挤掉。
+     */
+    private fun bindPage(page: Page, target: Segment) {
         val keyword = query.trim().lowercase()
-        val allVisible = when (segment) {
+        val allVisible = when (target) {
             Segment.CHECKINS -> if (keyword.isBlank()) checkins else checkins.filter { matches(it, keyword) }
             Segment.TRIPS -> if (keyword.isBlank()) trips else trips.filter { matches(it, keyword) }
         }
-        val shown = allVisible.take(visibleCount)
+        val limit = visibleCount[target] ?: PAGE_SIZE
+        val shown = allVisible.take(limit)
 
-        b.listContainer.removeAllViews()
-        val empty = shown.isEmpty()
-        b.textEmpty.setText(
-            if (keyword.isNotBlank() && empty) R.string.trips_search_empty else R.string.trips_empty,
-        )
-        b.textEmpty.visibility = if (empty) View.VISIBLE else View.GONE
-        b.btnLoadMore.visibility = if (allVisible.size > shown.size) View.VISIBLE else View.GONE
-        if (empty) return
+        page.column.removeAllViews()
+        rowsFor(target, keyword, limit, shown).forEach(page.column::addView)
+        if (shown.isEmpty()) {
+            page.column.addView(emptyView(searching = keyword.isNotBlank()))
+        } else if (allVisible.size > shown.size) {
+            page.column.addView(loadMoreButton(target, page))
+        }
+    }
 
-        val rowsKey = "$keyword|$visibleCount|$seenVersion"
-        val rows = when (segment) {
+    private fun rowsFor(target: Segment, keyword: String, limit: Int, shown: List<*>): List<View> {
+        val rowsKey = "$keyword|$limit|$seenVersion"
+        return when (target) {
             Segment.CHECKINS -> {
                 if (rowsKey == checkinRowsKey) checkinRowsCache
                 else shown.map { checkinRow(it as CheckinEntity) }.also {
@@ -241,8 +267,66 @@ class TripsFragment : Fragment() {
                 }
             }
         }
-        rows.forEach { b.listContainer.addView(it) }
     }
+
+    private fun emptyView(searching: Boolean): View = TextView(requireContext()).apply {
+        setText(if (searching) R.string.trips_search_empty else R.string.trips_empty)
+        gravity = Gravity.CENTER
+        textSize = 13f
+        setTextColor(ContextCompat.getColor(context, R.color.text_tertiary))
+        setPadding(dp(16), dp(32), dp(16), dp(32))
+    }
+
+    private fun loadMoreButton(target: Segment, page: Page): View {
+        val ctx = requireContext()
+        return MaterialButton(ctx, null, com.google.android.material.R.attr.materialButtonOutlinedStyle).apply {
+            setText(R.string.trips_load_more)
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                dp(44),
+            ).apply { topMargin = dp(10) }
+            setOnClickListener {
+                visibleCount[target] = (visibleCount[target] ?: PAGE_SIZE) + PAGE_SIZE
+                bindPage(page, target)
+            }
+        }
+    }
+
+    /** 每页各自一个 ViewHolder 池：页面内容不能被别的分段复用。 */
+    private inner class PageAdapter : RecyclerView.Adapter<PageHolder>() {
+        override fun getItemCount(): Int = segments.size
+
+        override fun getItemViewType(position: Int): Int = position
+
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PageHolder {
+            val ctx = parent.context
+            val column = LinearLayout(ctx).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(dp(16), 0, dp(16), dp(16))
+                layoutParams = ViewGroup.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                )
+            }
+            val scroll = ScrollView(ctx).apply {
+                isFillViewport = true
+                addView(column)
+                layoutParams = ViewGroup.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                )
+            }
+            val page = Page(scroll, column)
+            pages[segments[viewType]] = page
+            return PageHolder(page)
+        }
+
+        override fun onBindViewHolder(holder: PageHolder, position: Int) {
+            bindPage(holder.page, segments[position])
+        }
+    }
+
+    private class PageHolder(val page: Page) : RecyclerView.ViewHolder(page.scroll)
 
     private fun matches(checkin: CheckinEntity, keyword: String): Boolean =
         checkinSearchById[checkin.id]?.contains(keyword) == true
@@ -254,55 +338,6 @@ class TripsFragment : Fragment() {
         const val PAGE_SIZE = 30
     }
 
-    private fun updateSegColors() {
-        val on = ContextCompat.getColor(requireContext(), R.color.on_accent)
-        val off = ContextCompat.getColor(requireContext(), R.color.text_secondary)
-        binding.btnSegCheckins.setTextColor(if (segment == Segment.CHECKINS) on else off)
-        binding.btnSegTrips.setTextColor(if (segment == Segment.TRIPS) on else off)
-    }
-
-    private fun swipeToSegment(direction: Int) {
-        val target = if (direction > 0) Segment.TRIPS else Segment.CHECKINS
-        if (target == segment) return
-        val width = binding.scroll.width.toFloat().coerceAtLeast(1f)
-        val out = if (direction > 0) -width * 0.22f else width * 0.22f
-        binding.listContainer.animate()
-            .translationX(out).alpha(0.35f).setDuration(120)
-            .withEndAction {
-                binding.listContainer.translationX = -out
-                binding.listContainer.alpha = 1f
-                selectSegment(target)
-                binding.listContainer.animate().translationX(0f).setDuration(180).start()
-            }
-            .start()
-    }
-
-    private fun selectSegment(target: Segment) {
-        if (segment == target) return
-        segment = target
-        visibleCount = PAGE_SIZE
-        render()
-        binding.segTrack.post { moveIndicator(animate = true) }
-    }
-
-    /** 两等分滑块：宽度取容器一半，按当前分段平移。 */
-    private fun moveIndicator(animate: Boolean) {
-        val indicator = binding.chipIndicator
-        val half = binding.chipContainer.width / 2
-        // 还没布局完：等 chipContainer 的布局回调来摆，别把宽度写成 0
-        if (half <= 0) return
-        indicator.layoutParams = (indicator.layoutParams as FrameLayout.LayoutParams).apply { width = half }
-        indicator.requestLayout()
-        val target = if (segment == Segment.CHECKINS) 0f else half.toFloat()
-        if (animate) {
-            indicator.animate().translationX(target)
-                .setDuration(200)
-                .setInterpolator(PathInterpolator(0.2f, 0f, 0f, 1f))
-                .start()
-        } else {
-            indicator.translationX = target
-        }
-    }
     // ────────────────────────── 卡片 ──────────────────────────
 
     private fun checkinRow(checkin: CheckinEntity): View {
@@ -506,11 +541,6 @@ class TripsFragment : Fragment() {
         }
         frame.addView(content)
         root.addView(frame)
-        root.onHorizontalSwipe(
-            canSwipe = { !binding.inputSearch.hasFocus() },
-            onSwipeLeft = { swipeToSegment(1) },
-            onSwipeRight = { swipeToSegment(-1) },
-        )
         return root to content
     }
 
