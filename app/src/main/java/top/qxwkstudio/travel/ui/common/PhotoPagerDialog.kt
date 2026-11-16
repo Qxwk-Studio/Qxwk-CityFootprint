@@ -17,7 +17,7 @@ import android.widget.TextView
 import android.widget.Toast
 import top.qxwkstudio.travel.R
 
-/** 多图查看：左右切换、缩放、保存当前图。 */
+/** 多图查看：横向连续滑动切换（相邻照片跟手滑入、松手吸附）、缩放、保存当前图。 */
 internal fun showPhotoDialog(context: Context, paths: List<String>, startIndex: Int = 0) {
     val usable = paths.filter { it.isNotBlank() }
     if (usable.isEmpty()) return
