@@ -12,11 +12,14 @@ import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.EditText
+import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import androidx.core.content.ContextCompat
+import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
@@ -26,6 +29,7 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import top.qxwkstudio.travel.R
+import top.qxwkstudio.travel.data.DataExport
 import top.qxwkstudio.travel.data.SyncEvents
 import top.qxwkstudio.travel.data.CheckinRepo
 import top.qxwkstudio.travel.data.CityStore
@@ -56,6 +60,9 @@ import top.qxwkstudio.travel.logic.Timeline
  *
  * 竖条用 `clipToOutline` 裁到卡片圆角里 —— 之前它按方角画，会从圆角处露出一点，看着像「超出卡片」。
  * 菜单用 [showIconMenu]（自绘、带图标、宽度 wrap），与主页「+」是同一套浮层。
+ *
+ * 多选模式（外壳切换见 [TripsSelectionHost] / MainActivity）：卡片左侧多出一颗指示器，
+ * 点整张卡就是选中/取消；派生打卡在这期间整段隐藏，也不进全选、删除、导出与统计。
  */
 class TripsFragment : Fragment() {
 
@@ -104,6 +111,14 @@ class TripsFragment : Fragment() {
     /** 每座城市「最早那条打卡」的 id：表格里的首访角标与金色边框按它判断。 */
     private var firstVisitIds: Set<Long> = emptySet()
 
+    /** 多选模式：卡片左侧出指示器、派生打卡隐藏、点按变成选中（外层顶栏/底栏由 MainActivity 切换）。 */
+    private var selecting = false
+    private val selectedCheckins = mutableSetOf<Long>()
+    private val selectedTrips = mutableSetOf<String>()
+
+    /** 行 key → 「只刷新选中外观」：切换选中时不重建整行，只换指示器与卡片边框。 */
+    private val rowUpdaters = mutableMapOf<String, (Boolean) -> Unit>()
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentTripsBinding.inflate(inflater, container, false)
         return binding.root
@@ -147,10 +162,7 @@ class TripsFragment : Fragment() {
     override fun onDestroyView() {
         // 页面和行缓存都绑在旧视图上（换主题/尺寸会整页重建），留着会被下一份视图复用成僵尸 View
         pages.clear()
-        checkinRowsKey = ""
-        checkinRowsCache = emptyList()
-        tripRowsKey = ""
-        tripRowsCache = emptyList()
+        invalidateRowCaches()
         _binding?.pager?.adapter = null
         _binding = null
         super.onDestroyView()
@@ -214,7 +226,15 @@ class TripsFragment : Fragment() {
                     checkin.seqNo.toString(),
                 ).joinToString(" ").lowercase()
             }
+            // 数据变化后剔掉已经不存在的选中项，顶栏统计不会停留在旧数字上
+            if (selecting) {
+                selectedCheckins.retainAll(
+                    checkinList.filter { it.source != CheckinSource.DERIVED }.map { it.id }.toSet(),
+                )
+                selectedTrips.retainAll(tripList.map { it.uuid }.toSet())
+            }
             render()
+            if (selecting) notifySelectionCounts()
         }
     }
 
@@ -234,7 +254,11 @@ class TripsFragment : Fragment() {
     private fun bindPage(page: Page, target: Segment) {
         val keyword = query.trim().lowercase()
         val allVisible = when (target) {
-            Segment.CHECKINS -> if (keyword.isBlank()) checkins else checkins.filter { matches(it, keyword) }
+            Segment.CHECKINS -> {
+                val base = if (keyword.isBlank()) checkins else checkins.filter { matches(it, keyword) }
+                // 多选期间派生打卡整段隐藏：它们不允许被选中，也不参与全选/删除/导出与统计
+                if (selecting) base.filter { it.source != CheckinSource.DERIVED } else base
+            }
             Segment.TRIPS -> if (keyword.isBlank()) trips else trips.filter { matches(it, keyword) }
         }
         val limit = visibleCount[target] ?: PAGE_SIZE
@@ -250,7 +274,8 @@ class TripsFragment : Fragment() {
     }
 
     private fun rowsFor(target: Segment, keyword: String, limit: Int, shown: List<*>): List<View> {
-        val rowsKey = "$keyword|$limit|$seenVersion"
+        // selecting 进 key：进出多选时行结构（左侧指示器）不同，不能复用旧行
+        val rowsKey = "$keyword|$limit|$seenVersion|$selecting"
         return when (target) {
             Segment.CHECKINS -> {
                 if (rowsKey == checkinRowsKey) checkinRowsCache
@@ -366,24 +391,27 @@ class TripsFragment : Fragment() {
         checkin.amountCents?.takeIf { it > 0 }?.let { header.addView(costBadge(it)) }
         header.addView(spacer())
         if (first) header.addView(firstVisitChip())
-        header.addView(menuButton { anchor ->
-            showIconMenu(
-                anchor,
-                buildList {
-                    add(MenuAction(R.drawable.ic_share, R.string.trips_menu_share) {
-                        requireContext().notify(R.string.trips_share_wip)
-                    })
-                    if (!derived) {
-                        add(MenuAction(R.drawable.ic_edit, R.string.trips_menu_edit) {
-                            startActivity(CheckinEditActivity.intent(requireContext(), checkin.id))
+        // 多选模式下卡片菜单让位：这时候点卡片是选中，菜单点起来容易误删
+        if (!selecting) {
+            header.addView(menuButton { anchor ->
+                showIconMenu(
+                    anchor,
+                    buildList {
+                        add(MenuAction(R.drawable.ic_share, R.string.trips_menu_share) {
+                            requireContext().notify(R.string.trips_share_wip)
                         })
-                        add(MenuAction(R.drawable.ic_delete, R.string.trips_menu_delete) {
-                            confirmDeleteCheckin(checkin)
-                        })
-                    }
-                },
-            )
-        })
+                        if (!derived) {
+                            add(MenuAction(R.drawable.ic_edit, R.string.trips_menu_edit) {
+                                startActivity(CheckinEditActivity.intent(requireContext(), checkin.id))
+                            })
+                            add(MenuAction(R.drawable.ic_delete, R.string.trips_menu_delete) {
+                                confirmDeleteCheckin(checkin)
+                            })
+                        }
+                    },
+                )
+            })
+        }
         card.addView(header)
 
         // 第二行：左 同行人；右 评分 · 时长 · 到访时间（评分在右组左一）
@@ -421,9 +449,13 @@ class TripsFragment : Fragment() {
 
         root.isClickable = true
         root.setOnClickListener {
-            startActivity(CheckinDetailActivity.intent(requireContext(), checkin.id))
+            if (selecting) {
+                toggleCheckin(checkin)
+            } else {
+                startActivity(CheckinDetailActivity.intent(requireContext(), checkin.id))
+            }
         }
-        return root
+        return if (selecting) decorateSelectable(root, keyOf(checkin), checkin.id in selectedCheckins) else root
     }
 
     /** 非徽章信息之间的「·」分隔。 */
@@ -463,22 +495,24 @@ class TripsFragment : Fragment() {
         header.addView(titleViewWrap(trip.title.ifBlank { getString(R.string.trips_trip_empty_title) }))
         if (trip.totalCostCents > 0) header.addView(costBadge(trip.totalCostCents))
         header.addView(spacer())
-        header.addView(menuButton { anchor ->
-            showIconMenu(
-                anchor,
-                listOf(
-                    MenuAction(R.drawable.ic_share, R.string.trips_menu_share) {
-                        requireContext().notify(R.string.trips_share_wip)
-                    },
-                    MenuAction(R.drawable.ic_edit, R.string.trips_menu_edit) {
-                        startActivity(TripEditActivity.intent(requireContext(), trip.id))
-                    },
-                    MenuAction(R.drawable.ic_delete, R.string.trips_menu_delete) {
-                        confirmDeleteTrip(trip)
-                    },
-                ),
-            )
-        })
+        if (!selecting) {
+            header.addView(menuButton { anchor ->
+                showIconMenu(
+                    anchor,
+                    listOf(
+                        MenuAction(R.drawable.ic_share, R.string.trips_menu_share) {
+                            requireContext().notify(R.string.trips_share_wip)
+                        },
+                        MenuAction(R.drawable.ic_edit, R.string.trips_menu_edit) {
+                            startActivity(TripEditActivity.intent(requireContext(), trip.id))
+                        },
+                        MenuAction(R.drawable.ic_delete, R.string.trips_menu_delete) {
+                            confirmDeleteTrip(trip)
+                        },
+                    ),
+                )
+            })
+        }
         card.addView(header)
 
         // 第二行：左「城市串」、右「时间线数 · 时间」
@@ -497,9 +531,13 @@ class TripsFragment : Fragment() {
 
         root.isClickable = true
         root.setOnClickListener {
-            startActivity(TripDetailActivity.intent(requireContext(), trip.id))
+            if (selecting) {
+                toggleTrip(trip)
+            } else {
+                startActivity(TripDetailActivity.intent(requireContext(), trip.id))
+            }
         }
-        return root
+        return if (selecting) decorateSelectable(root, keyOf(trip), trip.uuid in selectedTrips) else root
     }
 
     /**
@@ -745,6 +783,268 @@ class TripsFragment : Fragment() {
         DatePrecision.MONTH -> Dates.dotMonth(checkin.checkinAt)
         DatePrecision.UNKNOWN -> getString(R.string.checkin_date_unknown)
         else -> Dates.ymd(checkin.checkinAt)
+    }
+
+    // ────────────────────────── 多选 ──────────────────────────
+
+    /** 由 MainActivity 在进入多选时调用（外壳切换在那边，选择状态在这边）。 */
+    fun enterSelectMode() {
+        if (selecting) return
+        selecting = true
+        selectedCheckins.clear()
+        selectedTrips.clear()
+        invalidateRowCaches()
+        render()
+        notifySelectionCounts()
+    }
+
+    /** 退出多选：清空选择、行结构还原，派生打卡按原规则回到列表。 */
+    fun exitSelectMode() {
+        if (!selecting) return
+        selecting = false
+        selectedCheckins.clear()
+        selectedTrips.clear()
+        invalidateRowCaches()
+        render()
+    }
+
+    /**
+     * 全选**当前这一页**的列表（屏幕上现在这批行），派生打卡不参与。
+     * 不做跨页全选：另一页的卡片此刻不可见，批量删除时被连带删掉太反直觉。
+     */
+    fun selectAllVisible() {
+        if (!selecting) return
+        val keyword = query.trim().lowercase()
+        when (segments.getOrNull(binding.pager.currentItem)) {
+            Segment.CHECKINS -> checkins
+                .filter { it.source != CheckinSource.DERIVED && (keyword.isBlank() || matches(it, keyword)) }
+                .take(visibleCount[Segment.CHECKINS] ?: PAGE_SIZE)
+                .forEach { checkin ->
+                    selectedCheckins.add(checkin.id)
+                    rowUpdaters[keyOf(checkin)]?.invoke(true)
+                }
+
+            Segment.TRIPS -> trips
+                .filter { keyword.isBlank() || matches(it, keyword) }
+                .take(visibleCount[Segment.TRIPS] ?: PAGE_SIZE)
+                .forEach { trip ->
+                    selectedTrips.add(trip.uuid)
+                    rowUpdaters[keyOf(trip)]?.invoke(true)
+                }
+
+            null -> Unit
+        }
+        notifySelectionCounts()
+    }
+
+    /** 二次确认：必须逐字输入确认文案，按钮才可用；输入不一致时点了也不删。 */
+    fun confirmDeleteSelected() {
+        if (selectedCheckins.isEmpty() && selectedTrips.isEmpty()) {
+            requireContext().notify(R.string.trips_selection_empty)
+            return
+        }
+        val ctx = requireContext()
+        val input = EditText(ctx).apply {
+            hint = getString(R.string.trips_selection_delete_hint)
+            setSingleLine(true)
+            textSize = 14f
+            setTextColor(ContextCompat.getColor(ctx, R.color.fg))
+        }
+        val box = FrameLayout(ctx).apply {
+            setPadding(dp(24), dp(4), dp(24), 0)
+            addView(
+                input,
+                FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                ),
+            )
+        }
+        val phrase = getString(R.string.trips_selection_delete_phrase)
+        val dialog = MaterialAlertDialogBuilder(ctx)
+            .setTitle(R.string.trips_selection_delete_title)
+            .setMessage(
+                getString(
+                    R.string.trips_selection_delete_message,
+                    selectedCheckins.size,
+                    selectedTrips.size,
+                    phrase,
+                ),
+            )
+            .setView(box)
+            .setNegativeButton(R.string.common_cancel, null)
+            .setPositiveButton(R.string.common_delete, null)
+            .create()
+        dialog.setOnShowListener {
+            val positive = dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE)
+            positive.isEnabled = false
+            input.doAfterTextChanged { text -> positive.isEnabled = text?.toString() == phrase }
+            positive.setOnClickListener {
+                if (input.text?.toString() != phrase) return@setOnClickListener
+                dialog.dismiss()
+                performDeleteSelected()
+            }
+        }
+        dialog.show()
+    }
+
+    /** 只导出被选中的内容；派生打卡不在选择集合里，因此也不会被带出去。 */
+    fun exportSelected() {
+        if (selectedCheckins.isEmpty() && selectedTrips.isEmpty()) {
+            requireContext().notify(R.string.trips_selection_empty)
+            return
+        }
+        val checkinIds = selectedCheckins.toSet()
+        val tripUuids = selectedTrips.toSet()
+        viewLifecycleOwner.lifecycleScope.runIo({
+            DataExport.export(
+                requireContext(),
+                AppDatabase.get(requireContext()),
+                onlyTripUuids = tripUuids,
+                onlyCheckinIds = checkinIds,
+            )
+        }) { result ->
+            val data = result.getOrNull()
+            if (data == null) {
+                requireContext().notify(R.string.export_failed, long = true)
+            } else {
+                requireContext().notify(
+                    getString(R.string.export_done, data.displayPath, data.trips, data.checkins, data.photos),
+                    long = true,
+                )
+            }
+        }
+    }
+
+    private fun performDeleteSelected() {
+        val checkinIds = selectedCheckins.toSet()
+        val tripUuids = selectedTrips.toSet()
+        val tripIds = trips.filter { it.uuid in tripUuids }.map { it.id }
+        viewLifecycleOwner.lifecycleScope.runIo({
+            val db = AppDatabase.get(requireContext())
+            // 先删行程：它的派生打卡由 TripRepo 在同一个事务里重算，不会留下孤儿
+            tripIds.forEach { TripRepo.delete(db, it) }
+            checkinIds.forEach { CheckinRepo.delete(db, it) }
+        }) { result ->
+            if (!result.isSuccess) {
+                requireContext().notify(R.string.common_error, long = true)
+                return@runIo
+            }
+            trips = trips.filterNot { it.uuid in tripUuids }
+            checkins = checkins.filterNot { it.id in checkinIds }
+            selectedCheckins.clear()
+            selectedTrips.clear()
+            invalidateRowCaches()
+            render()
+            notifySelectionCounts()
+            requireContext().notify(R.string.trips_selection_deleted)
+            PhotoJanitor.sweepAsync(requireContext())
+            load()
+        }
+    }
+
+    private fun toggleCheckin(checkin: CheckinEntity) {
+        if (!selecting || checkin.source == CheckinSource.DERIVED) return
+        val selected = if (checkin.id in selectedCheckins) {
+            selectedCheckins.remove(checkin.id)
+            false
+        } else {
+            selectedCheckins.add(checkin.id)
+            true
+        }
+        rowUpdaters[keyOf(checkin)]?.invoke(selected)
+        notifySelectionCounts()
+    }
+
+    private fun toggleTrip(trip: TripEntity) {
+        if (!selecting) return
+        val selected = if (trip.uuid in selectedTrips) {
+            selectedTrips.remove(trip.uuid)
+            false
+        } else {
+            selectedTrips.add(trip.uuid)
+            true
+        }
+        rowUpdaters[keyOf(trip)]?.invoke(selected)
+        notifySelectionCounts()
+    }
+
+    /**
+     * 多选行：左侧一颗指示器 + 原卡片。
+     *
+     * 卡片宽度让出一颗指示器的位置（整行仍铺满），选中只在卡片背景上多一圈主题色细描边 ——
+     * 不改尺寸、不改内边距、不改点击区域。切换选中只走 [rowUpdaters]，不重建整页 30 行。
+     */
+    private fun decorateSelectable(card: View, key: String, selected: Boolean): View {
+        val ctx = requireContext()
+        val dot = ImageView(ctx).apply {
+            contentDescription = getString(R.string.trips_selection_indicator)
+            layoutParams = LinearLayout.LayoutParams(dp(26), dp(26)).apply {
+                marginEnd = dp(10)
+                topMargin = dp(12)
+            }
+        }
+        val container = LinearLayout(ctx).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.TOP
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+            )
+        }
+        (card.layoutParams as? LinearLayout.LayoutParams)?.let { lp ->
+            lp.width = 0
+            lp.weight = 1f
+            card.layoutParams = lp
+        }
+        container.addView(dot)
+        container.addView(card)
+
+        val updater: (Boolean) -> Unit = { on ->
+            if (on) {
+                dot.background = GradientDrawable().apply {
+                    shape = GradientDrawable.OVAL
+                    setColor(Palette.accent(ctx))
+                }
+                dot.setImageResource(R.drawable.ic_check)
+                dot.imageTintList = android.content.res.ColorStateList.valueOf(
+                    ContextCompat.getColor(ctx, R.color.on_accent),
+                )
+                dot.setPadding(dp(5), dp(5), dp(5), dp(5))
+                // 描边走 foreground：只画在卡片轮廓上，不占尺寸，也不会被左侧竖条盖住
+                card.foreground = GradientDrawable().apply {
+                    cornerRadius = dp(14).toFloat()
+                    setStroke(dp(2), Palette.accent(ctx))
+                }
+            } else {
+                dot.setImageDrawable(null)
+                dot.background = GradientDrawable().apply {
+                    shape = GradientDrawable.OVAL
+                    setStroke(dp(2), ContextCompat.getColor(ctx, R.color.border))
+                    setColor(android.graphics.Color.TRANSPARENT)
+                }
+                card.foreground = null
+            }
+        }
+        rowUpdaters[key] = updater
+        updater(selected)
+        return container
+    }
+
+    private fun keyOf(checkin: CheckinEntity): String = "c${checkin.id}"
+
+    private fun keyOf(trip: TripEntity): String = "t${trip.uuid}"
+
+    private fun notifySelectionCounts() {
+        (activity as? TripsSelectionHost)?.onTripsSelectionCounts(selectedCheckins.size, selectedTrips.size)
+    }
+
+    private fun invalidateRowCaches() {
+        checkinRowsKey = ""
+        checkinRowsCache = emptyList()
+        tripRowsKey = ""
+        tripRowsCache = emptyList()
+        rowUpdaters.clear()
     }
 
     // ────────────────────────── 删除 ──────────────────────────

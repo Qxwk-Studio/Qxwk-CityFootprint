@@ -8,6 +8,7 @@ import top.qxwkstudio.travel.ui.achievements.AchievementsFragment
 import top.qxwkstudio.travel.ui.mine.MineFragment
 import top.qxwkstudio.travel.ui.trips.CheckinEditActivity
 import top.qxwkstudio.travel.ui.trips.TripEditActivity
+import top.qxwkstudio.travel.ui.trips.TripsSelectionHost
 
 import android.os.Bundle
 import android.text.SpannableString
@@ -45,7 +46,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
  *
  * 五个页面都是各自独立的实现。
  */
-class MainActivity : LocalizedActivity() {
+class MainActivity : LocalizedActivity(), TripsSelectionHost {
 
     private lateinit var binding: ActivityMainBinding
 
@@ -55,6 +56,12 @@ class MainActivity : LocalizedActivity() {
     /** 上一次算出的药丸落点（底栏坐标系里的 x），见 [placeNavPill]。NaN 保证第一次一定落位。 */
     private var pillTargetX = Float.NaN
 
+    /** 是否处于行程页多选模式：顶栏换返回键、底栏换多选功能区，返回键先退模式再退页面。 */
+    private var selectingTrips = false
+
+    /** 进入多选前的顶栏标题，退出时原样还回去。 */
+    private var titleBeforeSelection = ""
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // 主题色叠层：必须在 setContentView 之前应用，Material 控件（按钮/开关/输入框）的颜色取自主题
@@ -63,7 +70,7 @@ class MainActivity : LocalizedActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         val b = binding
         // 必须在 setContentView 之前（见 ui/EdgeToEdge.kt）
-        applyEdgeToEdge(b.topBar.root, b.bottomBar, bottomIncludeIme = false)
+        applyEdgeToEdge(b.topBar.root, b.bottomArea, bottomIncludeIme = false)
         setContentView(b.root)
 
         b.bottomNav.doOnLayout { pinBottomNavLabels() }
@@ -71,6 +78,7 @@ class MainActivity : LocalizedActivity() {
         b.bottomNav.post { placeNavPill(b.bottomNav.selectedItemId, animate = false) }
         setupNavPill()
         setupAddMenu()
+        setupSelectionBar()
         showLegalConsentIfNeeded()
 
         b.bottomNav.setOnItemSelectedListener { item ->
@@ -158,6 +166,10 @@ class MainActivity : LocalizedActivity() {
                 actions += MenuAction(R.drawable.ic_sync, R.string.menu_renumber) {
                     renumber()
                 }
+                // 多选只属于行程页：它要改顶栏与底栏，放在页面里做会够不着外壳
+                actions += MenuAction(R.drawable.ic_check, R.string.trips_menu_multi_select) {
+                    enterTripsSelection()
+                }
             }
             showIconMenu(anchor, actions)
         }
@@ -182,6 +194,81 @@ class MainActivity : LocalizedActivity() {
             }
         }
     }
+
+    // ────────────────────────── 行程页多选外壳 ──────────────────────────
+
+    private fun setupSelectionBar() {
+        binding.btnSelectAll.setOnClickListener { tripsFragment()?.selectAllVisible() }
+        binding.btnSelectionDelete.setOnClickListener { tripsFragment()?.confirmDeleteSelected() }
+        binding.btnSelectionExport.setOnClickListener { tripsFragment()?.exportSelected() }
+        setSelectionActions(0, 0)
+        // 多选模式下返回键先退模式，而不是直接退出应用
+        onBackPressedDispatcher.addCallback(this, object : androidx.activity.OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                if (selectingTrips) {
+                    exitTripsSelection()
+                    return
+                }
+                isEnabled = false
+                onBackPressedDispatcher.onBackPressed()
+                isEnabled = true
+            }
+        })
+    }
+
+    /**
+     * 进入多选：顶栏换成「返回 + 统计」，右上角动作项全部让位（规格要求右侧留空），
+     * 底栏从导航栏换成 全选 / 删除 / 导出。选择状态本身在 [TripsFragment] 里。
+     */
+    private fun enterTripsSelection() {
+        if (selectingTrips) return
+        val trips = tripsFragment() ?: return
+        selectingTrips = true
+        titleBeforeSelection = binding.topBar.title.text.toString()
+        binding.topBar.btnMenu.visibility = View.GONE
+        binding.topBar.btnBack.visibility = View.VISIBLE
+        binding.topBar.btnBack.setOnClickListener { exitTripsSelection() }
+        binding.topBar.title.text = getString(R.string.trips_selection_title, 0, 0)
+        binding.bottomBar.visibility = View.GONE
+        binding.multiBar.visibility = View.VISIBLE
+        trips.enterSelectMode()
+    }
+
+    /** 退出多选：顶栏、底栏、标题全部还原，并清空页面里的选择状态（见 TripsFragment.exitSelectMode）。 */
+    private fun exitTripsSelection() {
+        if (!selectingTrips) return
+        selectingTrips = false
+        tripsFragment()?.exitSelectMode()
+        binding.topBar.btnBack.setOnClickListener(null)
+        binding.topBar.btnBack.visibility = View.GONE
+        binding.topBar.btnMenu.visibility = View.VISIBLE
+        binding.topBar.title.text = titleBeforeSelection.ifBlank {
+            getString(titleOf(binding.bottomNav.selectedItemId))
+        }
+        binding.multiBar.visibility = View.GONE
+        binding.bottomBar.visibility = View.VISIBLE
+        setSelectionActions(0, 0)
+        updateTopMenuIcon()
+    }
+
+    override fun onTripsSelectionCounts(checkins: Int, trips: Int) {
+        if (!selectingTrips) return
+        binding.topBar.title.text = getString(R.string.trips_selection_title, checkins, trips)
+        setSelectionActions(checkins, trips)
+    }
+
+    /** 没选任何内容时删除/导出置灰，避免「点了没反应」的困惑（规格允许置灰或提示，这里选置灰）。 */
+    private fun setSelectionActions(checkins: Int, trips: Int) {
+        val any = checkins + trips > 0
+        listOf(binding.btnSelectionDelete, binding.btnSelectionExport).forEach {
+            it.isEnabled = any
+            it.alpha = if (any) 1f else 0.4f
+        }
+    }
+
+    private fun tripsFragment(): TripsFragment? =
+        supportFragmentManager.findFragmentByTag(TAG_TRIPS) as? TripsFragment
+
     // ────────────────────────── tab 路由 ──────────────────────────
 
     private fun show(tag: String) {
