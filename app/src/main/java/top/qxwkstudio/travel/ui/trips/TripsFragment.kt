@@ -793,6 +793,10 @@ class TripsFragment : Fragment() {
         selecting = true
         selectedCheckins.clear()
         selectedTrips.clear()
+        // 搜索框让位：这时若还按关键字过滤，用户看不到过滤条件，容易把看不见的条目一起选上
+        binding.inputSearch.clearFocus()
+        if (query.isNotBlank()) binding.inputSearch.setText("")
+        binding.searchCard.visibility = View.GONE
         invalidateRowCaches()
         render()
         notifySelectionCounts()
@@ -804,6 +808,7 @@ class TripsFragment : Fragment() {
         selecting = false
         selectedCheckins.clear()
         selectedTrips.clear()
+        binding.searchCard.visibility = View.VISIBLE
         invalidateRowCaches()
         render()
     }
