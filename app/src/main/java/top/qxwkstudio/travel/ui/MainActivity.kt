@@ -87,7 +87,7 @@ class MainActivity : LocalizedActivity(), TripsSelectionHost {
             // 落点用回调参数 itemId，不能读 selectedItemId：选中状态比这个回调晚一步更新
             // （时序说明见 1.x 的同一段注释，结论没变）
             placeNavPill(item.itemId, animate = true)
-            updateTopMenuIcon(item.itemId == R.id.tab_trips)
+            updateTopMenuIcon(item.itemId)
             true
         }
 
@@ -152,7 +152,6 @@ class MainActivity : LocalizedActivity(), TripsSelectionHost {
     }
 
     private fun setupAddMenu() {
-        binding.topBar.btnMenu.visibility = View.VISIBLE
         binding.topBar.btnMenu.setOnClickListener { anchor ->
             val actions = mutableListOf(
                 MenuAction(R.drawable.ic_locate, R.string.menu_checkin) {
@@ -176,9 +175,15 @@ class MainActivity : LocalizedActivity(), TripsSelectionHost {
         updateTopMenuIcon()
     }
 
-    private fun updateTopMenuIcon(
-        onTrips: Boolean = binding.bottomNav.selectedItemId == R.id.tab_trips,
-    ) {
+    /**
+     * 右上角按钮的形态按所在 tab 决定：首页是「+」，行程页是「⋮」（含重新编号 / 多选）。
+     * 地图 / 成就 / 我的三页没有这个入口，直接隐藏。
+     */
+    private fun updateTopMenuIcon(itemId: Int = binding.bottomNav.selectedItemId) {
+        val onTrips = itemId == R.id.tab_trips
+        val visible = onTrips || itemId == R.id.tab_home
+        binding.topBar.btnMenu.visibility = if (visible) View.VISIBLE else View.GONE
+        if (!visible) return
         binding.topBar.btnMenu.setImageResource(if (onTrips) R.drawable.ic_more else R.drawable.ic_add)
         binding.topBar.btnMenu.contentDescription = getString(
             if (onTrips) R.string.menu_renumber else R.string.common_add,
@@ -241,7 +246,6 @@ class MainActivity : LocalizedActivity(), TripsSelectionHost {
         tripsFragment()?.exitSelectMode()
         binding.topBar.btnBack.setOnClickListener(null)
         binding.topBar.btnBack.visibility = View.GONE
-        binding.topBar.btnMenu.visibility = View.VISIBLE
         binding.topBar.title.text = titleBeforeSelection.ifBlank {
             getString(titleOf(binding.bottomNav.selectedItemId))
         }
