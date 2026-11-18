@@ -361,12 +361,12 @@ abstract class ShareCanvas(context: Context) : View(context) {
         }
         stroke.strokeWidth = 6f
 
-        // 两行文字居中排在印章中心（圆心在卡片角上，所以往左上偏移取露出的那块的中心）。
-        // 参考图：外圈 + 居中两行 City / Footprint，不做弧形排版
+        // 两行文字居中排在印章中心。印章圆心压在卡片右下角上，露出来的只有左上一小块，
+        // 所以「中心」取露出的那块（约 0.42–0.45 半径）—— 按完整圆心排会把第二行整行推到卡片外。
         val textCenterX = centerX - radius * 0.45f
-        val textCenterY = centerY - radius * 0.45f
-        drawText(canvas, topLine, textCenterX, textCenterY - 2f, 26f, ink, align = Paint.Align.CENTER, letterSpacing = 0.02f)
-        drawText(canvas, bottomLine, textCenterX, textCenterY + 34f, 26f, ink, align = Paint.Align.CENTER, letterSpacing = 0.02f)
+        val textCenterY = centerY - radius * 0.42f
+        drawText(canvas, topLine, textCenterX, textCenterY - 4f, 30f, ink, align = Paint.Align.CENTER, letterSpacing = 0.02f)
+        drawText(canvas, bottomLine, textCenterX, textCenterY + 40f, 30f, ink, align = Paint.Align.CENTER, letterSpacing = 0.02f)
     }
 }
 

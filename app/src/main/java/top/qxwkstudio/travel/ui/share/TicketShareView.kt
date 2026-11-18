@@ -95,58 +95,58 @@ internal class TicketShareView(context: Context) : ShareCanvas(context) {
         when (layout) {
             TextLayout.HORIZONTAL -> {
                 // 横排：中英同一行，中文大、英文小一号紧跟其后
-                val zhWidth = measureStyled(titleZh, 62f, font).coerceAtMost(width - 40f)
-                drawStyled(canvas, titleZh, left, cursor + 58f, 62f, tint, font, maxWidth = width - 40f)
+                val zhWidth = measureStyled(titleZh, 72f, font).coerceAtMost(width - 40f)
+                drawStyled(canvas, titleZh, left, cursor + 68f, 72f, tint, font, maxWidth = width - 40f)
                 if (titleEn.isNotBlank()) {
                     drawText(
                         canvas = canvas,
                         value = titleEn,
                         x = left + zhWidth + 14f,
-                        baseline = cursor + 58f,
-                        size = 28f,
+                        baseline = cursor + 68f,
+                        size = 32f,
                         color = tint,
                         typeface = Typeface.DEFAULT,
                         letterSpacing = 0.12f,
                         maxWidth = (width - zhWidth - 14f).coerceAtLeast(48f),
                     )
                 }
-                cursor += 96f
+                cursor += 112f
             }
 
             TextLayout.VERTICAL -> {
                 // 竖排：中英都竖着读，两列**顶部对齐**在同一根基线上
                 val top = rect.top + 40f
-                val zhLeft = left + 28f
-                val zhHeight = drawStyledVertical(canvas, titleZh, zhLeft, top, 56f, tint, font, 10f)
+                val zhLeft = left + 34f
+                val zhHeight = drawStyledVertical(canvas, titleZh, zhLeft, top, 66f, tint, font, 12f)
                 if (titleEn.isNotBlank()) {
-                    // 旋转后的首字左沿贴在 top 上；中文首字字形顶比 top 低约 6，补一下才真正齐平
+                    // 旋转后的首字左沿贴在 top 上；中文首字字形顶比 top 低约 7，补一下才真正齐平
                     drawRotatedText(
                         canvas = canvas,
                         value = titleEn,
-                        x = zhLeft + 44f,
-                        top = top + 6f,
-                        size = 24f,
+                        x = zhLeft + 52f,
+                        top = top + 7f,
+                        size = 30f,
                         color = tint,
-                        maxHeight = zhHeight.coerceAtLeast(140f),
+                        maxHeight = zhHeight.coerceAtLeast(160f),
                     )
                 }
-                cursor = top + zhHeight + 22f
+                cursor = top + zhHeight + 26f
             }
         }
 
-        cursor += 44f
-        drawText(canvas, dateText, left, cursor, 30f, tint, Typeface.DEFAULT, maxWidth = width)
-        cursor += 30f
+        cursor += 48f
+        drawText(canvas, dateText, left, cursor, 36f, tint, Typeface.DEFAULT, maxWidth = width)
+        cursor += 38f
 
-        val lines = wrap(note, 24f, noteColor.resolve(context), width, 5)
+        val lines = wrap(note, 28f, noteColor.resolve(context), width, 4)
         lines.forEachIndexed { index, line ->
-            drawText(canvas, line, left, cursor + 40f + index * 34f, 24f, noteColor.resolve(context))
+            drawText(canvas, line, left, cursor + 46f + index * 40f, 28f, noteColor.resolve(context))
         }
 
         if (qrOn) {
             drawQr(
                 canvas = canvas,
-                dst = RectF(left, rect.bottom - 34f - 120f, left + 120f, rect.bottom - 34f),
+                dst = RectF(left, rect.bottom - 34f - 136f, left + 136f, rect.bottom - 34f),
                 content = qrContent,
                 ink = qrColor.resolve(context),
                 label = context.getString(R.string.share_qr_placeholder),
@@ -157,7 +157,7 @@ internal class TicketShareView(context: Context) : ShareCanvas(context) {
             canvas = canvas,
             centerX = rect.right - 4f,
             centerY = rect.bottom - 4f,
-            radius = 148f,
+            radius = 168f,
             style = stampStyle,
             ink = stampColor.resolve(context),
             paper = PAPER,
