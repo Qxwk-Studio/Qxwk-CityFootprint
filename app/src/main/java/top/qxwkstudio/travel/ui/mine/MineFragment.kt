@@ -99,7 +99,11 @@ class MineFragment : Fragment() {
         binding.rowExportData.setOnClickListener { startExportFlow() }
         binding.rowSync.setOnClickListener { startActivity(SyncActivity.intent(requireContext())) }
         binding.root.fadeSlideIn()
-        binding.textVersion.text = BuildConfig.VERSION_NAME
+        binding.textVersion.text = getString(
+            R.string.mine_version_value,
+            BuildConfig.VERSION_NAME,
+            BuildConfig.VERSION_CODE,
+        )
         load()
     }
 
