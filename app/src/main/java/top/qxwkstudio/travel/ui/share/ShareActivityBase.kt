@@ -125,8 +125,16 @@ abstract class ShareActivityBase : LocalizedActivity() {
 
     // ────────────────────────── 卡片骨架 ──────────────────────────
 
-    /** 一张「图标 + 标题 + 内容区」的卡片；返回内容区，调用方往里填控件。 */
-    protected fun addCard(iconRes: Int, titleRes: Int): LinearLayout {
+    /**
+     * 一张「图标 + 标题 + 内容区」的卡片；返回内容区，调用方往里填控件。
+     * [actionRes] 不为空时在标题右侧加一颗右对齐的文字按钮（如「选择照片」）。
+     */
+    protected fun addCard(
+        iconRes: Int,
+        titleRes: Int,
+        actionRes: Int? = null,
+        onAction: (() -> Unit)? = null,
+    ): LinearLayout {
         val card = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setBackgroundResource(R.drawable.bg_card)
@@ -148,6 +156,26 @@ abstract class ShareActivityBase : LocalizedActivity() {
             setTextColor(getColor(R.color.fg))
             setPadding(dp(6), 0, 0, 0)
         })
+        header.addView(View(this).apply {
+            layoutParams = LinearLayout.LayoutParams(0, 1, 1f)
+        })
+        if (actionRes != null) {
+            header.addView(MaterialButton(this, null, com.google.android.material.R.attr.materialButtonOutlinedStyle).apply {
+                setText(actionRes)
+                textSize = 12f
+                minWidth = 0
+                minHeight = 0
+                insetTop = 0
+                insetBottom = 0
+                cornerRadius = dp(8)
+                setPadding(dp(10), 0, dp(10), 0)
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    dp(30),
+                )
+                setOnClickListener { onAction?.invoke() }
+            })
+        }
         card.addView(header)
         val body = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         card.addView(body)
@@ -161,17 +189,36 @@ abstract class ShareActivityBase : LocalizedActivity() {
         return body
     }
 
-    /** 单选胶囊行；[disabled] 里的项灰掉并附「暂未开放」的说明由调用方决定。 */
+    /** 选择器上方的小标题（「字体」「颜色」这类），让每一行都能自己说明是什么。 */
+    protected fun sectionLabel(labelRes: Int): TextView = TextView(this).apply {
+        setText(labelRes)
+        textSize = 12f
+        setTextColor(getColor(R.color.text_tertiary))
+        setPadding(0, dp(12), 0, dp(2))
+    }
+
+    /** 单选胶囊行（带小标题）；[disabled] 里的项灰掉，是否附「暂未开放」由调用方决定。 */
     protected fun chips(
+        labelRes: Int,
         options: List<String>,
         selected: Int,
         disabled: IntArray = IntArray(0),
         onPick: (Int) -> Unit,
     ): View {
-        val row = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            setPadding(0, dp(10), 0, 0)
+        val block = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        block.addView(sectionLabel(labelRes))
+        // 字体/格式这类最多 6 项，一屏放不下：横向滚动，别把卡片撑出屏幕
+        val scroll = android.widget.HorizontalScrollView(this).apply {
+            isHorizontalScrollBarEnabled = false
         }
+        val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        scroll.addView(
+            row,
+            ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+            ),
+        )
         options.forEachIndexed { index, label ->
             val enabled = !disabled.contains(index)
             val active = enabled && index == selected
@@ -204,7 +251,8 @@ abstract class ShareActivityBase : LocalizedActivity() {
                 setOnClickListener { if (enabled) onPick(index) }
             })
         }
-        return row
+        block.addView(scroll)
+        return block
     }
 
     /** 滑条行：左侧标签、右侧当前值，拖动时实时回调（预览跟手）。 */
@@ -297,11 +345,12 @@ abstract class ShareActivityBase : LocalizedActivity() {
         return row
     }
 
-    /** 会自己重画选中描边的色板：换色后不需要调用方再管布局。 */
-    protected fun colorRowLive(current: () -> InkColor, onPick: (InkColor) -> Unit): View {
+    /** 会自己重画选中描边的色板（带小标题）：换色后不需要调用方再管布局。 */
+    protected fun colorRowLive(labelRes: Int, current: () -> InkColor, onPick: (InkColor) -> Unit): View {
         val host = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         fun fill() {
             host.removeAllViews()
+            host.addView(sectionLabel(labelRes))
             host.addView(colorRow(current()) { picked ->
                 onPick(picked)
                 fill()
@@ -311,12 +360,13 @@ abstract class ShareActivityBase : LocalizedActivity() {
         return host
     }
 
-    /** 已有照片的缩略图条 + 「从相册选择」。 */
+    /** 已有照片的缩略图条；[showPickButton] = false 时只展示缩略图（入口挪到卡片标题行）。 */
     protected fun photoStrip(
         paths: List<String>,
         selected: String?,
         onPick: (String) -> Unit,
         onPicked: (String) -> Unit,
+        showPickButton: Boolean = true,
     ): View {
         val block = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         if (paths.isEmpty()) {
@@ -361,15 +411,17 @@ abstract class ShareActivityBase : LocalizedActivity() {
             }
             block.addView(row)
         }
-        block.addView(MaterialButton(this, null, com.google.android.material.R.attr.materialButtonOutlinedStyle).apply {
-            setText(R.string.share_pick_gallery)
-            textSize = 12f
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-                dp(36),
-            ).apply { topMargin = dp(10) }
-            setOnClickListener { pickGallery(onPicked) }
-        })
+        if (showPickButton) {
+            block.addView(MaterialButton(this, null, com.google.android.material.R.attr.materialButtonOutlinedStyle).apply {
+                setText(R.string.share_pick_gallery)
+                textSize = 12f
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    dp(36),
+                ).apply { topMargin = dp(10) }
+                setOnClickListener { pickGallery(onPicked) }
+            })
+        }
         return block
     }
 

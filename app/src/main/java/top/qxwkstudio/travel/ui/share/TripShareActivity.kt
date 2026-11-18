@@ -118,6 +118,7 @@ class TripShareActivity : ShareActivityBase() {
             body.removeAllViews()
             body.addView(
                 chips(
+                    labelRes = R.string.share_label_layout,
                     options = listOf(getString(R.string.share_layout_h), getString(R.string.share_layout_v)),
                     selected = if (layout == TextLayout.HORIZONTAL) 0 else 1,
                 ) { index ->
@@ -137,6 +138,7 @@ class TripShareActivity : ShareActivityBase() {
             body.removeAllViews()
             body.addView(
                 chips(
+                    labelRes = R.string.share_label_format,
                     options = listOf(
                         getString(R.string.share_range_day),
                         getString(R.string.share_range_month),
@@ -193,7 +195,7 @@ class TripShareActivity : ShareActivityBase() {
             },
         )
         body.addView(
-            colorRowLive({ qrColor }) { color ->
+            colorRowLive(R.string.share_label_color, { qrColor }) { color ->
                 qrColor = color
                 view.qrColor = color
                 view.refresh()

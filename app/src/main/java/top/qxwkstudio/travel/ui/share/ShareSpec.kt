@@ -31,20 +31,23 @@ enum class InkColor {
 }
 
 /** 邮戳样式。 */
-enum class StampStyle { ROUND, SQUARE, DOUBLE }
+enum class StampStyle { ROUND, DOUBLE, SQUARE, OVAL, PERFORATED }
 
-/** 标题字体（不引字体文件，用系统自带的三族）。 */
+/** 标题字体：全部用系统字体族，不打包字体文件。 */
 enum class CardFont {
-    DEFAULT, SERIF, MONO;
+    DEFAULT, SERIF, MONO, LIGHT, CONDENSED, CURSIVE;
 
     fun typeface(): Typeface = when (this) {
         DEFAULT -> Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
         SERIF -> Typeface.create(Typeface.SERIF, Typeface.BOLD)
         MONO -> Typeface.create(Typeface.MONOSPACE, Typeface.BOLD)
+        LIGHT -> Typeface.create("sans-serif-light", Typeface.NORMAL)
+        CONDENSED -> Typeface.create("sans-serif-condensed", Typeface.BOLD)
+        CURSIVE -> Typeface.create("cursive", Typeface.NORMAL)
     }
 
     companion object {
-        val ALL = listOf(DEFAULT, SERIF, MONO)
+        val ALL = listOf(DEFAULT, SERIF, MONO, LIGHT, CONDENSED, CURSIVE)
     }
 }
 
@@ -52,7 +55,7 @@ enum class CardFont {
 enum class TextLayout { HORIZONTAL, VERTICAL }
 
 /** 单条日期格式。 */
-enum class DateStyle { DOT, CN, EN }
+enum class DateStyle { DOT, CN, EN, SLASH, ISO, SPACED }
 
 /** 时间跨度的精度。 */
 enum class RangeUnit { DAY, MONTH, YEAR }
@@ -80,6 +83,9 @@ object ShareDates {
             DateStyle.DOT -> "yyyy.MM.dd"
             DateStyle.CN -> "yyyy年M月d日"
             DateStyle.EN -> "d MMM yyyy"
+            DateStyle.SLASH -> "yyyy/MM/dd"
+            DateStyle.ISO -> "yyyy-MM-dd"
+            DateStyle.SPACED -> "yyyy  MM  dd"
         }
         return SimpleDateFormat(pattern, if (style == DateStyle.CN) Locale.CHINA else Locale.US)
             .format(Date(millis))

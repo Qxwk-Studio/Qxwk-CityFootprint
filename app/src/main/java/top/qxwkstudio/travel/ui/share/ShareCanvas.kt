@@ -100,6 +100,15 @@ abstract class ShareCanvas(context: Context) : View(context) {
         canvas.restore()
     }
 
+    /** 量一段文字在当前字号下的宽度（给「英文竖排贴右侧」这类排版定位用）。 */
+    protected fun measure(value: String, size: Float, typeface: Typeface, letterSpacing: Float = 0f): Float {
+        text.typeface = typeface
+        text.textSize = size
+        text.textAlign = Paint.Align.LEFT
+        text.letterSpacing = letterSpacing
+        return text.measureText(value)
+    }
+
     /** 单行文字；[maxWidth] > 0 时超宽按省略号截断。 */
     protected fun drawText(
         canvas: Canvas,
@@ -247,7 +256,30 @@ abstract class ShareCanvas(context: Context) : View(context) {
                 canvas.drawRect(centerX - side / 2f, centerY - side / 2f, centerX + side / 2f, centerY + side / 2f, stroke)
                 canvas.restore()
             }
+
+            StampStyle.OVAL -> {
+                canvas.save()
+                canvas.rotate(-12f, centerX, centerY)
+                val outer = RectF(centerX - radius, centerY - radius * 0.7f, centerX + radius, centerY + radius * 0.7f)
+                canvas.drawOval(outer, stroke)
+                stroke.strokeWidth = 3f
+                canvas.drawOval(
+                    RectF(outer.left + 20f, outer.top + 20f, outer.right - 20f, outer.bottom - 20f),
+                    stroke,
+                )
+                canvas.restore()
+            }
+
+            StampStyle.PERFORATED -> {
+                // 齿孔章：外圈用间距很大的虚线，像撕下来的一圈孔
+                stroke.pathEffect = DashPathEffect(floatArrayOf(16f, 12f), 0f)
+                canvas.drawCircle(centerX, centerY, radius, stroke)
+                stroke.pathEffect = null
+                stroke.strokeWidth = 3f
+                canvas.drawCircle(centerX, centerY, radius - 24f, stroke)
+            }
         }
+        stroke.strokeWidth = 6f
         // 文字只在露出的四分之一里，所以往左上压一点
         drawText(canvas, topLine, centerX - radius * 0.62f, centerY - radius * 0.5f, 26f, ink, align = Paint.Align.CENTER, letterSpacing = 0.08f)
         drawText(canvas, bottomLine, centerX - radius * 0.62f, centerY - radius * 0.5f + 34f, 24f, ink, align = Paint.Align.CENTER)

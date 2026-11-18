@@ -83,22 +83,39 @@ class CheckinShareActivity : ShareActivityBase() {
     }
 
     private fun photoCard() {
-        val body = addCard(R.drawable.ic_camera, R.string.share_card_photo)
-        fun fill() {
-            body.removeAllViews()
+        // 「选择照片」挪到卡片标题行右侧；本打卡已有的照片放在下面，没有就整块不显示
+        lateinit var body: LinearLayout
+        body = addCard(
+            iconRes = R.drawable.ic_camera,
+            titleRes = R.string.share_card_photo,
+            actionRes = R.string.share_pick_photo,
+            onAction = {
+                pickGallery { path ->
+                    photoPath = path
+                    applyPhoto()
+                    photoCardBody(body)
+                }
+            },
+        )
+        photoCardBody(body)
+    }
+
+    private fun photoCardBody(body: LinearLayout) {
+        body.removeAllViews()
+        if (photos.isNotEmpty()) {
             body.addView(
                 photoStrip(
                     paths = photos,
                     selected = photoPath,
-                    onPick = { photoPath = it; applyPhoto(); fill() },
-                    onPicked = { photoPath = it; applyPhoto(); fill() },
+                    onPick = { photoPath = it; applyPhoto(); photoCardBody(body) },
+                    onPicked = { photoPath = it; applyPhoto(); photoCardBody(body) },
+                    showPickButton = false,
                 ),
             )
-            body.addView(slider(R.string.share_offset_x, -100, 100, dx) { dx = it; applyTransform() })
-            body.addView(slider(R.string.share_offset_y, -100, 100, dy) { dy = it; applyTransform() })
-            body.addView(slider(R.string.share_zoom, 100, 300, zoom) { zoom = it; applyTransform() })
         }
-        fill()
+        body.addView(slider(R.string.share_offset_x, -100, 100, dx) { dx = it; applyTransform() })
+        body.addView(slider(R.string.share_offset_y, -100, 100, dy) { dy = it; applyTransform() })
+        body.addView(slider(R.string.share_zoom, 100, 300, zoom) { zoom = it; applyTransform() })
     }
 
     private fun titleCard() {
@@ -107,10 +124,14 @@ class CheckinShareActivity : ShareActivityBase() {
             body.removeAllViews()
             body.addView(
                 chips(
+                    labelRes = R.string.share_label_font,
                     options = listOf(
                         getString(R.string.share_font_default),
                         getString(R.string.share_font_serif),
                         getString(R.string.share_font_mono),
+                        getString(R.string.share_font_light),
+                        getString(R.string.share_font_condensed),
+                        getString(R.string.share_font_cursive),
                     ),
                     selected = CardFont.ALL.indexOf(font),
                 ) { index ->
@@ -122,6 +143,7 @@ class CheckinShareActivity : ShareActivityBase() {
             )
             body.addView(
                 chips(
+                    labelRes = R.string.share_label_layout,
                     options = listOf(getString(R.string.share_layout_h), getString(R.string.share_layout_v)),
                     selected = if (layout == TextLayout.HORIZONTAL) 0 else 1,
                 ) { index ->
@@ -141,6 +163,7 @@ class CheckinShareActivity : ShareActivityBase() {
             body.removeAllViews()
             body.addView(
                 chips(
+                    labelRes = R.string.share_label_calendar,
                     options = listOf(
                         getString(R.string.share_calendar_gregorian),
                         getString(R.string.share_calendar_lunar_soon),
@@ -151,10 +174,14 @@ class CheckinShareActivity : ShareActivityBase() {
             )
             body.addView(
                 chips(
+                    labelRes = R.string.share_label_format,
                     options = listOf(
                         getString(R.string.share_date_format_dot),
                         getString(R.string.share_date_format_cn),
                         getString(R.string.share_date_format_en),
+                        getString(R.string.share_date_format_slash),
+                        getString(R.string.share_date_format_iso),
+                        getString(R.string.share_date_format_space),
                     ),
                     selected = dateStyle.ordinal,
                 ) { index ->
@@ -191,7 +218,7 @@ class CheckinShareActivity : ShareActivityBase() {
         }
         body.addView(edit)
         body.addView(
-            colorRowLive({ noteColor }) { color ->
+            colorRowLive(R.string.share_label_color, { noteColor }) { color ->
                 noteColor = color
                 view.noteColor = color
                 view.refresh()
@@ -208,15 +235,15 @@ class CheckinShareActivity : ShareActivityBase() {
                     qrOn = checked
                     view.qrOn = checked
                     view.refresh()
+                    fill()
                 },
             )
             if (qrOn) {
                 body.addView(
-                    colorRow(qrColor) { color ->
+                    colorRowLive(R.string.share_label_color, { qrColor }) { color ->
                         qrColor = color
                         view.qrColor = color
                         view.refresh()
-                        fill()
                     },
                 )
             }
@@ -230,10 +257,13 @@ class CheckinShareActivity : ShareActivityBase() {
             body.removeAllViews()
             body.addView(
                 chips(
+                    labelRes = R.string.share_label_style,
                     options = listOf(
                         getString(R.string.share_stamp_round),
-                        getString(R.string.share_stamp_square),
                         getString(R.string.share_stamp_double),
+                        getString(R.string.share_stamp_square),
+                        getString(R.string.share_stamp_oval),
+                        getString(R.string.share_stamp_perforated),
                     ),
                     selected = stampStyle.ordinal,
                 ) { index ->
@@ -244,11 +274,10 @@ class CheckinShareActivity : ShareActivityBase() {
                 },
             )
             body.addView(
-                colorRow(stampColor) { color ->
+                colorRowLive(R.string.share_label_color, { stampColor }) { color ->
                     stampColor = color
                     view.stampColor = color
                     view.refresh()
-                    fill()
                 },
             )
         }
@@ -286,6 +315,9 @@ class CheckinShareActivity : ShareActivityBase() {
                 DateStyle.DOT -> "yyyy.MM.dd"
                 DateStyle.CN -> "yyyy年M月d日"
                 DateStyle.EN -> "d MMM yyyy"
+                DateStyle.SLASH -> "yyyy/MM/dd"
+                DateStyle.ISO -> "yyyy-MM-dd"
+                DateStyle.SPACED -> "yyyy  MM  dd"
             }
         }
         val locale = if (style == DateStyle.CN) Locale.CHINA else Locale.US

@@ -20,6 +20,13 @@
     <string name="share_card_timeline">Timeline</string>
 
     <string name="share_pick_gallery">Pick from gallery</string>
+    <string name="share_pick_photo">Pick photo</string>
+    <string name="share_label_font">Font</string>
+    <string name="share_label_layout">Layout</string>
+    <string name="share_label_calendar">Calendar</string>
+    <string name="share_label_format">Format</string>
+    <string name="share_label_color">Color</string>
+    <string name="share_label_style">Style</string>
     <string name="share_offset_x">Horizontal</string>
     <string name="share_offset_y">Vertical</string>
     <string name="share_zoom">Zoom</string>
@@ -27,6 +34,9 @@
     <string name="share_font_default">Default</string>
     <string name="share_font_serif">Serif</string>
     <string name="share_font_mono">Mono</string>
+    <string name="share_font_light">Light</string>
+    <string name="share_font_condensed">Condensed</string>
+    <string name="share_font_cursive">Cursive</string>
 
     <string name="share_layout_h">Horizontal</string>
     <string name="share_layout_v">Vertical</string>
@@ -43,6 +53,8 @@
     <string name="share_stamp_round">Round</string>
     <string name="share_stamp_square">Square</string>
     <string name="share_stamp_double">Double ring</string>
+    <string name="share_stamp_oval">Oval</string>
+    <string name="share_stamp_perforated">Perforated</string>
 
     <string name="share_qr_switch">Show QR code</string>
     <string name="share_timeline_switch">Show timeline</string>
@@ -52,6 +64,9 @@
     <string name="share_date_format_dot">2026.11.18</string>
     <string name="share_date_format_cn">2026年11月18日</string>
     <string name="share_date_format_en">18 Nov 2026</string>
+    <string name="share_date_format_slash">2026/11/18</string>
+    <string name="share_date_format_iso">2026-11-18</string>
+    <string name="share_date_format_space">2026 11 18</string>
 
     <string name="share_range_day">By day</string>
     <string name="share_range_month">By month</string>
