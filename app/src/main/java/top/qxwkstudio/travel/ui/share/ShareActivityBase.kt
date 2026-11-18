@@ -321,28 +321,29 @@ abstract class ShareActivityBase : LocalizedActivity() {
         return row
     }
 
-    /** 四档墨色：选中档加一圈主题色描边。 */
+    /** 十档墨色分两行（一行五个）—— 一行放不下，也不该横向滚动着挑颜色。 */
     protected fun colorRow(selected: InkColor, onPick: (InkColor) -> Unit): View {
-        val row = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            setPadding(0, dp(12), 0, 0)
-        }
-        InkColor.ALL.forEach { color ->
-            val dot = View(this).apply {
-                background = GradientDrawable().apply {
-                    shape = GradientDrawable.OVAL
-                    setColor(color.resolve(this@ShareActivityBase))
-                    if (color == selected) setStroke(dp(3), Palette.accent(this@ShareActivityBase))
-                }
-                layoutParams = LinearLayout.LayoutParams(dp(24), dp(24)).apply {
-                    marginEnd = dp(10)
-                }
-                setOnClickListener { onPick(color) }
+        val rows = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        InkColor.ALL.chunked(5).forEach { group ->
+            val row = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                setPadding(0, dp(10), 0, 0)
             }
-            row.addView(dot)
+            group.forEach { color ->
+                row.addView(View(this).apply {
+                    background = GradientDrawable().apply {
+                        shape = GradientDrawable.OVAL
+                        setColor(color.resolve(this@ShareActivityBase))
+                        if (color == selected) setStroke(dp(3), Palette.accent(this@ShareActivityBase))
+                    }
+                    layoutParams = LinearLayout.LayoutParams(dp(24), dp(24)).apply { marginEnd = dp(10) }
+                    setOnClickListener { onPick(color) }
+                })
+            }
+            rows.addView(row)
         }
-        return row
+        return rows
     }
 
     /** 会自己重画选中描边的色板（带小标题）：换色后不需要调用方再管布局。 */

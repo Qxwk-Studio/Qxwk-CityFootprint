@@ -68,7 +68,7 @@ internal class PosterShareView(context: Context) : ShareCanvas(context) {
         var cursor = image.bottom + 78f
 
         if (layout == TextLayout.VERTICAL) {
-            cursor += drawTextVertical(canvas, title, left + 34f, cursor, 56f, tint, Typeface.create(Typeface.DEFAULT, Typeface.BOLD), 10f)
+            cursor += drawStyledVertical(canvas, title, left + 34f, cursor, 56f, tint, CardFont.DEFAULT, 10f)
         } else {
             drawText(canvas, title, left, cursor, 62f, tint, Typeface.create(Typeface.DEFAULT, Typeface.BOLD), maxWidth = width)
             cursor += 22f

@@ -94,37 +94,41 @@ internal class TicketShareView(context: Context) : ShareCanvas(context) {
 
         when (layout) {
             TextLayout.HORIZONTAL -> {
-                drawText(canvas, titleZh, left, cursor + 58f, 62f, tint, font.typeface(), maxWidth = width - 52f)
+                // 横排：中英同一行，中文大、英文小一号紧跟其后
+                val zhWidth = measureStyled(titleZh, 62f, font).coerceAtMost(width - 40f)
+                drawStyled(canvas, titleZh, left, cursor + 58f, 62f, tint, font, maxWidth = width - 40f)
                 if (titleEn.isNotBlank()) {
-                    // 英文转 90° 贴在中文右侧，读起来是从上往下 —— 票根的标志性排版。
-                    // 竖着的英文占的是高度，给个上限，免得长城市名压到下面的日期
-                    val zhWidth = measure(titleZh, 62f, font.typeface()).coerceAtMost(width - 52f)
-                    canvas.save()
-                    canvas.translate(left + zhWidth + 20f, cursor - 8f)
-                    canvas.rotate(90f)
                     drawText(
                         canvas = canvas,
                         value = titleEn,
-                        x = 0f,
-                        baseline = 0f,
-                        size = 24f,
+                        x = left + zhWidth + 14f,
+                        baseline = cursor + 58f,
+                        size = 28f,
                         color = tint,
                         typeface = Typeface.DEFAULT,
-                        letterSpacing = 0.18f,
-                        maxWidth = 138f,
+                        letterSpacing = 0.12f,
+                        maxWidth = (width - zhWidth - 14f).coerceAtLeast(48f),
                     )
-                    canvas.restore()
                 }
                 cursor += 96f
             }
 
             TextLayout.VERTICAL -> {
-                cursor += drawTextVertical(canvas, titleZh, left + 28f, cursor, 56f, tint, font.typeface(), 10f)
+                // 竖排：中英都竖着读，中文一列、英文旋转 90° 紧贴右侧一列
+                val zhLeft = left + 28f
+                val zhHeight = drawStyledVertical(canvas, titleZh, zhLeft, cursor, 56f, tint, font, 10f)
                 if (titleEn.isNotBlank()) {
-                    drawText(canvas, titleEn, left, cursor + 26f, 24f, tint, Typeface.DEFAULT, letterSpacing = 0.16f, maxWidth = width)
-                    cursor += 44f
+                    drawRotatedText(
+                        canvas = canvas,
+                        value = titleEn,
+                        x = zhLeft + 44f,
+                        top = cursor - 2f,
+                        size = 24f,
+                        color = tint,
+                        maxHeight = zhHeight.coerceAtLeast(140f),
+                    )
                 }
-                cursor += 14f
+                cursor += zhHeight + 22f
             }
         }
 
@@ -154,6 +158,7 @@ internal class TicketShareView(context: Context) : ShareCanvas(context) {
             radius = 148f,
             style = stampStyle,
             ink = stampColor.resolve(context),
+            paper = PAPER,
             topLine = "CITY",
             bottomLine = "FOOTPRINT",
         )

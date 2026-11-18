@@ -33,7 +33,7 @@
     <string name="mine_group_about">About</string>
     <string name="mine_theme_color">Theme color</string>
     <string name="mine_open_source">Open source &amp; licenses</string>
-    <string name="mine_open_source_body">· MapLibre Native — BSD-2-Clause, map rendering engine\n· OpenStreetMap data — © OpenStreetMap contributors, ODbL, basemap data\n· Protomaps — ODbL, China z0–6 basemap tiles\n· Material Icons — Apache-2.0, UI icons\n· AndroidX / Material Components — Apache-2.0\n· Kotlin / kotlinx.serialization / Room — Apache-2.0</string>
+    <string name="mine_open_source_body">· MapLibre Native — BSD-2-Clause, map rendering engine\n· OpenStreetMap data — © OpenStreetMap contributors, ODbL, basemap data\n· Protomaps — ODbL, China z0–6 basemap tiles\n· Material Icons — Apache-2.0, UI icons\n· AndroidX / Material Components — Apache-2.0\n· Kotlin / kotlinx.serialization / Room — Apache-2.0\n· Ma Shan Zheng — SIL OFL 1.1, handwriting title font on share pages (subset)</string>
     <string name="mine_badge_color">Badge color</string>
     <string name="mine_group_software">Permissions &amp; storage</string>
     <string name="mine_permissions">Permissions</string>

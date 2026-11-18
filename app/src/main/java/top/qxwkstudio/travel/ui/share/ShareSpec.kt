@@ -2,6 +2,8 @@ package top.qxwkstudio.travel.ui.share
 
 import android.content.Context
 import android.graphics.Typeface
+import androidx.core.content.res.ResourcesCompat
+import top.qxwkstudio.travel.R
 import top.qxwkstudio.travel.ui.common.Palette
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -10,48 +12,77 @@ import java.util.Locale
 /**
  * 分享图的固定设计口径：墨色档位、字体、排列、日期格式、深链。
  *
- * 所有尺寸都在「设计坐标」里写（票根 1600×900、海报 1080×1440），
+ * 所有尺寸都在「设计坐标」里写（票根 2000×900、海报 1080×1440），
  * 预览按屏幕宽度整体缩放，导出按原尺寸出图 —— 两边画的是同一段代码，所见即所得。
  */
 
-/** 分享图上可切换的墨色，四档全站统一，避免每个卡片各配一套色板。 */
+/** 分享图上可切换的墨色。全部落在浅色纸上，够清楚又不刺眼。 */
 enum class InkColor {
-    BLACK, ACCENT, GOLD, GRAY;
+    BLACK, ACCENT, GOLD, GRAY, RED, BLUE, GREEN, PLUM, TEAL, BROWN;
 
     fun resolve(context: Context): Int = when (this) {
         BLACK -> 0xFF1F1B16.toInt()
         ACCENT -> Palette.accent(context)
         GOLD -> 0xFFB08A3E.toInt()
         GRAY -> 0xFF8C8578.toInt()
+        RED -> 0xFFB04A3A.toInt()
+        BLUE -> 0xFF35597E.toInt()
+        GREEN -> 0xFF3F6B4A.toInt()
+        PLUM -> 0xFF7A4A62.toInt()
+        TEAL -> 0xFF2F6F6A.toInt()
+        BROWN -> 0xFF6B4A2F.toInt()
     }
 
     companion object {
-        val ALL = listOf(BLACK, ACCENT, GOLD, GRAY)
+        val ALL = listOf(BLACK, ACCENT, GOLD, GRAY, RED, BLUE, GREEN, PLUM, TEAL, BROWN)
     }
 }
 
 /** 邮戳样式。 */
 enum class StampStyle { ROUND, DOUBLE, SQUARE, OVAL, PERFORATED }
 
-/** 标题字体：全部用系统字体族，不打包字体文件。 */
+/**
+ * 标题字体。
+ *
+ * 汉字只有一套系统字形（Noto Sans CJK），所以 serif/monospace 只对英文有效 —— 只靠换族名
+ * 在中文上「看不出区别」。因此：
+ *  - 手写体打包了一个 OFL 的毛笔楷书子集（res/font/mashanzheng.ttf，仅城市表用字）；
+ *  - 其余几档用字重、字距、横向压缩做出肉眼可辨的差别。
+ */
 enum class CardFont {
     DEFAULT, SERIF, MONO, LIGHT, CONDENSED, CURSIVE;
 
-    fun typeface(): Typeface = when (this) {
+    fun typeface(context: Context): Typeface = when (this) {
         DEFAULT -> Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
         SERIF -> Typeface.create(Typeface.SERIF, Typeface.BOLD)
         MONO -> Typeface.create(Typeface.MONOSPACE, Typeface.BOLD)
         LIGHT -> Typeface.create("sans-serif-light", Typeface.NORMAL)
         CONDENSED -> Typeface.create("sans-serif-condensed", Typeface.BOLD)
-        CURSIVE -> Typeface.create("cursive", Typeface.NORMAL)
+        // 子集里只有城市表用字；万一缺字回退系统字体，宁可丑也不能是豆腐块
+        CURSIVE -> runCatching { ResourcesCompat.getFont(context, R.font.mashanzheng) }
+            .getOrNull() ?: Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
     }
+
+    /** 字距：细体与手写拉开一点，窄体压紧。 */
+    val letterSpacing: Float
+        get() = when (this) {
+            LIGHT -> 0.06f
+            SERIF -> 0.02f
+            CURSIVE -> 0.02f
+            CONDENSED -> -0.02f
+            else -> 0f
+        }
+
+    /** 横向压缩：窄体用 0.85，肉眼明显更收。 */
+    val textScaleX: Float
+        get() = if (this == CONDENSED) 0.85f else 1f
 
     companion object {
         val ALL = listOf(DEFAULT, SERIF, MONO, LIGHT, CONDENSED, CURSIVE)
     }
 }
 
-/** 标题排列方向：竖排按字逐行落。 */
+/** 标题排列方向：横排 = 中英同一行；竖排 = 中英都竖着读。 */
 enum class TextLayout { HORIZONTAL, VERTICAL }
 
 /** 单条日期格式。 */
@@ -59,6 +90,9 @@ enum class DateStyle { DOT, CN, EN, SLASH, ISO, SPACED }
 
 /** 时间跨度的精度。 */
 enum class RangeUnit { DAY, MONTH, YEAR }
+
+/** 历法。农历换算见 [LunarCalendar]。 */
+enum class CalendarKind { GREGORIAN, LUNAR }
 
 /**
  * 分享深链。

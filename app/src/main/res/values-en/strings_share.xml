@@ -67,6 +67,9 @@
     <string name="share_date_format_slash">2026/11/18</string>
     <string name="share_date_format_iso">2026-11-18</string>
     <string name="share_date_format_space">2026 11 18</string>
+    <string name="share_date_lunar_full">丙午年十月十八</string>
+    <string name="share_date_lunar_short">农历十月十八</string>
+    <string name="share_date_lunar_month">十月十八</string>
 
     <string name="share_range_day">By day</string>
     <string name="share_range_month">By month</string>

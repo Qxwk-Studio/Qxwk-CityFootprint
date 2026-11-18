@@ -35,7 +35,9 @@ class CheckinShareActivity : ShareActivityBase() {
     private var dy = 0
     private var font = CardFont.DEFAULT
     private var layout = TextLayout.HORIZONTAL
+    private var calendar = CalendarKind.GREGORIAN
     private var dateStyle = DateStyle.DOT
+    private var lunarStyle = 0
     private var noteColor = InkColor.BLACK
     private var qrOn = true
     private var qrColor = InkColor.BLACK
@@ -64,7 +66,7 @@ class CheckinShareActivity : ShareActivityBase() {
             view.titleZh = entity.cityName
             view.titleEn = englishName(entity.cityName)
             view.note = entity.note.orEmpty()
-            view.dateText = dateText(entity, dateStyle)
+            view.dateText = dateText(entity)
             view.qrContent = ShareLink.checkin(entity.uuid)
             view.refresh()
             buildCards()
@@ -166,31 +168,55 @@ class CheckinShareActivity : ShareActivityBase() {
                     labelRes = R.string.share_label_calendar,
                     options = listOf(
                         getString(R.string.share_calendar_gregorian),
-                        getString(R.string.share_calendar_lunar_soon),
+                        getString(R.string.share_calendar_lunar),
                     ),
-                    selected = 0,
-                    disabled = intArrayOf(1),
-                ) { },
-            )
-            body.addView(
-                chips(
-                    labelRes = R.string.share_label_format,
-                    options = listOf(
-                        getString(R.string.share_date_format_dot),
-                        getString(R.string.share_date_format_cn),
-                        getString(R.string.share_date_format_en),
-                        getString(R.string.share_date_format_slash),
-                        getString(R.string.share_date_format_iso),
-                        getString(R.string.share_date_format_space),
-                    ),
-                    selected = dateStyle.ordinal,
+                    selected = calendar.ordinal,
                 ) { index ->
-                    dateStyle = DateStyle.entries[index]
-                    checkin?.let { view.dateText = dateText(it, dateStyle) }
+                    calendar = CalendarKind.entries[index]
+                    checkin?.let { view.dateText = dateText(it) }
                     view.refresh()
+                    // 两种历法的格式选项不同，整块重排
                     fill()
                 },
             )
+            if (calendar == CalendarKind.GREGORIAN) {
+                body.addView(
+                    chips(
+                        labelRes = R.string.share_label_format,
+                        options = listOf(
+                            getString(R.string.share_date_format_dot),
+                            getString(R.string.share_date_format_cn),
+                            getString(R.string.share_date_format_en),
+                            getString(R.string.share_date_format_slash),
+                            getString(R.string.share_date_format_iso),
+                            getString(R.string.share_date_format_space),
+                        ),
+                        selected = dateStyle.ordinal,
+                    ) { index ->
+                        dateStyle = DateStyle.entries[index]
+                        checkin?.let { view.dateText = dateText(it) }
+                        view.refresh()
+                        fill()
+                    },
+                )
+            } else {
+                body.addView(
+                    chips(
+                        labelRes = R.string.share_label_format,
+                        options = listOf(
+                            getString(R.string.share_date_lunar_full),
+                            getString(R.string.share_date_lunar_short),
+                            getString(R.string.share_date_lunar_month),
+                        ),
+                        selected = lunarStyle,
+                    ) { index ->
+                        lunarStyle = index
+                        checkin?.let { view.dateText = dateText(it) }
+                        view.refresh()
+                        fill()
+                    },
+                )
+            }
         }
         fill()
     }
@@ -201,8 +227,11 @@ class CheckinShareActivity : ShareActivityBase() {
             setText(view.note)
             hint = getString(R.string.share_card_note)
             textSize = 14f
-            minLines = 1
-            maxLines = 3
+            // 备注允许换行：多行输入 + 顶对齐，票根上会按换行分行画
+            inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE
+            gravity = android.view.Gravity.TOP
+            minLines = 2
+            maxLines = 6
             setTextColor(getColor(R.color.fg))
             setHintTextColor(ContextCompat.getColor(this@CheckinShareActivity, R.color.text_tertiary))
             background = ContextCompat.getDrawable(this@CheckinShareActivity, R.drawable.bg_input_box)
@@ -305,13 +334,27 @@ class CheckinShareActivity : ShareActivityBase() {
         return en.uppercase(Locale.US) + "."
     }
 
-    /** 日期按记录精度出：只记得年月就不编一个 1 号出来。 */
-    private fun dateText(entity: CheckinEntity, style: DateStyle): String {
+    /**
+     * 日期文案：先按历法取，再按记录精度收。
+     * 只记得年 / 年月时不编造具体日；农历解析失败（极端日期）回退公历。
+     */
+    private fun dateText(entity: CheckinEntity): String {
+        if (calendar == CalendarKind.LUNAR) {
+            val lunar = LunarCalendar.of(entity.checkinAt)
+            if (lunar != null) {
+                return when (entity.datePrecision) {
+                    DatePrecision.YEAR -> LunarCalendar.formatCoarse(lunar, 0)
+                    DatePrecision.MONTH -> LunarCalendar.formatCoarse(lunar, 1)
+                    DatePrecision.UNKNOWN -> getString(R.string.checkin_date_unknown)
+                    else -> LunarCalendar.format(lunar, lunarStyle)
+                }
+            }
+        }
         val pattern = when (entity.datePrecision) {
             DatePrecision.YEAR -> "yyyy"
             DatePrecision.MONTH -> "yyyy.MM"
             DatePrecision.UNKNOWN -> return getString(R.string.checkin_date_unknown)
-            else -> when (style) {
+            else -> when (dateStyle) {
                 DateStyle.DOT -> "yyyy.MM.dd"
                 DateStyle.CN -> "yyyy年M月d日"
                 DateStyle.EN -> "d MMM yyyy"
@@ -320,7 +363,7 @@ class CheckinShareActivity : ShareActivityBase() {
                 DateStyle.SPACED -> "yyyy  MM  dd"
             }
         }
-        val locale = if (style == DateStyle.CN) Locale.CHINA else Locale.US
+        val locale = if (dateStyle == DateStyle.CN) Locale.CHINA else Locale.US
         return SimpleDateFormat(pattern, locale).format(Date(entity.checkinAt))
     }
 

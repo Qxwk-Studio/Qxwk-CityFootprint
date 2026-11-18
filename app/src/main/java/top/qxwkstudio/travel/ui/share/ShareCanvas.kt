@@ -56,7 +56,7 @@ abstract class ShareCanvas(context: Context) : View(context) {
         canvas.restore()
     }
 
-    /** 导出原尺寸位图（票根 1600×900 / 海报 1080×设计高）。 */
+    /** 导出原尺寸位图（票根 2000×900 / 海报 1080×设计高）。 */
     fun exportBitmap(): Bitmap {
         val bitmap = Bitmap.createBitmap(designWidth, designHeight, Bitmap.Config.ARGB_8888)
         drawDesign(Canvas(bitmap))
@@ -100,12 +100,13 @@ abstract class ShareCanvas(context: Context) : View(context) {
         canvas.restore()
     }
 
-    /** 量一段文字在当前字号下的宽度（给「英文竖排贴右侧」这类排版定位用）。 */
+    /** 量一段文字在当前字号下的宽度（给标题排版定位用）。 */
     protected fun measure(value: String, size: Float, typeface: Typeface, letterSpacing: Float = 0f): Float {
         text.typeface = typeface
         text.textSize = size
         text.textAlign = Paint.Align.LEFT
         text.letterSpacing = letterSpacing
+        text.textScaleX = 1f
         return text.measureText(value)
     }
 
@@ -128,6 +129,46 @@ abstract class ShareCanvas(context: Context) : View(context) {
         text.color = color
         text.textAlign = align
         text.letterSpacing = letterSpacing
+        text.textScaleX = 1f
+        var shown = value
+        if (maxWidth > 0f) {
+            while (shown.length > 1 && text.measureText(shown) > maxWidth) {
+                shown = shown.dropLast(2) + "…"
+            }
+        }
+        canvas.drawText(shown, x, baseline, text)
+    }
+
+    // ── 标题专用：带字体样式（字重/字距/横向压缩/手写子集）──
+
+    private fun applyFont(font: CardFont, size: Float, color: Int, letterSpacing: Float) {
+        text.typeface = font.typeface(context)
+        text.textSize = size
+        text.color = color
+        text.letterSpacing = letterSpacing
+        text.textScaleX = font.textScaleX
+    }
+
+    protected fun measureStyled(value: String, size: Float, font: CardFont): Float {
+        applyFont(font, size, Color.BLACK, 0f)
+        text.textAlign = Paint.Align.LEFT
+        return text.measureText(value)
+    }
+
+    protected fun drawStyled(
+        canvas: Canvas,
+        value: String,
+        x: Float,
+        baseline: Float,
+        size: Float,
+        color: Int,
+        font: CardFont,
+        letterSpacing: Float = 0f,
+        maxWidth: Float = 0f,
+    ) {
+        if (value.isEmpty()) return
+        applyFont(font, size, color, font.letterSpacing + letterSpacing)
+        text.textAlign = Paint.Align.LEFT
         var shown = value
         if (maxWidth > 0f) {
             while (shown.length > 1 && text.measureText(shown) > maxWidth) {
@@ -138,21 +179,18 @@ abstract class ShareCanvas(context: Context) : View(context) {
     }
 
     /** 竖排标题：逐字往下落，返回占用高度。 */
-    protected fun drawTextVertical(
+    protected fun drawStyledVertical(
         canvas: Canvas,
         value: String,
         x: Float,
         top: Float,
         size: Float,
         color: Int,
-        typeface: Typeface,
+        font: CardFont,
         gap: Float,
     ): Float {
-        text.typeface = typeface
-        text.textSize = size
-        text.color = color
+        applyFont(font, size, color, 0f)
         text.textAlign = Paint.Align.CENTER
-        text.letterSpacing = 0f
         var y = top + size
         value.forEach { ch ->
             canvas.drawText(ch.toString(), x, y, text)
@@ -161,36 +199,66 @@ abstract class ShareCanvas(context: Context) : View(context) {
         return y - top
     }
 
-    /** 按宽度折行（最多 [maxLines] 行，多余的用省略号收尾）。 */
+    /** 竖排英文（旋转 90°，从上往下读）：返回占用高度。 */
+    protected fun drawRotatedText(
+        canvas: Canvas,
+        value: String,
+        x: Float,
+        top: Float,
+        size: Float,
+        color: Int,
+        maxHeight: Float,
+        letterSpacing: Float = 0.16f,
+    ) {
+        if (value.isEmpty()) return
+        canvas.save()
+        canvas.translate(x, top)
+        canvas.rotate(90f)
+        drawText(
+            canvas = canvas,
+            value = value,
+            x = 0f,
+            baseline = 0f,
+            size = size,
+            color = color,
+            typeface = Typeface.DEFAULT,
+            letterSpacing = letterSpacing,
+            maxWidth = maxHeight,
+        )
+        canvas.restore()
+    }
+
+    /**
+     * 按宽度折行；**保留手输的换行**（段落之间强制断行），最多 [maxLines] 行。
+     */
     protected fun wrap(value: String, size: Float, color: Int, maxWidth: Float, maxLines: Int): List<String> {
         text.typeface = Typeface.DEFAULT
         text.textSize = size
         text.color = color
         text.textAlign = Paint.Align.LEFT
         text.letterSpacing = 0f
+        text.textScaleX = 1f
+
         val lines = ArrayList<String>()
-        val paragraph = value.replace('\n', ' ').trim()
-        if (paragraph.isEmpty()) return lines
-        var line = StringBuilder()
-        for (ch in paragraph) {
-            val next = line.toString() + ch
-            if (text.measureText(next) > maxWidth && line.isNotEmpty()) {
-                lines.add(line.toString())
-                if (lines.size == maxLines) break
-                line = StringBuilder().append(ch)
-            } else {
-                line.append(ch)
+        val paragraphs = value.replace("\r\n", "\n").split('\n')
+        for (paragraph in paragraphs) {
+            if (lines.size >= maxLines) break
+            if (paragraph.isBlank()) {
+                lines.add("")
+                continue
             }
-        }
-        if (lines.size < maxLines && line.isNotEmpty()) lines.add(line.toString())
-        if (lines.isEmpty()) lines.add("")
-        if (lines.size == maxLines) {
-            val lastIndex = maxLines - 1
-            var last = lines[lastIndex]
-            if (text.measureText(paragraph) > text.measureText(lines.joinToString("")) && last.length > 1) {
-                while (last.length > 1 && text.measureText("$last…") > maxWidth) last = last.dropLast(1)
-                lines[lastIndex] = "$last…"
+            var line = StringBuilder()
+            for (ch in paragraph.trim()) {
+                val next = line.toString() + ch
+                if (text.measureText(next) > maxWidth && line.isNotEmpty()) {
+                    lines.add(line.toString())
+                    if (lines.size >= maxLines) break
+                    line = StringBuilder().append(ch)
+                } else {
+                    line.append(ch)
+                }
             }
+            if (lines.size < maxLines && line.isNotEmpty()) lines.add(line.toString())
         }
         return lines
     }
@@ -223,7 +291,10 @@ abstract class ShareCanvas(context: Context) : View(context) {
         )
     }
 
-    /** 四分之一圆邮戳：圆心压在卡片右下角，只露卡片内的那一块。 */
+    /**
+     * 四分之一圆邮戳：圆心压在卡片右下角，只露卡片内的那一块。
+     * [paper] 是卡片底色 —— 齿孔章要拿它「打孔」，不然孔是透明的、会透出背板色。
+     */
     protected fun drawStamp(
         canvas: Canvas,
         centerX: Float,
@@ -231,6 +302,7 @@ abstract class ShareCanvas(context: Context) : View(context) {
         radius: Float,
         style: StampStyle,
         ink: Int,
+        paper: Int,
         topLine: String,
         bottomLine: String,
     ) {
@@ -271,15 +343,23 @@ abstract class ShareCanvas(context: Context) : View(context) {
             }
 
             StampStyle.PERFORATED -> {
-                // 齿孔章：外圈用间距很大的虚线，像撕下来的一圈孔
-                stroke.pathEffect = DashPathEffect(floatArrayOf(16f, 12f), 0f)
+                // 齿孔：外圈实线，再沿线用纸色打一圈小圆孔（不是虚线）
                 canvas.drawCircle(centerX, centerY, radius, stroke)
-                stroke.pathEffect = null
                 stroke.strokeWidth = 3f
-                canvas.drawCircle(centerX, centerY, radius - 24f, stroke)
+                canvas.drawCircle(centerX, centerY, radius - 26f, stroke)
+
+                fill.color = paper
+                val holes = 30
+                for (index in 0 until holes) {
+                    val angle = Math.toRadians(index * 360.0 / holes)
+                    val hx = centerX + (radius * Math.cos(angle)).toFloat()
+                    val hy = centerY + (radius * Math.sin(angle)).toFloat()
+                    canvas.drawCircle(hx, hy, 8.5f, fill)
+                }
             }
         }
         stroke.strokeWidth = 6f
+
         // 文字只在露出的四分之一里，所以往左上压一点
         drawText(canvas, topLine, centerX - radius * 0.62f, centerY - radius * 0.5f, 26f, ink, align = Paint.Align.CENTER, letterSpacing = 0.08f)
         drawText(canvas, bottomLine, centerX - radius * 0.62f, centerY - radius * 0.5f + 34f, 24f, ink, align = Paint.Align.CENTER)
@@ -304,15 +384,4 @@ internal object ShareQr {
         }
         bitmap
     }.getOrNull()
-
-    /** 白底二维码：分享出去后放在深色背景上也能扫。 */
-    fun onWhite(content: String, sizePx: Int, color: Int): Bitmap? {
-        val dark = bitmap(content, sizePx, color) ?: return null
-        val out = Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(out)
-        canvas.drawColor(Color.WHITE)
-        canvas.drawBitmap(dark, 0f, 0f, null)
-        dark.recycle()
-        return out
-    }
 }
