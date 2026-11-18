@@ -47,9 +47,6 @@ class TripShareActivity : ShareActivityBase() {
 
     override val filePrefix: String = "trip-share"
 
-    /** 海报很高，预览随内容一起滚，不钉在顶部。 */
-    override val pinnedPreview: Boolean = false
-
     private val view: PosterShareView get() = canvas as PosterShareView
 
     override fun createCanvas(): ShareCanvas = PosterShareView(this)
@@ -108,8 +105,8 @@ class TripShareActivity : ShareActivityBase() {
                 companions = segment.companions.orEmpty(),
                 note = segment.note.orEmpty(),
             )
-            segment.events.forEach { event ->
-                if (event.text.isBlank()) return@forEach
+            segment.events.forEach eventLoop@{ event ->
+                if (event.text.isBlank()) return@eventLoop
                 rows += PosterShareView.Row(
                     city = segment.city,
                     dateText = dateOnly(event.time),

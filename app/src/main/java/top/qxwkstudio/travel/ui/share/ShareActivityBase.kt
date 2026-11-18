@@ -71,8 +71,8 @@ abstract class ShareActivityBase : LocalizedActivity() {
 
     protected abstract fun createCanvas(): ShareCanvas
 
-    /** 预览是否钉在屏幕顶部：票根钉住（改动时一直可见），海报随内容一起滚。 */
-    protected open val pinnedPreview: Boolean = true
+    /** 预览是否钉在屏幕顶部：默认不钉，跟页面内容一起滚（票根与海报都一样）。 */
+    protected open val pinnedPreview: Boolean = false
 
     /** 异步取数据、灌画布、建卡片。 */
     protected abstract fun populate()
