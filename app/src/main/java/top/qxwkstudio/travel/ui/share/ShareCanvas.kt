@@ -10,10 +10,6 @@ import android.graphics.Path
 import android.graphics.RectF
 import android.graphics.Typeface
 import android.view.View
-import com.google.zxing.BarcodeFormat
-import com.google.zxing.EncodeHintType
-import com.google.zxing.qrcode.QRCodeWriter
-import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel
 import kotlin.math.max
 import kotlin.math.roundToInt
 
@@ -35,7 +31,6 @@ abstract class ShareCanvas(context: Context) : View(context) {
     protected val stroke = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE }
     protected val text = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
 
-    private val qrCache = HashMap<String, Bitmap>()
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         val maxWidth = MeasureSpec.getSize(widthMeasureSpec).coerceAtLeast(1)
@@ -263,33 +258,7 @@ abstract class ShareCanvas(context: Context) : View(context) {
         return lines
     }
 
-    /** 深链二维码；内容为空（网页落地页还没定）时画虚线占位方块。 */
-    protected fun drawQr(canvas: Canvas, dst: RectF, content: String, ink: Int, label: String) {
-        if (content.isNotBlank()) {
-            val size = dst.width().roundToInt().coerceAtLeast(64)
-            val key = "$content|$size|$ink"
-            val cached = qrCache[key]
-            val bitmap = cached ?: ShareQr.bitmap(content, size, ink)?.also { qrCache[key] = it }
-            if (bitmap != null) {
-                canvas.drawBitmap(bitmap, null, dst, photoPaint)
-                return
-            }
-        }
-        stroke.color = ink
-        stroke.strokeWidth = 3f
-        stroke.pathEffect = DashPathEffect(floatArrayOf(10f, 8f), 0f)
-        canvas.drawRect(dst, stroke)
-        stroke.pathEffect = null
-        drawText(
-            canvas = canvas,
-            value = label,
-            x = dst.centerX(),
-            baseline = dst.centerY() + 9f,
-            size = 28f,
-            color = ink,
-            align = Paint.Align.CENTER,
-        )
-    }
+    /** 深链二维码占位已移除：票根左下角改成品牌文字，见 TicketShareView。 */
 
     /**
      * 四分之一圆印章：圆心压在卡片右下角，只露卡片内的那一块。
@@ -368,24 +337,4 @@ abstract class ShareCanvas(context: Context) : View(context) {
         drawText(canvas, topLine, textCenterX, textCenterY - 4f, 30f, ink, align = Paint.Align.CENTER, letterSpacing = 0.02f)
         drawText(canvas, bottomLine, textCenterX, textCenterY + 40f, 30f, ink, align = Paint.Align.CENTER, letterSpacing = 0.02f)
     }
-}
-
-/** ZXing 编码的一次性封装（只依赖 core，不引 android-embedded）。 */
-internal object ShareQr {
-
-    fun bitmap(content: String, sizePx: Int, color: Int): Bitmap? = runCatching {
-        val hints = mapOf(
-            EncodeHintType.CHARACTER_SET to "UTF-8",
-            EncodeHintType.ERROR_CORRECTION to ErrorCorrectionLevel.M,
-            EncodeHintType.MARGIN to 0,
-        )
-        val matrix = QRCodeWriter().encode(content, BarcodeFormat.QR_CODE, sizePx, sizePx, hints)
-        val bitmap = Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.ARGB_8888)
-        for (y in 0 until sizePx) {
-            for (x in 0 until sizePx) {
-                if (matrix[x, y]) bitmap.setPixel(x, y, color)
-            }
-        }
-        bitmap
-    }.getOrNull()
 }

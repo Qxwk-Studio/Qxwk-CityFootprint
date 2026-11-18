@@ -14,7 +14,6 @@
     <string name="share_card_title">Title</string>
     <string name="share_card_date">Date</string>
     <string name="share_card_note">Note</string>
-    <string name="share_card_qr">QR code</string>
     <string name="share_card_stamp">Stamp</string>
     <string name="share_card_city">Cities</string>
     <string name="share_card_timeline">Timeline</string>
@@ -55,10 +54,7 @@
     <string name="share_stamp_double">Double ring</string>
     <string name="share_stamp_oval">Oval</string>
     <string name="share_stamp_perforated">Perforated</string>
-
-    <string name="share_qr_switch">Show QR code</string>
     <string name="share_timeline_switch">Show timeline</string>
-    <string name="share_qr_placeholder">QR</string>
     <string name="share_city_empty">This trip has no visited cities yet</string>
 
     <string name="share_date_format_dot">2026.11.18</string>

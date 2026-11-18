@@ -7,7 +7,6 @@ import android.graphics.DashPathEffect
 import android.graphics.Path
 import android.graphics.RectF
 import android.graphics.Typeface
-import top.qxwkstudio.travel.R
 
 /**
  * 打卡分享：长幅票根（20:9）。
@@ -35,10 +34,6 @@ internal class TicketShareView(context: Context) : ShareCanvas(context) {
     var dateText = ""
     var note = ""
     var noteColor = InkColor.BLACK
-
-    var qrOn = true
-    var qrColor = InkColor.BLACK
-    var qrContent = ""
 
     var stampColor = InkColor.ACCENT
     var stampStyle = StampStyle.ROUND
@@ -143,15 +138,18 @@ internal class TicketShareView(context: Context) : ShareCanvas(context) {
             drawText(canvas, line, left, cursor + 46f + index * 40f, 28f, noteColor.resolve(context))
         }
 
-        if (qrOn) {
-            drawQr(
-                canvas = canvas,
-                dst = RectF(left, rect.bottom - 34f - 136f, left + 136f, rect.bottom - 34f),
-                content = qrContent,
-                ink = qrColor.resolve(context),
-                label = context.getString(R.string.share_qr_placeholder),
-            )
-        }
+        // 信息区左下角：品牌字（原二维码的位置）。印章占了右下角，这行只排到印章左边
+        drawText(
+            canvas = canvas,
+            value = "Cityfootprint",
+            x = left,
+            baseline = rect.bottom - 34f,
+            size = 26f,
+            color = tint,
+            typeface = Typeface.DEFAULT,
+            letterSpacing = 0.06f,
+            maxWidth = right - left - 110f,
+        )
 
         drawStamp(
             canvas = canvas,

@@ -14,7 +14,6 @@
     <string name="share_card_title">标题</string>
     <string name="share_card_date">时间</string>
     <string name="share_card_note">备注</string>
-    <string name="share_card_qr">二维码</string>
     <string name="share_card_stamp">印章</string>
     <string name="share_card_city">到达城市</string>
     <string name="share_card_timeline">时间线</string>
@@ -55,10 +54,7 @@
     <string name="share_stamp_double">双环章</string>
     <string name="share_stamp_oval">椭圆章</string>
     <string name="share_stamp_perforated">齿孔章</string>
-
-    <string name="share_qr_switch">显示二维码</string>
     <string name="share_timeline_switch">显示时间线</string>
-    <string name="share_qr_placeholder">二维码</string>
     <string name="share_city_empty">这个行程还没有到访城市</string>
 
     <string name="share_date_format_dot">2026.11.18</string>

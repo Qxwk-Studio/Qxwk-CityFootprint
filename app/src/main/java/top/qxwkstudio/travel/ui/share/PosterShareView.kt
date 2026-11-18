@@ -7,7 +7,6 @@ import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.RectF
 import android.graphics.Typeface
-import top.qxwkstudio.travel.R
 
 /**
  * 足迹分享：竖版海报。
@@ -34,10 +33,6 @@ internal class PosterShareView(context: Context) : ShareCanvas(context) {
     var layout = TextLayout.HORIZONTAL
     var dateText = ""
     var cities: List<String> = emptyList()
-
-    var qrOn = true
-    var qrColor = InkColor.BLACK
-    var qrContent = ""
 
     /** 时间线上的节点：城市名 → 起始日期（按行程时间线顺序）。 */
     var timeline: List<Pair<String, String>> = emptyList()
@@ -78,21 +73,10 @@ internal class PosterShareView(context: Context) : ShareCanvas(context) {
         drawText(canvas, dateText, left, cursor, 30f, tint, Typeface.DEFAULT, maxWidth = width)
 
         cursor += 58f
-        val qrSize = 138f
-        val qrReserve = if (qrOn) qrSize + 24f else 0f
-        val cityLines = wrap(cities.joinToString(" · "), 30f, tint, width - qrReserve, 2)
+        // 二维码已移除：城市行直接用满整宽
+        val cityLines = wrap(cities.joinToString(" · "), 30f, tint, width, 2)
         cityLines.forEachIndexed { index, line ->
             drawText(canvas, line, left, cursor + index * 40f, 30f, tint)
-        }
-        if (qrOn) {
-            // 二维码与「到达城市」同行，右对齐
-            drawQr(
-                canvas = canvas,
-                dst = RectF(right - qrSize, cursor - 34f, right, cursor - 34f + qrSize),
-                content = qrContent,
-                ink = qrColor.resolve(context),
-                label = context.getString(R.string.share_qr_placeholder),
-            )
         }
 
         if (timelineOn) drawTimeline(canvas, tint, cursor + 120f)

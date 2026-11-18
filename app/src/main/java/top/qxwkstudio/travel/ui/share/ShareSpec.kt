@@ -10,7 +10,7 @@ import java.util.Date
 import java.util.Locale
 
 /**
- * 分享图的固定设计口径：墨色档位、字体、排列、日期格式、深链。
+ * 分享图的固定设计口径：墨色档位、字体、排列、日期格式、农历。
  *
  * 所有尺寸都在「设计坐标」里写（票根 2000×900、海报 1080×1440），
  * 预览按屏幕宽度整体缩放，导出按原尺寸出图 —— 两边画的是同一段代码，所见即所得。
@@ -93,21 +93,6 @@ enum class RangeUnit { DAY, MONTH, YEAR }
 
 /** 历法。农历换算见 [LunarCalendar]。 */
 enum class CalendarKind { GREGORIAN, LUNAR }
-
-/**
- * 分享深链。
- *
- * **网页端的落地页还没做**（需求确认时明确「二维码先用矩形占位」），所以 [BASE] 先留空：
- * 生成出来的内容是空串，票根/海报在二维码位置画一个虚线方块占位；
- * 网页路由确定后只改这一处常量，两个分享页与导出图会一起生效。
- */
-object ShareLink {
-    private const val BASE = ""
-
-    fun checkin(uuid: String): String = if (BASE.isBlank()) "" else "${BASE}checkin/$uuid"
-
-    fun trip(uuid: String): String = if (BASE.isBlank()) "" else "${BASE}trip/$uuid"
-}
 
 /** 日期文案：单条按三档格式，跨度按三档精度。 */
 object ShareDates {

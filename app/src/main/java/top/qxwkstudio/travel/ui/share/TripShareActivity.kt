@@ -33,8 +33,6 @@ class TripShareActivity : ShareActivityBase() {
     private var layout = TextLayout.HORIZONTAL
     private var rangeUnit = RangeUnit.DAY
     private var selectedCities = linkedSetOf<String>()
-    private var qrOn = true
-    private var qrColor = InkColor.BLACK
     private var timelineOn = true
 
     override val titleRes: Int = R.string.share_title_trip
@@ -65,7 +63,6 @@ class TripShareActivity : ShareActivityBase() {
             view.title = entity.title
             view.layout = layout
             view.dateText = ShareDates.range(entity.startTime, entity.endTime, rangeUnit)
-            view.qrContent = ShareLink.trip(entity.uuid)
             applyCities()
             applyTimeline()
             applyPhoto()
@@ -89,7 +86,6 @@ class TripShareActivity : ShareActivityBase() {
         titleCard()
         dateCard()
         cityCard()
-        qrCard()
         timelineCard()
     }
 
@@ -183,24 +179,6 @@ class TripShareActivity : ShareActivityBase() {
                 }
             })
         }
-    }
-
-    private fun qrCard() {
-        val body = addCard(R.drawable.ic_link, R.string.share_card_qr)
-        body.addView(
-            switchRow(R.string.share_qr_switch, qrOn) { checked ->
-                qrOn = checked
-                view.qrOn = checked
-                view.refresh()
-            },
-        )
-        body.addView(
-            colorRowLive(R.string.share_label_color, { qrColor }) { color ->
-                qrColor = color
-                view.qrColor = color
-                view.refresh()
-            },
-        )
     }
 
     private fun timelineCard() {

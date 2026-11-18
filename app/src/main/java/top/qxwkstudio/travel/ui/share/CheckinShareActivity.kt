@@ -39,8 +39,6 @@ class CheckinShareActivity : ShareActivityBase() {
     private var dateStyle = DateStyle.DOT
     private var lunarStyle = 0
     private var noteColor = InkColor.BLACK
-    private var qrOn = true
-    private var qrColor = InkColor.BLACK
     private var stampStyle = StampStyle.ROUND
     private var stampColor = InkColor.ACCENT
 
@@ -67,7 +65,6 @@ class CheckinShareActivity : ShareActivityBase() {
             view.titleEn = englishName(entity.cityName)
             view.note = entity.note.orEmpty()
             view.dateText = dateText(entity)
-            view.qrContent = ShareLink.checkin(entity.uuid)
             view.refresh()
             buildCards()
         }
@@ -80,7 +77,6 @@ class CheckinShareActivity : ShareActivityBase() {
         titleCard()
         dateCard()
         noteCard()
-        qrCard()
         stampCard()
     }
 
@@ -254,31 +250,6 @@ class CheckinShareActivity : ShareActivityBase() {
                 view.refresh()
             },
         )
-    }
-
-    private fun qrCard() {
-        val body = addCard(R.drawable.ic_link, R.string.share_card_qr)
-        fun fill() {
-            body.removeAllViews()
-            body.addView(
-                switchRow(R.string.share_qr_switch, qrOn) { checked ->
-                    qrOn = checked
-                    view.qrOn = checked
-                    view.refresh()
-                    fill()
-                },
-            )
-            if (qrOn) {
-                body.addView(
-                    colorRowLive(R.string.share_label_color, { qrColor }) { color ->
-                        qrColor = color
-                        view.qrColor = color
-                        view.refresh()
-                    },
-                )
-            }
-        }
-        fill()
     }
 
     private fun stampCard() {
