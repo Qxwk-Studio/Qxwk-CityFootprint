@@ -161,7 +161,8 @@ internal class TicketShareView(context: Context) : ShareCanvas(context) {
             style = stampStyle,
             ink = stampColor.resolve(context),
             paper = PAPER,
-            arcText = "Cityfootprint",
+            topLine = "City",
+            bottomLine = "Footprint",
         )
         canvas.restore()
     }
