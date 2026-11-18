@@ -10,7 +10,11 @@
     <string name="share_send_failed">Could not open the share sheet</string>
     <string name="share_no_photo">No photo selected</string>
 
-    <string name="share_card_photo">Photo</string>
+    <string name="share_card_background">Background</string>
+    <string name="share_timeline_date">Show date</string>
+    <string name="share_timeline_time">Show time</string>
+    <string name="share_timeline_companions">Show companions</string>
+    <string name="share_timeline_note">Show note</string>    <string name="share_card_photo">Photo</string>
     <string name="share_card_title">Title</string>
     <string name="share_card_date">Date</string>
     <string name="share_card_note">Note</string>

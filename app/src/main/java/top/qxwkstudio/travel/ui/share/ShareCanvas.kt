@@ -277,9 +277,30 @@ abstract class ShareCanvas(context: Context) : View(context) {
         stroke.color = ink
         stroke.strokeWidth = 6f
         fill.color = ink
-        // 章面：50% 透明度的印色铺底，外圈与文字再实色盖上
+        // 章面：50% 透明度的印色铺底，形状必须与外圈一致（方章不能铺成圆的）。
+        // 外圈与文字随后用实色盖上
         fill.color = Color.argb(128, Color.red(ink), Color.green(ink), Color.blue(ink))
-        canvas.drawCircle(centerX, centerY, radius - 3f, fill)
+        when (style) {
+            StampStyle.SQUARE -> {
+                canvas.save()
+                canvas.rotate(8f, centerX, centerY)
+                val side = radius * 1.5f
+                canvas.drawRect(centerX - side / 2f, centerY - side / 2f, centerX + side / 2f, centerY + side / 2f, fill)
+                canvas.restore()
+            }
+
+            StampStyle.OVAL -> {
+                canvas.save()
+                canvas.rotate(-12f, centerX, centerY)
+                canvas.drawOval(
+                    RectF(centerX - radius, centerY - radius * 0.7f, centerX + radius, centerY + radius * 0.7f),
+                    fill,
+                )
+                canvas.restore()
+            }
+
+            else -> canvas.drawCircle(centerX, centerY, radius - 3f, fill)
+        }
         fill.color = ink
         when (style) {
             StampStyle.ROUND -> {

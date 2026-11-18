@@ -373,6 +373,44 @@ abstract class ShareActivityBase : LocalizedActivity() {
         return row
     }
 
+    /** 纸底色色板（票根/海报的「背景」卡）：浅色系，保证墨字始终看得清。 */
+    protected fun paperRowLive(labelRes: Int, current: () -> PaperColor, onPick: (PaperColor) -> Unit): View {
+        val host = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        fun fill() {
+            host.removeAllViews()
+            host.addView(sectionLabel(labelRes))
+            val row = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                setPadding(0, dp(10), 0, 0)
+            }
+            PaperColor.ALL.forEach { paper ->
+                row.addView(View(this).apply {
+                    background = GradientDrawable().apply {
+                        shape = GradientDrawable.OVAL
+                        setColor(paper.resolve())
+                        setStroke(
+                            dp(if (paper == current()) 3 else 1),
+                            if (paper == current()) {
+                                Palette.accent(this@ShareActivityBase)
+                            } else {
+                                ContextCompat.getColor(this@ShareActivityBase, R.color.border)
+                            },
+                        )
+                    }
+                    layoutParams = LinearLayout.LayoutParams(dp(24), dp(24)).apply { marginEnd = dp(10) }
+                    setOnClickListener {
+                        onPick(paper)
+                        fill()
+                    }
+                })
+            }
+            host.addView(row)
+        }
+        fill()
+        return host
+    }
+
     /** 会自己重画选中描边的色板（带小标题）：换色后不需要调用方再管布局。 */
     protected fun colorRowLive(labelRes: Int, current: () -> InkColor, onPick: (InkColor) -> Unit): View {
         val host = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }

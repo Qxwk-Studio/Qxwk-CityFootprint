@@ -37,6 +37,11 @@ class TripShareActivity : ShareActivityBase() {
     private var timelineOn = true
     private var note = ""
     private var noteColor = InkColor.BLACK
+    private var paperColor = PaperColor.CREAM
+    private var timelineShowDate = true
+    private var timelineShowTime = true
+    private var timelineShowCompanions = false
+    private var timelineShowNote = false
 
     override val titleRes: Int = R.string.share_title_trip
 
@@ -72,7 +77,12 @@ class TripShareActivity : ShareActivityBase() {
             view.dateText = ShareDates.range(entity.startTime, entity.endTime, rangeUnit)
             view.note = note
             view.noteColor = noteColor
+            view.paperColor = paperColor
             view.timeline = buildTimelineRows(timeline, entity.startTime)
+            view.showDate = timelineShowDate
+            view.showTime = timelineShowTime
+            view.showCompanions = timelineShowCompanions
+            view.showNote = timelineShowNote
             applyCities()
             applyPhoto()
             view.refresh()
@@ -90,20 +100,32 @@ class TripShareActivity : ShareActivityBase() {
             if (segment.city.isBlank()) return@forEach
             val city = CityStore.displayName(this, segment.city)
             val segmentStart = segment.events.firstOrNull()?.time?.takeIf { it > 0 } ?: startTime
-            rows += PosterShareView.Row(segment.city, formatDate(segmentStart), city)
+            rows += PosterShareView.Row(
+                city = segment.city,
+                dateText = dateOnly(segmentStart),
+                title = city,
+                companions = segment.companions.orEmpty(),
+                note = segment.note.orEmpty(),
+            )
             segment.events.forEach { event ->
                 if (event.text.isBlank()) return@forEach
-                rows += PosterShareView.Row(segment.city, formatDateTime(event.time), event.text)
+                rows += PosterShareView.Row(
+                    city = segment.city,
+                    dateText = dateOnly(event.time),
+                    timeText = timeOnly(event.time),
+                    title = event.text,
+                    note = event.note.orEmpty(),
+                )
             }
         }
         return rows.take(MAX_TIMELINE_ROWS)
     }
 
-    private fun formatDate(millis: Long): String =
+    private fun dateOnly(millis: Long): String =
         java.text.SimpleDateFormat("MM.dd", java.util.Locale.US).format(java.util.Date(millis))
 
-    private fun formatDateTime(millis: Long): String =
-        java.text.SimpleDateFormat("MM.dd HH:mm", java.util.Locale.US).format(java.util.Date(millis))
+    private fun timeOnly(millis: Long): String =
+        java.text.SimpleDateFormat("HH:mm", java.util.Locale.US).format(java.util.Date(millis))
 
     private fun collectPhotos(timeline: Timeline?): List<String> {
         val out = LinkedHashSet<String>()
@@ -116,6 +138,7 @@ class TripShareActivity : ShareActivityBase() {
     // ────────────────────────── 卡片 ──────────────────────────
 
     private fun buildCards() {
+        backgroundCard()
         photoCard()
         titleCard()
         noteCard()
@@ -123,6 +146,16 @@ class TripShareActivity : ShareActivityBase() {
         cityCard()
         timelineCard()
         addActions()
+    }
+
+    /** 第一张卡：海报纸底色。 */
+    private fun backgroundCard() {
+        val body = addCard(R.drawable.ic_palette, R.string.share_card_background)
+        body.addView(paperRowLive(R.string.share_label_color, { paperColor }) { color ->
+            paperColor = color
+            view.paperColor = color
+            view.refresh()
+        })
     }
 
     private fun photoCard() {
@@ -281,6 +314,35 @@ class TripShareActivity : ShareActivityBase() {
                 view.timelineOn = checked
                 // 海报高度跟时间线条数绑定：开关后必须重新测量
                 view.refreshSize()
+            },
+        )
+        // 每行显示哪些字段：日期 / 时间 / 同行人 / 备注
+        body.addView(
+            switchRow(R.string.share_timeline_date, timelineShowDate) { checked ->
+                timelineShowDate = checked
+                view.showDate = checked
+                view.refresh()
+            },
+        )
+        body.addView(
+            switchRow(R.string.share_timeline_time, timelineShowTime) { checked ->
+                timelineShowTime = checked
+                view.showTime = checked
+                view.refresh()
+            },
+        )
+        body.addView(
+            switchRow(R.string.share_timeline_companions, timelineShowCompanions) { checked ->
+                timelineShowCompanions = checked
+                view.showCompanions = checked
+                view.refresh()
+            },
+        )
+        body.addView(
+            switchRow(R.string.share_timeline_note, timelineShowNote) { checked ->
+                timelineShowNote = checked
+                view.showNote = checked
+                view.refresh()
             },
         )
     }

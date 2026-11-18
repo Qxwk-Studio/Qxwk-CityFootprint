@@ -10,7 +10,11 @@
     <string name="share_send_failed">调起分享失败</string>
     <string name="share_no_photo">还没有选择图片</string>
 
-    <string name="share_card_photo">图片</string>
+    <string name="share_card_background">背景</string>
+    <string name="share_timeline_date">显示日期</string>
+    <string name="share_timeline_time">显示时间</string>
+    <string name="share_timeline_companions">显示同行人</string>
+    <string name="share_timeline_note">显示备注</string>    <string name="share_card_photo">图片</string>
     <string name="share_card_title">标题</string>
     <string name="share_card_date">时间</string>
     <string name="share_card_note">备注</string>

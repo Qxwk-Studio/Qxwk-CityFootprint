@@ -38,6 +38,9 @@ internal class TicketShareView(context: Context) : ShareCanvas(context) {
     var stampColor = InkColor.ACCENT
     var stampStyle = StampStyle.ROUND
 
+    /** 票根纸底色（第一张「背景」卡可调）。 */
+    var paperColor = PaperColor.CREAM
+
     fun refresh() = invalidate()
 
     override fun drawDesign(canvas: Canvas) {
@@ -60,7 +63,7 @@ internal class TicketShareView(context: Context) : ShareCanvas(context) {
 
         canvas.save()
         canvas.clipPath(ticket)
-        fill.color = PAPER
+        fill.color = paperColor.resolve()
         canvas.drawRect(rect, fill)
 
         // 图片区固定 16:9；票根整体 20:9，所以右侧信息区只剩一小条
@@ -158,13 +161,12 @@ internal class TicketShareView(context: Context) : ShareCanvas(context) {
             radius = 168f,
             style = stampStyle,
             ink = stampColor.resolve(context),
-            paper = PAPER,
+            paper = paperColor.resolve(),
         )
         canvas.restore()
     }
 
     private companion object {
-        const val PAPER = 0xFFFBF6EA.toInt()
         const val PAPER_BACKDROP = 0xFFEAE2D1.toInt()
         const val PHOTO_EMPTY = 0xFFE2D9C6.toInt()
     }

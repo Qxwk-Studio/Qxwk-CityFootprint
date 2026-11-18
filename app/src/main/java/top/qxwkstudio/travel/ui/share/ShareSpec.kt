@@ -41,6 +41,25 @@ enum class InkColor {
 /** 邮戳样式。 */
 enum class StampStyle { ROUND, DOUBLE, SQUARE, OVAL, PERFORATED }
 
+/** 票根 / 海报的纸底色：都是浅色，保证墨字与印章始终看得清。 */
+enum class PaperColor {
+    CREAM, WHITE, GRAY, BLUE, GREEN, PINK, YELLOW;
+
+    fun resolve(): Int = when (this) {
+        CREAM -> 0xFFFBF6EA.toInt()
+        WHITE -> 0xFFFFFFFF.toInt()
+        GRAY -> 0xFFF1F0EC.toInt()
+        BLUE -> 0xFFEAF1F8.toInt()
+        GREEN -> 0xFFEAF3EC.toInt()
+        PINK -> 0xFFF9EDEF.toInt()
+        YELLOW -> 0xFFFBF3DC.toInt()
+    }
+
+    companion object {
+        val ALL = listOf(CREAM, WHITE, GRAY, BLUE, GREEN, PINK, YELLOW)
+    }
+}
+
 /**
  * 标题字体。
  *

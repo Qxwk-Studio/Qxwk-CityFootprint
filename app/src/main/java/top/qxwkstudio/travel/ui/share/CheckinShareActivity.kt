@@ -41,6 +41,7 @@ class CheckinShareActivity : ShareActivityBase() {
     private var noteColor = InkColor.BLACK
     private var stampStyle = StampStyle.ROUND
     private var stampColor = InkColor.ACCENT
+    private var paperColor = PaperColor.CREAM
 
     override val titleRes: Int = R.string.share_title_checkin
 
@@ -73,12 +74,23 @@ class CheckinShareActivity : ShareActivityBase() {
     // ────────────────────────── 卡片 ──────────────────────────
 
     private fun buildCards() {
+        backgroundCard()
         photoCard()
         titleCard()
         dateCard()
         noteCard()
         stampCard()
         addActions()
+    }
+
+    /** 第一张卡：票根纸底色。 */
+    private fun backgroundCard() {
+        val body = addCard(R.drawable.ic_palette, R.string.share_card_background)
+        body.addView(paperRowLive(R.string.share_label_color, { paperColor }) { color ->
+            paperColor = color
+            view.paperColor = color
+            view.refresh()
+        })
     }
 
     private fun photoCard() {
