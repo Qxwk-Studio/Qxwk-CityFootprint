@@ -330,11 +330,18 @@ abstract class ShareActivityBase : LocalizedActivity() {
         return row
     }
 
-    protected fun switchRow(labelRes: Int, checked: Boolean, onChange: (Boolean) -> Unit): View {
+    /** 开关行；[topPadding] 给卡片里连排的开关收间距用（时间线那组会传很小的值）。 */
+    protected fun switchRow(
+        labelRes: Int,
+        checked: Boolean,
+        topPadding: Int = 8,
+        onChange: (Boolean) -> Unit,
+    ): View {
         val row = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(0, dp(8), 0, 0)
+            setPadding(0, dp(topPadding), 0, 0)
+            minimumHeight = 0
         }
         row.addView(TextView(this).apply {
             setText(labelRes)
@@ -344,6 +351,8 @@ abstract class ShareActivityBase : LocalizedActivity() {
         })
         val switch = SwitchCompat(this).apply {
             isChecked = checked
+            minimumHeight = 0
+            minimumWidth = 0
             thumbTintList = ColorStateList.valueOf(Palette.accent(this@ShareActivityBase))
             trackTintList = ColorStateList.valueOf(getColor(R.color.border))
             setOnCheckedChangeListener { _, value -> onChange(value) }

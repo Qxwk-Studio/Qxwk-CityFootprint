@@ -85,7 +85,8 @@ class TripShareActivity : ShareActivityBase() {
             view.showNote = timelineShowNote
             applyCities()
             applyPhoto()
-            view.refresh()
+            // 时间线行数决定海报高度：数据到位后必须重新测量，否则首次进入会被截断
+            view.refreshSize()
             buildCards()
         }
     }
@@ -309,7 +310,7 @@ class TripShareActivity : ShareActivityBase() {
     private fun timelineCard() {
         val body = addCard(R.drawable.ic_timeline, R.string.share_card_timeline)
         body.addView(
-            switchRow(R.string.share_timeline_switch, timelineOn) { checked ->
+            switchRow(R.string.share_timeline_switch, timelineOn, topPadding = 6) { checked ->
                 timelineOn = checked
                 view.timelineOn = checked
                 // 海报高度跟时间线条数绑定：开关后必须重新测量
@@ -318,28 +319,28 @@ class TripShareActivity : ShareActivityBase() {
         )
         // 每行显示哪些字段：日期 / 时间 / 同行人 / 备注
         body.addView(
-            switchRow(R.string.share_timeline_date, timelineShowDate) { checked ->
+            switchRow(R.string.share_timeline_date, timelineShowDate, topPadding = 2) { checked ->
                 timelineShowDate = checked
                 view.showDate = checked
                 view.refresh()
             },
         )
         body.addView(
-            switchRow(R.string.share_timeline_time, timelineShowTime) { checked ->
+            switchRow(R.string.share_timeline_time, timelineShowTime, topPadding = 2) { checked ->
                 timelineShowTime = checked
                 view.showTime = checked
                 view.refresh()
             },
         )
         body.addView(
-            switchRow(R.string.share_timeline_companions, timelineShowCompanions) { checked ->
+            switchRow(R.string.share_timeline_companions, timelineShowCompanions, topPadding = 2) { checked ->
                 timelineShowCompanions = checked
                 view.showCompanions = checked
                 view.refresh()
             },
         )
         body.addView(
-            switchRow(R.string.share_timeline_note, timelineShowNote) { checked ->
+            switchRow(R.string.share_timeline_note, timelineShowNote, topPadding = 2) { checked ->
                 timelineShowNote = checked
                 view.showNote = checked
                 view.refresh()
