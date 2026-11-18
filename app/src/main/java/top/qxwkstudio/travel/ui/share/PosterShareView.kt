@@ -8,13 +8,14 @@ import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.RectF
 import android.graphics.Typeface
+import kotlin.math.max
 
 /**
  * 足迹分享：竖版海报。
  *
- * 固定 3:4（1080×1440）：上侧正方形图片区，下侧信息区（标题 / 时间段 / 到达城市，全部右对齐）。
- * 打开时间线时海报不改变上半部分，只在 3:4 的下沿画一条虚线，虚线下面再接一段竖排时间线，
- * 所以关掉时间线就是标准 3:4 海报，打开则整体变长。
+ * 基准 3:4（1080×1440）：上侧正方形图片区，下侧信息区（标题 / 备注 + 时间段与到达城市）。
+ * 打开时间线时上半部分一字不动，只在 3:4 的下沿画一条虚线，虚线下面接竖排时间线，
+ * 海报按时间线条数**动态变长**。
  */
 internal class PosterShareView(context: Context) : ShareCanvas(context) {
 
@@ -23,7 +24,14 @@ internal class PosterShareView(context: Context) : ShareCanvas(context) {
     var timelineOn = true
 
     override val designHeight: Int
-        get() = if (timelineOn) BASE_HEIGHT + TIMELINE_HEIGHT else BASE_HEIGHT
+        get() = if (timelineOn) {
+            BASE_HEIGHT + TIMELINE_HEADER.toInt() + max(1, timeline.size) * ROW_HEIGHT.toInt()
+        } else {
+            BASE_HEIGHT
+        }
+
+    /** 时间线一行：城市（决定颜色）、日期时间、标题。 */
+    data class Row(val city: String, val whenText: String, val title: String)
 
     var photo: Bitmap? = null
     var zoom = 1f
@@ -33,10 +41,13 @@ internal class PosterShareView(context: Context) : ShareCanvas(context) {
     var title = ""
     var font = CardFont.DEFAULT
     var dateText = ""
+
+    var note = ""
+    var noteColor = InkColor.BLACK
+
     var cities: List<String> = emptyList()
 
-    /** 时间线节点：城市名 → 日期。同城市共用一种颜色。 */
-    var timeline: List<Pair<String, String>> = emptyList()
+    var timeline: List<Row> = emptyList()
 
     fun refresh() = invalidate()
 
@@ -64,26 +75,40 @@ internal class PosterShareView(context: Context) : ShareCanvas(context) {
         val contentRight = designWidth - 60f
         val contentWidth = contentRight - contentLeft
 
-        // 标题：与票根同字号，只做横排；与图片留出一段明显空隙
+        // 标题：与票根同字号，只做横排
         val titleBaseline = image.bottom + GAP_IMAGE_TITLE
         drawStyled(canvas, title, contentLeft, titleBaseline, 72f, tint, font, maxWidth = contentWidth)
 
-        // 时间段与城市右对齐
-        val dateBaseline = titleBaseline + 70f
+        // 标题下面：备注在左，时间段与城市在右（右对齐）
+        val blockTop = titleBaseline + 66f
+        val noteWidth = contentWidth * 0.5f
+        val noteLines = wrap(note, 28f, noteColor.resolve(context), noteWidth, 4)
+        noteLines.forEachIndexed { index, line ->
+            drawText(
+                canvas = canvas,
+                value = line,
+                x = contentLeft,
+                baseline = blockTop + index * 40f,
+                size = 28f,
+                color = noteColor.resolve(context),
+            )
+        }
+
         drawText(
             canvas = canvas,
             value = dateText,
             x = contentRight,
-            baseline = dateBaseline,
+            baseline = blockTop,
             size = 36f,
             color = tint,
             typeface = Typeface.DEFAULT,
             align = Paint.Align.RIGHT,
-            maxWidth = contentWidth,
+            maxWidth = contentWidth * 0.46f,
         )
 
-        val cityBaseline = dateBaseline + 62f
-        val cityLines = wrap(cities.joinToString(" · "), 36f, tint, contentWidth, 2)
+        val cityBaseline = blockTop + 56f
+        val cityWidth = contentWidth * 0.46f
+        val cityLines = wrap(cities.joinToString(" · "), 36f, tint, cityWidth, 2)
         cityLines.forEachIndexed { index, line ->
             drawText(
                 canvas = canvas,
@@ -104,15 +129,15 @@ internal class PosterShareView(context: Context) : ShareCanvas(context) {
             stroke.pathEffect = DashPathEffect(floatArrayOf(14f, 10f), 0f)
             canvas.drawLine(40f, dividerY, designWidth - 40f, dividerY, stroke)
             stroke.pathEffect = null
-            drawTimeline(canvas, tint, dividerY + 54f)
+            drawTimeline(canvas, tint, dividerY + TIMELINE_HEADER)
         }
         canvas.restore()
     }
 
-    /** 竖排时间线：每个节点一行，圆点颜色按城市分配（同城市同色），行内用「·」分隔。 */
+    /** 竖排时间线：一行一个节点，颜色点按城市固定配色（同城市同色），行内「日期时间 标题」。 */
     private fun drawTimeline(canvas: Canvas, tint: Int, top: Float) {
-        val nodes = timeline.filter { it.first.isNotBlank() }
-        if (nodes.isEmpty()) return
+        val rows = timeline
+        if (rows.isEmpty()) return
 
         val palette = listOf(
             InkColor.ACCENT.resolve(context),
@@ -125,21 +150,33 @@ internal class PosterShareView(context: Context) : ShareCanvas(context) {
             InkColor.BROWN.resolve(context),
         )
         val colorOf = LinkedHashMap<String, Int>()
-        nodes.forEach { (city, _) ->
-            if (!colorOf.containsKey(city)) colorOf[city] = palette[colorOf.size % palette.size]
+        rows.forEach { row ->
+            if (!colorOf.containsKey(row.city)) colorOf[row.city] = palette[colorOf.size % palette.size]
         }
 
-        nodes.take(MAX_NODES).forEachIndexed { index, (city, date) ->
-            val baseline = top + index * 46f
-            fill.color = colorOf.getValue(city)
-            canvas.drawCircle(74f, baseline - 10f, 8f, fill)
+        rows.forEachIndexed { index, row ->
+            val baseline = top + index * ROW_HEIGHT
+            fill.color = colorOf.getValue(row.city)
+            canvas.drawCircle(64f, baseline - 9f, 8f, fill)
+
+            val whenWidth = measure(row.whenText, 24f, Typeface.DEFAULT)
             drawText(
                 canvas = canvas,
-                value = "$city · $date",
-                x = 96f,
+                value = row.whenText,
+                x = 88f,
+                baseline = baseline,
+                size = 24f,
+                color = tint,
+                typeface = Typeface.DEFAULT,
+            )
+            drawText(
+                canvas = canvas,
+                value = row.title,
+                x = 88f + whenWidth + 16f,
                 baseline = baseline,
                 size = 28f,
                 color = tint,
+                maxWidth = designWidth - 110f - whenWidth - 16f,
             )
         }
     }
@@ -152,12 +189,13 @@ internal class PosterShareView(context: Context) : ShareCanvas(context) {
         /** 3:4 基准高度（1080×1440）。 */
         const val BASE_HEIGHT = 1440
 
-        /** 时间线区间额外增加的高度。 */
-        const val TIMELINE_HEIGHT = 300
-
         /** 图片与标题之间的空隙（设计坐标）。 */
-        const val GAP_IMAGE_TITLE = 150f
+        const val GAP_IMAGE_TITLE = 120f
 
-        const val MAX_NODES = 6
+        /** 虚线到第一条时间线的留白。 */
+        const val TIMELINE_HEADER = 56f
+
+        /** 时间线单行高度。 */
+        const val ROW_HEIGHT = 46f
     }
 }

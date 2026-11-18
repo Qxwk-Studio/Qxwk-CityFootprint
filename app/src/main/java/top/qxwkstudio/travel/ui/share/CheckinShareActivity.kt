@@ -78,6 +78,7 @@ class CheckinShareActivity : ShareActivityBase() {
         dateCard()
         noteCard()
         stampCard()
+        addActions()
     }
 
     private fun photoCard() {

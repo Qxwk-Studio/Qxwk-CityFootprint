@@ -6,6 +6,7 @@ import android.content.res.ColorStateList
 import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
+import androidx.core.widget.doAfterTextChanged
 import androidx.lifecycle.lifecycleScope
 import top.qxwkstudio.travel.R
 import top.qxwkstudio.travel.data.CityStore
@@ -34,6 +35,8 @@ class TripShareActivity : ShareActivityBase() {
     private var rangeUnit = RangeUnit.DAY
     private var selectedCities = linkedSetOf<String>()
     private var timelineOn = true
+    private var note = ""
+    private var noteColor = InkColor.BLACK
 
     override val titleRes: Int = R.string.share_title_trip
 
@@ -62,17 +65,45 @@ class TripShareActivity : ShareActivityBase() {
             photos = collectPhotos(timeline)
             photoPath = photos.firstOrNull()
             selectedCities = segments.map { it.city }.filter { it.isNotBlank() }.toCollection(linkedSetOf())
+            note = entity.note.orEmpty()
 
             view.title = entity.title
             view.font = font
             view.dateText = ShareDates.range(entity.startTime, entity.endTime, rangeUnit)
+            view.note = note
+            view.noteColor = noteColor
+            view.timeline = buildTimelineRows(timeline, entity.startTime)
             applyCities()
-            applyTimeline()
             applyPhoto()
             view.refresh()
             buildCards()
         }
     }
+
+    /**
+     * 时间线行：每个城市先一行到达日，再把它下面的活动 / 交通 / 地点各排一行。
+     * 颜色只跟城市绑定，所以同一城市的所有活动都是同一种颜色。
+     */
+    private fun buildTimelineRows(timeline: Timeline?, startTime: Long): List<PosterShareView.Row> {
+        val rows = mutableListOf<PosterShareView.Row>()
+        timeline?.segments.orEmpty().forEach { segment ->
+            if (segment.city.isBlank()) return@forEach
+            val city = CityStore.displayName(this, segment.city)
+            val segmentStart = segment.events.firstOrNull()?.time?.takeIf { it > 0 } ?: startTime
+            rows += PosterShareView.Row(segment.city, formatDate(segmentStart), city)
+            segment.events.forEach { event ->
+                if (event.text.isBlank()) return@forEach
+                rows += PosterShareView.Row(segment.city, formatDateTime(event.time), event.text)
+            }
+        }
+        return rows.take(MAX_TIMELINE_ROWS)
+    }
+
+    private fun formatDate(millis: Long): String =
+        java.text.SimpleDateFormat("MM.dd", java.util.Locale.US).format(java.util.Date(millis))
+
+    private fun formatDateTime(millis: Long): String =
+        java.text.SimpleDateFormat("MM.dd HH:mm", java.util.Locale.US).format(java.util.Date(millis))
 
     private fun collectPhotos(timeline: Timeline?): List<String> {
         val out = LinkedHashSet<String>()
@@ -87,9 +118,11 @@ class TripShareActivity : ShareActivityBase() {
     private fun buildCards() {
         photoCard()
         titleCard()
+        noteCard()
         dateCard()
         cityCard()
         timelineCard()
+        addActions()
     }
 
     private fun photoCard() {
@@ -246,8 +279,46 @@ class TripShareActivity : ShareActivityBase() {
             switchRow(R.string.share_timeline_switch, timelineOn) { checked ->
                 timelineOn = checked
                 view.timelineOn = checked
-                // 关掉时间线后海报变矮：必须重新测量，否则预览下沿会留着一条空白
+                // 海报高度跟时间线条数绑定：开关后必须重新测量
                 view.refreshSize()
+            },
+        )
+    }
+
+    /** 备注卡与打卡分享页同一套：多行输入 + 十档墨色。 */
+    private fun noteCard() {
+        val body = addCard(R.drawable.ic_note, R.string.share_card_note)
+        val edit = android.widget.EditText(this).apply {
+            setText(note)
+            hint = getString(R.string.share_card_note)
+            textSize = 14f
+            inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE
+            gravity = android.view.Gravity.TOP
+            minLines = 2
+            maxLines = 5
+            setTextColor(getColor(R.color.fg))
+            setHintTextColor(getColor(R.color.text_tertiary))
+            background = androidx.core.content.ContextCompat.getDrawable(
+                this@TripShareActivity,
+                R.drawable.bg_input_box,
+            )
+            setPadding(dp(12), dp(8), dp(12), dp(8))
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+            ).apply { topMargin = dp(10) }
+            doAfterTextChanged { editable ->
+                note = editable?.toString().orEmpty()
+                view.note = note
+                view.refresh()
+            }
+        }
+        body.addView(edit)
+        body.addView(
+            colorRowLive(R.string.share_label_color, { noteColor }) { color ->
+                noteColor = color
+                view.noteColor = color
+                view.refresh()
             },
         )
     }
@@ -274,17 +345,13 @@ class TripShareActivity : ShareActivityBase() {
             .map { CityStore.displayName(this, it) }
     }
 
-    /** 时间线按行程顺序排：城市 + 该城市段第一件事的日期（没有就退回行程开始日）。 */
-    private fun applyTimeline() {
-        val start = trip?.startTime ?: 0L
-        view.timeline = segments.map { segment ->
-            val time = segment.events.firstOrNull()?.time?.takeIf { it > 0L } ?: start
-            CityStore.displayName(this, segment.city) to ShareDates.single(time, DateStyle.DOT)
-        }.filter { it.first.isNotBlank() }
-    }
+    /** 时间线与城市颜色绑定在 view.timeline（Row.city）里，城市勾选不影响时间线内容。 */
 
     companion object {
         private const val EXTRA_ID = "trip_id"
+
+        /** 时间线最多这么多行：再多海报会长得离谱，也超出常见分享场景。 */
+        private const val MAX_TIMELINE_ROWS = 18
 
         fun intent(context: Context, id: Long): Intent =
             Intent(context, TripShareActivity::class.java).putExtra(EXTRA_ID, id)

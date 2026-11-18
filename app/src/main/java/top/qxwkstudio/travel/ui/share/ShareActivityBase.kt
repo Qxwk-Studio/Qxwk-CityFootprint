@@ -81,7 +81,8 @@ abstract class ShareActivityBase : LocalizedActivity() {
         super.onCreate(savedInstanceState)
         Palette.apply(this)
         binding = ActivityShareBinding.inflate(layoutInflater)
-        applyEdgeToEdge(binding.topBar.root, binding.bottomBar)
+        // 保存/分享是滚动内容的一部分，所以底部 inset 补在内容容器上
+        applyEdgeToEdge(binding.topBar.root, binding.cards)
         setContentView(binding.root)
         binding.root.fadeSlideIn()
         binding.topBar.btnBack.visibility = View.VISIBLE
@@ -102,9 +103,29 @@ abstract class ShareActivityBase : LocalizedActivity() {
             host.setPadding(0, 0, 0, dp(10))
             binding.cards.addView(host, 0)
         }
-        binding.btnSave.setOnClickListener { saveImage() }
-        binding.btnShare.setOnClickListener { shareImage() }
         populate()
+    }
+
+    /**
+     * 保存 / 分享按钮：作为最后一块内容放进滚动区（不钉在屏幕底部），
+     * 由子类在卡片全部建好后调用。
+     */
+    protected fun addActions() {
+        val row = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            setPadding(0, dp(6), 0, dp(6))
+        }
+        row.addView(MaterialButton(this, null, com.google.android.material.R.attr.materialButtonOutlinedStyle).apply {
+            setText(R.string.share_save)
+            layoutParams = LinearLayout.LayoutParams(0, dp(44), 1f).apply { marginEnd = dp(8) }
+            setOnClickListener { saveImage() }
+        })
+        row.addView(MaterialButton(this).apply {
+            setText(R.string.share_send)
+            layoutParams = LinearLayout.LayoutParams(0, dp(44), 1f).apply { marginStart = dp(8) }
+            setOnClickListener { shareImage() }
+        })
+        binding.cards.addView(row)
     }
 
     // ────────────────────────── 保存 / 分享 ──────────────────────────

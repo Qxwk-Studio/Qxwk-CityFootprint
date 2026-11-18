@@ -263,7 +263,7 @@ abstract class ShareCanvas(context: Context) : View(context) {
     /**
      * 四分之一圆印章：圆心压在卡片右下角，只露卡片内的那一块。
      * [paper] 是卡片底色 —— 齿孔要拿它「打孔」，不然孔是透明的、会透出背板色。
-     * [topLine]/[bottomLine] 两行文字居中排在印章（露出的那块）中心，不再走弧线。
+     * 章面不写字（品牌字排在信息区左下角，见 TicketShareView）。
      */
     protected fun drawStamp(
         canvas: Canvas,
@@ -273,8 +273,6 @@ abstract class ShareCanvas(context: Context) : View(context) {
         style: StampStyle,
         ink: Int,
         paper: Int,
-        topLine: String,
-        bottomLine: String,
     ) {
         stroke.color = ink
         stroke.strokeWidth = 6f
@@ -333,12 +331,5 @@ abstract class ShareCanvas(context: Context) : View(context) {
             }
         }
         stroke.strokeWidth = 6f
-
-        // 两行文字居中排在印章中心。印章圆心压在卡片右下角上，露出来的只有左上一小块，
-        // 所以「中心」取露出的那块（约 0.42–0.45 半径）—— 按完整圆心排会把第二行整行推到卡片外。
-        val textCenterX = centerX - radius * 0.45f
-        val textCenterY = centerY - radius * 0.42f
-        drawText(canvas, topLine, textCenterX, textCenterY - 4f, 30f, ink, align = Paint.Align.CENTER, letterSpacing = 0.02f)
-        drawText(canvas, bottomLine, textCenterX, textCenterY + 40f, 30f, ink, align = Paint.Align.CENTER, letterSpacing = 0.02f)
     }
 }

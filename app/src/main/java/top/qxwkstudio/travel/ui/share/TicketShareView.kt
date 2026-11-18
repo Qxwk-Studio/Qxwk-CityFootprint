@@ -138,6 +138,19 @@ internal class TicketShareView(context: Context) : ShareCanvas(context) {
             drawText(canvas, line, left, cursor + 46f + index * 40f, 28f, noteColor.resolve(context))
         }
 
+        // 信息区左下角：品牌字（印章里不再写字，避免重复）
+        drawText(
+            canvas = canvas,
+            value = "Cityfootprint",
+            x = left,
+            baseline = rect.bottom - 34f,
+            size = 26f,
+            color = tint,
+            typeface = Typeface.DEFAULT,
+            letterSpacing = 0.06f,
+            maxWidth = right - left - 110f,
+        )
+
         drawStamp(
             canvas = canvas,
             centerX = rect.right - 4f,
@@ -146,8 +159,6 @@ internal class TicketShareView(context: Context) : ShareCanvas(context) {
             style = stampStyle,
             ink = stampColor.resolve(context),
             paper = PAPER,
-            topLine = "City",
-            bottomLine = "Footprint",
         )
         canvas.restore()
     }
