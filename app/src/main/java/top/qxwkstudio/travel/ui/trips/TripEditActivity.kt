@@ -663,13 +663,22 @@ class TripEditActivity : LocalizedActivity() {
         setPadding(dp(16), dp(6), dp(16), 0)
     }
 
+    /**
+     * 照片行：最多三张，可横向拖动排序。
+     *
+     * 拖动只改 `photoPath` 里的先后顺序（照片内容与归属不动）；松手后立刻回写，
+     * 并把子 View 按新顺序重排 —— 不整页 render：缩略图是异步解码的，重建会闪一下白。
+     */
     private fun photoRow(item: DraftItem): LinearLayout {
         val row = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             setPadding(dp(16), dp(8), dp(16), 0)
         }
-        val paths = item.photoPath?.split(",")?.filter { it.isNotBlank() }.orEmpty()
+        val paths = item.photoPath?.split(",")?.filter { it.isNotBlank() }?.toMutableList()
+            ?: mutableListOf()
         val shown = paths.take(3)
+        val tiles = mutableListOf<android.widget.FrameLayout>()
+        val images = mutableListOf<ImageView>()
         shown.forEachIndexed { i, path ->
             val tile = android.widget.FrameLayout(this).apply {
                 layoutParams = if (shown.size == 3) {
@@ -686,7 +695,14 @@ class TripEditActivity : LocalizedActivity() {
                     ViewGroup.LayoutParams.MATCH_PARENT,
                     ViewGroup.LayoutParams.MATCH_PARENT,
                 )
-                setOnClickListener { showPhotoDialog(this@TripEditActivity, paths, i) }
+                // 顺序可能被拖动改过：按路径反查当前位置，别把点击记在旧下标上
+                setOnClickListener {
+                    showPhotoDialog(
+                        this@TripEditActivity,
+                        paths.toList(),
+                        paths.indexOf(path).coerceAtLeast(0),
+                    )
+                }
             }
             tile.addView(image)
             // 编辑页会频繁 render，缩略图放到 IO 上解码，首帧不阻塞输入。
@@ -705,15 +721,182 @@ class TripEditActivity : LocalizedActivity() {
                 layoutParams = android.widget.FrameLayout.LayoutParams(dp(20), dp(20), Gravity.TOP or Gravity.END)
                     .apply { topMargin = dp(4); marginEnd = dp(4) }
                 setOnClickListener {
-                    val left = paths.toMutableList().also { it.removeAt(i) }
-                    item.photoPath = left.joinToString(",").ifBlank { null }
+                    paths.remove(path)
+                    item.photoPath = paths.joinToString(",").ifBlank { null }
                     render()
                 }
             })
+            tiles += tile
+            images += image
             row.addView(tile)
+        }
+        attachPhotoReorder(row, tiles, images, paths) { newPaths ->
+            item.photoPath = newPaths.joinToString(",").ifBlank { null }
         }
         return row
     }
+
+    /**
+     * 照片拖动排序。
+     *
+     * 手指横向拖过 [dragSlop] 才启动（纵向留给外层 ScrollView），启动后父级不再拦截触摸；
+     * 拖动中被拖的那张抬起、按手指位移跟手，其余照片按当前槽位左右让位，跨槽时给一次触感反馈。
+     * 松手滑到目标槽位，再把子 View 按新顺序重排并回写 `photoPath` —— 照片文件与归属都不动。
+     */
+    private fun attachPhotoReorder(
+        row: LinearLayout,
+        tiles: List<View>,
+        handles: List<View>,
+        paths: MutableList<String>,
+        onOrderChanged: (List<String>) -> Unit,
+    ) {
+        if (tiles.size < 2) return
+        val slots = IntArray(tiles.size)           // 槽位左边界（布局位置，拖动期间不变）
+        val order = MutableList(tiles.size) { it } // 槽位 → 子 View 下标
+        val dragSlop = dp(20).toFloat()
+        var dragChild = -1
+        var downRawX = 0f
+        var downRawY = 0f
+        var dragging = false
+
+        // 重排过之后「子 View 下标 == 槽位」不再成立，必须按 order 反查
+        fun captureSlots() = tiles.forEachIndexed { child, view -> slots[order.indexOf(child)] = view.left }
+
+        fun targetSlot(centerX: Float): Int {
+            val half = tiles[0].width / 2f
+            var best = 0
+            var bestDistance = Float.MAX_VALUE
+            for (slot in slots.indices) {
+                val distance = kotlin.math.abs(centerX - (slots[slot] + half))
+                if (distance < bestDistance) {
+                    bestDistance = distance
+                    best = slot
+                }
+            }
+            return best
+        }
+
+        // 拖动不让它飞出照片行：中心最多停在首/尾槽位，顺带避免被父布局裁掉
+        fun minDragX(child: Int): Int = slots.min() - tiles[child].left
+        fun maxDragX(child: Int): Int = slots.max() - tiles[child].left
+
+        fun resetTiles() = tiles.forEach {
+            it.animate().cancel()
+            it.translationX = 0f
+            it.elevation = 0f
+            it.scaleX = 1f
+            it.scaleY = 1f
+            it.alpha = 1f
+        }
+
+        /** 其余照片滑到各自新槽位；被拖的那张交给手指。 */
+        fun shiftOthers() = tiles.forEachIndexed { tileIndex, view ->
+            if (tileIndex == dragChild) return@forEachIndexed
+            val slot = order.indexOf(tileIndex)
+            view.animate().translationX((slots[slot] - view.left).toFloat()).setDuration(120).start()
+        }
+
+        fun commit() {
+            // 保住可能存在的第 4 张以后（正常最多 3 张，这里只是不让脏数据丢图）
+            val newPaths = order.map { paths[it] } + paths.drop(tiles.size)
+            row.removeAllViews()
+            order.forEachIndexed { slot, tileIndex ->
+                val view = tiles[tileIndex]
+                val lp = view.layoutParams as LinearLayout.LayoutParams
+                // 「最后一张不加右边距」要跟着换人，否则重排后中间会出现贴着的两张
+                lp.marginEnd = if (slot < order.lastIndex) dp(8) else 0
+                view.layoutParams = lp
+                row.addView(view)
+            }
+            resetTiles()
+            order.clear()
+            order.addAll(tiles.indices)
+            if (newPaths != paths) {
+                paths.clear()
+                paths.addAll(newPaths)
+                onOrderChanged(newPaths.toList())
+            }
+        }
+
+        fun endDrag() {
+            val child = dragChild
+            if (child < 0) {
+                dragging = false
+                return
+            }
+            val view = tiles[child]
+            val targetX = (slots[order.indexOf(child)] - view.left).toFloat()
+            view.animate().translationX(targetX).setDuration(140).withEndAction {
+                if (row.isAttachedToWindow) commit() else resetTiles()
+                dragChild = -1
+                dragging = false
+            }.start()
+        }
+
+        handles.forEachIndexed { child, handle ->
+            // 手指落在这张图上：先不接管，点击与纵向滚动照常；横向拖过阈值才变成排序。
+            // 监听器必须挂在图片上（它是点击目标），挂在外层 FrameLayout 上会被子 View 吞掉。
+            handle.setOnTouchListener { v, event ->
+                when (event.actionMasked) {
+                    android.view.MotionEvent.ACTION_DOWN -> {
+                        downRawX = event.rawX
+                        downRawY = event.rawY
+                        dragChild = child
+                        dragging = false
+                        false
+                    }
+
+                    android.view.MotionEvent.ACTION_MOVE -> {
+                        if (!dragging) {
+                            val dx = event.rawX - downRawX
+                            if (kotlin.math.abs(dx) < dragSlop) return@setOnTouchListener false
+                            if (kotlin.math.abs(dx) < kotlin.math.abs(event.rawY - downRawY) * 1.5f) {
+                                return@setOnTouchListener false
+                            }
+                            dragging = true
+                            captureSlots()
+                            row.parent?.requestDisallowInterceptTouchEvent(true)
+                            v.isPressed = false
+                            v.cancelLongPress()
+                            // 抬起 + 放大 + 其余变淡：一眼能看出「正在拖哪张、其余在让位」
+                            tiles[child].elevation = dp(6).toFloat()
+                            tiles[child].scaleX = 1.04f
+                            tiles[child].scaleY = 1.04f
+                            tiles.forEachIndexed { i, other -> if (i != child) other.alpha = 0.55f }
+                        }
+                        val dx = (event.rawX - downRawX).coerceIn(
+                            minDragX(child).toFloat(),
+                            maxDragX(child).toFloat(),
+                        )
+                        tiles[child].translationX = dx
+                        val center = tiles[child].left + tiles[child].width / 2f + dx
+                        val slot = targetSlot(center)
+                        if (slot != order.indexOf(child)) {
+                            order.remove(child)
+                            order.add(slot, child)
+                            tiles[child].performHapticFeedback(android.view.HapticFeedbackConstants.CLOCK_TICK)
+                            shiftOthers()
+                        }
+                        true
+                    }
+
+                    android.view.MotionEvent.ACTION_UP,
+                    android.view.MotionEvent.ACTION_CANCEL -> {
+                        if (dragging) {
+                            endDrag()
+                            true
+                        } else {
+                            dragChild = -1
+                            false
+                        }
+                    }
+
+                    else -> false
+                }
+            }
+        }
+    }
+
 
     private fun ratingInline(item: DraftItem): LinearLayout {
         val row = LinearLayout(this).apply {

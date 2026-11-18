@@ -39,9 +39,19 @@ object DataExport {
     private const val FORMAT = "city-footprint-export"
     private const val VERSION = 1
 
-    suspend fun export(context: Context, db: AppDatabase): Result {
-        val trips = db.trips().list()
-        val checkins = db.checkins().list()
+    /**
+     * 导出数据；[onlyTripUuids] / [onlyCheckinIds] 非空时只导出这些（行程页多选导出用）。
+     *
+     * 过滤后照片也从「被导出的内容」里取，所以不会把没选中的照片一起打进包里。
+     */
+    suspend fun export(
+        context: Context,
+        db: AppDatabase,
+        onlyTripUuids: Set<String>? = null,
+        onlyCheckinIds: Set<Long>? = null,
+    ): Result {
+        val trips = db.trips().list().filter { onlyTripUuids == null || it.uuid in onlyTripUuids }
+        val checkins = db.checkins().list().filter { onlyCheckinIds == null || it.id in onlyCheckinIds }
 
         val photoPaths = LinkedHashSet<String>()
         trips.forEach { trip ->

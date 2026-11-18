@@ -164,9 +164,10 @@ class SyncActivity : LocalizedActivity() {
         }
     }
 
+    /** 服务端支持版本是一段 versionCode 区间，按「20300~20999」这种紧凑写法展示。 */
     private fun versionLabel(info: SyncApi.ServerInfo): String {
         val range = info.supportedVersions
-        return if (range.size >= 2) "[${range[0]},${range[1]}]" else "—"
+        return if (range.size >= 2) "${range[0]}~${range[1]}" else "—"
     }
 
     private fun validateSession() {

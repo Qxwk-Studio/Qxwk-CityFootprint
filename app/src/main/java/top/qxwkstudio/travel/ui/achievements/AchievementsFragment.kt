@@ -6,7 +6,6 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.view.animation.PathInterpolator
 import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
@@ -17,6 +16,7 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import androidx.viewpager2.widget.ViewPager2
 import top.qxwkstudio.travel.R
 import top.qxwkstudio.travel.data.SyncEvents
 import top.qxwkstudio.travel.data.CheckinRepo
@@ -31,23 +31,28 @@ import top.qxwkstudio.travel.logic.AchievementsEnglish
 import top.qxwkstudio.travel.logic.Dates
 
 /**
- * 成就页（2.0）：四个分类的滑动胶囊（占满整宽）+ 成就卡列表。
+ * 成就页（2.0）：四个分类的滑动胶囊（占满整宽）+ ViewPager2 分页列表。
  *
- * 分类只有四个、没有「全部」：一屏只展示一个分类，胶囊平均分宽度，选中块用和底部导航
- * 同一条非线性曲线滑过去。
+ * 分类只有四个、没有「全部」：每个分类一页，胶囊平均分宽度。左右滑动是跟手翻页，
+ * 相邻页常驻，拖动时两侧内容一起位移，滑块按 `position + positionOffset` 连续联动，
+ * 松手按速度吸附；点胶囊则是平滑滚过去（跨两个分类也一路滑过去，不是直接跳）。
  *
- * 解锁进度作为**列表第一项**，跟着列表一起滚 —— 之前钉在顶部，小屏上一滚就只剩它和两三张卡。
+ * 解锁进度卡是**列表第一项**，跟着列表一起滚 —— 之前钉在顶部，小屏上一滚就只剩它和两三张卡。
+ * 每页各自保留滚动位置，翻回来不会跳回顶部。
  */
 class AchievementsFragment : Fragment() {
 
     private var _binding: FragmentAchievementsBinding? = null
     private val binding get() = requireNotNull(_binding) { "binding 在视图生命周期外被访问" }
 
-    private var selectedCategory: Int = 0
-
     private var states: Map<String, Achievements.State> = emptyMap()
     private var seenVersion = -1
-    private val adapter = AchievementAdapter()
+
+    /** 已经创建出来的分类页（页面由 ViewPager2 持有，这里只为刷新数据时重铺）。 */
+    private val pages = mutableMapOf<Int, RecyclerView>()
+
+    /** 胶囊滑块与标签颜色的连续联动，见 [PagerSegments]。 */
+    private lateinit var tracker: PagerSegments
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentAchievementsBinding.inflate(inflater, container, false)
@@ -60,13 +65,18 @@ class AchievementsFragment : Fragment() {
             SyncEvents.events.collect { load() }
         }
         binding.root.fadeSlideIn()
-        binding.list.layoutManager = LinearLayoutManager(requireContext())
-        binding.list.adapter = adapter
-        binding.list.onHorizontalSwipe(
-            onSwipeLeft = { swipeCategory(1) },
-            onSwipeRight = { swipeCategory(-1) },
-        )
         buildChips()
+        tracker = PagerSegments(binding.segTrack, binding.chipIndicator, binding.chipContainer)
+        binding.pager.adapter = PageAdapter()
+        // 相邻分类提前铺好：拖动时是真内容在平移，而不是松手后才出现
+        binding.pager.offscreenPageLimit = 1
+        binding.pager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
+            // 拖动、惯性、吸附都是同一条逐像素回调：滑块和标签色只在这一处更新
+            override fun onPageScrolled(position: Int, positionOffset: Float, positionOffsetPixels: Int) {
+                tracker.update(position + positionOffset)
+            }
+        })
+        binding.pager.post { tracker.update(binding.pager.currentItem.toFloat()) }
     }
 
     override fun onHiddenChanged(hidden: Boolean) {
@@ -83,7 +93,8 @@ class AchievementsFragment : Fragment() {
     }
 
     override fun onDestroyView() {
-        binding.list.adapter = null
+        pages.clear()
+        _binding?.pager?.adapter = null
         _binding = null
         super.onDestroyView()
     }
@@ -113,8 +124,10 @@ class AchievementsFragment : Fragment() {
             result.getOrNull()?.let {
                 states = it
                 seenVersion = DataVersion.current
-                refreshEmptyState()
-                adapter.submit(buildRows())
+                // 四页同时刷新：屏幕外的相邻页不刷，翻过去会看到上一版进度
+                pages.forEach { (category, list) ->
+                    (list.adapter as AchievementAdapter?)?.submit(rowsFor(category))
+                }
             }
         }
     }
@@ -130,97 +143,46 @@ class AchievementsFragment : Fragment() {
                 textSize = 12f
                 gravity = android.view.Gravity.CENTER
                 layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f)
-                setTextColor(
-                    ContextCompat.getColor(
-                        requireContext(),
-                        if (index == selectedCategory) R.color.on_accent else R.color.text_secondary,
-                    ),
-                )
+                // 初始颜色不在这里写：滑块和文字色只有一个来源（PagerSegments），否则两处会打架
                 isClickable = true
-                setOnClickListener { selectCategory(index) }
+                setOnClickListener { binding.pager.setCurrentItem(index, true) }
             }
             container.addView(chip)
         }
-        container.post { moveIndicator(animate = false) }
     }
 
-    private fun swipeCategory(direction: Int) {
-        val target = selectedCategory + direction
-        if (target !in Achievements.categories.indices) return
-        val width = binding.list.width.toFloat().coerceAtLeast(1f)
-        val out = if (direction > 0) -width * 0.22f else width * 0.22f
-        binding.list.animate()
-            .translationX(out).alpha(0.35f).setDuration(120)
-            .withEndAction {
-                binding.list.translationX = -out
-                binding.list.alpha = 1f
-                selectCategory(target)
-                binding.list.animate().translationX(0f).setDuration(180).start()
+    // ────────────────────────── 分页 ──────────────────────────
+
+    /** 一个分类一页。每页自己的 ViewHolder 池（viewType = 页号），内容不会被别的分类复用。 */
+    private inner class PageAdapter : RecyclerView.Adapter<PageHolder>() {
+        override fun getItemCount(): Int = Achievements.categories.size
+
+        override fun getItemViewType(position: Int): Int = position
+
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PageHolder {
+            val ctx = parent.context
+            val list = RecyclerView(ctx).apply {
+                layoutManager = LinearLayoutManager(ctx)
+                clipToPadding = false
+                setPadding(dp(16), dp(12), dp(16), dp(16))
+                adapter = AchievementAdapter()
+                layoutParams = RecyclerView.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                )
+                // 每页保留自己的滚动位置：翻回来不该跳回顶部
+                setHasFixedSize(true)
             }
-            .start()
-    }
+            pages[viewType] = list
+            return PageHolder(list)
+        }
 
-    private fun selectCategory(index: Int) {
-        if (index !in Achievements.categories.indices || index == selectedCategory) return
-        selectedCategory = index
-        refreshChipColors()
-        moveIndicator(animate = true)
-        refreshEmptyState()
-        adapter.submit(buildRows())
-        binding.list.scrollToPosition(0)
-    }
-
-    private fun refreshChipColors() {
-        val container = binding.chipContainer
-        for (index in 0 until container.childCount) {
-            val chip = container.getChildAt(index) as TextView
-            chip.setTextColor(
-                ContextCompat.getColor(
-                    requireContext(),
-                    if (index == selectedCategory) R.color.on_accent else R.color.text_secondary,
-                ),
-            )
+        override fun onBindViewHolder(holder: PageHolder, position: Int) {
+            (holder.list.adapter as AchievementAdapter).submit(rowsFor(position))
         }
     }
 
-    /** 四等分；translationX 只按段宽走（FrameLayout 已按 padding 布局子 View）。 */
-    private fun moveIndicator(animate: Boolean) {
-        val track = binding.segTrack
-        val indicator = binding.chipIndicator
-        fun place() {
-            val available = track.width - track.paddingLeft - track.paddingRight
-            if (available <= 0) return
-            val part = available / 4
-            val lp = indicator.layoutParams
-            if (lp.width != part) {
-                lp.width = part
-                indicator.layoutParams = lp
-            }
-            val target = part * selectedCategory
-            if (animate) {
-                indicator.animate()
-                    .translationX(target.toFloat())
-                    .setDuration(200L)
-                    .setInterpolator(PathInterpolator(0.2f, 0f, 0f, 1f))
-                    .start()
-            } else {
-                indicator.animate().cancel()
-                indicator.translationX = target.toFloat()
-            }
-        }
-        track.post { place() }
-        track.addOnLayoutChangeListener { _, left, _, right, _, oldLeft, _, oldRight, _ ->
-            if (right - left != oldRight - oldLeft) place()
-        }
-    }
-
-    // ────────────────────────── 列表 ──────────────────────────
-
-    /** 新用户也要看到全部未解锁成就，不因「0 进度」把列表藏起来。 */
-    private fun refreshEmptyState() {
-        binding.textEmpty.visibility = View.GONE
-        binding.list.visibility = View.VISIBLE
-    }
+    private class PageHolder(val list: RecyclerView) : RecyclerView.ViewHolder(list)
 
     private fun isEnglish(): Boolean =
         resources.configuration.locales[0].language == "en"
@@ -247,16 +209,15 @@ class AchievementsFragment : Fragment() {
         ) : Row
     }
 
-    private fun buildRows(): List<Row> {
+    private fun rowsFor(category: Int): List<Row> {
         val categories = Achievements.categories
-        val index = selectedCategory
-        val codes = categories[index].items.map { it.code }
+        val codes = categories[category].items.map { it.code }
         val done = codes.count { states[it]?.done == true }
         val rows = ArrayList<Row>(16)
-        rows.add(Row.Header(categoryTitle(index), done, codes.size))
-        categories[index].items.forEach { def ->
+        rows.add(Row.Header(categoryTitle(category), done, codes.size))
+        categories[category].items.forEach { def ->
             val state = states[def.code] ?: return@forEach
-            rows.add(Row.Card(index, def, state))
+            rows.add(Row.Card(category, def, state))
         }
         return rows
     }

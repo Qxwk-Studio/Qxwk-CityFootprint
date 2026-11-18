@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 成就页（2.0）：四分类滑动胶囊（占满整宽）+ 成就卡列表。
-     解锁情况作为列表的第一项，跟着列表一起滚，不再钉在顶部。 -->
+<!-- 成就页（2.0）：四分类滑动胶囊（占满整宽）+ 每个分类一页的成就卡列表。
+     解锁进度卡是列表的第一项，跟着列表一起滚，不再钉在顶部；每页各自保留滚动位置。 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -30,23 +30,10 @@
             android:orientation="horizontal" />
     </FrameLayout>
 
-    <TextView
-        android:id="@+id/textEmpty"
+    <!-- 页面（每个分类一个 RecyclerView）在 AchievementsFragment 里创建，相邻页常驻 -->
+    <androidx.viewpager2.widget.ViewPager2
+        android:id="@+id/pager"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1"
-        android:gravity="center"
-        android:padding="32dp"
-        android:text="@string/ach_empty"
-        android:textColor="@color/text_tertiary"
-        android:textSize="13sp"
-        android:visibility="gone" />
-
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/list"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:clipToPadding="false"
-        android:padding="16dp" />
+        android:layout_weight="1" />
 </LinearLayout>

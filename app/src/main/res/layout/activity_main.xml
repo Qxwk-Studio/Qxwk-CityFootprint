@@ -21,25 +21,131 @@
         android:layout_height="0dp"
         android:layout_weight="1" />
 
+    <!-- 底部区域：普通导航栏与「多选功能区」互斥显示，共用同一块 inset 补齐的面板。
+         若把两块各自作为 inset 宿主，切换显示时补过的那份 padding 会跟着消失，内容会掉进手势条；
+         sidebar 底色也放在这一层，补出来的 padding 才不会露出内容区的底色。 -->
     <LinearLayout
-        android:id="@+id/bottomBar"
+        android:id="@+id/bottomArea"
         style="@style/Widget.App.ShellBand">
 
-        <View style="@style/Widget.App.ShellDivider" />
-
-        <com.google.android.material.bottomnavigation.BottomNavigationView
-            android:id="@+id/bottomNav"
-            style="@style/Widget.App.BottomNav"
+        <LinearLayout
+            android:id="@+id/bottomBar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:minHeight="52dp"
-            android:paddingStart="4dp"
-            android:paddingEnd="4dp"
-            app:itemIconSize="20dp"
-            app:itemPaddingTop="6dp"
-            app:itemPaddingBottom="4dp"
-            app:activeIndicatorLabelPadding="0dp"
-            app:labelVisibilityMode="labeled"
-            app:menu="@menu/bottom_nav" />
+            android:orientation="vertical">
+
+            <View style="@style/Widget.App.ShellDivider" />
+
+            <com.google.android.material.bottomnavigation.BottomNavigationView
+                android:id="@+id/bottomNav"
+                style="@style/Widget.App.BottomNav"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="52dp"
+                android:paddingStart="4dp"
+                android:paddingEnd="4dp"
+                app:itemIconSize="20dp"
+                app:itemPaddingTop="6dp"
+                app:itemPaddingBottom="4dp"
+                app:activeIndicatorLabelPadding="0dp"
+                app:labelVisibilityMode="labeled"
+                app:menu="@menu/bottom_nav" />
+        </LinearLayout>
+
+        <!-- 多选功能条：进入行程页多选模式时替换导航栏。按钮可用性由 MainActivity 按选择数量控制 -->
+        <LinearLayout
+            android:id="@+id/multiBar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <View style="@style/Widget.App.ShellDivider" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:paddingStart="8dp"
+                android:paddingTop="4dp"
+                android:paddingEnd="8dp"
+                android:paddingBottom="4dp">
+
+                <LinearLayout
+                    android:id="@+id/btnSelectAll"
+                    android:layout_width="0dp"
+                    android:layout_height="44dp"
+                    android:layout_weight="1"
+                    android:background="?attr/selectableItemBackground"
+                    android:gravity="center"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:layout_width="18dp"
+                        android:layout_height="18dp"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_check"
+                        app:tint="@color/sidebar_fg" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="6dp"
+                        android:text="@string/trips_selection_select_all"
+                        android:textColor="@color/sidebar_fg"
+                        android:textSize="14sp" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/btnSelectionDelete"
+                    android:layout_width="0dp"
+                    android:layout_height="44dp"
+                    android:layout_weight="1"
+                    android:background="?attr/selectableItemBackground"
+                    android:gravity="center"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:layout_width="18dp"
+                        android:layout_height="18dp"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_delete"
+                        app:tint="@color/destructive" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="6dp"
+                        android:text="@string/trips_selection_delete"
+                        android:textColor="@color/destructive"
+                        android:textSize="14sp" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/btnSelectionExport"
+                    android:layout_width="0dp"
+                    android:layout_height="44dp"
+                    android:layout_weight="1"
+                    android:background="?attr/selectableItemBackground"
+                    android:gravity="center"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:layout_width="18dp"
+                        android:layout_height="18dp"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_export"
+                        app:tint="@color/sidebar_fg" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="6dp"
+                        android:text="@string/trips_selection_export"
+                        android:textColor="@color/sidebar_fg"
+                        android:textSize="14sp" />
+                </LinearLayout>
+            </LinearLayout>
+        </LinearLayout>
     </LinearLayout>
 </LinearLayout>

@@ -114,4 +114,16 @@
     <string name="trips_search_hint">Search city, title or note</string>
     <string name="trips_search_empty">No matches</string>
     <string name="trips_load_more">Load more</string>
+    <string name="trips_menu_multi_select">Select</string>
+    <string name="trips_selection_title">%1$d check-ins, %2$d trips selected</string>
+    <string name="trips_selection_empty">Nothing selected yet</string>
+    <string name="trips_selection_select_all">Select all</string>
+    <string name="trips_selection_delete">Delete</string>
+    <string name="trips_selection_export">Export</string>
+    <string name="trips_selection_indicator">Selected</string>
+    <string name="trips_selection_delete_title">Delete selected items?</string>
+    <string name="trips_selection_delete_message">This removes %1$d check-ins and %2$d trips and cannot be undone.\nType \"%3$s\" to confirm:</string>
+    <string name="trips_selection_delete_hint">Type the confirmation text</string>
+    <string name="trips_selection_delete_phrase">I confirm deleting the selected items</string>
+    <string name="trips_selection_deleted">Selected items deleted</string>
 </resources>
