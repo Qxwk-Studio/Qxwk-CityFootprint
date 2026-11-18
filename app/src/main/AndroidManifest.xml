@@ -90,6 +90,29 @@
             android:name=".ui.mine.StorageActivity"
             android:exported="false"
             android:parentActivityName=".ui.MainActivity" />
+
+        <!-- 分享页：打卡票根 / 足迹海报。样式由入口决定，所以是两个 Activity 共用一个基类 -->
+        <activity
+            android:name=".ui.share.CheckinShareActivity"
+            android:exported="false"
+            android:parentActivityName=".ui.MainActivity"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".ui.share.TripShareActivity"
+            android:exported="false"
+            android:parentActivityName=".ui.MainActivity"
+            android:windowSoftInputMode="adjustResize" />
+
+        <!-- 分享用的临时图片：cacheDir/share/ 交给系统分享面板读一次，不需要存储权限 -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.files"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
     </application>
 
 </manifest>

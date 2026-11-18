@@ -1,6 +1,8 @@
 package top.qxwkstudio.travel.ui.trips
 
 import top.qxwkstudio.travel.ui.common.*
+import top.qxwkstudio.travel.ui.share.CheckinShareActivity
+import top.qxwkstudio.travel.ui.share.TripShareActivity
 import top.qxwkstudio.travel.logic.Provinces
 
 import android.graphics.drawable.GradientDrawable
@@ -398,7 +400,7 @@ class TripsFragment : Fragment() {
                     anchor,
                     buildList {
                         add(MenuAction(R.drawable.ic_share, R.string.trips_menu_share) {
-                            requireContext().notify(R.string.trips_share_wip)
+                            startActivity(CheckinShareActivity.intent(requireContext(), checkin.id))
                         })
                         if (!derived) {
                             add(MenuAction(R.drawable.ic_edit, R.string.trips_menu_edit) {
@@ -501,7 +503,7 @@ class TripsFragment : Fragment() {
                     anchor,
                     listOf(
                         MenuAction(R.drawable.ic_share, R.string.trips_menu_share) {
-                            requireContext().notify(R.string.trips_share_wip)
+                            startActivity(TripShareActivity.intent(requireContext(), trip.id))
                         },
                         MenuAction(R.drawable.ic_edit, R.string.trips_menu_edit) {
                             startActivity(TripEditActivity.intent(requireContext(), trip.id))

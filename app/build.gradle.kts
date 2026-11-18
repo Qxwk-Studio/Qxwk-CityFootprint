@@ -148,6 +148,8 @@ dependencies {
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("com.google.android.material:material:1.11.0")
     implementation("androidx.recyclerview:recyclerview:1.3.2")
+    // 分享页的二维码：只用 core（纯 Java 编码器，约 500KB），不引 zxing-android-embedded。
+    implementation("com.google.zxing:core:3.5.3")
     // 行程/成就页的左右翻页：手写的「换页动画」没有跟手位移，观感是切完才动。
     // ViewPager2 自带跟手拖动、松手按速度吸附、以及逐像素的 onPageScrolled（标签指示器靠它联动）。
     implementation("androidx.viewpager2:viewpager2:1.1.0")
