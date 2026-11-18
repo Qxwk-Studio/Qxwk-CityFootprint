@@ -330,11 +330,12 @@ abstract class ShareActivityBase : LocalizedActivity() {
         return row
     }
 
-    /** 开关行；[topPadding] 给卡片里连排的开关收间距用（时间线那组会传很小的值）。 */
+    /** 开关行；[topPadding]/[textSize] 给连排的小开关收高度用（时间线那组会传很小的值）。 */
     protected fun switchRow(
         labelRes: Int,
         checked: Boolean,
         topPadding: Int = 8,
+        textSize: Float = 13f,
         onChange: (Boolean) -> Unit,
     ): View {
         val row = LinearLayout(this).apply {
@@ -345,7 +346,7 @@ abstract class ShareActivityBase : LocalizedActivity() {
         }
         row.addView(TextView(this).apply {
             setText(labelRes)
-            textSize = 13f
+            this.textSize = textSize
             setTextColor(getColor(R.color.fg))
             layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
         })

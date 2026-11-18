@@ -55,6 +55,12 @@ enum class PaperColor {
         YELLOW -> 0xFFFBF3DC.toInt()
     }
 
+    /**
+     * 底板（画布最外层、卡片四周那一圈）颜色：由纸色压暗 8% 得到，
+     * 换背景时底板跟着换，不会出现「浅蓝纸 + 米色底」的割裂。
+     */
+    fun backdrop(): Int = androidx.core.graphics.ColorUtils.blendARGB(resolve(), 0xFF2A2622.toInt(), 0.08f)
+
     companion object {
         val ALL = listOf(CREAM, WHITE, GRAY, BLUE, GREEN, PINK, YELLOW)
     }

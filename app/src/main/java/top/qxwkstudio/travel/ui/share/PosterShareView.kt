@@ -71,7 +71,7 @@ internal class PosterShareView(context: Context) : ShareCanvas(context) {
         val tint = InkColor.BLACK.resolve(context)
         val height = designHeight.toFloat()
 
-        fill.color = BACKDROP
+        fill.color = paperColor.backdrop()
         canvas.drawRect(0f, 0f, designWidth.toFloat(), height, fill)
 
         val card = RectF(30f, 30f, designWidth - 30f, height - 30f)
@@ -199,7 +199,6 @@ internal class PosterShareView(context: Context) : ShareCanvas(context) {
     private companion object {
 
         /** 海报纸底色由视图字段决定，这里不再写死。 */
-        const val BACKDROP = 0xFFEAE2D1.toInt()
         const val PHOTO_EMPTY = 0xFFE2D9C6.toInt()
 
         /** 3:4 基准高度（1080×1440）。 */

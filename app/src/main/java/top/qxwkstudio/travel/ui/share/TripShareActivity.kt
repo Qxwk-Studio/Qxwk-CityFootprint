@@ -317,35 +317,58 @@ class TripShareActivity : ShareActivityBase() {
                 view.refreshSize()
             },
         )
-        // 每行显示哪些字段：日期 / 时间 / 同行人 / 备注
+        // 每行显示哪些字段：日期 / 时间 / 同行人 / 备注。四个开关排成 2×2，比竖着四行矮一半
         body.addView(
-            switchRow(R.string.share_timeline_date, timelineShowDate, topPadding = 2) { checked ->
-                timelineShowDate = checked
-                view.showDate = checked
+            switchGrid(
+                listOf(
+                    R.string.share_timeline_date to timelineShowDate,
+                    R.string.share_timeline_time to timelineShowTime,
+                    R.string.share_timeline_companions to timelineShowCompanions,
+                    R.string.share_timeline_note to timelineShowNote,
+                ),
+            ) { index, checked ->
+                when (index) {
+                    0 -> timelineShowDate = checked
+                    1 -> timelineShowTime = checked
+                    2 -> timelineShowCompanions = checked
+                    else -> timelineShowNote = checked
+                }
+                view.showDate = timelineShowDate
+                view.showTime = timelineShowTime
+                view.showCompanions = timelineShowCompanions
+                view.showNote = timelineShowNote
                 view.refresh()
             },
         )
-        body.addView(
-            switchRow(R.string.share_timeline_time, timelineShowTime, topPadding = 2) { checked ->
-                timelineShowTime = checked
-                view.showTime = checked
-                view.refresh()
-            },
-        )
-        body.addView(
-            switchRow(R.string.share_timeline_companions, timelineShowCompanions, topPadding = 2) { checked ->
-                timelineShowCompanions = checked
-                view.showCompanions = checked
-                view.refresh()
-            },
-        )
-        body.addView(
-            switchRow(R.string.share_timeline_note, timelineShowNote, topPadding = 2) { checked ->
-                timelineShowNote = checked
-                view.showNote = checked
-                view.refresh()
-            },
-        )
+    }
+
+    /** 开关排成两列：每行两颗，[onChange] 带下标（顺序与传入列表一致）。 */
+    private fun switchGrid(
+        items: List<Pair<Int, Boolean>>,
+        onChange: (Int, Boolean) -> Unit,
+    ): View {
+        val grid = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        items.chunked(2).forEachIndexed { rowIndex, pair ->
+            val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+            pair.forEachIndexed { column, (labelRes, checked) ->
+                val index = rowIndex * 2 + column
+                val cell = switchRow(labelRes, checked, topPadding = 2, textSize = 12f) { value ->
+                    onChange(index, value)
+                }
+                row.addView(
+                    cell,
+                    LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
+                        if (column == 0) marginEnd = dp(8)
+                    },
+                )
+            }
+            // 奇数个时补一个空位，保证左右列宽一致
+            if (pair.size == 1) {
+                row.addView(View(this), LinearLayout.LayoutParams(0, 1, 1f))
+            }
+            grid.addView(row)
+        }
+        return grid
     }
 
     /** 备注卡与打卡分享页同一套：多行输入 + 十档墨色。 */

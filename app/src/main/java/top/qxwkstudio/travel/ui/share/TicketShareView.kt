@@ -46,7 +46,7 @@ internal class TicketShareView(context: Context) : ShareCanvas(context) {
     override fun drawDesign(canvas: Canvas) {
         val tint = InkColor.BLACK.resolve(context)
 
-        fill.color = PAPER_BACKDROP
+        fill.color = paperColor.backdrop()
         canvas.drawRect(0f, 0f, designWidth.toFloat(), designHeight.toFloat(), fill)
 
         val rect = RectF(44f, 44f, 1956f, 856f)
@@ -167,7 +167,6 @@ internal class TicketShareView(context: Context) : ShareCanvas(context) {
     }
 
     private companion object {
-        const val PAPER_BACKDROP = 0xFFEAE2D1.toInt()
         const val PHOTO_EMPTY = 0xFFE2D9C6.toInt()
     }
 }
