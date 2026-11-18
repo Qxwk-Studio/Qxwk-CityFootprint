@@ -207,6 +207,7 @@ class CheckinShareActivity : ShareActivityBase() {
                             getString(R.string.share_date_lunar_full),
                             getString(R.string.share_date_lunar_short),
                             getString(R.string.share_date_lunar_month),
+                            getString(R.string.share_date_lunar_year),
                         ),
                         selected = lunarStyle,
                     ) { index ->

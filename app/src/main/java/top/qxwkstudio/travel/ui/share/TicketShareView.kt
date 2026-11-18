@@ -114,21 +114,23 @@ internal class TicketShareView(context: Context) : ShareCanvas(context) {
             }
 
             TextLayout.VERTICAL -> {
-                // 竖排：中英都竖着读，中文一列、英文旋转 90° 紧贴右侧一列
+                // 竖排：中英都竖着读，两列**顶部对齐**在同一根基线上
+                val top = rect.top + 40f
                 val zhLeft = left + 28f
-                val zhHeight = drawStyledVertical(canvas, titleZh, zhLeft, cursor, 56f, tint, font, 10f)
+                val zhHeight = drawStyledVertical(canvas, titleZh, zhLeft, top, 56f, tint, font, 10f)
                 if (titleEn.isNotBlank()) {
+                    // 旋转后的首字左沿贴在 top 上；中文首字字形顶比 top 低约 6，补一下才真正齐平
                     drawRotatedText(
                         canvas = canvas,
                         value = titleEn,
                         x = zhLeft + 44f,
-                        top = cursor - 2f,
+                        top = top + 6f,
                         size = 24f,
                         color = tint,
                         maxHeight = zhHeight.coerceAtLeast(140f),
                     )
                 }
-                cursor += zhHeight + 22f
+                cursor = top + zhHeight + 22f
             }
         }
 
@@ -159,8 +161,7 @@ internal class TicketShareView(context: Context) : ShareCanvas(context) {
             style = stampStyle,
             ink = stampColor.resolve(context),
             paper = PAPER,
-            topLine = "CITY",
-            bottomLine = "FOOTPRINT",
+            arcText = "Cityfootprint",
         )
         canvas.restore()
     }

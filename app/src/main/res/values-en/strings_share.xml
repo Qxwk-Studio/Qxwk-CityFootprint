@@ -70,6 +70,7 @@
     <string name="share_date_lunar_full">丙午年十月十八</string>
     <string name="share_date_lunar_short">农历十月十八</string>
     <string name="share_date_lunar_month">十月十八</string>
+    <string name="share_date_lunar_year">丙午年</string>
 
     <string name="share_range_day">By day</string>
     <string name="share_range_month">By month</string>

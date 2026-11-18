@@ -321,29 +321,25 @@ abstract class ShareActivityBase : LocalizedActivity() {
         return row
     }
 
-    /** 十档墨色分两行（一行五个）—— 一行放不下，也不该横向滚动着挑颜色。 */
+    /** 十档墨色排在**一行**里（点小一点、间距收紧，窄屏也放得下）。 */
     protected fun colorRow(selected: InkColor, onPick: (InkColor) -> Unit): View {
-        val rows = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        InkColor.ALL.chunked(5).forEach { group ->
-            val row = LinearLayout(this).apply {
-                orientation = LinearLayout.HORIZONTAL
-                gravity = Gravity.CENTER_VERTICAL
-                setPadding(0, dp(10), 0, 0)
-            }
-            group.forEach { color ->
-                row.addView(View(this).apply {
-                    background = GradientDrawable().apply {
-                        shape = GradientDrawable.OVAL
-                        setColor(color.resolve(this@ShareActivityBase))
-                        if (color == selected) setStroke(dp(3), Palette.accent(this@ShareActivityBase))
-                    }
-                    layoutParams = LinearLayout.LayoutParams(dp(24), dp(24)).apply { marginEnd = dp(10) }
-                    setOnClickListener { onPick(color) }
-                })
-            }
-            rows.addView(row)
+        val row = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(0, dp(10), 0, 0)
         }
-        return rows
+        InkColor.ALL.forEach { color ->
+            row.addView(View(this).apply {
+                background = GradientDrawable().apply {
+                    shape = GradientDrawable.OVAL
+                    setColor(color.resolve(this@ShareActivityBase))
+                    if (color == selected) setStroke(dp(3), Palette.accent(this@ShareActivityBase))
+                }
+                layoutParams = LinearLayout.LayoutParams(dp(20), dp(20)).apply { marginEnd = dp(6) }
+                setOnClickListener { onPick(color) }
+            })
+        }
+        return row
     }
 
     /** 会自己重画选中描边的色板（带小标题）：换色后不需要调用方再管布局。 */

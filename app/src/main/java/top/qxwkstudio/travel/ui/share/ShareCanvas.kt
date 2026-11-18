@@ -292,8 +292,9 @@ abstract class ShareCanvas(context: Context) : View(context) {
     }
 
     /**
-     * 四分之一圆邮戳：圆心压在卡片右下角，只露卡片内的那一块。
-     * [paper] 是卡片底色 —— 齿孔章要拿它「打孔」，不然孔是透明的、会透出背板色。
+     * 四分之一圆印章：圆心压在卡片右下角，只露卡片内的那一块。
+     * [paper] 是卡片底色 —— 齿孔要拿它「打孔」，不然孔是透明的、会透出背板色。
+     * [arcText] 沿外圈内侧的弧线排（印章的环形文字），不是直线。
      */
     protected fun drawStamp(
         canvas: Canvas,
@@ -303,8 +304,7 @@ abstract class ShareCanvas(context: Context) : View(context) {
         style: StampStyle,
         ink: Int,
         paper: Int,
-        topLine: String,
-        bottomLine: String,
+        arcText: String,
     ) {
         stroke.color = ink
         stroke.strokeWidth = 6f
@@ -360,9 +360,37 @@ abstract class ShareCanvas(context: Context) : View(context) {
         }
         stroke.strokeWidth = 6f
 
-        // 文字只在露出的四分之一里，所以往左上压一点
-        drawText(canvas, topLine, centerX - radius * 0.62f, centerY - radius * 0.5f, 26f, ink, align = Paint.Align.CENTER, letterSpacing = 0.08f)
-        drawText(canvas, bottomLine, centerX - radius * 0.62f, centerY - radius * 0.5f + 34f, 24f, ink, align = Paint.Align.CENTER)
+        // 环形文字：圆心在右下角，露出来的那四分之一对应 272°（左下）到 356°（正上）。
+        // 半径压在双环/圆章内圈（radius-22）以内，避免字压到环线上
+        drawArcText(canvas, arcText, centerX, centerY, radius - 32f, startAngle = 272f, sweep = 84f, size = 15f, color = ink)
+    }
+
+    /** 沿圆弧排字：每个字绕圆心旋转到对应角度，贴合印章弧度。 */
+    protected fun drawArcText(
+        canvas: Canvas,
+        value: String,
+        centerX: Float,
+        centerY: Float,
+        radius: Float,
+        startAngle: Float,
+        sweep: Float,
+        size: Float,
+        color: Int,
+    ) {
+        if (value.isEmpty()) return
+        text.typeface = Typeface.DEFAULT_BOLD
+        text.textSize = size
+        text.color = color
+        text.textAlign = Paint.Align.CENTER
+        text.letterSpacing = 0f
+        text.textScaleX = 1f
+        val step = if (value.length > 1) sweep / (value.length - 1) else 0f
+        value.forEachIndexed { index, ch ->
+            canvas.save()
+            canvas.rotate(startAngle + step * index, centerX, centerY)
+            canvas.drawText(ch.toString(), centerX, centerY - radius, text)
+            canvas.restore()
+        }
     }
 }
 

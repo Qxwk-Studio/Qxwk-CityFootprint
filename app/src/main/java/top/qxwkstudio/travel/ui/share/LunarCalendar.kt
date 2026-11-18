@@ -78,11 +78,12 @@ object LunarCalendar {
         }
     }
 
-    /** 票根上的三种农历写法：全称 / 带「农历」前缀 / 只到月日。 */
+    /** 票根上的四种农历写法：全称 / 带「农历」前缀 / 只到月日 / 只到年。 */
     fun format(value: Value, style: Int): String = when (style) {
         0 -> "${value.cycleYear}年${value.monthName}${value.dayName}"
         1 -> "农历${value.monthName}${value.dayName}"
-        else -> "${value.monthName}${value.dayName}"
+        2 -> "${value.monthName}${value.dayName}"
+        else -> "${value.cycleYear}年"
     }
 
     /** 只记得年月 / 只记得年时（记录精度不足），降到「干支年 + 月」或「干支年」。 */
