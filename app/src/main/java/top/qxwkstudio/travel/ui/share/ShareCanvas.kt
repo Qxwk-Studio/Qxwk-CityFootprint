@@ -279,6 +279,10 @@ abstract class ShareCanvas(context: Context) : View(context) {
         stroke.color = ink
         stroke.strokeWidth = 6f
         fill.color = ink
+        // 章面：50% 透明度的印色铺底，外圈与文字再实色盖上
+        fill.color = Color.argb(128, Color.red(ink), Color.green(ink), Color.blue(ink))
+        canvas.drawCircle(centerX, centerY, radius - 3f, fill)
+        fill.color = ink
         when (style) {
             StampStyle.ROUND -> {
                 canvas.drawCircle(centerX, centerY, radius, stroke)

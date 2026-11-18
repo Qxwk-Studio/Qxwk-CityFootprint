@@ -110,6 +110,7 @@ object ShareDates {
             .format(Date(millis))
     }
 
+    /** 时间跨度：始终写成「起 — 止」两段，哪怕起止同一天。 */
     fun range(start: Long, end: Long, unit: RangeUnit): String {
         val pattern = when (unit) {
             RangeUnit.DAY -> "yyyy.MM.dd"
@@ -117,8 +118,6 @@ object ShareDates {
             RangeUnit.YEAR -> "yyyy"
         }
         val format = SimpleDateFormat(pattern, Locale.US)
-        val from = format.format(Date(start))
-        val to = format.format(Date(end))
-        return if (from == to) from else "$from — $to"
+        return "${format.format(Date(start))} — ${format.format(Date(end))}"
     }
 }

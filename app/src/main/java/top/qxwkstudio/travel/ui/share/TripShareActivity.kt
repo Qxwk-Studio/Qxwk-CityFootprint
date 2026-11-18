@@ -30,7 +30,6 @@ class TripShareActivity : ShareActivityBase() {
     private var zoom = 100
     private var dx = 0
     private var dy = 0
-    private var layout = TextLayout.HORIZONTAL
     private var font = CardFont.DEFAULT
     private var rangeUnit = RangeUnit.DAY
     private var selectedCities = linkedSetOf<String>()
@@ -65,7 +64,6 @@ class TripShareActivity : ShareActivityBase() {
             selectedCities = segments.map { it.city }.filter { it.isNotBlank() }.toCollection(linkedSetOf())
 
             view.title = entity.title
-            view.layout = layout
             view.font = font
             view.dateText = ShareDates.range(entity.startTime, entity.endTime, rangeUnit)
             applyCities()
@@ -149,18 +147,6 @@ class TripShareActivity : ShareActivityBase() {
                 ) { index ->
                     font = CardFont.ALL[index]
                     view.font = font
-                    view.refresh()
-                    fill()
-                },
-            )
-            body.addView(
-                chips(
-                    labelRes = R.string.share_label_layout,
-                    options = listOf(getString(R.string.share_layout_h), getString(R.string.share_layout_v)),
-                    selected = if (layout == TextLayout.HORIZONTAL) 0 else 1,
-                ) { index ->
-                    layout = if (index == 0) TextLayout.HORIZONTAL else TextLayout.VERTICAL
-                    view.layout = layout
                     view.refresh()
                     fill()
                 },

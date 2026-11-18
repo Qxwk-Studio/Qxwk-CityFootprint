@@ -89,21 +89,21 @@ internal class TicketShareView(context: Context) : ShareCanvas(context) {
 
         when (layout) {
             TextLayout.HORIZONTAL -> {
-                // 横排：中英同一行，中文大、英文小一号紧跟其后
-                val zhWidth = measureStyled(titleZh, 72f, font).coerceAtMost(width - 40f)
-                drawStyled(canvas, titleZh, left, cursor + 68f, 72f, tint, font, maxWidth = width - 40f)
+                // 横排：中文一行、英文一行（左对齐），不再并排
+                drawStyled(canvas, titleZh, left, cursor + 68f, 72f, tint, font, maxWidth = width)
                 if (titleEn.isNotBlank()) {
                     drawText(
                         canvas = canvas,
                         value = titleEn,
-                        x = left + zhWidth + 14f,
-                        baseline = cursor + 68f,
+                        x = left,
+                        baseline = cursor + 68f + 48f,
                         size = 32f,
                         color = tint,
                         typeface = Typeface.DEFAULT,
                         letterSpacing = 0.12f,
-                        maxWidth = (width - zhWidth - 14f).coerceAtLeast(48f),
+                        maxWidth = width,
                     )
+                    cursor += 48f
                 }
                 cursor += 112f
             }
@@ -137,19 +137,6 @@ internal class TicketShareView(context: Context) : ShareCanvas(context) {
         lines.forEachIndexed { index, line ->
             drawText(canvas, line, left, cursor + 46f + index * 40f, 28f, noteColor.resolve(context))
         }
-
-        // 信息区左下角：品牌字（原二维码的位置）。印章占了右下角，这行只排到印章左边
-        drawText(
-            canvas = canvas,
-            value = "Cityfootprint",
-            x = left,
-            baseline = rect.bottom - 34f,
-            size = 26f,
-            color = tint,
-            typeface = Typeface.DEFAULT,
-            letterSpacing = 0.06f,
-            maxWidth = right - left - 110f,
-        )
 
         drawStamp(
             canvas = canvas,
