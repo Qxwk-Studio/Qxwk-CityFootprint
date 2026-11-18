@@ -1,0 +1,103 @@
+name: Build Signed Test APK
+
+# 仅手动触发，只产出一个用正式签名签好的测试包（release 构建），不发版、不建 tag、不更新 D1。
+# 与「Build, Release and Publish Android APK」的区别：那边版本号取自 release.json 且会走发布流程；
+# 这里版本号在 Actions 页面手输，经 -PtestVersionName/-PtestVersionCode 传给 Gradle 覆盖掉 release.json 的版本
+# （只影响本次构建，不改文件、不提交）。
+on:
+  workflow_dispatch:
+    inputs:
+      version_name:
+        description: '测试包版本名，例如 2.3.5'
+        required: true
+        type: string
+      version_code:
+        description: '测试包 versionCode，例如 20305'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate version inputs
+        env:
+          VERSION_NAME: ${{ inputs.version_name }}
+          VERSION_CODE: ${{ inputs.version_code }}
+        run: |
+          if ! [[ "$VERSION_NAME" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::version_name 必须是 x.y.z，例如 2.3.5"
+            exit 1
+          fi
+          if ! [[ "$VERSION_CODE" =~ ^[0-9]+$ ]] || [ "$VERSION_CODE" -le 0 ]; then
+            echo "::error::version_code 必须是正整数，例如 20305"
+            exit 1
+          fi
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools'
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x app/gradlew
+
+      - name: Restore keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "::error::缺少 Secrets.KEYSTORE_BASE64，测试包无法使用正式签名"
+            exit 1
+          fi
+          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
+          echo "CF_KEYSTORE_FILE=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
+
+      - name: Unit tests
+        run: ./gradlew testDebugUnitTest
+        working-directory: app
+
+      # assembleRelease 在「有 CF_KEYSTORE_FILE」时自动用正式签名（见 build.gradle.kts 的 signingConfig），
+      # 缺密钥会产出 unsigned 包 —— 下面的重命名步骤会因为找不到 APK 而失败，正是想要的。
+      # 版本号仍由 Actions 页面手输：经 -PtestVersionName/-PtestVersionCode 盖掉 release.json，构建期生效。
+      - name: Build Release APK
+        env:
+          CF_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          CF_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          CF_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          TEST_VERSION_NAME: ${{ inputs.version_name }}
+          TEST_VERSION_CODE: ${{ inputs.version_code }}
+        run: ./gradlew assembleRelease -PtestVersionName="$TEST_VERSION_NAME" -PtestVersionCode="$TEST_VERSION_CODE"
+        working-directory: app
+
+      - name: Rename APK
+        env:
+          VERSION_NAME: ${{ inputs.version_name }}
+        run: |
+          DIR=app/build/outputs/apk/release
+          APK=$(ls "$DIR"/*-arm64-v8a-release.apk 2>/dev/null) || {
+            echo "::error::没找到已签名的 *-arm64-v8a-release.apk（签名没生效？），目录内容："
+            ls -l "$DIR"
+            exit 1
+          }
+          mv "$APK" "$DIR/CityFootprint-test-$VERSION_NAME.apk"
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: CityFootprint-test-${{ inputs.version_name }}
+          path: app/build/outputs/apk/release/CityFootprint-test-${{ inputs.version_name }}.apk
+          if-no-files-found: error
