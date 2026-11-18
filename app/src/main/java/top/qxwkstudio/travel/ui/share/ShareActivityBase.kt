@@ -71,6 +71,9 @@ abstract class ShareActivityBase : LocalizedActivity() {
 
     protected abstract fun createCanvas(): ShareCanvas
 
+    /** 预览是否钉在屏幕顶部：票根钉住（改动时一直可见），海报随内容一起滚。 */
+    protected open val pinnedPreview: Boolean = true
+
     /** 异步取数据、灌画布、建卡片。 */
     protected abstract fun populate()
 
@@ -92,6 +95,13 @@ abstract class ShareActivityBase : LocalizedActivity() {
                 ViewGroup.LayoutParams.WRAP_CONTENT,
             ).apply { gravity = Gravity.CENTER_HORIZONTAL },
         )
+        if (!pinnedPreview) {
+            // 把预览区整体挪进滚动容器的最前面（海报太高，钉住会把卡片区挤没）
+            val host = binding.previewHost
+            (host.parent as? ViewGroup)?.removeView(host)
+            host.setPadding(0, 0, 0, dp(10))
+            binding.cards.addView(host, 0)
+        }
         binding.btnSave.setOnClickListener { saveImage() }
         binding.btnShare.setOnClickListener { shareImage() }
         populate()

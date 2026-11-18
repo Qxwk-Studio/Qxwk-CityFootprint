@@ -31,6 +31,7 @@ internal class PosterShareView(context: Context) : ShareCanvas(context) {
 
     var title = ""
     var layout = TextLayout.HORIZONTAL
+    var font = CardFont.DEFAULT
     var dateText = ""
     var cities: List<String> = emptyList()
 
@@ -63,9 +64,9 @@ internal class PosterShareView(context: Context) : ShareCanvas(context) {
         var cursor = image.bottom + 78f
 
         if (layout == TextLayout.VERTICAL) {
-            cursor += drawStyledVertical(canvas, title, left + 34f, cursor, 56f, tint, CardFont.DEFAULT, 10f)
+            cursor += drawStyledVertical(canvas, title, left + 34f, cursor, 56f, tint, font, 10f)
         } else {
-            drawText(canvas, title, left, cursor, 62f, tint, Typeface.create(Typeface.DEFAULT, Typeface.BOLD), maxWidth = width)
+            drawStyled(canvas, title, left, cursor, 62f, tint, font, maxWidth = width)
             cursor += 22f
         }
 

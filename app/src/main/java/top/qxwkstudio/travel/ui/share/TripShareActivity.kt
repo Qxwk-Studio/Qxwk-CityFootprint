@@ -3,8 +3,8 @@ package top.qxwkstudio.travel.ui.share
 import android.content.Context
 import android.content.Intent
 import android.content.res.ColorStateList
+import android.view.View
 import android.view.ViewGroup
-import android.widget.CheckBox
 import android.widget.LinearLayout
 import androidx.lifecycle.lifecycleScope
 import top.qxwkstudio.travel.R
@@ -31,6 +31,7 @@ class TripShareActivity : ShareActivityBase() {
     private var dx = 0
     private var dy = 0
     private var layout = TextLayout.HORIZONTAL
+    private var font = CardFont.DEFAULT
     private var rangeUnit = RangeUnit.DAY
     private var selectedCities = linkedSetOf<String>()
     private var timelineOn = true
@@ -38,6 +39,9 @@ class TripShareActivity : ShareActivityBase() {
     override val titleRes: Int = R.string.share_title_trip
 
     override val filePrefix: String = "trip-share"
+
+    /** 海报很高，预览随内容一起滚，不钉在顶部。 */
+    override val pinnedPreview: Boolean = false
 
     private val view: PosterShareView get() = canvas as PosterShareView
 
@@ -62,6 +66,7 @@ class TripShareActivity : ShareActivityBase() {
 
             view.title = entity.title
             view.layout = layout
+            view.font = font
             view.dateText = ShareDates.range(entity.startTime, entity.endTime, rangeUnit)
             applyCities()
             applyTimeline()
@@ -90,28 +95,64 @@ class TripShareActivity : ShareActivityBase() {
     }
 
     private fun photoCard() {
-        val body = addCard(R.drawable.ic_camera, R.string.share_card_photo)
-        fun fill() {
-            body.removeAllViews()
+        // 与打卡分享页一致：选择照片在标题右侧，已有照片列在下面（没有就隐藏），再往下才是滑条
+        lateinit var body: LinearLayout
+        body = addCard(
+            iconRes = R.drawable.ic_camera,
+            titleRes = R.string.share_card_photo,
+            actionRes = R.string.share_pick_photo,
+            onAction = {
+                pickGallery { path ->
+                    photoPath = path
+                    applyPhoto()
+                    photoCardBody(body)
+                }
+            },
+        )
+        photoCardBody(body)
+    }
+
+    private fun photoCardBody(body: LinearLayout) {
+        body.removeAllViews()
+        if (photos.isNotEmpty()) {
             body.addView(
                 photoStrip(
                     paths = photos,
                     selected = photoPath,
-                    onPick = { photoPath = it; applyPhoto(); fill() },
-                    onPicked = { photoPath = it; applyPhoto(); fill() },
+                    onPick = { photoPath = it; applyPhoto(); photoCardBody(body) },
+                    onPicked = { photoPath = it; applyPhoto(); photoCardBody(body) },
+                    showPickButton = false,
                 ),
             )
-            body.addView(slider(R.string.share_offset_x, -100, 100, dx) { dx = it; applyTransform() })
-            body.addView(slider(R.string.share_offset_y, -100, 100, dy) { dy = it; applyTransform() })
-            body.addView(slider(R.string.share_zoom, 100, 300, zoom) { zoom = it; applyTransform() })
         }
-        fill()
+        body.addView(slider(R.string.share_offset_x, -100, 100, dx) { dx = it; applyTransform() })
+        body.addView(slider(R.string.share_offset_y, -100, 100, dy) { dy = it; applyTransform() })
+        body.addView(slider(R.string.share_zoom, 100, 300, zoom) { zoom = it; applyTransform() })
     }
 
     private fun titleCard() {
         val body = addCard(R.drawable.ic_note, R.string.share_card_title)
         fun fill() {
             body.removeAllViews()
+            body.addView(
+                chips(
+                    labelRes = R.string.share_label_font,
+                    options = listOf(
+                        getString(R.string.share_font_default),
+                        getString(R.string.share_font_serif),
+                        getString(R.string.share_font_mono),
+                        getString(R.string.share_font_light),
+                        getString(R.string.share_font_condensed),
+                        getString(R.string.share_font_cursive),
+                    ),
+                    selected = CardFont.ALL.indexOf(font),
+                ) { index ->
+                    font = CardFont.ALL[index]
+                    view.font = font
+                    view.refresh()
+                    fill()
+                },
+            )
             body.addView(
                 chips(
                     labelRes = R.string.share_label_layout,
@@ -164,21 +205,53 @@ class TripShareActivity : ShareActivityBase() {
             })
             return
         }
-        cities.forEach { city ->
-            body.addView(CheckBox(this).apply {
-                text = CityStore.displayName(this@TripShareActivity, city)
-                textSize = 13f
-                setTextColor(getColor(R.color.fg))
-                buttonTintList = ColorStateList.valueOf(Palette.accent(this@TripShareActivity))
-                isChecked = city in selectedCities
-                setPadding(0, dp(4), 0, 0)
-                setOnCheckedChangeListener { _, checked ->
-                    if (checked) selectedCities.add(city) else selectedCities.remove(city)
-                    applyCities()
-                    view.refresh()
-                }
-            })
+        cities.forEach { city -> body.addView(cityRow(city)) }
+    }
+
+    /** 城市勾选：小圆点 + 城市名，尺寸与行程页多选指示器一致（18dp）。 */
+    private fun cityRow(city: String): View {
+        val row = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = android.view.Gravity.CENTER_VERTICAL
+            setPadding(0, dp(7), 0, dp(7))
+            isClickable = true
+            setBackgroundColor(android.graphics.Color.TRANSPARENT)
         }
+        val dot = android.widget.ImageView(this).apply {
+            layoutParams = LinearLayout.LayoutParams(dp(18), dp(18)).apply { marginEnd = dp(10) }
+            setPadding(dp(3), dp(3), dp(3), dp(3))
+            imageTintList = ColorStateList.valueOf(getColor(R.color.on_accent))
+        }
+        row.addView(dot)
+        row.addView(android.widget.TextView(this).apply {
+            text = CityStore.displayName(this@TripShareActivity, city)
+            textSize = 13f
+            setTextColor(getColor(R.color.fg))
+        })
+
+        fun paint() {
+            val on = city in selectedCities
+            dot.background = android.graphics.drawable.GradientDrawable().apply {
+                shape = android.graphics.drawable.GradientDrawable.OVAL
+                if (on) {
+                    setColor(Palette.accent(this@TripShareActivity))
+                } else {
+                    setStroke(dp(1), getColor(R.color.border))
+                    setColor(android.graphics.Color.TRANSPARENT)
+                }
+            }
+            dot.setImageDrawable(
+                if (on) androidx.core.content.ContextCompat.getDrawable(this, R.drawable.ic_check) else null,
+            )
+        }
+        row.setOnClickListener {
+            if (!selectedCities.add(city)) selectedCities.remove(city)
+            paint()
+            applyCities()
+            view.refresh()
+        }
+        paint()
+        return row
     }
 
     private fun timelineCard() {
