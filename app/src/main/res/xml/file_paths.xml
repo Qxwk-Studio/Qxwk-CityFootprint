@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 分享图片的临时目录：生成的 PNG 先落到 cacheDir/share/，再用 FileProvider 交给系统分享面板。
+     只开放这一个子目录，别把整个 cacheDir 暴露出去。 -->
+<paths>
+    <cache-path
+        name="share"
+        path="share/" />
+</paths>

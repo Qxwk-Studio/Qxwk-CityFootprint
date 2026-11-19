@@ -31,6 +31,15 @@ val debugVersionCodeOverride = (project.findProperty("debugVersionCode") as Stri
     ?.toIntOrNull()
     ?.takeIf { it > 0 }
 
+// 仅供「Build Signed Test APK」工作流使用的 release 版本覆盖：那套流程在 Actions 页面手输版本号，
+// 用它盖掉 release.json 里的值（只在构建期生效，不改文件）。正式发版不传这两个参数，
+// 版本号仍然只来自 release.json。
+val testVersionNameOverride = (project.findProperty("testVersionName") as String?)
+    ?.takeIf { it.isNotBlank() }
+val testVersionCodeOverride = (project.findProperty("testVersionCode") as String?)
+    ?.toIntOrNull()
+    ?.takeIf { it > 0 }
+
 android {
     namespace = "top.qxwkstudio.travel"
     compileSdk = 34
@@ -129,6 +138,15 @@ androidComponents {
         }
         if (debugVersionCodeOverride != null) {
             variant.outputs.forEach { it.versionCode.set(debugVersionCodeOverride) }
+        }
+    }
+    // 测试包（release 构建 + 正式签名）：版本号由 Actions 输入经 -PtestVersionName/-PtestVersionCode 传进来
+    onVariants(selector().withBuildType("release")) { variant ->
+        if (testVersionNameOverride != null) {
+            variant.outputs.forEach { it.versionName.set(testVersionNameOverride) }
+        }
+        if (testVersionCodeOverride != null) {
+            variant.outputs.forEach { it.versionCode.set(testVersionCodeOverride) }
         }
     }
 }

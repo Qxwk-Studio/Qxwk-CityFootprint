@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 分享页（打卡票根 / 足迹海报）文案。 -->
+<resources>
+    <string name="share_title_checkin">Share check-in</string>
+    <string name="share_title_trip">Share trip</string>
+    <string name="share_save">Save</string>
+    <string name="share_send">Share</string>
+    <string name="share_saved">Saved to gallery</string>
+    <string name="share_save_failed">Save failed, try again later</string>
+    <string name="share_send_failed">Could not open the share sheet</string>
+    <string name="share_no_photo">No photo selected</string>
+
+    <string name="share_card_background">Background</string>
+    <string name="share_timeline_date">Show date</string>
+    <string name="share_timeline_time">Show time</string>
+    <string name="share_timeline_companions">Show companions</string>
+    <string name="share_timeline_note">Show note</string>    <string name="share_card_photo">Photo</string>
+    <string name="share_card_title">Title</string>
+    <string name="share_card_date">Date</string>
+    <string name="share_card_note">Note</string>
+    <string name="share_card_stamp">Stamp</string>
+    <string name="share_card_city">Cities</string>
+    <string name="share_card_timeline">Timeline</string>
+
+    <string name="share_pick_gallery">Pick from gallery</string>
+    <string name="share_pick_photo">Pick photo</string>
+    <string name="share_label_font">Font</string>
+    <string name="share_label_layout">Layout</string>
+    <string name="share_label_calendar">Calendar</string>
+    <string name="share_label_format">Format</string>
+    <string name="share_label_color">Color</string>
+    <string name="share_label_style">Style</string>
+    <string name="share_offset_x">Horizontal</string>
+    <string name="share_offset_y">Vertical</string>
+    <string name="share_zoom">Zoom</string>
+
+    <string name="share_font_default">Default</string>
+    <string name="share_font_serif">Serif</string>
+    <string name="share_font_mono">Mono</string>
+    <string name="share_font_light">Light</string>
+    <string name="share_font_condensed">Condensed</string>
+    <string name="share_font_cursive">Cursive</string>
+
+    <string name="share_layout_h">Horizontal</string>
+    <string name="share_layout_v">Vertical</string>
+
+    <string name="share_calendar_gregorian">Gregorian</string>
+    <string name="share_calendar_lunar">Lunar</string>
+    <string name="share_calendar_lunar_soon">Lunar (coming soon)</string>
+
+    <string name="share_color_black">Ink</string>
+    <string name="share_color_accent">Accent</string>
+    <string name="share_color_gold">Gold</string>
+    <string name="share_color_gray">Gray</string>
+
+    <string name="share_stamp_round">Round</string>
+    <string name="share_stamp_square">Square</string>
+    <string name="share_stamp_double">Double ring</string>
+    <string name="share_stamp_oval">Oval</string>
+    <string name="share_stamp_perforated">Perforated</string>
+    <string name="share_timeline_switch">Show timeline</string>
+    <string name="share_city_empty">This trip has no visited cities yet</string>
+
+    <string name="share_date_format_dot">2026.11.18</string>
+    <string name="share_date_format_cn">2026年11月18日</string>
+    <string name="share_date_format_en">18 Nov 2026</string>
+    <string name="share_date_format_slash">2026/11/18</string>
+    <string name="share_date_format_iso">2026-11-18</string>
+    <string name="share_date_format_space">2026 11 18</string>
+    <string name="share_date_lunar_full">丙午年十月十八</string>
+    <string name="share_date_lunar_short">农历十月十八</string>
+    <string name="share_date_lunar_month">十月十八</string>
+    <string name="share_date_lunar_year">丙午年</string>
+
+    <string name="share_range_day">By day</string>
+    <string name="share_range_month">By month</string>
+    <string name="share_range_year">By year</string>
+</resources>

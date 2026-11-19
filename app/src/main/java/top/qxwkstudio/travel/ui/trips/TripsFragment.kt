@@ -1,6 +1,8 @@
 package top.qxwkstudio.travel.ui.trips
 
 import top.qxwkstudio.travel.ui.common.*
+import top.qxwkstudio.travel.ui.share.CheckinShareActivity
+import top.qxwkstudio.travel.ui.share.TripShareActivity
 import top.qxwkstudio.travel.logic.Provinces
 
 import android.graphics.drawable.GradientDrawable
@@ -398,7 +400,7 @@ class TripsFragment : Fragment() {
                     anchor,
                     buildList {
                         add(MenuAction(R.drawable.ic_share, R.string.trips_menu_share) {
-                            requireContext().notify(R.string.trips_share_wip)
+                            startActivity(CheckinShareActivity.intent(requireContext(), checkin.id))
                         })
                         if (!derived) {
                             add(MenuAction(R.drawable.ic_edit, R.string.trips_menu_edit) {
@@ -501,7 +503,7 @@ class TripsFragment : Fragment() {
                     anchor,
                     listOf(
                         MenuAction(R.drawable.ic_share, R.string.trips_menu_share) {
-                            requireContext().notify(R.string.trips_share_wip)
+                            startActivity(TripShareActivity.intent(requireContext(), trip.id))
                         },
                         MenuAction(R.drawable.ic_edit, R.string.trips_menu_edit) {
                             startActivity(TripEditActivity.intent(requireContext(), trip.id))
@@ -984,9 +986,9 @@ class TripsFragment : Fragment() {
         val ctx = requireContext()
         val dot = ImageView(ctx).apply {
             contentDescription = getString(R.string.trips_selection_indicator)
-            layoutParams = LinearLayout.LayoutParams(dp(26), dp(26)).apply {
-                marginEnd = dp(10)
-                topMargin = dp(12)
+            layoutParams = LinearLayout.LayoutParams(dp(20), dp(20)).apply {
+                marginEnd = dp(8)
+                topMargin = dp(14)
             }
         }
         val container = LinearLayout(ctx).apply {
@@ -1015,7 +1017,7 @@ class TripsFragment : Fragment() {
                 dot.imageTintList = android.content.res.ColorStateList.valueOf(
                     ContextCompat.getColor(ctx, R.color.on_accent),
                 )
-                dot.setPadding(dp(5), dp(5), dp(5), dp(5))
+                dot.setPadding(dp(3), dp(3), dp(3), dp(3))
                 // 描边走 foreground：只画在卡片轮廓上，不占尺寸，也不会被左侧竖条盖住
                 card.foreground = GradientDrawable().apply {
                     cornerRadius = dp(14).toFloat()

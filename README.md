@@ -152,7 +152,7 @@ npx.cmd -y serve docs
 1. 修改根目录 `release.json` 的 `versionName`、`versionCode`、`importance`、`changelog`、`cfNotes`。
 
 2. 在 GitHub Actions → `Build, Release and Publish Android APK` → `Run workflow` 手动触发。
-   只调试构建时使用 `Build Signed Debug APK`，不会发版或更新 D1；该流程也会恢复正式 keystore，调试包使用正式签名。
+   只想要一个测试包时使用 `Build Signed Test APK`：手输版本名与 versionCode，按 **release** 构建并用正式 keystore 签名，版本号经 Gradle 参数覆盖（不改 `release.json`），不发版、不建 tag、不更新 D1。
 
 - `changelog`：GitHub Release 的完整更新日志
 - `cfNotes`：写入 D1 `app_versions.notes` 的简短说明，用于 App 更新提示

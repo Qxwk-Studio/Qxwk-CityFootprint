@@ -259,7 +259,8 @@ cd app && ./gradlew testDebugUnitTest
    `*-release-unsigned.apk`。
 2. 修改根目录 `release.json` 的 `versionName` / `versionCode` / `importance` / `changelog`（完整 Release 说明）/ `cfNotes`（App 更新提示）。
    GitHub Actions → `Build, Release and Publish Android APK` → `Run workflow`（**仅手动触发，无版本输入**）。
-   只构建 debug APK 时使用 `Build Signed Debug APK`；该流程会恢复正式 keystore，并用 `-PuseReleaseSigningForDebug=true` 给调试包使用正式签名。
+   只想要一个测试包时使用 `Build Signed Test APK`：手输版本名与 versionCode，流程经
+   `-PtestVersionName` / `-PtestVersionCode` 把它们传给 `assembleRelease`（正式签名、不改 `release.json`、不发版、不建 tag、不更新 D1）。
    Gradle 直接读取 release.json 获取版本号，无需修改 `app/build.gradle.kts`；跑单测 → `assembleRelease`
    → 上传 arm64-v8a 包 → 创建 `v<version>` tag 与 GitHub Release（正文取 `changelog`）
    → 写入 D1 `app_versions`（`notes` 取 `cfNotes`）。D1 步骤需要 Secrets `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID`。
