@@ -32,8 +32,20 @@ object CityStore {
 
     fun displayName(context: Context, name: String): String {
         if (context.resources.configuration.locales[0].language != "en") return name
-        return all(context).firstOrNull { it.name == name }?.nameEn ?: name
+        // 列表逐行调用：建一次 name → City 索引，别对四百多条线性扫
+        return byName(context)[name]?.nameEn ?: name
     }
+
+    /** name → City 的索引，首次用到时才建（缓存与 [all] 同源）。 */
+    private fun byName(context: Context): Map<String, City> {
+        index?.let { return it }
+        return synchronized(this) {
+            index ?: all(context).associateBy { it.name }.also { index = it }
+        }
+    }
+
+    @Volatile
+    private var index: Map<String, City>? = null
 
     /** assets/cities.json 的报文：`{ "cities": [...] }`。 */
     @Serializable

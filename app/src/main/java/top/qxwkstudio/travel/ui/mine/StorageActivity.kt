@@ -100,9 +100,13 @@ class StorageActivity : LocalizedActivity() {
             .setTitle(R.string.storage_cleanup_cache)
             .setMessage(R.string.storage_cache_confirm)
             .setPositiveButton(R.string.common_confirm) { _, _ ->
-                cacheDir.listFiles()?.forEach { runCatching { it.deleteRecursively() } }
-                notify(R.string.storage_cache_cleared)
-                refreshSizes()
+                // 递归删缓存目录放到 IO：几百个缩略图/分享图时主线程会卡一下
+                lifecycleScope.runIo({
+                    cacheDir.listFiles()?.forEach { runCatching { it.deleteRecursively() } }
+                }) {
+                    notify(R.string.storage_cache_cleared)
+                    refreshSizes()
+                }
             }
             .setNegativeButton(R.string.common_cancel, null)
             .show()

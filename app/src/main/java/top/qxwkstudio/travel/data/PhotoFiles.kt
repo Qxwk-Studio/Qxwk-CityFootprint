@@ -113,7 +113,10 @@ object PhotoFiles {
             val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
             BitmapFactory.decodeFile(first, bounds)
             var sample = 1
-            while (maxOf(bounds.outWidth, bounds.outHeight) / (sample * 2) >= maxPx) sample *= 2
+            // 目标：解码结果尽量贴近 maxPx，但**不超过**它。
+            // 旧条件 `max/(sample*2) >= maxPx` 在 2560px / maxPx=2048 时算出 sample=1，
+            // 单张就占满 16MB 缓存（2560×1920 ARGB ≈ 19MB），翻页必重解码。
+            while (maxOf(bounds.outWidth, bounds.outHeight) / sample > maxPx) sample *= 2
             BitmapFactory.decodeFile(first, BitmapFactory.Options().apply { inSampleSize = sample })
         }.getOrNull()?.also { cache.put(key, it) }
     }

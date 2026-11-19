@@ -80,6 +80,12 @@ class MapFragment : Fragment() {
     private var locating = false
     private var styleLoaded = false
 
+    /** 本次加载在跑：防止 onViewCreated / onResume / SyncEvents 同时触发多次 load。 */
+    private var loading = false
+
+    /** 由系统重建（旋转/深色切换）：此时 MapView 自己恢复了镜头，别再强行拉回默认视野。 */
+    private var hadSavedState = false
+
     /** 定位权限：用户在图上主动点准心时才请求（与打卡页同一套口径）。 */
     private val locatePermission = registerForActivityResult(
         androidx.activity.result.contract.ActivityResultContracts.RequestPermission(),
@@ -107,6 +113,7 @@ class MapFragment : Fragment() {
         // 表现为地图只显示一条、上下出现大片底色。
         mapView.setBackgroundColor(androidx.core.content.ContextCompat.getColor(requireContext(), R.color.map_bg))
         mapView.onCreate(savedInstanceState)
+        hadSavedState = savedInstanceState != null
         binding.btnClose.setOnClickListener { binding.cityCard.visibility = View.GONE }
         binding.btnLocate.setOnClickListener { locate() }
         load()
@@ -126,7 +133,9 @@ class MapFragment : Fragment() {
 
     override fun onPause() {
         hideCityPanel()
-        mapView.onPause()
+        // 与 onResume 的 `if (!isHidden)` 配对：隐藏的 tab 在 onHiddenChanged 里已经 pause 过，
+        // 这里再 pause 一次会让 MapView 的内部计数错位
+        if (!isHidden) mapView.onPause()
         super.onPause()
     }
 
@@ -165,6 +174,12 @@ class MapFragment : Fragment() {
      * 拿到之后才去碰地图：MapLibre 的 style 必须在主线程设。
      */
     private fun load() {
+        // 进来时 onViewCreated 与 onResume 都会调一次，SyncEvents 每来一次事件也会调：
+        // 数据没变、地图已就绪时直接返回，否则 getMapAsync/监听/底图拷贝会重复注册或重复执行
+        if (loading) return
+        if (map != null && seenVersion == DataVersion.current) return
+        loading = true
+        val version = DataVersion.current
         viewLifecycleOwner.lifecycleScope.runIo({
             val db = AppDatabase.get(requireContext())
             val cities = db.checkins().distinctCities().toSet()
@@ -196,13 +211,14 @@ class MapFragment : Fragment() {
             CityBoundaries.locator(requireContext())
             Triple(cities, path, badge)
         }) { result ->
+            loading = false
             val (cities, path, badge) = result.getOrNull() ?: run {
                 binding.textStatus.setText(R.string.map_failed)
                 return@runIo
             }
             visited = cities
             badgeColor = runCatching { android.graphics.Color.parseColor(badge) }.getOrDefault(0)
-            seenVersion = DataVersion.current
+            seenVersion = version
             if (map == null) setupMap(path) else refreshVisited()
         }
     }
@@ -219,10 +235,14 @@ class MapFragment : Fragment() {
             // 不再请求超过数据范围的瓦片。
             mapLibre.setMaxZoomPreference(6.0)
             mapLibre.setLatLngBoundsForCameraTarget(LatLngBounds.from(53.6, 135.1, 3.8, 73.5))
-            mapLibre.cameraPosition = CameraPosition.Builder()
-                .target(LatLng(35.0, 105.0))
-                .zoom(3.2)
-                .build()
+            // 只有首次创建才设默认视野；系统重建时 MapView 已经恢复了用户原来的镜头，
+            // 无条件设一次会把镜头拉回全国视野（用户刚放大到某座城市，一转屏就丢了）
+            if (!hadSavedState) {
+                mapLibre.cameraPosition = CameraPosition.Builder()
+                    .target(LatLng(35.0, 105.0))
+                    .zoom(3.2)
+                    .build()
+            }
             // 关掉 MapLibre 自带的 (i) 署名按钮：版权信息统一放在「我的 → 开源项目与许可」，
             // 地图页本身不再压两块小字（左下角的 © OpenStreetMap 也一起移走了）。
             mapLibre.uiSettings.isAttributionEnabled = false
@@ -647,7 +667,8 @@ class MapFragment : Fragment() {
             style?.getSourceAs<GeoJsonSource>(MY_LOCATION_SOURCE)?.setGeoJson(
                 """{"type":"Feature","geometry":{"type":"Point","coordinates":[${location.longitude},${location.latitude}]}}""",
             )
-            map?.animateCamera(CameraUpdateFactory.newLatLngZoom(LatLng(lat, lng), 8.0))
+            // 缩放取 6：瓦片只到 z6，setMaxZoomPreference 也是 6，写 8 会被夹回去、日志里还容易误判
+            map?.animateCamera(CameraUpdateFactory.newLatLngZoom(LatLng(lat, lng), 6.0))
             if (target == null) ctx.notify(R.string.locate_no_city, long = true)
         }
     }
