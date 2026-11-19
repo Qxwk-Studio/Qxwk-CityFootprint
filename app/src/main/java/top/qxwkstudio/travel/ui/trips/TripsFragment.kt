@@ -88,7 +88,10 @@ class TripsFragment : Fragment() {
     private lateinit var tracker: PagerSegments
 
     /** 一页的滚动容器 + 卡片列；两页各自独立滚动，翻页后回到原位置。 */
-    private class Page(val scroll: ScrollView, val column: LinearLayout)
+    private class Page(val scroll: ScrollView, val column: LinearLayout) {
+        /** 每页顶部那条搜索卡（第一个卡片位置）。 */
+        var search: View? = null
+    }
 
     /** 两个分段各自缓存已铺好的卡片，来回切换时不重复 inflate 前 30 条。 */
     private var checkinRowsKey = ""
@@ -132,18 +135,6 @@ class TripsFragment : Fragment() {
             SyncEvents.events.collect { load() }
         }
         binding.root.fadeSlideIn()
-        binding.inputSearch.addTextChangedListener(object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = Unit
-            override fun afterTextChanged(s: Editable?) {
-                query = s?.toString().orEmpty()
-                // 换了关键字，两段的「已展开条数」都回到第一屏
-                visibleCount.clear()
-                binding.btnClearSearch.visibility = if (query.isBlank()) View.GONE else View.VISIBLE
-                render()
-            }
-        })
-        binding.btnClearSearch.setOnClickListener { binding.inputSearch.setText("") }
 
         tracker = PagerSegments(binding.segTrack, binding.chipIndicator, binding.chipContainer)
         binding.pager.adapter = PageAdapter()
@@ -164,6 +155,7 @@ class TripsFragment : Fragment() {
     override fun onDestroyView() {
         // 页面和行缓存都绑在旧视图上（换主题/尺寸会整页重建），留着会被下一份视图复用成僵尸 View
         pages.clear()
+        searchInputs.clear()
         invalidateRowCaches()
         _binding?.pager?.adapter = null
         _binding = null
@@ -240,6 +232,58 @@ class TripsFragment : Fragment() {
         }
     }
 
+    /** 两页各自的搜索框共享同一个 query；同步时用 [syncingQuery] 防止互相触发。 */
+    private val searchInputs = mutableListOf<EditText>()
+    private var syncingQuery = false
+
+    private fun searchCard(ctx: android.content.Context): View {
+        val card = android.view.LayoutInflater.from(ctx).inflate(R.layout.view_trips_search, null)
+        val input = card.findViewById<EditText>(R.id.inputSearch)
+        val clear = card.findViewById<ImageView>(R.id.btnClearSearch)
+        input.setText(query)
+        input.setSelection(input.text.length)
+        clear.visibility = if (query.isBlank()) View.GONE else View.VISIBLE
+        input.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = Unit
+            override fun afterTextChanged(s: Editable?) {
+                if (syncingQuery) return
+                val text = s?.toString().orEmpty()
+                query = text
+                visibleCount.clear()
+                syncingQuery = true
+                searchInputs.forEach { other ->
+                    if (other !== input) {
+                        other.setText(text)
+                        other.setSelection(other.text.length)
+                    }
+                }
+                syncingQuery = false
+                searchInputs.forEach { other ->
+                    other.findViewById<ImageView>(R.id.btnClearSearch)?.visibility =
+                        if (text.isBlank()) View.GONE else View.VISIBLE
+                }
+                render()
+            }
+        })
+        clear.setOnClickListener { input.setText("") }
+        card.layoutParams = LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            dp(44),
+        ).apply { bottomMargin = dp(10) }
+        searchInputs += input
+        return card
+    }
+
+    private fun clearSearch() {
+        query = ""
+        syncingQuery = true
+        searchInputs.forEach { it.setText("") }
+        syncingQuery = false
+        visibleCount.clear()
+        render()
+    }
+
     private fun render() {
         val b = binding
         b.btnSegCheckins.text = getString(R.string.trips_seg_checkins, checkins.size)
@@ -266,7 +310,9 @@ class TripsFragment : Fragment() {
         val limit = visibleCount[target] ?: PAGE_SIZE
         val shown = allVisible.take(limit)
 
-        page.column.removeAllViews()
+        // 搜索卡固定在第 0 个位置，只重铺它后面的行
+        while (page.column.childCount > 1) page.column.removeViewAt(page.column.childCount - 1)
+        page.search?.visibility = if (selecting) View.GONE else View.VISIBLE
         rowsFor(target, keyword, limit, shown).forEach(page.column::addView)
         if (shown.isEmpty()) {
             page.column.addView(emptyView(searching = keyword.isNotBlank()))
@@ -344,6 +390,7 @@ class TripsFragment : Fragment() {
                 )
             }
             val page = Page(scroll, column)
+            page.search = searchCard(ctx).also { column.addView(it) }
             pages[segments[viewType]] = page
             return PageHolder(page)
         }
@@ -721,9 +768,7 @@ class TripsFragment : Fragment() {
         selectedCheckins.clear()
         selectedTrips.clear()
         // 搜索框让位：这时若还按关键字过滤，用户看不到过滤条件，容易把看不见的条目一起选上
-        binding.inputSearch.clearFocus()
-        if (query.isNotBlank()) binding.inputSearch.setText("")
-        binding.searchCard.visibility = View.GONE
+        clearSearch()
         invalidateRowCaches()
         render()
         notifySelectionCounts()
@@ -735,7 +780,6 @@ class TripsFragment : Fragment() {
         selecting = false
         selectedCheckins.clear()
         selectedTrips.clear()
-        binding.searchCard.visibility = View.VISIBLE
         invalidateRowCaches()
         render()
     }

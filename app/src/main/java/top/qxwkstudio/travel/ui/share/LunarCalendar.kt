@@ -78,12 +78,21 @@ object LunarCalendar {
         }
     }
 
-    /** 票根上的四种农历写法：全称 / 带「农历」前缀 / 只到月日 / 只到年。 */
+    /** 汉字数字年：二零二六（逐位读，0 用「零」）。 */
+    private fun yearDigits(year: Int): String =
+        year.toString().map { "零一二三四五六七八九"[it - '0'] }.joinToString("")
+
+    /** 大写数字写法：二零二六年五月廿三（月/日沿用农历的「正月、廿三」叫法）。 */
+    fun formatUppercase(value: Value): String =
+        "${yearDigits(value.relatedYear)}年${value.monthName}${value.dayName}"
+
+    /** 票根上的五种农历写法：全称 / 农历前缀 / 只到月日 / 只到年 / 大写数字。 */
     fun format(value: Value, style: Int): String = when (style) {
         0 -> "${value.cycleYear}年${value.monthName}${value.dayName}"
         1 -> "农历${value.monthName}${value.dayName}"
         2 -> "${value.monthName}${value.dayName}"
-        else -> "${value.cycleYear}年"
+        3 -> "${value.cycleYear}年"
+        else -> formatUppercase(value)
     }
 
     /** 只记得年月 / 只记得年时（记录精度不足），降到「干支年 + 月」或「干支年」。 */

@@ -46,7 +46,7 @@ internal class PosterShareView(context: Context) : ShareCanvas(context) {
     var dy = 0f
 
     var title = ""
-    var font = CardFont.DEFAULT
+    var font = CardFont()
     var dateText = ""
 
     var note = ""

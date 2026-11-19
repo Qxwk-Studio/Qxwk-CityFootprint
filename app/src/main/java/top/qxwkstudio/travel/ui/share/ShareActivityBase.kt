@@ -476,7 +476,29 @@ abstract class ShareActivityBase : LocalizedActivity() {
                 orientation = LinearLayout.HORIZONTAL
                 setPadding(0, dp(10), 0, 0)
             }
-            paths.take(6).forEach { path ->
+            // 照片多时横向排不下：放进 HorizontalScrollView，手指横向拖才滑得动；
+            // 纵向拖动仍然交给外层 ScrollView（只在横向位移更大时抢手势）
+            val scroller = android.widget.HorizontalScrollView(this).apply {
+                isHorizontalScrollBarEnabled = false
+                isFillViewport = false
+                var downX = 0f
+                var downY = 0f
+                setOnTouchListener { view, event ->
+                    when (event.actionMasked) {
+                        android.view.MotionEvent.ACTION_DOWN -> {
+                            downX = event.x
+                            downY = event.y
+                        }
+                        android.view.MotionEvent.ACTION_MOVE -> {
+                            if (kotlin.math.abs(event.x - downX) > kotlin.math.abs(event.y - downY)) {
+                                view.parent?.requestDisallowInterceptTouchEvent(true)
+                            }
+                        }
+                    }
+                    false
+                }
+            }
+            paths.forEach { path ->
                 val tile = FrameLayout(this).apply {
                     setBackgroundResource(R.drawable.bg_photo_tile)
                     clipToOutline = true
@@ -504,7 +526,8 @@ abstract class ShareActivityBase : LocalizedActivity() {
                     result.getOrNull()?.let { if (image.isAttachedToWindow) image.setImageBitmap(it) }
                 }
             }
-            block.addView(row)
+            scroller.addView(row)
+            block.addView(scroller)
         }
         if (showPickButton) {
             block.addView(MaterialButton(this, null, com.google.android.material.R.attr.materialButtonOutlinedStyle).apply {

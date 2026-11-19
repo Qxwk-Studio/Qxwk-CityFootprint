@@ -153,24 +153,31 @@ class MainActivity : LocalizedActivity(), TripsSelectionHost {
 
     private fun setupAddMenu() {
         binding.topBar.btnMenu.setOnClickListener { anchor ->
-            val actions = mutableListOf(
-                MenuAction(R.drawable.ic_locate, R.string.menu_checkin) {
-                    startActivity(CheckinEditActivity.intent(this))
-                },
-                MenuAction(R.drawable.ic_luggage, R.string.menu_trip) {
-                    startActivity(TripEditActivity.intent(this))
-                },
-            )
+            // 行程页的三点菜单只放「重新编号 / 多选」；新建打卡与新建行程是首页「+」的职责
             if (binding.bottomNav.selectedItemId == R.id.tab_trips) {
-                actions += MenuAction(R.drawable.ic_sync, R.string.menu_renumber) {
-                    renumber()
-                }
-                // 多选只属于行程页：它要改顶栏与底栏，放在页面里做会够不着外壳
-                actions += MenuAction(R.drawable.ic_check, R.string.trips_menu_multi_select) {
-                    enterTripsSelection()
-                }
+                showIconMenu(
+                    anchor,
+                    listOf(
+                        MenuAction(R.drawable.ic_sync, R.string.menu_renumber) { renumber() },
+                        // 多选只属于行程页：它要改顶栏与底栏，放在页面里做会够不着外壳
+                        MenuAction(R.drawable.ic_check, R.string.trips_menu_multi_select) {
+                            enterTripsSelection()
+                        },
+                    ),
+                )
+                return@setOnClickListener
             }
-            showIconMenu(anchor, actions)
+            showIconMenu(
+                anchor,
+                listOf(
+                    MenuAction(R.drawable.ic_locate, R.string.menu_checkin) {
+                        startActivity(CheckinEditActivity.intent(this))
+                    },
+                    MenuAction(R.drawable.ic_luggage, R.string.menu_trip) {
+                        startActivity(TripEditActivity.intent(this))
+                    },
+                ),
+            )
         }
         updateTopMenuIcon()
     }

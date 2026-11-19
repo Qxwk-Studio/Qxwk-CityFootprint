@@ -35,11 +35,7 @@
     <string name="share_zoom">缩放</string>
 
     <string name="share_font_default">默认</string>
-    <string name="share_font_serif">衬线</string>
     <string name="share_font_mono">等宽</string>
-    <string name="share_font_light">细体</string>
-    <string name="share_font_condensed">窄体</string>
-    <string name="share_font_cursive">手写</string>
 
     <string name="share_layout_h">横排</string>
     <string name="share_layout_v">竖排</string>
@@ -70,4 +66,11 @@
     <string name="share_range_day">按日</string>
     <string name="share_range_month">按月</string>
     <string name="share_range_year">按年</string>
+    <string name="share_font_hand">手写</string>
+    <string name="share_label_font_style">样式</string>
+    <string name="share_style_default">默认</string>
+    <string name="share_style_bold">粗体</string>
+    <string name="share_style_light">细体</string>
+    <string name="share_style_italic">斜体</string>
+    <string name="share_date_lunar_upper">大写数字</string>
 </resources>
