@@ -73,8 +73,10 @@ internal class ZoomablePhotoPager(
                 return true
             }
             val factor = next / scale
-            offsetX -= (detector.focusX - width / 2f) * (factor - 1f)
-            offsetY -= (detector.focusY - height / 2f) * (factor - 1f)
+            // 缩放围绕手指焦点：o' = o·factor + (p - c)·(1 - factor)
+            // 旧写法漏了 o·factor 这一项，捏合时画面会往焦点反方向漂
+            offsetX = offsetX * factor + (detector.focusX - width / 2f) * (1f - factor)
+            offsetY = offsetY * factor + (detector.focusY - height / 2f) * (1f - factor)
             scale = next
             clampOffsets()
             applyTransform()
@@ -162,8 +164,10 @@ internal class ZoomablePhotoPager(
                     return true
                 }
                 if (scale > 1.01f) {
-                    offsetX -= event.x - lastX
-                    offsetY -= event.y - lastY
+                    // 图片跟着手指走：translationX/Y 是屏幕空间位移，方向必须与手指同向。
+                    // 之前是 `-=`，手指往右拖图片往左跑，观感完全反了。
+                    offsetX += event.x - lastX
+                    offsetY += event.y - lastY
                     lastX = event.x
                     lastY = event.y
                     clampOffsets()
