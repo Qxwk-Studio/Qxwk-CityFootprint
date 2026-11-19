@@ -66,11 +66,11 @@ class CityFootprintApp : Application() {
      * 后台预热城市表（assets/cities.json，四百多条）。
      *
      * 为什么不在页面上按需读：主页与统计页首帧要在**主线程**用它查省份
-     * （见 ui/VisitsFragment.renderOverview 与 ui/StatsFragment.render —— 两者都跑在协程的 done 回调里，
+     * （见 ui/home/HomeFragment 与 ui/stats/StatsFragment —— 两者的渲染都跑在协程的 done 回调里，
      * 而 done 一定在主线程）。不预热，那一帧就得在主线程读 asset 再反序列化整份文件。
      * 冷启动到首帧之间隔着 /api/me 与 /api/my-visits 两次往返，这点时间足够后台把表解出来。
      *
-     * 起裸 Thread 而不是协程：这里没有现成的 scope（ui/appScope 是给退出登录那一次用的），
+     * 起裸 Thread 而不是协程：这里没有现成的 scope（也不需要：城市表解析完就直接写进 CityStore 的内存缓存），
      * 而 CityStore.all 内部有 synchronized 兜底 —— 万一主线程先到，它等的是同一次解析，不会解两遍。
      * daemon：预热没跑完也不该拖着进程不退。
      */
@@ -88,7 +88,7 @@ class CityFootprintApp : Application() {
          * **调用会重建所有正在显示的 Activity**（AppCompat 在值发生变化时才重建，选了当前那一档等于没动）：
          * 调用点若还挂着弹窗、对话框，先收掉再调，免得它们挂在一个正在销毁的窗口上。
          *
-         * 放在伴生对象里而不是散成顶层函数：启动（本类）与「我的」页改设置（ProfileFragment）
+         * 放在伴生对象里而不是散成顶层函数：启动（本类）与「我的」页改设置（ui/mine/MineFragment）
          * 两处共用同一份映射，多一份 when 就会多一个「三档里漏掉一档」的机会。
          */
         fun applyAppearance(appearance: Appearance) {

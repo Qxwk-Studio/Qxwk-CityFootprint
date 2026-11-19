@@ -210,7 +210,7 @@ class MapFragment : Fragment() {
     private fun setupMap(path: String) {
         mapView.getMapAsync { mapLibre ->
             map = mapLibre
-            // 瓦片只到 z6，放大封顶 9；范围锁中国境内，别让用户滑到一片空白
+            // 瓦片只到 z6，放大封顶 6（setMaxZoomPreference）；范围锁中国境内，别让用户滑到一片空白
             // 只做平移与缩放：旋转/倾斜手势关掉，避免用户误转成斜的地图
             mapLibre.uiSettings.isRotateGesturesEnabled = false
             mapLibre.uiSettings.isTiltGesturesEnabled = false

@@ -189,11 +189,6 @@ dependencies {
     // JSON：@Serializable 数据类 + 编译期序列化器（见 data/Json.kt）
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.2")
 
-    // 地图选型见 README：osmdroid 是纯原生 Android View 的 OSM 地图，不需要任何 API key，
-    // 与「界面本身和地图都要原生」的要求一致。6.1.20 是它在 Maven Central 上的最后一个正式版
-    // （上游仓库 2024-11 已归档，但包还在、API 稳定）。
-    implementation("org.osmdroid:osmdroid-android:6.1.20")
-
     // 本地库（2.0 起是数据的唯一真相）：4 张表见 data/db/AppDatabase.kt。
     // room-ktx 提供挂起 DAO 的实现（CoroutinesRoom），没有它就只能在 DAO 上写阻塞调用。
     implementation("androidx.room:room-runtime:2.6.1")

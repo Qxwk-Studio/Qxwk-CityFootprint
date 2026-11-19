@@ -29,9 +29,6 @@ interface TripDao {
     @Query("SELECT * FROM trips WHERE id = :id AND deleted_at IS NULL")
     suspend fun byId(id: Long): TripEntity?
 
-    @Query("SELECT * FROM trips WHERE uuid = :uuid AND deleted_at IS NULL")
-    suspend fun byUuid(uuid: String): TripEntity?
-
     /** 行程列表：按首个节点时间倒序（最新在上），与「行程」页的排序口径一致。 */
     @Query("SELECT * FROM trips WHERE deleted_at IS NULL ORDER BY start_time DESC, id DESC")
     suspend fun list(): List<TripEntity>
@@ -67,9 +64,6 @@ interface CheckinDao {
     @Insert
     suspend fun insert(checkin: CheckinEntity): Long
 
-    @Insert
-    suspend fun insertAll(checkins: List<CheckinEntity>)
-
     @Update
     suspend fun update(checkin: CheckinEntity)
 
@@ -79,13 +73,6 @@ interface CheckinDao {
 
     @Query("SELECT * FROM city_checkins WHERE id = :id AND deleted_at IS NULL")
     suspend fun byId(id: Long): CheckinEntity?
-
-    /**
-     * 未来的同步只取**手动打卡**：派生打卡是行程的产物，每台设备本地重算即可，
-     * 同步它只会在两台设备上各算出一套重复数据。
-     */
-    @Query("SELECT * FROM city_checkins WHERE source = ${CheckinSource.MANUAL} AND deleted_at IS NULL")
-    suspend fun syncableCheckins(): List<CheckinEntity>
 
     @Query("SELECT * FROM city_checkins WHERE source = ${CheckinSource.MANUAL}")
     suspend fun manualAllForSync(): List<CheckinEntity>
@@ -140,7 +127,7 @@ interface CheckinDao {
 @Dao
 interface AchievementDao {
 
-    /** 整体替换：每次重算把 54 条全部写一遍，省掉「哪些变了」的比对。 */
+    /** 整体替换：每次重算把 89 条全部写一遍，省掉「哪些变了」的比对。 */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertAll(states: List<AchievementStateEntity>)
 
@@ -149,9 +136,6 @@ interface AchievementDao {
 
     @Query("SELECT * FROM achievement_states")
     suspend fun list(): List<AchievementStateEntity>
-
-    @Query("SELECT * FROM achievement_states WHERE code = :code")
-    suspend fun byCode(code: String): AchievementStateEntity?
 }
 
 /** 设备级设置读写。 */

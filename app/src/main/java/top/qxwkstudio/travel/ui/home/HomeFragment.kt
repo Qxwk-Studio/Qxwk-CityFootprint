@@ -103,6 +103,9 @@ class HomeFragment : Fragment() {
     }
 
     private fun load() {
+        // 版本号要在**读库之前**取：读完再取的话，读库与取号之间发生的写入会被
+        // 打上「已是最新」的标记，之后 onResume 就不再重载，页面停在旧数据上
+        val version = DataVersion.current
         viewLifecycleOwner.lifecycleScope.runIo({
             val db = AppDatabase.get(requireContext())
             CheckinRepo.list(db)
@@ -124,7 +127,7 @@ class HomeFragment : Fragment() {
             .filter { it.rating != null }
             .groupBy { it.cityName }
             .mapValues { (_, list) -> list.sumOf { it.rating ?: 0 }.toFloat() / list.size }
-            seenVersion = DataVersion.current
+            seenVersion = version
             entries = checkins.map {
                 Stats.Entry(
                     cityName = it.cityName,

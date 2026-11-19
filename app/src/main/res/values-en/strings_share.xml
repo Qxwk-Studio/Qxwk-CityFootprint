@@ -46,12 +46,7 @@
 
     <string name="share_calendar_gregorian">Gregorian</string>
     <string name="share_calendar_lunar">Lunar</string>
-    <string name="share_calendar_lunar_soon">Lunar (coming soon)</string>
 
-    <string name="share_color_black">Ink</string>
-    <string name="share_color_accent">Accent</string>
-    <string name="share_color_gold">Gold</string>
-    <string name="share_color_gray">Gray</string>
 
     <string name="share_stamp_round">Round</string>
     <string name="share_stamp_square">Square</string>

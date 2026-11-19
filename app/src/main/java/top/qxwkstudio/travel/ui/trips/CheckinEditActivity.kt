@@ -406,7 +406,7 @@ class CheckinEditActivity : LocalizedActivity() {
             }
         }
     }
-    /** 停留天数步进：最少 1 天。 */
+    /** 备注字数计数（上限 233，与 TextWatcher 联动）。 */
     private fun updateCounter(length: Int) {
         binding.textCounter.text = getString(R.string.char_counter, length, 233)
     }
@@ -547,7 +547,6 @@ class CheckinEditActivity : LocalizedActivity() {
 
     // ────────────────────────── 可选信息 ──────────────────────────
 
-    /** 城市评分：5 颗星，点第 n 颗 = n 星；再点同一颗清零。 */
     /** 城市评分：1~10 的拉条，未评分时显示「未评分」。 */
     private fun setupRating() {
         val b = binding

@@ -631,17 +631,6 @@ class TripsFragment : Fragment() {
         }
     }
 
-    private fun titleView(text: String): TextView = TextView(requireContext()).apply {
-        this.text = text
-        textSize = 15f
-        setTypeface(typeface, android.graphics.Typeface.BOLD)
-        setTextColor(ContextCompat.getColor(context, R.color.fg))
-        maxLines = 1
-        ellipsize = TextUtils.TruncateAt.END
-        setPadding(dp(8), 0, dp(8), 0)
-        layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
-    }
-
     private fun menuButton(onClick: (View) -> Unit): View =
         ImageView(requireContext()).apply {
             setImageResource(R.drawable.ic_more)
@@ -656,11 +645,6 @@ class TripsFragment : Fragment() {
         }
 
     /** 备注：图标 + 单行文字（超长截断）。没有备注返回 null，调用方用 spacer 占位把右侧信息顶到最右。 */
-    private fun noteView(note: String?): View? {
-        if (note.isNullOrBlank()) return null
-        return iconText(R.drawable.ic_note, note, expandText = true)
-    }
-
     /** 首访角标：金色浅底 + 金边。 */
     private fun firstVisitChip(): TextView = TextView(requireContext()).apply {
         setText(R.string.first_visit)
@@ -675,65 +659,6 @@ class TripsFragment : Fragment() {
     }
 
     /** 照片缩略图 + 同行人 + 星级；三者都没有返回 null。 */
-    private fun checkinExtras(checkin: CheckinEntity): View? {
-        val ctx = requireContext()
-        val hasPhoto = checkin.photoPath != null
-        val hasCompanions = checkin.companions != null
-        val hasRating = checkin.rating != null
-        if (!hasPhoto && !hasCompanions && !hasRating) return null
-
-        val row = LinearLayout(ctx).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            setPadding(0, dp(8), 0, 0)
-        }
-        if (hasPhoto) {
-            val thumb = ImageView(ctx).apply {
-                setBackgroundResource(R.drawable.bg_photo_tile)
-                scaleType = ImageView.ScaleType.CENTER_CROP
-                layoutParams = LinearLayout.LayoutParams(dp(64), dp(64)).apply { marginEnd = dp(10) }
-                setOnClickListener {
-                    val photos = checkin.photoPath?.split(",")?.filter { it.isNotBlank() }.orEmpty()
-                    showPhotoDialog(ctx, photos)
-                }
-            }
-            row.addView(thumb)
-            // 列表可能一次铺 30 张卡片；缩略图不能在主线程同步解码。
-            viewLifecycleOwner.lifecycleScope.runIo({
-                PhotoStore.load(checkin.photoPath, maxPx = 256)
-            }) { result ->
-                result.getOrNull()?.let { if (thumb.isAttachedToWindow) thumb.setImageBitmap(it) }
-            }
-        }
-        val info = LinearLayout(ctx).apply {
-            orientation = LinearLayout.VERTICAL
-            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
-        }
-        if (hasCompanions) {
-            info.addView(TextView(ctx).apply {
-                text = checkin.companions.orEmpty().ifBlank { "—" }
-                textSize = 12f
-                setTextColor(ContextCompat.getColor(ctx, R.color.text_secondary))
-            })
-        }
-        if (hasRating) {
-            val stars = LinearLayout(ctx).apply { orientation = LinearLayout.HORIZONTAL }
-            for (star in 1..5) {
-                stars.addView(ImageView(ctx).apply {
-                    setImageResource(if ((checkin.rating ?: 0) >= star) R.drawable.ic_star else R.drawable.ic_star_outline)
-                    imageTintList = android.content.res.ColorStateList.valueOf(
-                        ContextCompat.getColor(ctx, R.color.first_visit),
-                    )
-                    layoutParams = LinearLayout.LayoutParams(dp(14), dp(14))
-                })
-            }
-            stars.setPadding(0, dp(2), 0, 0)
-            info.addView(stars)
-        }
-        row.addView(info)
-        return row
-    }
-
     private fun spacer(): View = View(requireContext()).apply {
         layoutParams = LinearLayout.LayoutParams(0, 1, 1f)
     }

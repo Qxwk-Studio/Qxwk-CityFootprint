@@ -1,11 +1,14 @@
 package top.qxwkstudio.travel.ui.share
 
+import android.Manifest
 import android.content.Context
+import android.content.pm.PackageManager
 import android.content.res.ColorStateList
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.drawable.GradientDrawable
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.view.Gravity
 import android.view.View
@@ -131,6 +134,15 @@ abstract class ShareActivityBase : LocalizedActivity() {
     // ────────────────────────── 保存 / 分享 ──────────────────────────
 
     private fun saveImage() {
+        // Android 7–9 的相册写入走 MediaStore.insertImage，需要 WRITE_EXTERNAL_STORAGE；
+        // 不请求就会静默失败（提示「保存失败」但用户没有可操作的东西）
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q &&
+            ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) !=
+            PackageManager.PERMISSION_GRANTED
+        ) {
+            storagePermission.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+            return
+        }
         val bitmap = canvas.exportBitmap()
         val name = "$filePrefix-${System.currentTimeMillis()}"
         lifecycleScope.runIo({ ShareExporter.saveToGallery(this, bitmap, name) }) { result ->
@@ -138,6 +150,13 @@ abstract class ShareActivityBase : LocalizedActivity() {
             val ok = result.getOrNull() == true
             notify(if (ok) R.string.share_saved else R.string.share_save_failed, long = !ok)
         }
+    }
+
+    /** 老系统的存储权限：授权后重走一次 saveImage（此时已授权，不会再进这条分支）。 */
+    private val storagePermission = registerForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+    ) { granted ->
+        if (granted) saveImage() else notify(R.string.photo_failed, long = true)
     }
 
     private fun shareImage() {

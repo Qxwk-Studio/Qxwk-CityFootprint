@@ -9,8 +9,6 @@
     <string name="perm_storage_scoped_desc">Android 10 起使用分区存储，无需额外授权</string>
     <string name="perm_network">网络</string>
     <string name="perm_network_desc">仅用于检查更新</string>
-    <string name="perm_photos">照片</string>
-    <string name="perm_photos_desc">通过系统照片选择器读取，不申请相册权限</string>
     <string name="perm_not_required">无需授权</string>
     <string name="perm_granted">已授权</string>
     <string name="perm_denied">未授权</string>
@@ -20,9 +18,6 @@
     <string name="perm_group_required">必要权限</string>
     <string name="perm_group_optional">可选权限</string>
     <string name="perm_network_off">已关闭联网权限，检查更新不可用</string>
-    <string name="perm_notification">通知</string>
-    <string name="perm_notification_desc">自动记录状态与到达提醒</string>
-    <string name="perm_notification_not_needed">当前系统无需授权</string>
     <string name="perm_sync">可选同步</string>
     <string name="perm_sync_desc">自动同步行程与打卡</string>
 </resources>

@@ -119,21 +119,8 @@ enum class RangeUnit { DAY, MONTH, YEAR }
 /** 历法。农历换算见 [LunarCalendar]。 */
 enum class CalendarKind { GREGORIAN, LUNAR }
 
-/** 日期文案：单条按三档格式，跨度按三档精度。 */
+/** 日期跨度文案：按三档精度输出「起 — 止」。 */
 object ShareDates {
-
-    fun single(millis: Long, style: DateStyle): String {
-        val pattern = when (style) {
-            DateStyle.DOT -> "yyyy.MM.dd"
-            DateStyle.CN -> "yyyy年M月d日"
-            DateStyle.EN -> "d MMM yyyy"
-            DateStyle.SLASH -> "yyyy/MM/dd"
-            DateStyle.ISO -> "yyyy-MM-dd"
-            DateStyle.SPACED -> "yyyy  MM  dd"
-        }
-        return SimpleDateFormat(pattern, if (style == DateStyle.CN) Locale.CHINA else Locale.US)
-            .format(Date(millis))
-    }
 
     /** 时间跨度：始终写成「起 — 止」两段，哪怕起止同一天。 */
     fun range(start: Long, end: Long, unit: RangeUnit): String {

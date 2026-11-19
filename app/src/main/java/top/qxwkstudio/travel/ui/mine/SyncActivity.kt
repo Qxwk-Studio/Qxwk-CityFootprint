@@ -47,7 +47,7 @@ class SyncActivity : LocalizedActivity() {
         binding.topBar.btnBack.setOnClickListener { finish() }
 
         binding.inputServer.setText(Prefs.syncServer)
-        binding.btnFetchServer.setOnClickListener { fetchServer() }
+        binding.btnFetchServer.setOnClickListener { loadServer(manual = true) }
         binding.btnLogin.setOnClickListener { login() }
         binding.btnLogout.setOnClickListener { confirmLogout() }
         binding.btnSyncNow.setOnClickListener { syncNow() }
@@ -115,54 +115,49 @@ class SyncActivity : LocalizedActivity() {
         credentialsLoaded = true
     }
 
-    private fun fetchServer() {
-        val server = normalizedServer() ?: run {
-            notify(R.string.sync_server_invalid)
+    /**
+     * 拉一次服务器信息。
+     *
+     * [manual] = 用户点「获取」：额外校验/保存地址、按钮转圈，失败文案是「获取失败」；
+     * 自动拉（进页面、切回前台）不打断用户，失败只提示网络问题。两种情况共用同一段解析。
+     */
+    private fun loadServer(manual: Boolean = false) {
+        val server = normalizedServer()
+        if (server == null) {
+            if (manual) notify(R.string.sync_server_invalid)
+            setServerInfo(serverName = "—", photo = "—", version = "—")
             return
         }
-        Prefs.saveSyncServer(this, server)
-        binding.btnFetchServer.isEnabled = false
-        binding.btnFetchServer.setText(R.string.sync_fetching)
+        if (manual) {
+            Prefs.saveSyncServer(this, server)
+            binding.btnFetchServer.isEnabled = false
+            binding.btnFetchServer.setText(R.string.sync_fetching)
+        }
         lifecycleScope.runIo({ SyncApi.server(server) }) { result ->
-            binding.btnFetchServer.isEnabled = true
-            binding.btnFetchServer.setText(R.string.sync_server_fetch)
+            if (manual) {
+                binding.btnFetchServer.isEnabled = true
+                binding.btnFetchServer.setText(R.string.sync_server_fetch)
+            }
             val info = result.getOrNull()?.getOrNull()
             if (info == null) {
-                binding.textServerName.setText(R.string.sync_server_fetch_failed)
-                binding.textPhotoSupport.text = "—"
-                binding.textVersionSupport.text = "—"
-            } else {
-                binding.textServerName.text = info.serverName.ifBlank { "City Footprint" }
-                binding.textPhotoSupport.setText(
-                    if (info.supportsPhotoUpload) R.string.sync_photo_yes else R.string.sync_photo_no,
+                binding.textServerName.setText(
+                    if (manual) R.string.sync_server_fetch_failed else R.string.sync_network_failed,
                 )
-                binding.textVersionSupport.text = versionLabel(info)
+                setServerInfo(photo = "—", version = "—")
+                return@runIo
             }
+            binding.textServerName.text = info.serverName.ifBlank { "City Footprint" }
+            binding.textPhotoSupport.setText(
+                if (info.supportsPhotoUpload) R.string.sync_photo_yes else R.string.sync_photo_no,
+            )
+            binding.textVersionSupport.text = versionLabel(info)
         }
     }
 
-    private fun loadServer() {
-        val server = normalizedServer()
-        if (server == null) {
-            binding.textServerName.text = "—"
-            binding.textPhotoSupport.text = "—"
-            binding.textVersionSupport.text = "—"
-            return
-        }
-        lifecycleScope.runIo({ SyncApi.server(server) }) { result ->
-            val info = result.getOrNull()?.getOrNull()
-            if (info == null) {
-                binding.textServerName.setText(R.string.sync_network_failed)
-                binding.textPhotoSupport.text = "—"
-                binding.textVersionSupport.text = "—"
-            } else {
-                binding.textServerName.text = info.serverName.ifBlank { "City Footprint" }
-                binding.textPhotoSupport.setText(
-                    if (info.supportsPhotoUpload) R.string.sync_photo_yes else R.string.sync_photo_no,
-                )
-                binding.textVersionSupport.text = versionLabel(info)
-            }
-        }
+    private fun setServerInfo(serverName: String? = null, photo: String, version: String) {
+        serverName?.let { binding.textServerName.text = it }
+        binding.textPhotoSupport.text = photo
+        binding.textVersionSupport.text = version
     }
 
     /** 服务端支持版本是一段 versionCode 区间，按「20300~20999」这种紧凑写法展示。 */

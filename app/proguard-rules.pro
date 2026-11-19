@@ -1,26 +1,10 @@
 # release 的 R8 规则（开关见 build.gradle.kts 的 release buildType）。
 #
-# 这里只有地图那一条，其余不用管：清单里注册的四个 Activity 由 AGP 按清单自动补规则，
-# ViewBinding 生成的类、Material/osmdroid 自带的 consumer 规则也都由各自的依赖兜住。
-
-# ── 按类名 inflate 的自定义 View（跨语言契约：布局 XML ↔ 类名）──
-# fragment_map.xml 里写的是 <org.osmdroid.views.MapView .../>，框架用的是
-# LayoutInflater.createView 的反射路径 —— R8 看不见「XML 里有个字符串等于某个类名」，
-# 只看见 LayoutInflater 的反射调用。名字被改成 a.b.c 之后，症状是**点开地图页直接崩**
-# （ClassNotFoundException: org.osmdroid.views.MapView），而 debug 包里一切正常。
-# 我们的 Kotlin 代码确实引用了 MapView 类型（binding.map 的强转），所以它大概率会被保留；
-# 显式写一条是为了把这份契约摆到源码里，别依赖「恰好还被别处引用」。
--keep class org.osmdroid.views.MapView { *; }
--keep class org.osmdroid.views.overlay.** { *; }
--keep class org.osmdroid.tileprovider.tilesource.** { *; }
-
-# ── WebView 的 JS 桥（跨语言契约：Java 方法 ↔ 网页 JS 调用）──
-# 网页那边写的是 window.CityFootprint.getIdentity()，方法名是**字符串**，
-# R8 看不见这个调用（它只看见我们自己的 Kotlin 代码里没人调 getIdentity）。
-# 用 -keepclassmembers 而不是 -keep：类名不参与契约（桥是以 "CityFootprint" 这个名字注册进 WebView 的），
-# 保住方法名就够，类本身照样可以被改名。
-# 症状对照：漏了这条，debug 包一切正常，**release 包**里网页调用会报
-# 「getIdentity is not a function」，而 App 侧看不出任何异常。
--keepclassmembers class top.qxwkstudio.travel.ui.WebViewActivity$IdentityBridge {
-    @android.webkit.JavascriptInterface <methods>;
-}
+# 当前**没有任何自定义规则**：
+#  - 清单里注册的 Activity 由 AGP 按清单自动补规则；
+#  - ViewBinding 生成的类、Material / MapLibre 自带的 consumer 规则由各自依赖兜住；
+#  - 2.0 起地图是 MapLibre，早期为 osmdroid 写的 MapView / overlay / tileprovider 三条 keep
+#    随依赖一起删掉了（对应类已经不在包里）；WebView 的 JS 桥与那个 Activity 也早已移除。
+#
+# 以后再加「按类名 inflate 的自定义 View」或「JS 桥」这类跨语言契约时，记得在这里补规则，
+# 并写清漏了会以什么症状出现 —— 这类问题只在 release 包里暴露。

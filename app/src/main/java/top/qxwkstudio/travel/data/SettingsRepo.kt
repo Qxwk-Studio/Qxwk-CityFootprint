@@ -17,7 +17,6 @@ object SettingsRepo {
 
     private const val KEY_UUID = "uuid"
     private const val KEY_NICKNAME = "nickname"
-    private const val KEY_AVATAR_PATH = "avatar_path"
     private const val KEY_BADGE_COLOR = "badge_color"
 
     /** 徽章色默认值：与主题主色一致（口径 16 说的「预设色板」，默认就是主色）。 */
@@ -38,16 +37,7 @@ object SettingsRepo {
         db.settings().put(AppSettingEntity(KEY_NICKNAME, nickname))
     }
 
-    // ── 头像与徽章色（2.0 的「个性化」）──
-
-    /** 头像文件路径（应用私有目录）。空或 null 表示没设过，界面退回「昵称首字 + 徽章色」。 */
-    suspend fun avatarPath(db: AppDatabase): String? =
-        db.settings().get(KEY_AVATAR_PATH)?.takeIf { it.isNotBlank() }
-
-    suspend fun setAvatarPath(db: AppDatabase, path: String?) {
-        if (path.isNullOrBlank()) db.settings().remove(KEY_AVATAR_PATH)
-        else db.settings().put(AppSettingEntity(KEY_AVATAR_PATH, path))
-    }
+    // ── 徽章色（2.0 的「个性化」）──
 
     /**
      * 徽章色（头像底 / 我的页色点 / 地图定位点），存 #RRGGBB。
