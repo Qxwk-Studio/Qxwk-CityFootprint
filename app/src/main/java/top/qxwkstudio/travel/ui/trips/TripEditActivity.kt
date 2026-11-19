@@ -148,10 +148,38 @@ class TripEditActivity : LocalizedActivity() {
         })
         bindCounters()
 
-        if (editingId != 0L) loadExisting() else {
-            render()
-            markClean()
+        if (!restoreDraft(savedInstanceState)) {
+            if (editingId != 0L) loadExisting() else {
+                render()
+                markClean()
+            }
         }
+    }
+
+    /**
+     * 旋转/进程重建后恢复未保存的草稿；返回 true 表示已恢复（不再读库覆盖）。
+     *
+     * 存的是时间线 JSON + 标题/备注 + 进入页面时的干净快照。草稿里的照片路径指向磁盘，
+     * 文件本来就在，不会因为重建而丢。
+     */
+    private fun restoreDraft(state: Bundle?): Boolean {
+        val json = state?.getString(KEY_DRAFT) ?: return false
+        val timeline = Timeline.decode(json) ?: return false
+        binding.inputTitle.setText(state.getString(KEY_TITLE).orEmpty())
+        binding.inputNote.setText(state.getString(KEY_NOTE).orEmpty())
+        items.clear()
+        items += timeline.items.map { DraftItem.from(it) }
+        initialSnapshot = state.getString(KEY_SNAPSHOT).orEmpty()
+        render()
+        return true
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putString(KEY_DRAFT, Timeline(items.map { it.toItem() }).encode())
+        outState.putString(KEY_TITLE, binding.inputTitle.text?.toString().orEmpty())
+        outState.putString(KEY_NOTE, binding.inputNote.text?.toString().orEmpty())
+        outState.putString(KEY_SNAPSHOT, initialSnapshot)
     }
 
     // ────────────────────────── 载入 ──────────────────────────
@@ -1301,6 +1329,12 @@ class TripEditActivity : LocalizedActivity() {
 
     companion object {
         private const val EXTRA_ID = "trip_id"
+
+        // onSaveInstanceState 的键：旋转/进程重建时恢复草稿用
+        private const val KEY_DRAFT = "draft_timeline"
+        private const val KEY_TITLE = "draft_title"
+        private const val KEY_NOTE = "draft_note"
+        private const val KEY_SNAPSHOT = "draft_snapshot"
         fun intent(context: android.content.Context, tripId: Long = 0L): Intent =
             Intent(context, TripEditActivity::class.java).putExtra(EXTRA_ID, tripId)
     }

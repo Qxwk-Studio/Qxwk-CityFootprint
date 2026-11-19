@@ -1,4 +1,4 @@
-﻿package top.qxwkstudio.travel.ui.trips
+package top.qxwkstudio.travel.ui.trips
 
 import top.qxwkstudio.travel.ui.common.*
 import top.qxwkstudio.travel.ui.picker.CityPickerActivity
@@ -98,7 +98,9 @@ class CheckinEditActivity : LocalizedActivity() {
         val picked = uris.take(remain)
         lifecycleScope.runIo({
             picked.mapIndexedNotNull { index, uri ->
-                PhotoStore.save(this, uri, "${photoName}_${photoPaths.size + index + 1}")
+                // 文件名不能用「当前张数 + 下标」：删掉第 1 张再补一张会落到同一个序号，
+                // 覆盖列表里仍在用的照片。用随机后缀，保证每次导入都是新文件。
+                PhotoStore.save(this, uri, "${photoName}_${UUID.randomUUID().toString().take(8)}_${index + 1}")
             }
         }) { result ->
             val saved = result.getOrNull().orEmpty()
@@ -170,7 +172,77 @@ class CheckinEditActivity : LocalizedActivity() {
             override fun handleOnBackPressed() = confirmDiscard()
         })
 
-        if (editing) loadForEdit() else markClean()
+        if (restoreDraft(savedInstanceState)) {
+            // 草稿已经回填到界面；编辑态只需悄悄取回实体，保存时才不会变成「新建一条」
+            if (editing) loadEntityForEditing()
+        } else if (editing) loadForEdit() else markClean()
+    }
+
+    /**
+     * 旋转/进程重建后恢复未保存的草稿；返回 true 表示已恢复（不再读库覆盖）。
+     *
+     * 只恢复「用户能看见并改过」的东西：城市、日期三档、备注/同行人/金额/天数、评分、照片、
+     * 以及进入页面时的干净快照（否则重建后会被误判成「没改过」）。
+     */
+    private fun restoreDraft(state: Bundle?): Boolean {
+        if (state == null) return false
+        val snapshot = state.getString(KEY_SNAPSHOT) ?: return false
+        state.getString(KEY_CITY)?.let { name ->
+            setCity(
+                City(
+                    name = name,
+                    province = state.getString(KEY_PROVINCE).orEmpty(),
+                    lat = state.getDouble(KEY_LAT),
+                    lng = state.getDouble(KEY_LNG),
+                    adcode = state.getInt(KEY_ADCODE, -1).takeIf { it > 0 },
+                ),
+            )
+        }
+        binding.spinYear.setSelection(state.getInt(KEY_SPIN_YEAR, binding.spinYear.selectedItemPosition), false)
+        binding.spinMonth.setSelection(state.getInt(KEY_SPIN_MONTH, binding.spinMonth.selectedItemPosition), false)
+        binding.spinDay.setSelection(state.getInt(KEY_SPIN_DAY, binding.spinDay.selectedItemPosition), false)
+        state.getString(KEY_NOTE)?.let { binding.inputNote.setText(it) }
+        state.getString(KEY_COMPANIONS)?.let { binding.inputCompanions.setText(it) }
+        state.getString(KEY_AMOUNT)?.let { binding.inputAmount.setText(it) }
+        state.getString(KEY_DAYS)?.let { binding.inputDays.setText(it) }
+        companions = state.getString(KEY_COMPANIONS)
+        rating = state.getInt(KEY_RATING, -1).takeIf { it > 0 }
+        photoName = state.getString(KEY_PHOTO_NAME) ?: photoName
+        photoPaths.clear()
+        photoPaths += state.getString(KEY_PHOTOS).orEmpty().split(",").filter { it.isNotBlank() }
+        setupRating()
+        renderPhoto()
+        initialSnapshot = snapshot
+        return true
+    }
+
+    /** 编辑态重建后只为拿回 [editingEntity]（保存时据此走 update 而不是 create）。 */
+    private fun loadEntityForEditing() {
+        lifecycleScope.runIo({ AppDatabase.get(this).checkins().byId(editingId) }) { result ->
+            editingEntity = result.getOrNull()
+        }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putInt(KEY_SPIN_YEAR, binding.spinYear.selectedItemPosition)
+        outState.putInt(KEY_SPIN_MONTH, binding.spinMonth.selectedItemPosition)
+        outState.putInt(KEY_SPIN_DAY, binding.spinDay.selectedItemPosition)
+        outState.putString(KEY_NOTE, binding.inputNote.text?.toString())
+        outState.putString(KEY_COMPANIONS, binding.inputCompanions.text?.toString())
+        outState.putString(KEY_AMOUNT, binding.inputAmount.text?.toString())
+        outState.putString(KEY_DAYS, binding.inputDays.text?.toString())
+        outState.putInt(KEY_RATING, rating ?: -1)
+        outState.putString(KEY_PHOTOS, photoPaths.joinToString(","))
+        outState.putString(KEY_PHOTO_NAME, photoName)
+        outState.putString(KEY_SNAPSHOT, initialSnapshot)
+        city?.let {
+            outState.putString(KEY_CITY, it.name)
+            outState.putString(KEY_PROVINCE, it.province)
+            outState.putDouble(KEY_LAT, it.lat)
+            outState.putDouble(KEY_LNG, it.lng)
+            outState.putInt(KEY_ADCODE, it.adcode ?: -1)
+        }
     }
 
     // ────────────────────────── 日期 ──────────────────────────
@@ -405,7 +477,9 @@ class CheckinEditActivity : LocalizedActivity() {
         binding.topBar.btnSaveIcon.isEnabled = false
         lifecycleScope.runIo({
             val db = AppDatabase.get(this)
-            if (existing == null) {
+            // 旋转重建后 editingEntity 可能还没取回：按 id 再读一次，避免把「编辑」做成「新建」
+            val target = existing ?: if (editingId != 0L) db.checkins().byId(editingId) else null
+            if (target == null) {
                 CheckinRepo.createManual(
                     db = db,
                     city = picked,
@@ -422,7 +496,7 @@ class CheckinEditActivity : LocalizedActivity() {
                 // 编辑：整体替换可编辑字段，id / uuid / 编号 / 来源保持不动
                 CheckinRepo.updateManual(
                     db,
-                    existing.copy(
+                    target.copy(
                         cityName = picked.name,
                         cityCode = picked.adcode,
                         province = picked.province,
@@ -564,6 +638,24 @@ class CheckinEditActivity : LocalizedActivity() {
 
     companion object {
         private const val EXTRA_ID = "checkin_id"
+
+        // onSaveInstanceState 的键：旋转/进程重建时恢复草稿用
+        private const val KEY_SNAPSHOT = "draft_snapshot"
+        private const val KEY_CITY = "draft_city"
+        private const val KEY_PROVINCE = "draft_province"
+        private const val KEY_LAT = "draft_lat"
+        private const val KEY_LNG = "draft_lng"
+        private const val KEY_ADCODE = "draft_adcode"
+        private const val KEY_SPIN_YEAR = "draft_spin_year"
+        private const val KEY_SPIN_MONTH = "draft_spin_month"
+        private const val KEY_SPIN_DAY = "draft_spin_day"
+        private const val KEY_NOTE = "draft_note"
+        private const val KEY_COMPANIONS = "draft_companions"
+        private const val KEY_AMOUNT = "draft_amount"
+        private const val KEY_DAYS = "draft_days"
+        private const val KEY_RATING = "draft_rating"
+        private const val KEY_PHOTOS = "draft_photos"
+        private const val KEY_PHOTO_NAME = "draft_photo_name"
 
         /** 新增传 0（或不传），编辑传打卡 id。 */
         fun intent(context: android.content.Context, checkinId: Long = 0L): Intent =

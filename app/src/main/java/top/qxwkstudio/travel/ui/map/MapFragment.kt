@@ -630,12 +630,15 @@ class MapFragment : Fragment() {
         _binding?.btnLocate?.isEnabled = false
         Locate.current(requireContext()) { location ->
             locating = false
+            // 定位回调可能在旋转/深色切换之后才回来：那时 Fragment 已 detach，
+            // requireContext() 会抛 IllegalStateException，所以先取 context 再决定要不要继续
+            val ctx = context ?: return@current
             _binding?.btnLocate?.isEnabled = true
             if (location == null) {
-                requireContext().notify(R.string.locate_failed, long = true)
+                ctx.notify(R.string.locate_failed, long = true)
                 return@current
             }
-            val found = CityBoundaries.locator(requireContext())
+            val found = CityBoundaries.locator(ctx)
                 .locate(location.latitude, location.longitude)
             val target = found?.city
             val lat = target?.lat ?: location.latitude
@@ -645,7 +648,7 @@ class MapFragment : Fragment() {
                 """{"type":"Feature","geometry":{"type":"Point","coordinates":[${location.longitude},${location.latitude}]}}""",
             )
             map?.animateCamera(CameraUpdateFactory.newLatLngZoom(LatLng(lat, lng), 8.0))
-            if (target == null) requireContext().notify(R.string.locate_no_city, long = true)
+            if (target == null) ctx.notify(R.string.locate_no_city, long = true)
         }
     }
 
