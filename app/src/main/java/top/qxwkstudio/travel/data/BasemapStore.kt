@@ -22,7 +22,13 @@ object BasemapStore {
     private const val DIR = "basemap"
     private const val NAME = "cn-z0-6.pmtiles"
 
-    /** 确保本地有一份最新的底图，返回它的绝对路径。**只能在 IO 线程调用**（要读 23 MB 资产）。 */
+    /**
+     * 确保本地有一份最新的底图，返回它的绝对路径。**只能在 IO 线程调用**（要读 6.6 MB 资产）。
+     *
+     * `openFd().length` 能用的前提是 `.pmtiles` 在 APK 里**不压缩**（见 build.gradle.kts 的
+     * `androidResources { noCompress += "pmtiles" }`）；被 aapt2 压过的条目这里会抛，
+     * 于是 assetSize 恒为 null、每次进地图都重拷一遍。
+     */
     fun ensure(context: Context): String {
         val app = context.applicationContext
         val dir = File(app.filesDir, DIR).apply { mkdirs() }

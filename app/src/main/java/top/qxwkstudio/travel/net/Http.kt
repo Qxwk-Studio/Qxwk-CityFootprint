@@ -17,6 +17,13 @@ class HttpResult(val code: Int, val body: String) {
 }
 
 /**
+ * 服务端明确答了非 2xx。带上状态码，调用方才能区分「401 需要重登」与「网络/服务端故障」——
+ * 之前只把 body 塞进 IllegalStateException，所有失败都长一个样，断网也会被当成登录失效。
+ */
+class HttpException(val code: Int, val body: String) :
+    IllegalStateException("HTTP $code: ${body.take(200)}")
+
+/**
  * 极简 HTTP 客户端，只用 JDK 的 HttpURLConnection。
  *
  * 为什么不用 Retrofit/OkHttp：整个 app 一共十来个接口、全是「点一下发一次」，

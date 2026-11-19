@@ -8,6 +8,7 @@ import kotlinx.serialization.json.put
 import kotlinx.serialization.Serializable
 import top.qxwkstudio.travel.Api
 import top.qxwkstudio.travel.net.Http
+import top.qxwkstudio.travel.net.HttpException
 
 /** 可选同步的账号与服务信息；数据 push/pull 暂未接入。 */
 internal object SyncApi {
@@ -87,7 +88,7 @@ internal object SyncApi {
             put("app_version", appVersion)
         }.toString()
         val result = Http.request("POST", api(server, "sync/register"), token = token, jsonBody = body)
-        if (!result.ok) return Result.failure(IllegalStateException(result.body))
+        if (!result.ok) return Result.failure(HttpException(result.code, result.body))
         return runCatching { json.decodeFromString(DeviceResponse.serializer(), result.body) }
     }
 
@@ -97,14 +98,14 @@ internal object SyncApi {
             put("changes", JsonArray(changes))
         }.toString()
         val result = Http.request("POST", api(server, "sync/push"), token = token, jsonBody = body)
-        if (!result.ok) return Result.failure(IllegalStateException(result.body))
+        if (!result.ok) return Result.failure(HttpException(result.code, result.body))
         return runCatching { json.decodeFromString(PushResponse.serializer(), result.body) }
     }
 
     fun pull(server: String, token: String, since: Long): Result<PullResponse> {
         val url = api(server, "sync/pull") + "?since=" + since
         val result = Http.request("GET", url, token = token)
-        if (!result.ok) return Result.failure(IllegalStateException(result.body))
+        if (!result.ok) return Result.failure(HttpException(result.code, result.body))
         return runCatching { json.decodeFromString(PullResponse.serializer(), result.body) }
     }
 
@@ -116,7 +117,7 @@ internal object SyncApi {
     fun login(server: String, account: String, password: String): Result<Session> {
         val body = json.encodeToString(LoginRequest.serializer(), LoginRequest(account, password))
         val result = Http.request("POST", api(server, "auth/login"), jsonBody = body)
-        if (!result.ok) return Result.failure(IllegalStateException(result.body))
+        if (!result.ok) return Result.failure(HttpException(result.code, result.body))
         return runCatching {
             val parsed = json.decodeFromString(LoginResponse.serializer(), result.body)
             if (parsed.accessToken.isBlank()) error("empty token")
@@ -126,7 +127,7 @@ internal object SyncApi {
 
     fun me(server: String, token: String): Result<Session> {
         val result = Http.request("GET", api(server, "auth/me"), token = token)
-        if (!result.ok) return Result.failure(IllegalStateException(result.body))
+        if (!result.ok) return Result.failure(HttpException(result.code, result.body))
         return runCatching {
             val parsed = json.decodeFromString(MeResponse.serializer(), result.body)
             Session(token, parsed.user.uuid, parsed.user.nickname, parsed.user.avatar, parsed.user.color)
@@ -135,7 +136,7 @@ internal object SyncApi {
 
     fun server(server: String): Result<ServerInfo> {
         val result = Http.request("GET", api(server, "server"))
-        if (!result.ok) return Result.failure(IllegalStateException(result.body))
+        if (!result.ok) return Result.failure(HttpException(result.code, result.body))
         return runCatching { json.decodeFromString(ServerInfo.serializer(), result.body) }
     }
 }

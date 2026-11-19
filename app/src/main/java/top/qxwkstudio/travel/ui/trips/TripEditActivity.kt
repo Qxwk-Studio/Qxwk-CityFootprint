@@ -495,7 +495,7 @@ class TripEditActivity : LocalizedActivity() {
                     override fun afterTextChanged(s: Editable) {
                         val raw = s.toString().trim()
                         item.costCents = if (raw.isEmpty()) null
-                        else ((raw.toDoubleOrNull() ?: 0.0).coerceIn(0.0, 20_000_000.0) * 100).toInt()
+                        else ((raw.toDoubleOrNull() ?: 0.0).coerceIn(0.0, 20_000_000.0) * 100).let { Math.round(it).toInt() }
                     }
                 })
             }

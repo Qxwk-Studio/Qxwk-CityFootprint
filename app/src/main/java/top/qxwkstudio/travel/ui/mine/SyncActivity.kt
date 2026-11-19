@@ -12,6 +12,7 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import top.qxwkstudio.travel.R
 import top.qxwkstudio.travel.data.LocalData
+import top.qxwkstudio.travel.net.HttpException
 import top.qxwkstudio.travel.data.Prefs
 import top.qxwkstudio.travel.data.SyncCredentials
 import top.qxwkstudio.travel.data.db.AppDatabase
@@ -174,20 +175,27 @@ class SyncActivity : LocalizedActivity() {
         val token = Prefs.syncToken
         if (token.isBlank()) return
         lifecycleScope.runIo({ SyncApi.me(Prefs.syncServer, token) }) { result ->
-            val session = result.getOrNull()?.getOrNull()
-            if (session == null) {
-                // Token 过期只清 token，保留开关、同步数据和本地加密凭证。
-                Prefs.clearSyncSession(this)
-                Prefs.saveSyncResult(this, 0, 0, 0, false, "auth")
-                credentialsLoaded = false
-                SyncScheduler.cancel()
-                render()
-            } else {
-                Prefs.saveSyncSession(
+            val error = result.exceptionOrNull()
+            if (error != null) {
+                // 只有服务端明确答 401 才算登录失效；断网 / 超时 / 5xx 只是这次没验成，
+                // 清 token 会把用户平白踢回登录页
+                if ((error as? HttpException)?.code == 401) {
+                    // Token 过期只清 token，保留开关、同步数据和本地加密凭证。
+                    Prefs.clearSyncSession(this)
+                    Prefs.saveSyncResult(this, 0, 0, 0, false, "auth")
+                    credentialsLoaded = false
+                    SyncScheduler.cancel()
+                    render()
+                } else {
+                    notify(R.string.sync_network_failed)
+                }
+                return@runIo
+            }
+            val session = result.getOrNull()?.getOrNull() ?: return@runIo
+            Prefs.saveSyncSession(
                 this, session.token, session.uuid, session.nickname, session.avatar, session.color,
             )
-                render()
-            }
+            render()
         }
     }
 
@@ -287,7 +295,7 @@ class SyncActivity : LocalizedActivity() {
 
     private fun commitLogin(session: SyncApi.Session, wipeLocal: Boolean, account: String, password: String) {
         lifecycleScope.runIo({
-            if (wipeLocal) LocalData.wipe(AppDatabase.get(this))
+            if (wipeLocal) LocalData.wipe(this, AppDatabase.get(this))
         }) {
             if (wipeLocal) {
                 Prefs.clearSyncData(this)
@@ -372,7 +380,7 @@ class SyncActivity : LocalizedActivity() {
         credentialsLoaded = false
         binding.inputPassword.text?.clear()
         if (wipeLocal) {
-            lifecycleScope.runIo({ LocalData.wipe(AppDatabase.get(this)) }) {
+            lifecycleScope.runIo({ LocalData.wipe(this, AppDatabase.get(this)) }) {
                 render()
                 notify(R.string.sync_wipe_done, long = true)
             }

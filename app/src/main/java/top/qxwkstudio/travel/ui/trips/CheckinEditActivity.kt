@@ -281,7 +281,13 @@ class CheckinEditActivity : LocalizedActivity() {
         if (monthPos == 0) return placeholder(year, 1, 1) to DatePrecision.YEAR
         val dayPos = b.spinDay.selectedItemPosition
         if (dayPos == 0) return placeholder(year, monthPos, 1) to DatePrecision.MONTH
-        return placeholder(year, monthPos, dayPos) to DatePrecision.DAY
+        // 下拉固定 1..31，但二月/小月没有 31：按当月实际天数夹住，别让 Calendar 宽容进位
+        // （选「2 月 31 日」会被推成 3 月 2 日，日期就静默变了）
+        val maxDay = Calendar.getInstance().apply {
+            clear()
+            set(year, monthPos - 1, 1, 12, 0, 0)
+        }.getActualMaximum(Calendar.DAY_OF_MONTH)
+        return placeholder(year, monthPos, dayPos.coerceAtMost(maxDay)) to DatePrecision.DAY
     }
     private fun placeholder(year: Int, month: Int, day: Int): Long =
         Calendar.getInstance().apply {
@@ -433,6 +439,9 @@ class CheckinEditActivity : LocalizedActivity() {
     private fun isDirty(): Boolean = initialSnapshot.isNotEmpty() && snapshot() != initialSnapshot
 
     private fun confirmDiscard() {
+        // 保存/定位进行中不响应返回：此时 finish() 会取消协程、事务回滚，
+        // 用户却以为「点了返回就没事了」
+        if (busy) return
         if (!isDirty()) { finish(); return }
         MaterialAlertDialogBuilder(this)
             .setTitle(R.string.discard_title)
@@ -457,7 +466,8 @@ class CheckinEditActivity : LocalizedActivity() {
             null
         } else {
             val yuan = amountText.toDoubleOrNull() ?: 0.0
-            (yuan.coerceIn(0.0, 20_000_000.0) * 100).toInt()
+            // 用四舍五入而不是截断：0.29 元 × 100 在浮点里是 28.999…，截断会存成 28 分
+            Math.round(yuan.coerceIn(0.0, 20_000_000.0) * 100).toInt()
         }
         val days = binding.inputDays.text?.toString()?.trim()?.toIntOrNull()
         if (days != null && days !in 1..3650) {
@@ -479,12 +489,21 @@ class CheckinEditActivity : LocalizedActivity() {
             val db = AppDatabase.get(this)
             // 旋转重建后 editingEntity 可能还没取回：按 id 再读一次，避免把「编辑」做成「新建」
             val target = existing ?: if (editingId != 0L) db.checkins().byId(editingId) else null
+            // 老数据「记不清了」= UNKNOWN，展示上与「只到年」完全一样；用户没动日期时回写原精度，
+            // 否则一次编辑就把历史记录的精度永久改写成 YEAR
+            val keptPrecision = if (target?.datePrecision == DatePrecision.UNKNOWN &&
+                precision == DatePrecision.YEAR && at == target.checkinAt
+            ) {
+                DatePrecision.UNKNOWN
+            } else {
+                precision
+            }
             if (target == null) {
                 CheckinRepo.createManual(
                     db = db,
                     city = picked,
                     checkinAt = at,
-                    datePrecision = precision,
+                    datePrecision = keptPrecision,
                     note = note.ifBlank { null },
                     companions = companions,
                     rating = rating,
@@ -501,7 +520,7 @@ class CheckinEditActivity : LocalizedActivity() {
                         cityCode = picked.adcode,
                         province = picked.province,
                         checkinAt = at,
-                        datePrecision = precision,
+                        datePrecision = keptPrecision,
                         note = note.ifBlank { null },
                         companions = companions,
                         rating = rating,
