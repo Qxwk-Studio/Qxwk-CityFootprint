@@ -129,6 +129,11 @@ android {
         // AGP 8 起 buildConfig 默认关闭，不显式打开就没有这个类
         buildConfig = true
     }
+    // .pmtiles 必须**不压缩**：BasemapStore 用 assets.openFd().length 判断要不要重拷底图，
+    // 被 aapt2 压缩过的条目 openFd 会抛异常 → assetSize 恒 null → 每次进地图都重写 6.6 MB
+    androidResources {
+        noCompress += "pmtiles"
+    }
 }
 
 androidComponents {
@@ -166,6 +171,8 @@ dependencies {
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("com.google.android.material:material:1.11.0")
     implementation("androidx.recyclerview:recyclerview:1.3.2")
+    // 相册导入要按 EXIF 把竖拍照片转正（不读 EXIF 会横躺）
+    implementation("androidx.exifinterface:exifinterface:1.3.7")
     // 行程/成就页的左右翻页：手写的「换页动画」没有跟手位移，观感是切完才动。
     // ViewPager2 自带跟手拖动、松手按速度吸附、以及逐像素的 onPageScrolled（标签指示器靠它联动）。
     implementation("androidx.viewpager2:viewpager2:1.1.0")
@@ -181,11 +188,6 @@ dependencies {
 
     // JSON：@Serializable 数据类 + 编译期序列化器（见 data/Json.kt）
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.2")
-
-    // 地图选型见 README：osmdroid 是纯原生 Android View 的 OSM 地图，不需要任何 API key，
-    // 与「界面本身和地图都要原生」的要求一致。6.1.20 是它在 Maven Central 上的最后一个正式版
-    // （上游仓库 2024-11 已归档，但包还在、API 稳定）。
-    implementation("org.osmdroid:osmdroid-android:6.1.20")
 
     // 本地库（2.0 起是数据的唯一真相）：4 张表见 data/db/AppDatabase.kt。
     // room-ktx 提供挂起 DAO 的实现（CoroutinesRoom），没有它就只能在 DAO 上写阻塞调用。

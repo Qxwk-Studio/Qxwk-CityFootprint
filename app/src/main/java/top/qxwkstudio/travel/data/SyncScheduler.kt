@@ -46,9 +46,12 @@ internal object SyncScheduler {
         val app = appContext ?: return
         if (!Prefs.legalAccepted || !Prefs.networkAllowed || !Prefs.syncEnabled ||
             Prefs.syncToken.isBlank() || Prefs.syncServer.isBlank()) return
-        if (System.currentTimeMillis() < ignoreUntil) return
+        // 同步刚结束的冷却窗口：不是丢弃这次编辑，而是等窗口结束再排一次，
+        // 否则同步结束后几秒内的改动会既不进队也不补发
+        val wait = (ignoreUntil - System.currentTimeMillis()).coerceAtLeast(0L)
         debounce?.cancel()
         debounce = scope.launch {
+            if (wait > 0) delay(wait)
             delay(delayMs)
             if (System.currentTimeMillis() < ignoreUntil) return@launch
             runNow(app, force = false)
@@ -62,7 +65,9 @@ internal object SyncScheduler {
 
     suspend fun runNow(context: Context, force: Boolean): Result<SyncEngine.Report>? {
         if (!Prefs.legalAccepted) return null
-        if (!force && (!Prefs.legalAccepted || !Prefs.networkAllowed || !Prefs.syncEnabled || Prefs.syncToken.isBlank())) return null
+        // 网络开关是无条件闸门：force 只跳过「节流/开关未开」的等待，不能绕过用户关掉的网络
+        if (!Prefs.networkAllowed) return null
+        if (!force && (!Prefs.syncEnabled || Prefs.syncToken.isBlank())) return null
         if (Prefs.syncToken.isBlank() || Prefs.syncServer.isBlank()) return null
         return mutex.withLock {
             ignoreUntil = System.currentTimeMillis() + 5000

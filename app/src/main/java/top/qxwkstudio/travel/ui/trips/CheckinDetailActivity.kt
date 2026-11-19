@@ -92,7 +92,14 @@ class CheckinDetailActivity : LocalizedActivity() {
             }
             Triple(entity, first?.id == entity?.id, tripSeq)
         }) { result ->
-            val (entity, first, tripSeq) = result.getOrNull() ?: return@runIo
+            val data = result.getOrNull()
+            if (data == null) {
+                // 读库失败与「记录已被删」是两回事：前者给错误提示，后者直接退出
+                notify(R.string.common_error, long = true)
+                finish()
+                return@runIo
+            }
+            val (entity, first, tripSeq) = data
             if (entity == null) { finish(); return@runIo }
             currentCity = entity.cityName
             render(entity, first, tripSeq)

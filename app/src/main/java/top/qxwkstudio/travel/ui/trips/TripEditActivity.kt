@@ -148,10 +148,38 @@ class TripEditActivity : LocalizedActivity() {
         })
         bindCounters()
 
-        if (editingId != 0L) loadExisting() else {
-            render()
-            markClean()
+        if (!restoreDraft(savedInstanceState)) {
+            if (editingId != 0L) loadExisting() else {
+                render()
+                markClean()
+            }
         }
+    }
+
+    /**
+     * 旋转/进程重建后恢复未保存的草稿；返回 true 表示已恢复（不再读库覆盖）。
+     *
+     * 存的是时间线 JSON + 标题/备注 + 进入页面时的干净快照。草稿里的照片路径指向磁盘，
+     * 文件本来就在，不会因为重建而丢。
+     */
+    private fun restoreDraft(state: Bundle?): Boolean {
+        val json = state?.getString(KEY_DRAFT) ?: return false
+        val timeline = Timeline.decode(json) ?: return false
+        binding.inputTitle.setText(state.getString(KEY_TITLE).orEmpty())
+        binding.inputNote.setText(state.getString(KEY_NOTE).orEmpty())
+        items.clear()
+        items += timeline.items.map { DraftItem.from(it) }
+        initialSnapshot = state.getString(KEY_SNAPSHOT).orEmpty()
+        render()
+        return true
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putString(KEY_DRAFT, Timeline(items.map { it.toItem() }).encode())
+        outState.putString(KEY_TITLE, binding.inputTitle.text?.toString().orEmpty())
+        outState.putString(KEY_NOTE, binding.inputNote.text?.toString().orEmpty())
+        outState.putString(KEY_SNAPSHOT, initialSnapshot)
     }
 
     // ────────────────────────── 载入 ──────────────────────────
@@ -467,7 +495,7 @@ class TripEditActivity : LocalizedActivity() {
                     override fun afterTextChanged(s: Editable) {
                         val raw = s.toString().trim()
                         item.costCents = if (raw.isEmpty()) null
-                        else ((raw.toDoubleOrNull() ?: 0.0).coerceIn(0.0, 20_000_000.0) * 100).toInt()
+                        else ((raw.toDoubleOrNull() ?: 0.0).coerceIn(0.0, 20_000_000.0) * 100).let { Math.round(it).toInt() }
                     }
                 })
             }
@@ -568,16 +596,6 @@ class TripEditActivity : LocalizedActivity() {
             layoutParams = LinearLayout.LayoutParams(dp(28), dp(28)).apply { marginStart = dp(4) }
             setOnClickListener { onClick() }
         }
-
-    private fun actionText(symbol: String, onClick: () -> Unit): TextView = TextView(this).apply {
-        text = symbol
-        textSize = 12f
-        gravity = Gravity.CENTER
-        setTextColor(if (symbol == "🗑") getColor(R.color.destructive) else getColor(R.color.text_secondary))
-        background = ContextCompat.getDrawable(this@TripEditActivity, R.drawable.bg_icon_badge)
-        layoutParams = LinearLayout.LayoutParams(dp(28), dp(28)).apply { marginStart = dp(4) }
-        setOnClickListener { onClick() }
-    }
 
     private fun fieldLabel(icon: Int, text: String): LinearLayout = LinearLayout(this).apply {
         orientation = LinearLayout.HORIZONTAL
@@ -1006,43 +1024,6 @@ class TripEditActivity : LocalizedActivity() {
     }
 
     /** 备注：图标 + 名称 + 输入框（多行，和其他输入框同起止）。 */
-    private fun noteInline(item: DraftItem, hintRes: Int): LinearLayout = LinearLayout(this).apply {
-        orientation = LinearLayout.HORIZONTAL
-        gravity = Gravity.TOP
-        setPadding(dp(16), dp(10), dp(16), 0)
-        addView(ImageView(this@TripEditActivity).apply {
-            setImageResource(R.drawable.ic_note)
-            imageTintList = android.content.res.ColorStateList.valueOf(
-                ContextCompat.getColor(this@TripEditActivity, R.color.text_secondary),
-            )
-            layoutParams = LinearLayout.LayoutParams(dp(16), dp(16)).apply { topMargin = dp(12) }
-        })
-        addView(TextView(this@TripEditActivity).apply {
-            text = getString(R.string.checkin_note)
-            textSize = 14f
-            setTextColor(getColor(R.color.text_secondary))
-            setPadding(dp(6), dp(12), dp(8), 0)
-        })
-        addView(EditText(this@TripEditActivity).apply {
-            hint = getString(hintRes)
-            setText(item.note)
-            textSize = 13f
-            gravity = Gravity.TOP
-            inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE
-            minLines = 1
-            maxLines = 6
-            filters = arrayOf(android.text.InputFilter.LengthFilter(Limits.NOTE))
-            background = ContextCompat.getDrawable(this@TripEditActivity, R.drawable.bg_input_box)
-            setPadding(dp(10), dp(8), dp(10), dp(8))
-            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
-            addTextChangedListener(object : TextWatcher {
-                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
-                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = Unit
-                override fun afterTextChanged(s: Editable) { item.note = s.toString().trim() }
-            })
-        })
-    }
-
     /** 必填星号：独立小红字，避免 Spannable 测量问题。 */
     private fun starView(): TextView = TextView(this).apply {
         text = "*"
@@ -1075,41 +1056,6 @@ class TripEditActivity : LocalizedActivity() {
             })
         }
         addView(edit)
-    }
-
-    private fun ratingRow(item: DraftItem): LinearLayout {
-        val row = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(16), dp(6), dp(16), 0)
-        }
-        val value = TextView(this).apply {
-            textSize = 13f
-            gravity = Gravity.END
-            setTextColor(getColor(R.color.text_secondary))
-            text = item.rating?.let { getString(R.string.rating_value, it) } ?: getString(R.string.rating_unrated)
-            layoutParams = LinearLayout.LayoutParams(dp(52), ViewGroup.LayoutParams.WRAP_CONTENT)
-        }
-        row.addView(android.widget.SeekBar(this).apply {
-            max = 9
-            progress = (item.rating ?: 1) - 1
-            maxHeight = dp(3)
-            minHeight = dp(3)
-            progressDrawable = ContextCompat.getDrawable(this@TripEditActivity, R.drawable.seekbar_thick)
-            thumbTintList = android.content.res.ColorStateList.valueOf(Palette.accent(this@TripEditActivity))
-            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
-            setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
-                override fun onProgressChanged(bar: android.widget.SeekBar?, p: Int, fromUser: Boolean) {
-                    if (!fromUser) return
-                    item.rating = p + 1
-                    value.text = getString(R.string.rating_value, p + 1)
-                }
-                override fun onStartTrackingTouch(bar: android.widget.SeekBar?) = Unit
-                override fun onStopTrackingTouch(bar: android.widget.SeekBar?) = Unit
-            })
-        })
-        row.addView(value)
-        return row
     }
 
     // ────────────────────────── 事件交互 ──────────────────────────
@@ -1301,6 +1247,12 @@ class TripEditActivity : LocalizedActivity() {
 
     companion object {
         private const val EXTRA_ID = "trip_id"
+
+        // onSaveInstanceState 的键：旋转/进程重建时恢复草稿用
+        private const val KEY_DRAFT = "draft_timeline"
+        private const val KEY_TITLE = "draft_title"
+        private const val KEY_NOTE = "draft_note"
+        private const val KEY_SNAPSHOT = "draft_snapshot"
         fun intent(context: android.content.Context, tripId: Long = 0L): Intent =
             Intent(context, TripEditActivity::class.java).putExtra(EXTRA_ID, tripId)
     }

@@ -538,38 +538,6 @@ class TripDetailActivity : LocalizedActivity() {
         ).apply { bottomMargin = dp(10) }
     }
 
-    private fun labeledValue(
-        icon: Int,
-        label: String,
-        value: String,
-        topMargin: Int = 0,
-    ): LinearLayout = LinearLayout(this).apply {
-        orientation = LinearLayout.HORIZONTAL
-        gravity = Gravity.CENTER_VERTICAL
-        setPadding(dp(12), dp(topMargin), 0, 0)
-        addView(ImageView(this@TripDetailActivity).apply {
-            setImageResource(icon)
-            imageTintList = android.content.res.ColorStateList.valueOf(
-                ContextCompat.getColor(this@TripDetailActivity, R.color.text_tertiary),
-            )
-            layoutParams = LinearLayout.LayoutParams(dp(14), dp(14))
-        })
-        addView(TextView(this@TripDetailActivity).apply {
-            this.text = label
-            textSize = 13f
-            setTextColor(ContextCompat.getColor(this@TripDetailActivity, R.color.text_secondary))
-            setPadding(dp(6), 0, 0, 0)
-        })
-        if (value.isNotEmpty()) {
-            addView(TextView(this@TripDetailActivity).apply {
-                this.text = value
-                textSize = 14f
-                setTextColor(if (value == "-") getColor(R.color.text_tertiary) else getColor(R.color.fg))
-                setPadding(dp(10), 0, 0, 0)
-            })
-        }
-    }
-
     private fun fieldCard(icon: Int, label: String, value: String): LinearLayout {
         val card = card()
         card.addView(fieldLabel(icon, label))
@@ -598,33 +566,6 @@ class TripDetailActivity : LocalizedActivity() {
             setTextColor(ContextCompat.getColor(this@TripDetailActivity, R.color.text_secondary))
             setPadding(dp(6), 0, 0, 0)
         })
-    }
-
-    private fun labeledRow(icon: Int, label: String, value: String): LinearLayout {
-        val row = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(12), dp(8), 0, 0)
-        }
-        row.addView(ImageView(this).apply {
-            setImageResource(icon)
-            imageTintList = android.content.res.ColorStateList.valueOf(getColor(R.color.text_tertiary))
-            layoutParams = LinearLayout.LayoutParams(dp(14), dp(14))
-        })
-        row.addView(TextView(this).apply {
-            text = label
-            textSize = 13f
-            setTextColor(getColor(R.color.text_secondary))
-            setPadding(dp(6), 0, 0, 0)
-        })
-        row.addView(TextView(this).apply {
-            text = value
-            textSize = 14f
-            setTextColor(if (value == "-") getColor(R.color.text_tertiary) else getColor(R.color.fg))
-            setPadding(dp(10), 0, 0, 0)
-            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
-        })
-        return row
     }
 
     private fun divider(): View = View(this).apply {

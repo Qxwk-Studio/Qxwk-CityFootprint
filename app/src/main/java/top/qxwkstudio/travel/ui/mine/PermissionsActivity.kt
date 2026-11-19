@@ -32,10 +32,6 @@ class PermissionsActivity : LocalizedActivity() {
         ActivityResultContracts.RequestPermission(),
     ) { refresh() }
 
-    private val notificationPermission = registerForActivityResult(
-        ActivityResultContracts.RequestPermission(),
-    ) { refresh() }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Palette.apply(this)
@@ -90,21 +86,6 @@ class PermissionsActivity : LocalizedActivity() {
         }
         binding.rowSyncPermission.setOnClickListener { binding.switchSyncPermission.toggle() }
 
-        binding.switchNotification.setOnCheckedChangeListener { _, checked ->
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
-                binding.switchNotification.isChecked = false
-                return@setOnCheckedChangeListener
-            }
-            if (checked) {
-                if (!granted(Manifest.permission.POST_NOTIFICATIONS)) {
-                    notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
-                }
-            } else if (granted(Manifest.permission.POST_NOTIFICATIONS)) {
-                binding.switchNotification.isChecked = true
-                openAppSettings()
-            }
-        }
-        binding.rowNotification.setOnClickListener { binding.switchNotification.toggle() }
         binding.btnSystemSettings.setOnClickListener { openAppSettings() }
     }
 
@@ -127,28 +108,6 @@ class PermissionsActivity : LocalizedActivity() {
                 openAppSettings()
             }
         }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            val notificationGranted = granted(Manifest.permission.POST_NOTIFICATIONS)
-            binding.switchNotification.setOnCheckedChangeListener(null)
-            binding.switchNotification.isChecked = notificationGranted
-            binding.switchNotification.isEnabled = true
-            binding.switchNotification.setOnCheckedChangeListener { _, checked ->
-                if (checked) {
-                    if (!granted(Manifest.permission.POST_NOTIFICATIONS)) {
-                        notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
-                    }
-                } else if (granted(Manifest.permission.POST_NOTIFICATIONS)) {
-                    binding.switchNotification.isChecked = true
-                    openAppSettings()
-                }
-            }
-        } else {
-            binding.switchNotification.setOnCheckedChangeListener(null)
-            binding.switchNotification.isChecked = false
-            binding.switchNotification.isEnabled = false
-            binding.textNotificationDesc.setText(R.string.perm_notification_not_needed)
-        }
-
         if (Build.VERSION.SDK_INT > Build.VERSION_CODES.P) {
             binding.textStorageDesc.setText(R.string.perm_storage_scoped_desc)
             binding.textStorageStatus.setText(R.string.perm_not_required)

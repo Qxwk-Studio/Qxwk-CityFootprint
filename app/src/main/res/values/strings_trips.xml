@@ -4,7 +4,6 @@
     <string name="checkin_detail_title">打卡详情</string>
     <string name="trip_detail_title">足迹详情</string>
     <string name="detail_edit">编辑</string>
-    <string name="detail_city_section">到访城市</string>
     <string name="detail_uuid">UUID：%1$s</string>
     <string name="detail_own_id">编号 #%1$d</string>
     <string name="detail_from_trip">来自足迹 #%1$d</string>
@@ -16,7 +15,6 @@
     <string name="trips_menu_share">分享</string>
     <string name="trips_menu_edit">编辑</string>
     <string name="trips_menu_delete">删除</string>
-    <string name="trips_share_wip">分享功能即将推出</string>
     <string name="trips_deleted">已删除</string>
     <string name="checkin_edit_title">编辑打卡</string>
     <string name="checkin_title">新建打卡</string>
@@ -58,13 +56,9 @@
     <string name="rating_label">城市评分</string>
     <string name="first_visit">首访</string>
     <string name="trip_event_note_hint">备注</string>
-    <string name="checkin_section_basic">基本信息</string>
     <string name="checkin_section_optional">可选项</string>
     <string name="trip_timeline_label">时间线</string>
     <string name="trip_add_city">添加城市</string>
-    <string name="trip_add_city_hint">还没有到访城市，点下面的「添加城市」开始</string>
-    <string name="trip_remove_city">移除这座城市</string>
-    <string name="trip_segment_empty">还没有添加活动或交通</string>
     <string name="trip_type_activity">活动记录</string>
     <string name="trip_type_ride">交通记录</string>
     <string name="trip_note_label">备注</string>
@@ -84,10 +78,7 @@
     <string name="trip_range_label">时间范围</string>
     <string name="trip_stats_label">行程统计</string>
     <string name="trip_stats_value">%1$d 座城市 · %2$d 个时间线项目</string>
-    <string name="trip_event_label">活动</string>
-    <string name="trip_segment_timeline_label">时间线</string>
     <string name="trip_type_visit">到访城市</string>
-    <string name="trip_event_visit_hint">地点</string>
     <string name="trip_event_type">类型</string>
     <string name="trip_add_item">添加项目</string>
     <string name="trip_add_city_item">到访城市</string>

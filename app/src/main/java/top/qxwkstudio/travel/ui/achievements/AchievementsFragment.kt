@@ -100,6 +100,8 @@ class AchievementsFragment : Fragment() {
     }
 
     private fun load() {
+        // 版本号在读库前取：读完再取的话，期间的写入会被「已是最新」吞掉
+        val version = DataVersion.current
         viewLifecycleOwner.lifecycleScope.runIo({
             val db = AppDatabase.get(requireContext())
             val samples = CheckinRepo.listChronological(db).map {
@@ -109,21 +111,27 @@ class AchievementsFragment : Fragment() {
             val evaluated = Achievements.evaluate(samples, tripTimes)
 
             val existing = db.achievements().list().associateBy { it.code }
-            db.achievements().upsertAll(
-                evaluated.map { (code, state) ->
-                    AchievementStateEntity(
-                        code = code,
-                        unlockedAt = existing[code]?.unlockedAt ?: state.unlockedAt,
-                        progress = state.progress,
-                        target = state.target,
-                    )
-                }
-            )
+            val rows = evaluated.map { (code, state) ->
+                AchievementStateEntity(
+                    code = code,
+                    unlockedAt = existing[code]?.unlockedAt ?: state.unlockedAt,
+                    progress = state.progress,
+                    target = state.target,
+                )
+            }
+            // 没变就不写：整表重写 89 行会连带触发 Room 失效通知与一次同步扫描，
+            // 而这页每次 onResume / 同步事件都会重算一遍
+            val changed = rows.filter { row ->
+                val old = existing[row.code]
+                old == null || old.unlockedAt != row.unlockedAt ||
+                    old.progress != row.progress || old.target != row.target
+            }
+            if (changed.isNotEmpty()) db.achievements().upsertAll(changed)
             evaluated
         }) { result ->
             result.getOrNull()?.let {
                 states = it
-                seenVersion = DataVersion.current
+                seenVersion = version
                 // 四页同时刷新：屏幕外的相邻页不刷，翻过去会看到上一版进度
                 pages.forEach { (category, list) ->
                     (list.adapter as AchievementAdapter?)?.submit(rowsFor(category))

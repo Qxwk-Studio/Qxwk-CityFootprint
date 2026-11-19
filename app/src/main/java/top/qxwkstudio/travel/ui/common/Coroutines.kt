@@ -3,7 +3,6 @@ package top.qxwkstudio.travel.ui.common
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -36,11 +35,3 @@ internal fun <T> CoroutineScope.runIo(work: suspend () -> T, done: (Result<T>) -
         done(result)
     }
 }
-
-/**
- * 进程级 scope：给「尽力而为、且不依赖任何界面存活」的请求用。
- *
- * 目前只有一个用处 —— 退出登录时通知通行证撤销会话。那一刻页面正在关闭，
- * 挂在 UI scope 上会被连带取消，请求就发不出去了；而它失败也无所谓（本地 token 已经清掉）。
- */
-internal val appScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)

@@ -31,7 +31,17 @@ internal object ShareExporter {
             }
             val resolver = context.contentResolver
             val uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values) ?: return false
-            resolver.openOutputStream(uri)?.use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+            // 压缩/写流失败要把刚插入的空行删掉，否则会留下一条 IS_PENDING 的隐藏空条目，
+            // 用户却看到「已保存」
+            val written = runCatching {
+                resolver.openOutputStream(uri)?.use { out ->
+                    bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+                } ?: false
+            }.getOrDefault(false)
+            if (!written) {
+                runCatching { resolver.delete(uri, null, null) }
+                return false
+            }
             values.clear()
             values.put(MediaStore.Images.Media.IS_PENDING, 0)
             resolver.update(uri, values, null, null)

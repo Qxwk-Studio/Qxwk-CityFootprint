@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- 我的与个性化（简体中文） -->
 <resources>
-    <string name="profile_update_new_title">发现新版本</string>
     <string name="profile_update_small_title">小型更新</string>
     <string name="profile_update_normal_title">普通更新</string>
     <string name="profile_update_force_title">重大更新</string>
@@ -18,7 +17,6 @@
     <string name="mine_appearance_light">浅色</string>
     <string name="mine_appearance_dark">深色</string>
     <string name="mine_appearance_title">外观</string>
-    <string name="mine_cleanup_photos">清理无引用照片</string>
     <string name="cleanup_confirm_title">清理无引用照片？</string>
     <string name="cleanup_confirm_message">只删除没有任何打卡或行程引用的照片文件，正在使用的照片不受影响。</string>
     <string name="cleanup_done">已清理 %1$d 张照片，释放 %2$s</string>

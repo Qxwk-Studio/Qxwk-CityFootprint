@@ -1,4 +1,4 @@
-﻿package top.qxwkstudio.travel.ui.trips
+package top.qxwkstudio.travel.ui.trips
 
 import top.qxwkstudio.travel.ui.common.*
 import top.qxwkstudio.travel.ui.picker.CityPickerActivity
@@ -98,7 +98,9 @@ class CheckinEditActivity : LocalizedActivity() {
         val picked = uris.take(remain)
         lifecycleScope.runIo({
             picked.mapIndexedNotNull { index, uri ->
-                PhotoStore.save(this, uri, "${photoName}_${photoPaths.size + index + 1}")
+                // 文件名不能用「当前张数 + 下标」：删掉第 1 张再补一张会落到同一个序号，
+                // 覆盖列表里仍在用的照片。用随机后缀，保证每次导入都是新文件。
+                PhotoStore.save(this, uri, "${photoName}_${UUID.randomUUID().toString().take(8)}_${index + 1}")
             }
         }) { result ->
             val saved = result.getOrNull().orEmpty()
@@ -170,7 +172,77 @@ class CheckinEditActivity : LocalizedActivity() {
             override fun handleOnBackPressed() = confirmDiscard()
         })
 
-        if (editing) loadForEdit() else markClean()
+        if (restoreDraft(savedInstanceState)) {
+            // 草稿已经回填到界面；编辑态只需悄悄取回实体，保存时才不会变成「新建一条」
+            if (editing) loadEntityForEditing()
+        } else if (editing) loadForEdit() else markClean()
+    }
+
+    /**
+     * 旋转/进程重建后恢复未保存的草稿；返回 true 表示已恢复（不再读库覆盖）。
+     *
+     * 只恢复「用户能看见并改过」的东西：城市、日期三档、备注/同行人/金额/天数、评分、照片、
+     * 以及进入页面时的干净快照（否则重建后会被误判成「没改过」）。
+     */
+    private fun restoreDraft(state: Bundle?): Boolean {
+        if (state == null) return false
+        val snapshot = state.getString(KEY_SNAPSHOT) ?: return false
+        state.getString(KEY_CITY)?.let { name ->
+            setCity(
+                City(
+                    name = name,
+                    province = state.getString(KEY_PROVINCE).orEmpty(),
+                    lat = state.getDouble(KEY_LAT),
+                    lng = state.getDouble(KEY_LNG),
+                    adcode = state.getInt(KEY_ADCODE, -1).takeIf { it > 0 },
+                ),
+            )
+        }
+        binding.spinYear.setSelection(state.getInt(KEY_SPIN_YEAR, binding.spinYear.selectedItemPosition), false)
+        binding.spinMonth.setSelection(state.getInt(KEY_SPIN_MONTH, binding.spinMonth.selectedItemPosition), false)
+        binding.spinDay.setSelection(state.getInt(KEY_SPIN_DAY, binding.spinDay.selectedItemPosition), false)
+        state.getString(KEY_NOTE)?.let { binding.inputNote.setText(it) }
+        state.getString(KEY_COMPANIONS)?.let { binding.inputCompanions.setText(it) }
+        state.getString(KEY_AMOUNT)?.let { binding.inputAmount.setText(it) }
+        state.getString(KEY_DAYS)?.let { binding.inputDays.setText(it) }
+        companions = state.getString(KEY_COMPANIONS)
+        rating = state.getInt(KEY_RATING, -1).takeIf { it > 0 }
+        photoName = state.getString(KEY_PHOTO_NAME) ?: photoName
+        photoPaths.clear()
+        photoPaths += state.getString(KEY_PHOTOS).orEmpty().split(",").filter { it.isNotBlank() }
+        setupRating()
+        renderPhoto()
+        initialSnapshot = snapshot
+        return true
+    }
+
+    /** 编辑态重建后只为拿回 [editingEntity]（保存时据此走 update 而不是 create）。 */
+    private fun loadEntityForEditing() {
+        lifecycleScope.runIo({ AppDatabase.get(this).checkins().byId(editingId) }) { result ->
+            editingEntity = result.getOrNull()
+        }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putInt(KEY_SPIN_YEAR, binding.spinYear.selectedItemPosition)
+        outState.putInt(KEY_SPIN_MONTH, binding.spinMonth.selectedItemPosition)
+        outState.putInt(KEY_SPIN_DAY, binding.spinDay.selectedItemPosition)
+        outState.putString(KEY_NOTE, binding.inputNote.text?.toString())
+        outState.putString(KEY_COMPANIONS, binding.inputCompanions.text?.toString())
+        outState.putString(KEY_AMOUNT, binding.inputAmount.text?.toString())
+        outState.putString(KEY_DAYS, binding.inputDays.text?.toString())
+        outState.putInt(KEY_RATING, rating ?: -1)
+        outState.putString(KEY_PHOTOS, photoPaths.joinToString(","))
+        outState.putString(KEY_PHOTO_NAME, photoName)
+        outState.putString(KEY_SNAPSHOT, initialSnapshot)
+        city?.let {
+            outState.putString(KEY_CITY, it.name)
+            outState.putString(KEY_PROVINCE, it.province)
+            outState.putDouble(KEY_LAT, it.lat)
+            outState.putDouble(KEY_LNG, it.lng)
+            outState.putInt(KEY_ADCODE, it.adcode ?: -1)
+        }
     }
 
     // ────────────────────────── 日期 ──────────────────────────
@@ -209,7 +281,13 @@ class CheckinEditActivity : LocalizedActivity() {
         if (monthPos == 0) return placeholder(year, 1, 1) to DatePrecision.YEAR
         val dayPos = b.spinDay.selectedItemPosition
         if (dayPos == 0) return placeholder(year, monthPos, 1) to DatePrecision.MONTH
-        return placeholder(year, monthPos, dayPos) to DatePrecision.DAY
+        // 下拉固定 1..31，但二月/小月没有 31：按当月实际天数夹住，别让 Calendar 宽容进位
+        // （选「2 月 31 日」会被推成 3 月 2 日，日期就静默变了）
+        val maxDay = Calendar.getInstance().apply {
+            clear()
+            set(year, monthPos - 1, 1, 12, 0, 0)
+        }.getActualMaximum(Calendar.DAY_OF_MONTH)
+        return placeholder(year, monthPos, dayPos.coerceAtMost(maxDay)) to DatePrecision.DAY
     }
     private fun placeholder(year: Int, month: Int, day: Int): Long =
         Calendar.getInstance().apply {
@@ -328,7 +406,7 @@ class CheckinEditActivity : LocalizedActivity() {
             }
         }
     }
-    /** 停留天数步进：最少 1 天。 */
+    /** 备注字数计数（上限 233，与 TextWatcher 联动）。 */
     private fun updateCounter(length: Int) {
         binding.textCounter.text = getString(R.string.char_counter, length, 233)
     }
@@ -361,6 +439,9 @@ class CheckinEditActivity : LocalizedActivity() {
     private fun isDirty(): Boolean = initialSnapshot.isNotEmpty() && snapshot() != initialSnapshot
 
     private fun confirmDiscard() {
+        // 保存/定位进行中不响应返回：此时 finish() 会取消协程、事务回滚，
+        // 用户却以为「点了返回就没事了」
+        if (busy) return
         if (!isDirty()) { finish(); return }
         MaterialAlertDialogBuilder(this)
             .setTitle(R.string.discard_title)
@@ -385,7 +466,8 @@ class CheckinEditActivity : LocalizedActivity() {
             null
         } else {
             val yuan = amountText.toDoubleOrNull() ?: 0.0
-            (yuan.coerceIn(0.0, 20_000_000.0) * 100).toInt()
+            // 用四舍五入而不是截断：0.29 元 × 100 在浮点里是 28.999…，截断会存成 28 分
+            Math.round(yuan.coerceIn(0.0, 20_000_000.0) * 100).toInt()
         }
         val days = binding.inputDays.text?.toString()?.trim()?.toIntOrNull()
         if (days != null && days !in 1..3650) {
@@ -405,12 +487,23 @@ class CheckinEditActivity : LocalizedActivity() {
         binding.topBar.btnSaveIcon.isEnabled = false
         lifecycleScope.runIo({
             val db = AppDatabase.get(this)
-            if (existing == null) {
+            // 旋转重建后 editingEntity 可能还没取回：按 id 再读一次，避免把「编辑」做成「新建」
+            val target = existing ?: if (editingId != 0L) db.checkins().byId(editingId) else null
+            // 老数据「记不清了」= UNKNOWN，展示上与「只到年」完全一样；用户没动日期时回写原精度，
+            // 否则一次编辑就把历史记录的精度永久改写成 YEAR
+            val keptPrecision = if (target?.datePrecision == DatePrecision.UNKNOWN &&
+                precision == DatePrecision.YEAR && at == target.checkinAt
+            ) {
+                DatePrecision.UNKNOWN
+            } else {
+                precision
+            }
+            if (target == null) {
                 CheckinRepo.createManual(
                     db = db,
                     city = picked,
                     checkinAt = at,
-                    datePrecision = precision,
+                    datePrecision = keptPrecision,
                     note = note.ifBlank { null },
                     companions = companions,
                     rating = rating,
@@ -422,12 +515,12 @@ class CheckinEditActivity : LocalizedActivity() {
                 // 编辑：整体替换可编辑字段，id / uuid / 编号 / 来源保持不动
                 CheckinRepo.updateManual(
                     db,
-                    existing.copy(
+                    target.copy(
                         cityName = picked.name,
                         cityCode = picked.adcode,
                         province = picked.province,
                         checkinAt = at,
-                        datePrecision = precision,
+                        datePrecision = keptPrecision,
                         note = note.ifBlank { null },
                         companions = companions,
                         rating = rating,
@@ -454,7 +547,6 @@ class CheckinEditActivity : LocalizedActivity() {
 
     // ────────────────────────── 可选信息 ──────────────────────────
 
-    /** 城市评分：5 颗星，点第 n 颗 = n 星；再点同一颗清零。 */
     /** 城市评分：1~10 的拉条，未评分时显示「未评分」。 */
     private fun setupRating() {
         val b = binding
@@ -564,6 +656,24 @@ class CheckinEditActivity : LocalizedActivity() {
 
     companion object {
         private const val EXTRA_ID = "checkin_id"
+
+        // onSaveInstanceState 的键：旋转/进程重建时恢复草稿用
+        private const val KEY_SNAPSHOT = "draft_snapshot"
+        private const val KEY_CITY = "draft_city"
+        private const val KEY_PROVINCE = "draft_province"
+        private const val KEY_LAT = "draft_lat"
+        private const val KEY_LNG = "draft_lng"
+        private const val KEY_ADCODE = "draft_adcode"
+        private const val KEY_SPIN_YEAR = "draft_spin_year"
+        private const val KEY_SPIN_MONTH = "draft_spin_month"
+        private const val KEY_SPIN_DAY = "draft_spin_day"
+        private const val KEY_NOTE = "draft_note"
+        private const val KEY_COMPANIONS = "draft_companions"
+        private const val KEY_AMOUNT = "draft_amount"
+        private const val KEY_DAYS = "draft_days"
+        private const val KEY_RATING = "draft_rating"
+        private const val KEY_PHOTOS = "draft_photos"
+        private const val KEY_PHOTO_NAME = "draft_photo_name"
 
         /** 新增传 0（或不传），编辑传打卡 id。 */
         fun intent(context: android.content.Context, checkinId: Long = 0L): Intent =

@@ -4,7 +4,6 @@
     <string name="checkin_detail_title">Check-in details</string>
     <string name="trip_detail_title">Trip details</string>
     <string name="detail_edit">Edit</string>
-    <string name="detail_city_section">Visited cities</string>
     <string name="detail_uuid">UUID: %1$s</string>
     <string name="detail_own_id">No. #%1$d</string>
     <string name="detail_from_trip">From trip #%1$d</string>
@@ -16,7 +15,6 @@
     <string name="trips_menu_share">Share</string>
     <string name="trips_menu_edit">Edit</string>
     <string name="trips_menu_delete">Delete</string>
-    <string name="trips_share_wip">Sharing is coming soon</string>
     <string name="trips_deleted">Deleted</string>
     <string name="checkin_edit_title">Edit check-in</string>
     <string name="checkin_title">New check-in</string>
@@ -58,13 +56,9 @@
     <string name="rating_label">City rating</string>
     <string name="first_visit">First visit</string>
     <string name="trip_event_note_hint">Note</string>
-    <string name="checkin_section_basic">Basics</string>
     <string name="checkin_section_optional">Optional</string>
     <string name="trip_timeline_label">Timeline</string>
     <string name="trip_add_city">Add city</string>
-    <string name="trip_add_city_hint">No cities yet. Tap Add city below to start</string>
-    <string name="trip_remove_city">Remove this city</string>
-    <string name="trip_segment_empty">No activities or transport yet</string>
     <string name="trip_type_activity">Activity</string>
     <string name="trip_type_ride">Transport</string>
     <string name="trip_note_label">Note</string>
@@ -84,10 +78,7 @@
     <string name="trip_range_label">Date range</string>
     <string name="trip_stats_label">Trip stats</string>
     <string name="trip_stats_value">%1$d cities · %2$d timeline items</string>
-    <string name="trip_event_label">Activity</string>
-    <string name="trip_segment_timeline_label">Timeline</string>
     <string name="trip_type_visit">Visit</string>
-    <string name="trip_event_visit_hint">Place</string>
     <string name="trip_event_type">Type</string>
     <string name="trip_add_item">Add item</string>
     <string name="trip_add_city_item">Visited city</string>

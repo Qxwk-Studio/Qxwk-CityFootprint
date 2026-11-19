@@ -16,23 +16,31 @@ import top.qxwkstudio.travel.logic.Timeline
  */
 object PhotoJanitor {
 
-    /** 收集仍被引用的照片路径：活着的打卡 + 活着的行程（城市段）。软删的行不算引用。 */
-    suspend fun referenced(db: AppDatabase): Set<String> = buildSet {
+    /**
+     * 收集仍被引用的照片路径：活着的打卡 + 活着的行程（**全量 items**）。软删的行不算引用。
+     *
+     * 有行程的时间线解析不了时返回 **null**（而不是空集合）：调用方必须据此跳过清扫 ——
+     * 拿空集合去清扫等于把全目录照片删光，宁可留垃圾也不能误删。
+     */
+    suspend fun referenced(db: AppDatabase): Set<String>? = buildSet {
         db.checkins().list().forEach { checkin ->
             checkin.photoPath?.split(",")?.filter { it.isNotBlank() }?.forEach(::add)
         }
         db.trips().list().forEach { trip ->
-            Timeline.decode(trip.timeline)?.segments?.forEach { segment ->
-                segment.photoPath?.split(",")?.filter { it.isNotBlank() }?.forEach(::add)
-                segment.events.forEach { event ->
-                    event.photoPath?.split(",")?.filter { it.isNotBlank() }?.forEach(::add)
-                }
+            // 用 items 而不是 segments：第一个到访城市之前的交通/出发照片不属于任何城市段，
+            // 按 segments 收集会把它们当孤儿删掉（时间线 JSON 里的路径还在 → 打开即破图）。
+            val timeline = Timeline.decode(trip.timeline) ?: return null
+            timeline.items.forEach { item ->
+                item.photoPath?.split(",")?.filter { it.isNotBlank() }?.forEach(::add)
             }
         }
     }
 
-    suspend fun sweep(context: Context, db: AppDatabase): Pair<Int, Long> =
-        PhotoFiles.cleanupUnreferenced(context, referenced(db))
+    suspend fun sweep(context: Context, db: AppDatabase): Pair<Int, Long> {
+        // 解析失败就不清扫：见 referenced 的注释
+        val refs = referenced(db) ?: return 0 to 0L
+        return PhotoFiles.cleanupUnreferenced(context, refs)
+    }
 
     /** 后台跑一次（启动、删除成功后调用）；不关心结果。 */
     fun sweepAsync(context: Context) {

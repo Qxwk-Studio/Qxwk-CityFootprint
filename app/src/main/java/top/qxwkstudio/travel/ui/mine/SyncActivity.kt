@@ -12,6 +12,7 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import top.qxwkstudio.travel.R
 import top.qxwkstudio.travel.data.LocalData
+import top.qxwkstudio.travel.net.HttpException
 import top.qxwkstudio.travel.data.Prefs
 import top.qxwkstudio.travel.data.SyncCredentials
 import top.qxwkstudio.travel.data.db.AppDatabase
@@ -46,7 +47,7 @@ class SyncActivity : LocalizedActivity() {
         binding.topBar.btnBack.setOnClickListener { finish() }
 
         binding.inputServer.setText(Prefs.syncServer)
-        binding.btnFetchServer.setOnClickListener { fetchServer() }
+        binding.btnFetchServer.setOnClickListener { loadServer(manual = true) }
         binding.btnLogin.setOnClickListener { login() }
         binding.btnLogout.setOnClickListener { confirmLogout() }
         binding.btnSyncNow.setOnClickListener { syncNow() }
@@ -114,54 +115,49 @@ class SyncActivity : LocalizedActivity() {
         credentialsLoaded = true
     }
 
-    private fun fetchServer() {
-        val server = normalizedServer() ?: run {
-            notify(R.string.sync_server_invalid)
+    /**
+     * 拉一次服务器信息。
+     *
+     * [manual] = 用户点「获取」：额外校验/保存地址、按钮转圈，失败文案是「获取失败」；
+     * 自动拉（进页面、切回前台）不打断用户，失败只提示网络问题。两种情况共用同一段解析。
+     */
+    private fun loadServer(manual: Boolean = false) {
+        val server = normalizedServer()
+        if (server == null) {
+            if (manual) notify(R.string.sync_server_invalid)
+            setServerInfo(serverName = "—", photo = "—", version = "—")
             return
         }
-        Prefs.saveSyncServer(this, server)
-        binding.btnFetchServer.isEnabled = false
-        binding.btnFetchServer.setText(R.string.sync_fetching)
+        if (manual) {
+            Prefs.saveSyncServer(this, server)
+            binding.btnFetchServer.isEnabled = false
+            binding.btnFetchServer.setText(R.string.sync_fetching)
+        }
         lifecycleScope.runIo({ SyncApi.server(server) }) { result ->
-            binding.btnFetchServer.isEnabled = true
-            binding.btnFetchServer.setText(R.string.sync_server_fetch)
+            if (manual) {
+                binding.btnFetchServer.isEnabled = true
+                binding.btnFetchServer.setText(R.string.sync_server_fetch)
+            }
             val info = result.getOrNull()?.getOrNull()
             if (info == null) {
-                binding.textServerName.setText(R.string.sync_server_fetch_failed)
-                binding.textPhotoSupport.text = "—"
-                binding.textVersionSupport.text = "—"
-            } else {
-                binding.textServerName.text = info.serverName.ifBlank { "City Footprint" }
-                binding.textPhotoSupport.setText(
-                    if (info.supportsPhotoUpload) R.string.sync_photo_yes else R.string.sync_photo_no,
+                binding.textServerName.setText(
+                    if (manual) R.string.sync_server_fetch_failed else R.string.sync_network_failed,
                 )
-                binding.textVersionSupport.text = versionLabel(info)
+                setServerInfo(photo = "—", version = "—")
+                return@runIo
             }
+            binding.textServerName.text = info.serverName.ifBlank { "City Footprint" }
+            binding.textPhotoSupport.setText(
+                if (info.supportsPhotoUpload) R.string.sync_photo_yes else R.string.sync_photo_no,
+            )
+            binding.textVersionSupport.text = versionLabel(info)
         }
     }
 
-    private fun loadServer() {
-        val server = normalizedServer()
-        if (server == null) {
-            binding.textServerName.text = "—"
-            binding.textPhotoSupport.text = "—"
-            binding.textVersionSupport.text = "—"
-            return
-        }
-        lifecycleScope.runIo({ SyncApi.server(server) }) { result ->
-            val info = result.getOrNull()?.getOrNull()
-            if (info == null) {
-                binding.textServerName.setText(R.string.sync_network_failed)
-                binding.textPhotoSupport.text = "—"
-                binding.textVersionSupport.text = "—"
-            } else {
-                binding.textServerName.text = info.serverName.ifBlank { "City Footprint" }
-                binding.textPhotoSupport.setText(
-                    if (info.supportsPhotoUpload) R.string.sync_photo_yes else R.string.sync_photo_no,
-                )
-                binding.textVersionSupport.text = versionLabel(info)
-            }
-        }
+    private fun setServerInfo(serverName: String? = null, photo: String, version: String) {
+        serverName?.let { binding.textServerName.text = it }
+        binding.textPhotoSupport.text = photo
+        binding.textVersionSupport.text = version
     }
 
     /** 服务端支持版本是一段 versionCode 区间，按「20300~20999」这种紧凑写法展示。 */
@@ -174,20 +170,27 @@ class SyncActivity : LocalizedActivity() {
         val token = Prefs.syncToken
         if (token.isBlank()) return
         lifecycleScope.runIo({ SyncApi.me(Prefs.syncServer, token) }) { result ->
-            val session = result.getOrNull()?.getOrNull()
-            if (session == null) {
-                // Token 过期只清 token，保留开关、同步数据和本地加密凭证。
-                Prefs.clearSyncSession(this)
-                Prefs.saveSyncResult(this, 0, 0, 0, false, "auth")
-                credentialsLoaded = false
-                SyncScheduler.cancel()
-                render()
-            } else {
-                Prefs.saveSyncSession(
+            val error = result.exceptionOrNull()
+            if (error != null) {
+                // 只有服务端明确答 401 才算登录失效；断网 / 超时 / 5xx 只是这次没验成，
+                // 清 token 会把用户平白踢回登录页
+                if ((error as? HttpException)?.code == 401) {
+                    // Token 过期只清 token，保留开关、同步数据和本地加密凭证。
+                    Prefs.clearSyncSession(this)
+                    Prefs.saveSyncResult(this, 0, 0, 0, false, "auth")
+                    credentialsLoaded = false
+                    SyncScheduler.cancel()
+                    render()
+                } else {
+                    notify(R.string.sync_network_failed)
+                }
+                return@runIo
+            }
+            val session = result.getOrNull()?.getOrNull() ?: return@runIo
+            Prefs.saveSyncSession(
                 this, session.token, session.uuid, session.nickname, session.avatar, session.color,
             )
-                render()
-            }
+            render()
         }
     }
 
@@ -287,7 +290,7 @@ class SyncActivity : LocalizedActivity() {
 
     private fun commitLogin(session: SyncApi.Session, wipeLocal: Boolean, account: String, password: String) {
         lifecycleScope.runIo({
-            if (wipeLocal) LocalData.wipe(AppDatabase.get(this))
+            if (wipeLocal) LocalData.wipe(this, AppDatabase.get(this))
         }) {
             if (wipeLocal) {
                 Prefs.clearSyncData(this)
@@ -372,7 +375,7 @@ class SyncActivity : LocalizedActivity() {
         credentialsLoaded = false
         binding.inputPassword.text?.clear()
         if (wipeLocal) {
-            lifecycleScope.runIo({ LocalData.wipe(AppDatabase.get(this)) }) {
+            lifecycleScope.runIo({ LocalData.wipe(this, AppDatabase.get(this)) }) {
                 render()
                 notify(R.string.sync_wipe_done, long = true)
             }
