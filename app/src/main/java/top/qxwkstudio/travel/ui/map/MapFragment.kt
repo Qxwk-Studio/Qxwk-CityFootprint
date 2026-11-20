@@ -83,6 +83,9 @@ class MapFragment : Fragment() {
     /** 本次加载在跑：防止 onViewCreated / onResume / SyncEvents 同时触发多次 load。 */
     private var loading = false
 
+    /** 加载期间又来了 load()：不能直接丢，加载完补跑一次。 */
+    private var pendingLoad = false
+
     /** 由系统重建（旋转/深色切换）：此时 MapView 自己恢复了镜头，别再强行拉回默认视野。 */
     private var hadSavedState = false
 
@@ -176,7 +179,10 @@ class MapFragment : Fragment() {
     private fun load() {
         // 进来时 onViewCreated 与 onResume 都会调一次，SyncEvents 每来一次事件也会调：
         // 数据没变、地图已就绪时直接返回，否则 getMapAsync/监听/底图拷贝会重复注册或重复执行
-        if (loading) return
+        if (loading) {
+            pendingLoad = true
+            return
+        }
         if (map != null && seenVersion == DataVersion.current) return
         loading = true
         val version = DataVersion.current
@@ -212,6 +218,10 @@ class MapFragment : Fragment() {
             Triple(cities, path, badge)
         }) { result ->
             loading = false
+            if (pendingLoad) {
+                pendingLoad = false
+                load()
+            }
             val (cities, path, badge) = result.getOrNull() ?: run {
                 binding.textStatus.setText(R.string.map_failed)
                 return@runIo
