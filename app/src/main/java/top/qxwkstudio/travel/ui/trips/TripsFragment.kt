@@ -895,12 +895,21 @@ class TripsFragment : Fragment() {
         }
         val checkinIds = selectedCheckins.toSet()
         val tripUuids = selectedTrips.toSet()
+        requireActivity().pickExportFormat { format -> runExport(tripUuids, checkinIds, format) }
+    }
+
+    private fun runExport(
+        tripUuids: Set<String>,
+        checkinIds: Set<Long>,
+        format: DataExport.Format,
+    ) {
         viewLifecycleOwner.lifecycleScope.runIo({
             DataExport.export(
                 requireContext(),
                 AppDatabase.get(requireContext()),
                 onlyTripUuids = tripUuids,
                 onlyCheckinIds = checkinIds,
+                format = format,
             )
         }) { result ->
             val data = result.getOrNull()
