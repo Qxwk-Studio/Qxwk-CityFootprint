@@ -85,7 +85,16 @@ abstract class ShareActivityBase : LocalizedActivity() {
         Palette.apply(this)
         binding = ActivityShareBinding.inflate(layoutInflater)
         // 保存/分享是滚动内容的一部分，所以底部 inset 补在内容容器上
-        applyEdgeToEdge(binding.topBar.root, binding.cards)
+        applyEdgeToEdge(binding.topBar.root, binding.scroll) {
+            // 键盘弹出时把焦点输入框滚进可见区（备注是多行输入，容易被键盘盖住）
+            val focused = currentFocus ?: return@applyEdgeToEdge
+            binding.scroll.post {
+                focused.requestRectangleOnScreen(
+                    android.graphics.Rect(0, 0, focused.width, focused.height),
+                    true,
+                )
+            }
+        }
         setContentView(binding.root)
         binding.root.fadeSlideIn()
         binding.topBar.btnBack.visibility = View.VISIBLE
@@ -476,7 +485,29 @@ abstract class ShareActivityBase : LocalizedActivity() {
                 orientation = LinearLayout.HORIZONTAL
                 setPadding(0, dp(10), 0, 0)
             }
-            paths.take(6).forEach { path ->
+            // 照片多时横向排不下：放进 HorizontalScrollView，手指横向拖才滑得动；
+            // 纵向拖动仍然交给外层 ScrollView（只在横向位移更大时抢手势）
+            val scroller = android.widget.HorizontalScrollView(this).apply {
+                isHorizontalScrollBarEnabled = false
+                isFillViewport = false
+                var downX = 0f
+                var downY = 0f
+                setOnTouchListener { view, event ->
+                    when (event.actionMasked) {
+                        android.view.MotionEvent.ACTION_DOWN -> {
+                            downX = event.x
+                            downY = event.y
+                        }
+                        android.view.MotionEvent.ACTION_MOVE -> {
+                            if (kotlin.math.abs(event.x - downX) > kotlin.math.abs(event.y - downY)) {
+                                view.parent?.requestDisallowInterceptTouchEvent(true)
+                            }
+                        }
+                    }
+                    false
+                }
+            }
+            paths.forEach { path ->
                 val tile = FrameLayout(this).apply {
                     setBackgroundResource(R.drawable.bg_photo_tile)
                     clipToOutline = true
@@ -504,7 +535,8 @@ abstract class ShareActivityBase : LocalizedActivity() {
                     result.getOrNull()?.let { if (image.isAttachedToWindow) image.setImageBitmap(it) }
                 }
             }
-            block.addView(row)
+            scroller.addView(row)
+            block.addView(scroller)
         }
         if (showPickButton) {
             block.addView(MaterialButton(this, null, com.google.android.material.R.attr.materialButtonOutlinedStyle).apply {
@@ -548,15 +580,20 @@ internal object SharePhoto {
         } else {
             top.qxwkstudio.travel.ui.common.PhotoStore.load(path, 2048)?.let { return it }
         }
-        return runCatching { BitmapFactory.decodeFile(path) }.getOrNull()
+        // 兜底解码也必须按 maxPx 采样：副本不在 PhotoFiles 目录里时会走到这里，
+        // 直接 decodeFile 会把 12–48MP 原图整个展开
+        return runCatching {
+            val target = if (maxPx > 0) maxPx else 2048
+            val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            BitmapFactory.decodeFile(path, bounds)
+            var sample = 1
+            while (maxOf(bounds.outWidth, bounds.outHeight) / sample > target) sample *= 2
+            BitmapFactory.decodeFile(path, BitmapFactory.Options().apply { inSampleSize = sample })
+        }.getOrNull()
     }
 
-    fun copyFromUri(context: Context, uri: Uri): String? = runCatching {
-        val dir = File(context.cacheDir, "share").apply { mkdirs() }
-        val target = File(dir, "picked-${System.currentTimeMillis()}.jpg")
-        context.contentResolver.openInputStream(uri)?.use { input ->
-            target.outputStream().use { output -> input.copyTo(output) }
-        } ?: return null
-        target.absolutePath
-    }.getOrNull()
+    /** 相册选图：走 PhotoFiles（两段式解码 + EXIF 转正 + JPEG 压缩），不要原样拷原图。 */
+    fun copyFromUri(context: Context, uri: Uri): String? =
+        runCatching { top.qxwkstudio.travel.data.PhotoFiles.save(context, uri, "share_${System.currentTimeMillis()}") }
+            .getOrNull()
 }

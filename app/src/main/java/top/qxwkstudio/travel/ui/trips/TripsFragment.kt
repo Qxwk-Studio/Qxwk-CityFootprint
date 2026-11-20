@@ -24,6 +24,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import androidx.room.withTransaction
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.widget.ViewPager2
 import com.google.android.material.button.MaterialButton
@@ -88,7 +89,10 @@ class TripsFragment : Fragment() {
     private lateinit var tracker: PagerSegments
 
     /** 一页的滚动容器 + 卡片列；两页各自独立滚动，翻页后回到原位置。 */
-    private class Page(val scroll: ScrollView, val column: LinearLayout)
+    private class Page(val scroll: ScrollView, val column: LinearLayout) {
+        /** 每页顶部那条搜索卡（第一个卡片位置）。 */
+        var search: View? = null
+    }
 
     /** 两个分段各自缓存已铺好的卡片，来回切换时不重复 inflate 前 30 条。 */
     private var checkinRowsKey = ""
@@ -109,6 +113,12 @@ class TripsFragment : Fragment() {
     private var tripSearchByUuid: Map<String, String> = emptyMap()
 
     private var seenVersion = -1
+
+    /** 本次加载在跑：onViewCreated 与 onResume 相邻触发时只读一次库。 */
+    private var loading = false
+
+    /** 加载期间又来了 load()：不能直接丢，加载完补跑一次。 */
+    private var pendingLoad = false
 
     /** 每座城市「最早那条打卡」的 id：表格里的首访角标与金色边框按它判断。 */
     private var firstVisitIds: Set<Long> = emptySet()
@@ -132,18 +142,6 @@ class TripsFragment : Fragment() {
             SyncEvents.events.collect { load() }
         }
         binding.root.fadeSlideIn()
-        binding.inputSearch.addTextChangedListener(object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = Unit
-            override fun afterTextChanged(s: Editable?) {
-                query = s?.toString().orEmpty()
-                // 换了关键字，两段的「已展开条数」都回到第一屏
-                visibleCount.clear()
-                binding.btnClearSearch.visibility = if (query.isBlank()) View.GONE else View.VISIBLE
-                render()
-            }
-        })
-        binding.btnClearSearch.setOnClickListener { binding.inputSearch.setText("") }
 
         tracker = PagerSegments(binding.segTrack, binding.chipIndicator, binding.chipContainer)
         binding.pager.adapter = PageAdapter()
@@ -164,6 +162,7 @@ class TripsFragment : Fragment() {
     override fun onDestroyView() {
         // 页面和行缓存都绑在旧视图上（换主题/尺寸会整页重建），留着会被下一份视图复用成僵尸 View
         pages.clear()
+        searchInputs.clear()
         invalidateRowCaches()
         _binding?.pager?.adapter = null
         _binding = null
@@ -186,15 +185,25 @@ class TripsFragment : Fragment() {
     }
 
     private fun load() {
+        if (loading) {
+            pendingLoad = true
+            return
+        }
+        loading = true
+        // 版本号在读库前取：读完再取会把期间的写入标成「已是最新」
+        val version = DataVersion.current
         viewLifecycleOwner.lifecycleScope.runIo({
             val db = AppDatabase.get(requireContext())
             TripRepo.list(db) to CheckinRepo.list(db)
         }) { result ->
+            loading = false
+            val replay = pendingLoad
+            pendingLoad = false
             val (tripList, checkinList) = result.getOrNull() ?: return@runIo
             trips = tripList
             checkins = checkinList
             seqByUuid = tripList.associate { it.uuid to it.seqNo }
-            seenVersion = DataVersion.current
+            seenVersion = version
             firstVisitIds = checkinList
                 .groupBy { it.cityName }
                 .values
@@ -237,7 +246,61 @@ class TripsFragment : Fragment() {
             }
             render()
             if (selecting) notifySelectionCounts()
+            // 加载期间被吞掉的刷新在这里补跑（例如同步事件、从编辑页返回）
+            if (replay) load()
         }
+    }
+
+    /** 两页各自的搜索框共享同一个 query；同步时用 [syncingQuery] 防止互相触发。 */
+    private val searchInputs = mutableListOf<EditText>()
+    private var syncingQuery = false
+
+    private fun searchCard(ctx: android.content.Context): View {
+        val card = android.view.LayoutInflater.from(ctx).inflate(R.layout.view_trips_search, null)
+        val input = card.findViewById<EditText>(R.id.inputSearch)
+        val clear = card.findViewById<ImageView>(R.id.btnClearSearch)
+        input.setText(query)
+        input.setSelection(input.text.length)
+        clear.visibility = if (query.isBlank()) View.GONE else View.VISIBLE
+        input.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = Unit
+            override fun afterTextChanged(s: Editable?) {
+                if (syncingQuery) return
+                val text = s?.toString().orEmpty()
+                query = text
+                visibleCount.clear()
+                syncingQuery = true
+                searchInputs.forEach { other ->
+                    if (other !== input) {
+                        other.setText(text)
+                        other.setSelection(other.text.length)
+                    }
+                }
+                syncingQuery = false
+                searchInputs.forEach { other ->
+                    other.findViewById<ImageView>(R.id.btnClearSearch)?.visibility =
+                        if (text.isBlank()) View.GONE else View.VISIBLE
+                }
+                render()
+            }
+        })
+        clear.setOnClickListener { input.setText("") }
+        card.layoutParams = LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            dp(44),
+        ).apply { bottomMargin = dp(10) }
+        searchInputs += input
+        return card
+    }
+
+    private fun clearSearch() {
+        query = ""
+        syncingQuery = true
+        searchInputs.forEach { it.setText("") }
+        syncingQuery = false
+        visibleCount.clear()
+        render()
     }
 
     private fun render() {
@@ -266,7 +329,9 @@ class TripsFragment : Fragment() {
         val limit = visibleCount[target] ?: PAGE_SIZE
         val shown = allVisible.take(limit)
 
-        page.column.removeAllViews()
+        // 搜索卡固定在第 0 个位置，只重铺它后面的行
+        while (page.column.childCount > 1) page.column.removeViewAt(page.column.childCount - 1)
+        page.search?.visibility = if (selecting) View.GONE else View.VISIBLE
         rowsFor(target, keyword, limit, shown).forEach(page.column::addView)
         if (shown.isEmpty()) {
             page.column.addView(emptyView(searching = keyword.isNotBlank()))
@@ -344,6 +409,7 @@ class TripsFragment : Fragment() {
                 )
             }
             val page = Page(scroll, column)
+            page.search = searchCard(ctx).also { column.addView(it) }
             pages[segments[viewType]] = page
             return PageHolder(page)
         }
@@ -721,9 +787,7 @@ class TripsFragment : Fragment() {
         selectedCheckins.clear()
         selectedTrips.clear()
         // 搜索框让位：这时若还按关键字过滤，用户看不到过滤条件，容易把看不见的条目一起选上
-        binding.inputSearch.clearFocus()
-        if (query.isNotBlank()) binding.inputSearch.setText("")
-        binding.searchCard.visibility = View.GONE
+        clearSearch()
         invalidateRowCaches()
         render()
         notifySelectionCounts()
@@ -735,7 +799,6 @@ class TripsFragment : Fragment() {
         selecting = false
         selectedCheckins.clear()
         selectedTrips.clear()
-        binding.searchCard.visibility = View.VISIBLE
         invalidateRowCaches()
         render()
     }
@@ -854,9 +917,12 @@ class TripsFragment : Fragment() {
         val tripIds = trips.filter { it.uuid in tripUuids }.map { it.id }
         viewLifecycleOwner.lifecycleScope.runIo({
             val db = AppDatabase.get(requireContext())
-            // 先删行程：它的派生打卡由 TripRepo 在同一个事务里重算，不会留下孤儿
-            tripIds.forEach { TripRepo.delete(db, it) }
-            checkinIds.forEach { CheckinRepo.delete(db, it) }
+            // 整批一个事务：中途失败不会留下删了一半的列表
+            db.withTransaction {
+                // 先删行程：它的派生打卡由 TripRepo 在同一事务里重算，不会留下孤儿
+                tripIds.forEach { TripRepo.delete(db, it) }
+                checkinIds.forEach { CheckinRepo.delete(db, it) }
+            }
         }) { result ->
             if (!result.isSuccess) {
                 requireContext().notify(R.string.common_error, long = true)

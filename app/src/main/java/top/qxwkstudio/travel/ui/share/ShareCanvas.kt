@@ -136,12 +136,18 @@ abstract class ShareCanvas(context: Context) : View(context) {
 
     // ── 标题专用：带字体样式（字重/字距/横向压缩/手写子集）──
 
+    /** Typeface.create 不便宜：3 种字族 × 4 种样式的组合缓存下来，重绘时不再新建。 */
+    private val typefaceCache = HashMap<CardFont, Typeface>()
+
+    private fun typefaceOf(font: CardFont): Typeface =
+        typefaceCache.getOrPut(font) { font.typeface(context) }
+
     private fun applyFont(font: CardFont, size: Float, color: Int, letterSpacing: Float) {
-        text.typeface = font.typeface(context)
+        text.typeface = typefaceOf(font)
         text.textSize = size
         text.color = color
         text.letterSpacing = letterSpacing
-        text.textScaleX = font.textScaleX
+        text.textScaleX = 1f
     }
 
     protected fun measureStyled(value: String, size: Float, font: CardFont): Float {

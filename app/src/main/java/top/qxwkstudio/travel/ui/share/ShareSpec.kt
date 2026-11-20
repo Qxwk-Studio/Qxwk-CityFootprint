@@ -66,45 +66,81 @@ enum class PaperColor {
     }
 }
 
-/**
- * 标题字体。
- *
- * 汉字只有一套系统字形（Noto Sans CJK），所以 serif/monospace 只对英文有效 —— 只靠换族名
- * 在中文上「看不出区别」。因此：
- *  - 手写体打包了一个 OFL 的毛笔楷书子集（res/font/mashanzheng.ttf，仅城市表用字）；
- *  - 其余几档用字重、字距、横向压缩做出肉眼可辨的差别。
- */
-enum class CardFont {
-    DEFAULT, SERIF, MONO, LIGHT, CONDENSED, CURSIVE;
+/** 字体族：默认（系统无衬线）/ 手写（打包的毛笔楷书）/ 等宽（Noto Sans Mono 系列）。 */
+enum class FontFamily {
+    DEFAULT, HAND, MONO;
 
-    fun typeface(context: Context): Typeface = when (this) {
-        DEFAULT -> Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-        SERIF -> Typeface.create(Typeface.SERIF, Typeface.BOLD)
-        MONO -> Typeface.create(Typeface.MONOSPACE, Typeface.BOLD)
-        LIGHT -> Typeface.create("sans-serif-light", Typeface.NORMAL)
-        CONDENSED -> Typeface.create("sans-serif-condensed", Typeface.BOLD)
-        // 子集里只有城市表用字；万一缺字回退系统字体，宁可丑也不能是豆腐块
-        CURSIVE -> runCatching { ResourcesCompat.getFont(context, R.font.mashanzheng) }
+    fun base(context: Context): Typeface = when (this) {
+        DEFAULT -> Typeface.create("sans-serif", Typeface.NORMAL)
+        // AOSP 只有 monospace / serif-monospace；sans-serif-monospace 不存在，会静默回退默认无衬线
+        MONO -> Typeface.create(Typeface.MONOSPACE, Typeface.NORMAL)
+        // 打包的 OFL 毛笔楷书；万一缺字回退系统字体，宁可丑也不能是豆腐块
+        HAND -> runCatching { ResourcesCompat.getFont(context, R.font.mashanzheng) }
             .getOrNull() ?: Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
     }
 
-    /** 字距：细体与手写拉开一点，窄体压紧。 */
+    /** 字距：手写拉开一点，等宽压紧。 */
     val letterSpacing: Float
         get() = when (this) {
-            LIGHT -> 0.06f
-            SERIF -> 0.02f
-            CURSIVE -> 0.02f
-            CONDENSED -> -0.02f
-            else -> 0f
+            HAND -> 0.02f
+            MONO -> -0.01f
+            DEFAULT -> 0f
         }
 
-    /** 横向压缩：窄体用 0.85，肉眼明显更收。 */
-    val textScaleX: Float
-        get() = if (this == CONDENSED) 0.85f else 1f
+    companion object {
+        val ALL = listOf(DEFAULT, HAND, MONO)
+    }
+}
+
+/** 字体样式：默认 / 粗体 / 细体 / 斜体。 */
+enum class FontStyle {
+    NORMAL, BOLD, LIGHT, ITALIC;
+
+    val weight: Int
+        get() = when (this) {
+            BOLD -> Typeface.BOLD
+            ITALIC -> Typeface.ITALIC
+            else -> Typeface.NORMAL
+        }
+
+    /** 细体只有系统 sans 有独立字族，其余场景靠字距拉开观感。 */
+    val letterSpacing: Float get() = if (this == LIGHT) 0.05f else 0f
 
     companion object {
-        val ALL = listOf(DEFAULT, SERIF, MONO, LIGHT, CONDENSED, CURSIVE)
+        val ALL = listOf(NORMAL, BOLD, LIGHT, ITALIC)
     }
+}
+
+/** 字体族的中文/英文标签。 */
+val FontFamily.labelRes: Int
+    get() = when (this) {
+        FontFamily.DEFAULT -> R.string.share_font_default
+        FontFamily.HAND -> R.string.share_font_hand
+        FontFamily.MONO -> R.string.share_font_mono
+    }
+
+/** 字体样式标签。 */
+val FontStyle.labelRes: Int
+    get() = when (this) {
+        FontStyle.NORMAL -> R.string.share_style_default
+        FontStyle.BOLD -> R.string.share_style_bold
+        FontStyle.LIGHT -> R.string.share_style_light
+        FontStyle.ITALIC -> R.string.share_style_italic
+    }
+
+/** 标题字体 = 字体族 + 样式。画布只认这一个组合。 */
+data class CardFont(
+    val family: FontFamily = FontFamily.DEFAULT,
+    val style: FontStyle = FontStyle.NORMAL,
+) {
+    fun typeface(context: Context): Typeface {
+        if (style == FontStyle.LIGHT && family == FontFamily.DEFAULT) {
+            return Typeface.create("sans-serif-light", Typeface.NORMAL)
+        }
+        return Typeface.create(family.base(context), style.weight)
+    }
+
+    val letterSpacing: Float get() = family.letterSpacing + style.letterSpacing
 }
 
 /** 标题排列方向：横排 = 中英同一行；竖排 = 中英都竖着读。 */

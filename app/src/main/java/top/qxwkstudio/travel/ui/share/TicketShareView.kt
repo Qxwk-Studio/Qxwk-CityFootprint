@@ -28,7 +28,7 @@ internal class TicketShareView(context: Context) : ShareCanvas(context) {
 
     var titleZh = ""
     var titleEn = ""
-    var font = CardFont.DEFAULT
+    var font = CardFont()
     var layout = TextLayout.HORIZONTAL
 
     var dateText = ""

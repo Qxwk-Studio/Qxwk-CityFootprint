@@ -51,52 +51,6 @@
         </LinearLayout>
     </FrameLayout>
 
-    <LinearLayout
-        android:id="@+id/searchCard"
-        android:layout_width="match_parent"
-        android:layout_height="44dp"
-        android:layout_marginStart="16dp"
-        android:layout_marginEnd="16dp"
-        android:layout_marginBottom="10dp"
-        android:background="@drawable/bg_card"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:paddingStart="14dp"
-        android:paddingEnd="8dp">
-
-        <ImageView
-            android:layout_width="18dp"
-            android:layout_height="18dp"
-            android:contentDescription="@null"
-            android:src="@drawable/ic_search"
-            app:tint="@color/text_tertiary" />
-
-        <EditText
-            android:id="@+id/inputSearch"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_marginStart="8dp"
-            android:layout_weight="1"
-            android:background="@null"
-            android:hint="@string/trips_search_hint"
-            android:imeOptions="actionSearch"
-            android:inputType="text"
-            android:maxLines="1"
-            android:padding="0dp"
-            android:textColor="@color/fg"
-            android:textColorHint="@color/text_tertiary"
-            android:textSize="14sp" />
-
-        <ImageView
-            android:id="@+id/btnClearSearch"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
-            android:contentDescription="@null"
-            android:padding="9dp"
-            android:src="@drawable/ic_close"
-            android:visibility="gone"
-            app:tint="@color/text_tertiary" />
-    </LinearLayout>
 
     <!-- 页面（滚动容器 + 卡片列）在 TripsFragment 里按分段创建，相邻页常驻 -->
     <androidx.viewpager2.widget.ViewPager2

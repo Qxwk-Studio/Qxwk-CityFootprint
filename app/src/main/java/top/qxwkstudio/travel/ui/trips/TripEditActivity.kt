@@ -63,6 +63,9 @@ class TripEditActivity : LocalizedActivity() {
 
     private var initialSnapshot: String = ""
 
+    /** 保存/提交在跑：此时返回或重复保存都会让 runIo 取消、事务回滚。 */
+    private var busy = false
+
     private val picker = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         picking = false
         val target = pickingIndex
@@ -165,11 +168,14 @@ class TripEditActivity : LocalizedActivity() {
     private fun restoreDraft(state: Bundle?): Boolean {
         val json = state?.getString(KEY_DRAFT) ?: return false
         val timeline = Timeline.decode(json) ?: return false
+        // 同上：载入未完成时 snapshot 为空，不能当作「已恢复草稿」
+        val snapshot = state.getString(KEY_SNAPSHOT).orEmpty()
+        if (snapshot.isBlank()) return false
         binding.inputTitle.setText(state.getString(KEY_TITLE).orEmpty())
         binding.inputNote.setText(state.getString(KEY_NOTE).orEmpty())
         items.clear()
         items += timeline.items.map { DraftItem.from(it) }
-        initialSnapshot = state.getString(KEY_SNAPSHOT).orEmpty()
+        initialSnapshot = snapshot
         render()
         return true
     }
@@ -1157,6 +1163,7 @@ class TripEditActivity : LocalizedActivity() {
     }
 
     private fun save() {
+        if (busy) return
         val title = Sanitize.line(binding.inputTitle.text?.toString(), Limits.SHORT)
         if (title.isEmpty()) {
             showError(getString(R.string.trip_err_title))
@@ -1174,6 +1181,7 @@ class TripEditActivity : LocalizedActivity() {
             timeline = timeline,
         )
         val id = editingId
+        busy = true
         binding.btnSave.isEnabled = false
         binding.topBar.btnSaveIcon.isEnabled = false
         lifecycleScope.runIo({
@@ -1182,6 +1190,7 @@ class TripEditActivity : LocalizedActivity() {
             if (id == 0L) TripRepo.create(db, input, { lookup[it] })
             else TripRepo.update(db, id, input, { lookup[it] })
         }) { result ->
+            busy = false
             binding.btnSave.isEnabled = true
             binding.topBar.btnSaveIcon.isEnabled = true
             val error = result.exceptionOrNull()
@@ -1211,6 +1220,7 @@ class TripEditActivity : LocalizedActivity() {
     private fun isDirty(): Boolean = initialSnapshot.isNotEmpty() && snapshot() != initialSnapshot
 
     private fun confirmDiscard() {
+        if (busy) return
         if (!isDirty()) { finish(); return }
         MaterialAlertDialogBuilder(this)
             .setTitle(R.string.discard_title)

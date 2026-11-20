@@ -35,11 +35,7 @@
     <string name="share_zoom">Zoom</string>
 
     <string name="share_font_default">Default</string>
-    <string name="share_font_serif">Serif</string>
     <string name="share_font_mono">Mono</string>
-    <string name="share_font_light">Light</string>
-    <string name="share_font_condensed">Condensed</string>
-    <string name="share_font_cursive">Cursive</string>
 
     <string name="share_layout_h">Horizontal</string>
     <string name="share_layout_v">Vertical</string>
@@ -70,4 +66,11 @@
     <string name="share_range_day">By day</string>
     <string name="share_range_month">By month</string>
     <string name="share_range_year">By year</string>
+    <string name="share_font_hand">Hand</string>
+    <string name="share_label_font_style">Style</string>
+    <string name="share_style_default">Default</string>
+    <string name="share_style_bold">Bold</string>
+    <string name="share_style_light">Light</string>
+    <string name="share_style_italic">Italic</string>
+    <string name="share_date_lunar_upper">Uppercase</string>
 </resources>

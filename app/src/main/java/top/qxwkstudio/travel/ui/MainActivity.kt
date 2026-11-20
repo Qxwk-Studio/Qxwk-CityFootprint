@@ -153,40 +153,52 @@ class MainActivity : LocalizedActivity(), TripsSelectionHost {
 
     private fun setupAddMenu() {
         binding.topBar.btnMenu.setOnClickListener { anchor ->
-            val actions = mutableListOf(
-                MenuAction(R.drawable.ic_locate, R.string.menu_checkin) {
-                    startActivity(CheckinEditActivity.intent(this))
-                },
-                MenuAction(R.drawable.ic_luggage, R.string.menu_trip) {
-                    startActivity(TripEditActivity.intent(this))
-                },
-            )
+            // 行程页的三点菜单只放「重新编号 / 多选」；新建打卡与新建行程是首页「+」的职责
             if (binding.bottomNav.selectedItemId == R.id.tab_trips) {
-                actions += MenuAction(R.drawable.ic_sync, R.string.menu_renumber) {
-                    renumber()
-                }
-                // 多选只属于行程页：它要改顶栏与底栏，放在页面里做会够不着外壳
-                actions += MenuAction(R.drawable.ic_check, R.string.trips_menu_multi_select) {
-                    enterTripsSelection()
-                }
+                showIconMenu(
+                    anchor,
+                    listOf(
+                        MenuAction(R.drawable.ic_sync, R.string.menu_renumber) { renumber() },
+                        // 多选只属于行程页：它要改顶栏与底栏，放在页面里做会够不着外壳
+                        MenuAction(R.drawable.ic_check, R.string.trips_menu_multi_select) {
+                            enterTripsSelection()
+                        },
+                    ),
+                )
+                return@setOnClickListener
             }
-            showIconMenu(anchor, actions)
+            showIconMenu(
+                anchor,
+                listOf(
+                    MenuAction(R.drawable.ic_locate, R.string.menu_checkin) {
+                        startActivity(CheckinEditActivity.intent(this))
+                    },
+                    MenuAction(R.drawable.ic_luggage, R.string.menu_trip) {
+                        startActivity(TripEditActivity.intent(this))
+                    },
+                ),
+            )
         }
         updateTopMenuIcon()
     }
 
     /**
-     * 右上角按钮的形态按所在 tab 决定：首页是「+」，行程页是「⋮」（含重新编号 / 多选）。
-     * 地图 / 成就 / 我的三页没有这个入口，直接隐藏。
+     * 右上角按钮的形态按所在 tab 决定：
+     *  - 首页 / 地图 / 成就：「+」，新建打卡与行程；
+     *  - 行程页：「⋮」，含重新编号 / 多选；
+     *  - 「我的」没有这个入口，直接隐藏。
      */
     private fun updateTopMenuIcon(itemId: Int = binding.bottomNav.selectedItemId) {
         val onTrips = itemId == R.id.tab_trips
-        val visible = onTrips || itemId == R.id.tab_home
+        val visible = onTrips ||
+            itemId == R.id.tab_home ||
+            itemId == R.id.tab_map ||
+            itemId == R.id.tab_achievements
         binding.topBar.btnMenu.visibility = if (visible) View.VISIBLE else View.GONE
         if (!visible) return
         binding.topBar.btnMenu.setImageResource(if (onTrips) R.drawable.ic_more else R.drawable.ic_add)
         binding.topBar.btnMenu.contentDescription = getString(
-            if (onTrips) R.string.menu_renumber else R.string.common_add,
+            if (onTrips) R.string.menu_trips_actions else R.string.common_add,
         )
     }
 

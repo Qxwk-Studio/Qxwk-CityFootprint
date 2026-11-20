@@ -48,11 +48,11 @@
     <string name="sync_login_confirm_message">确认登录 %1$s？</string>
     <string name="sync_login_switch_message">这是另一个账号。本地数据会同步到新账号，是否保留？</string>
     <string name="sync_login_keep">保留本地数据</string>
-    <string name="sync_login_wipe">清空本地数据后登录</string>
+    <string name="sync_login_wipe">重置本机数据后登录</string>
     <string name="sync_logout_keep">仅退出</string>
-    <string name="sync_logout_wipe">退出并清空本地数据</string>
-    <string name="sync_wipe_warning">清空后本机行程、打卡和成就会删除，且不能恢复。</string>
-    <string name="sync_wipe_done">本地数据已清空</string>
+    <string name="sync_logout_wipe">退出并重置本机数据</string>
+    <string name="sync_wipe_warning">重置后本机行程、打卡和成就将清空，登录同步后会从云端恢复。</string>
+    <string name="sync_wipe_done">本机数据已重置，稍后从云端恢复</string>
     <string name="sync_conflict_title">同步冲突</string>
     <string name="sync_conflict_message">本地：%1$s
 远端：%2$s</string>

@@ -188,6 +188,9 @@ class HomeFragment : Fragment() {
      * 轨道有 3dp padding：可分配宽度是「轨道宽 - 左右 padding」，一半给「次数」、一半给「时间」。
      * 划动用 180ms，与屏幕其它过渡同档；首次进来直接落位（不播动画），免得看见它从左边滑过去。
      */
+    /** 排名段的宽度监听：每次重挂前先摘掉上一个，避免切换维度时越积越多。 */
+    private var pillLayoutListener: android.view.View.OnLayoutChangeListener? = null
+
     private fun placeSegPill(animate: Boolean) {
         val b = binding
         val track = b.segRank
@@ -216,9 +219,12 @@ class HomeFragment : Fragment() {
         // 首次进入时 width 可能还是 0（add + 布局同一帧），post 里取不到就靠这次布局回调兜住；
         // 之后旋转/分屏改变宽度同样会重新落位。
         track.post { place() }
-        track.addOnLayoutChangeListener { _, left, _, right, _, oldLeft, _, oldRight, _ ->
+        pillLayoutListener?.let(track::removeOnLayoutChangeListener)
+        val listener = android.view.View.OnLayoutChangeListener { _, left, _, right, _, oldLeft, _, oldRight, _ ->
             if (right - left != oldRight - oldLeft) place()
         }
+        pillLayoutListener = listener
+        track.addOnLayoutChangeListener(listener)
     }
 
     private fun divider(): View = View(requireContext()).apply {

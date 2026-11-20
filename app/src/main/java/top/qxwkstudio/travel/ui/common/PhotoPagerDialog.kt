@@ -68,13 +68,23 @@ internal fun showPhotoDialog(context: Context, paths: List<String>, startIndex: 
             setColor(0xCC1F2937.toInt())
         }
         setOnClickListener {
-            val bitmap = pager.currentBitmap()
-            val ok = bitmap != null && savePagerBitmap(context, bitmap)
-            Toast.makeText(
-                context,
-                if (ok) R.string.photo_saved else R.string.photo_save_failed,
-                Toast.LENGTH_SHORT,
-            ).show()
+            val bitmap = pager.currentBitmap() ?: run {
+                Toast.makeText(context, R.string.photo_save_failed, Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            // 2048px 的 JPEG 压缩要上百毫秒：别压在主线程
+            isEnabled = false
+            Thread {
+                val ok = savePagerBitmap(context, bitmap)
+                android.os.Handler(android.os.Looper.getMainLooper()).post {
+                    isEnabled = true
+                    Toast.makeText(
+                        context,
+                        if (ok) R.string.photo_saved else R.string.photo_save_failed,
+                        Toast.LENGTH_SHORT,
+                    ).show()
+                }
+            }.apply { name = "photo-save"; isDaemon = true }.start()
         }
         layoutParams = FrameLayout.LayoutParams(
             ViewGroup.LayoutParams.WRAP_CONTENT,
@@ -132,7 +142,16 @@ private fun savePagerBitmap(context: Context, bitmap: Bitmap): Boolean = runCatc
         }
         val resolver = context.contentResolver
         val uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values) ?: return false
-        resolver.openOutputStream(uri)?.use { bitmap.compress(Bitmap.CompressFormat.JPEG, 95, it) }
+        // 压缩/写流失败要把刚插入的空条目删掉，否则会静默留下一条 IS_PENDING 的隐藏图
+        val written = runCatching {
+            resolver.openOutputStream(uri)?.use { out ->
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 95, out)
+            } ?: false
+        }.getOrDefault(false)
+        if (!written) {
+            runCatching { resolver.delete(uri, null, null) }
+            return false
+        }
         values.clear()
         values.put(MediaStore.Images.Media.IS_PENDING, 0)
         resolver.update(uri, values, null, null)

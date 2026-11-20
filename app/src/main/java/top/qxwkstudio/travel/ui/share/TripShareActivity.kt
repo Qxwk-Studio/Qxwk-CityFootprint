@@ -31,7 +31,7 @@ class TripShareActivity : ShareActivityBase() {
     private var zoom = 100
     private var dx = 0
     private var dy = 0
-    private var font = CardFont.DEFAULT
+    private var font = CardFont()
     private var rangeUnit = RangeUnit.DAY
     private var selectedCities = linkedSetOf<String>()
     private var timelineOn = true
@@ -199,17 +199,22 @@ class TripShareActivity : ShareActivityBase() {
             body.addView(
                 chips(
                     labelRes = R.string.share_label_font,
-                    options = listOf(
-                        getString(R.string.share_font_default),
-                        getString(R.string.share_font_serif),
-                        getString(R.string.share_font_mono),
-                        getString(R.string.share_font_light),
-                        getString(R.string.share_font_condensed),
-                        getString(R.string.share_font_cursive),
-                    ),
-                    selected = CardFont.ALL.indexOf(font),
+                    options = FontFamily.ALL.map { getString(it.labelRes) },
+                    selected = FontFamily.ALL.indexOf(font.family),
                 ) { index ->
-                    font = CardFont.ALL[index]
+                    font = font.copy(family = FontFamily.ALL[index])
+                    view.font = font
+                    view.refresh()
+                    fill()
+                },
+            )
+            body.addView(
+                chips(
+                    labelRes = R.string.share_label_font_style,
+                    options = FontStyle.ALL.map { getString(it.labelRes) },
+                    selected = FontStyle.ALL.indexOf(font.style),
+                ) { index ->
+                    font = font.copy(style = FontStyle.ALL[index])
                     view.font = font
                     view.refresh()
                     fill()

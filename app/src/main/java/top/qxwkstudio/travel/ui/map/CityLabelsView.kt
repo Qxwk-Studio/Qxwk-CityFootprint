@@ -62,8 +62,16 @@ class CityLabelsView @JvmOverloads constructor(
         invalidate()
     }
 
+    /** 复用的碰撞矩形：每帧只改数值，避免给每个标签新建 RectF。 */
+    private val rectPool = mutableListOf<RectF>()
+
     fun submit(newLabels: List<Label>) {
-        labels = newLabels
+        // 排序放在这里：onDraw 每帧都跑，拖动/缩放时按名称重排是纯浪费
+        labels = newLabels.sortedWith(
+            compareByDescending<Label> { it.visited }
+                .thenByDescending { it.major }
+                .thenBy { it.name },
+        )
         invalidate()
     }
 
@@ -74,20 +82,17 @@ class CityLabelsView @JvmOverloads constructor(
         // 低缩放只保留主要城市；到 z4.2 才放开全部城市
         val showAll = zoom >= 4.2f
         val size = (6f + (zoom - 2f) * 1.5f).coerceIn(6f, 18f) * density
-        listOf(basePaint, visitedPaint, haloPaint).forEach { it.textSize = size }
+        basePaint.textSize = size
+        visitedPaint.textSize = size
+        haloPaint.textSize = size
         haloPaint.strokeWidth = (size * 0.10f).coerceAtLeast(1f * density)
 
         val metrics = basePaint.fontMetrics
         val baselineOffset = -(metrics.ascent + metrics.descent) / 2f
-        val occupied = mutableListOf<RectF>()
+        var placed = 0
 
-        // 去过的城市 > 主要城市 > 普通城市；同优先级按名称稳定排序
-        val ordered = labels.sortedWith(
-            compareByDescending<Label> { it.visited }
-                .thenByDescending { it.major }
-                .thenBy { it.name },
-        )
-        ordered.forEach { label ->
+        // 去过的城市 > 主要城市 > 普通城市（顺序已在 submit 里排好）
+        labels.forEach { label ->
             if (!showAll && !label.visited && !label.major) return@forEach
             val point = mapLibre.projection.toScreenLocation(label.latLng)
             if (point.x < 0 || point.y < 0 || point.x > width || point.y > height) return@forEach
@@ -98,9 +103,13 @@ class CityLabelsView @JvmOverloads constructor(
             if (textWidth > width * 0.36f) return@forEach
             val x = point.x - textWidth / 2f
             val y = point.y + baselineOffset
-            val rect = RectF(x, point.y - size, x + textWidth, point.y + size)
-            if (occupied.any { RectF.intersects(it, rect) }) return@forEach
-            occupied += rect
+            // 复用池里的矩形：只重设数值，不新建对象
+            val rect = if (placed < rectPool.size) rectPool[placed] else RectF().also { rectPool += it }
+            rect.set(x, point.y - size, x + textWidth, point.y + size)
+            for (i in 0 until placed) {
+                if (RectF.intersects(rectPool[i], rect)) return@forEach
+            }
+            placed++
 
             canvas.drawText(label.name, x, y, haloPaint)
             canvas.drawText(label.name, x, y, paint)

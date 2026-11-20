@@ -263,7 +263,10 @@ internal object SyncEngine {
         val uuid = data["uuid"]?.jsonPrimitive?.contentOrNull ?: return
         val existing = db.checkins().byUuidAny(uuid)
         val remoteModified = data["client_modified_at"]?.jsonPrimitive?.longOrNull ?: 0L
-        // 与行程走同一条规则：时间相等时不要当「远端更新」覆盖本地未推送的修改
+        // 与行程一致：本地还有没推上去的修改时，远端快照不能直接覆盖（否则多设备下静默丢编辑）
+        if (!force && existing != null &&
+            SyncRules.shouldPush(existing.modifiedAt, Prefs.syncSyncedAt("checkin", uuid))) return
+        // 时间相等时也不要当「远端更新」
         if (!SyncRules.shouldApplyRemote(existing?.modifiedAt ?: 0L, remoteModified, force)) return
         val deletedAt = data["deleted_at"]?.jsonPrimitive?.longOrNull
         if (deletedAt != null) {

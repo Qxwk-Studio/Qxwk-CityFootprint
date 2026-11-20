@@ -173,12 +173,25 @@ class MineFragment : Fragment() {
         refreshLocal()
     }
 
+    /** 头像 URL / 位图缓存：bindProfile 会被 load()、refreshLocal() 多次触发，不能每次都下。 */
+    private var avatarUrl: String? = null
+    private var avatarBitmap: android.graphics.Bitmap? = null
+    private var avatarLoading = false
+
     private fun loadSyncedAvatar(url: String?) {
         val safeUrl = url?.takeIf { it.startsWith("https://") && Prefs.networkAllowed }
         if (safeUrl == null) {
+            avatarUrl = null
+            avatarBitmap = null
             resetAvatarIcon(currentBadge)
             return
         }
+        if (avatarUrl == safeUrl) {
+            avatarBitmap?.let { showAvatar(it); return }
+            if (avatarLoading) return
+        }
+        avatarUrl = safeUrl
+        avatarLoading = true
         viewLifecycleOwner.lifecycleScope.runIo({
             val connection = (URL(safeUrl).openConnection() as HttpURLConnection).apply {
                 connectTimeout = 8_000
@@ -191,18 +204,25 @@ class MineFragment : Fragment() {
                 connection.disconnect()
             }
         }) { result ->
+            avatarLoading = false
             val bitmap = result.getOrNull()
             if (bitmap == null) {
+                avatarBitmap = null
                 resetAvatarIcon(currentBadge)
             } else {
-                _binding?.iconAvatar?.apply {
-                    setPadding(0, 0, 0, 0)
-                    scaleType = android.widget.ImageView.ScaleType.CENTER_CROP
-                    imageTintList = null
-                    clipToOutline = true
-                    setImageBitmap(bitmap)
-                }
+                avatarBitmap = bitmap
+                showAvatar(bitmap)
             }
+        }
+    }
+
+    private fun showAvatar(bitmap: android.graphics.Bitmap) {
+        _binding?.iconAvatar?.apply {
+            setPadding(0, 0, 0, 0)
+            scaleType = android.widget.ImageView.ScaleType.CENTER_CROP
+            imageTintList = null
+            clipToOutline = true
+            setImageBitmap(bitmap)
         }
     }
 

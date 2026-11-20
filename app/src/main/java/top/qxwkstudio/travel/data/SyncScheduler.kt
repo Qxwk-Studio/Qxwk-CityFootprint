@@ -14,6 +14,8 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import top.qxwkstudio.travel.R
+import top.qxwkstudio.travel.net.Http
+import top.qxwkstudio.travel.net.HttpException
 import top.qxwkstudio.travel.data.db.AppDatabase
 
 /**
@@ -63,6 +65,9 @@ internal object SyncScheduler {
         debounce = null
     }
 
+    /** 与自动同步互斥的操作（手动解决冲突等）：避免 sync 收尾时用启动快照覆盖用户选择。 */
+    suspend fun <T> runExclusive(block: suspend () -> T): T = mutex.withLock { block() }
+
     suspend fun runNow(context: Context, force: Boolean): Result<SyncEngine.Report>? {
         if (!Prefs.legalAccepted) return null
         // 网络开关是无条件闸门：force 只跳过「节流/开关未开」的等待，不能绕过用户关掉的网络
@@ -104,6 +109,16 @@ internal object SyncScheduler {
     }
 
     private fun classify(error: Throwable): String {
+        // 有状态码就按状态码判：不再靠 body 里是否出现 "401" 猜（代理错误页也会带这个数字）
+        (error as? HttpException)?.let { http ->
+            return when {
+                http.code == 401 -> "auth"
+                http.code == Http.NETWORK_FAILED || http.code <= 0 -> "network"
+                http.code in 500..599 -> "server"
+                http.code in 400..499 -> "server"
+                else -> "unknown"
+            }
+        }
         val msg = error.message.orEmpty()
         return when {
             msg.contains("401") || msg.contains("unauthorized") || msg.contains("登录") -> "auth"
