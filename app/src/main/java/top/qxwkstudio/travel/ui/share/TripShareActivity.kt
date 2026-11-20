@@ -250,7 +250,8 @@ class TripShareActivity : ShareActivityBase() {
 
     private fun cityCard() {
         val body = addCard(R.drawable.ic_city, R.string.share_card_city)
-        val cities = segments.map { it.city }.filter { it.isNotBlank() }
+        // 同一座城市可能出现多个城市段：勾选列表与海报都只显示一次
+        val cities = segments.map { it.city }.filter { it.isNotBlank() }.distinct()
         if (cities.isEmpty()) {
             body.addView(android.widget.TextView(this).apply {
                 setText(R.string.share_city_empty)
@@ -430,6 +431,7 @@ class TripShareActivity : ShareActivityBase() {
     private fun applyCities() {
         view.cities = segments.map { it.city }
             .filter { it.isNotBlank() && it in selectedCities }
+            .distinct()
             .map { CityStore.displayName(this, it) }
     }
 

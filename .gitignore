@@ -11,3 +11,5 @@ release-notes.md
 
 # CI 生成的 D1 发版 SQL
 backend/.release-version.sql
+
+dist-local/

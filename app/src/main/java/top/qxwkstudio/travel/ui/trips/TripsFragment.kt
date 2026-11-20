@@ -171,7 +171,11 @@ class TripsFragment : Fragment() {
 
     override fun onHiddenChanged(hidden: Boolean) {
         super.onHiddenChanged(hidden)
-        if (!hidden) { _binding?.root?.fadeSlideIn(); load() }
+        if (!hidden) {
+            _binding?.root?.fadeSlideIn()
+            // 数据没变就别重读重铺：切 tab 的卡顿主要来自这里的两页整铺
+            if (seenVersion != DataVersion.current) load()
+        }
     }
 
     /** 从打卡页回来时本页没被 hide 过，靠版本号判断要不要重读（同 HomeFragment）。 */
