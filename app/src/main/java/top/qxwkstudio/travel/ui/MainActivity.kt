@@ -183,12 +183,17 @@ class MainActivity : LocalizedActivity(), TripsSelectionHost {
     }
 
     /**
-     * 右上角按钮的形态按所在 tab 决定：首页是「+」，行程页是「⋮」（含重新编号 / 多选）。
-     * 地图 / 成就 / 我的三页没有这个入口，直接隐藏。
+     * 右上角按钮的形态按所在 tab 决定：
+     *  - 首页 / 地图 / 成就：「+」，新建打卡与行程；
+     *  - 行程页：「⋮」，含重新编号 / 多选；
+     *  - 「我的」没有这个入口，直接隐藏。
      */
     private fun updateTopMenuIcon(itemId: Int = binding.bottomNav.selectedItemId) {
         val onTrips = itemId == R.id.tab_trips
-        val visible = onTrips || itemId == R.id.tab_home
+        val visible = onTrips ||
+            itemId == R.id.tab_home ||
+            itemId == R.id.tab_map ||
+            itemId == R.id.tab_achievements
         binding.topBar.btnMenu.visibility = if (visible) View.VISIBLE else View.GONE
         if (!visible) return
         binding.topBar.btnMenu.setImageResource(if (onTrips) R.drawable.ic_more else R.drawable.ic_add)
