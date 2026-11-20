@@ -7,7 +7,7 @@ import java.io.OutputStream
 import java.security.MessageDigest
 import java.security.SecureRandom
 import javax.crypto.Cipher
-import javax.crypto.CipherInputStream
+import java.io.IOException
 import javax.crypto.CipherOutputStream
 import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
@@ -58,26 +58,93 @@ internal object BackupCrypto {
         }
     }
 
-    /** 打开备份：返回 (flags, 解密后的流)。调用方负责关闭，并自行按 flags 解压。 */
+    /**
+     * 打开备份：返回 (flags, 解密后的流)。调用方负责关闭，并自行按 flags 解压。
+     *
+     * 不用 `CipherInputStream`：Android libcore 的实现会把 GCM 校验失败当成 EOF，
+     * 篡改/截断的备份会被当作完整流继续解析。这里自己驱动 cipher，读到结尾显式
+     * `doFinal()` —— 标签不对就抛 `IOException`。
+     */
     fun open(source: File): Pair<Int, InputStream> {
         val raw = source.inputStream().buffered()
         val header = ByteArray(HEADER_LEN)
-        var offset = 0
-        while (offset < HEADER_LEN) {
-            val read = raw.read(header, offset, HEADER_LEN - offset)
-            require(read > 0) { "备份文件不完整" }
-            offset += read
+        try {
+            var offset = 0
+            while (offset < HEADER_LEN) {
+                val read = raw.read(header, offset, HEADER_LEN - offset)
+                require(read > 0) { "备份文件不完整" }
+                offset += read
+            }
+            require(String(header, 0, 4, Charsets.US_ASCII) == MAGIC) { "不是本应用导出的备份" }
+            val version = header[4].toInt()
+            require(version == VERSION) { "备份版本不支持：$version" }
+            val flags = header[5].toInt()
+            val iv = header.copyOfRange(6, 6 + IV_LEN)
+            val cipher = Cipher.getInstance("AES/GCM/NoPadding").apply {
+                init(Cipher.DECRYPT_MODE, key, GCMParameterSpec(128, iv))
+                updateAAD(header)
+            }
+            return flags to CipherBackedStream(raw, cipher)
+        } catch (error: Throwable) {
+            // 头校验失败也不能漏 fd（GCM 失败在流尾，走 close 路径）
+            runCatching { raw.close() }
+            throw error
         }
-        require(String(header, 0, 4, Charsets.US_ASCII) == MAGIC) { "不是本应用导出的备份" }
-        val version = header[4].toInt()
-        require(version == VERSION) { "备份版本不支持：$version" }
-        val flags = header[5].toInt()
-        val iv = header.copyOfRange(6, 6 + IV_LEN)
-        val cipher = Cipher.getInstance("AES/GCM/NoPadding").apply {
-            init(Cipher.DECRYPT_MODE, key, GCMParameterSpec(128, iv))
-            updateAAD(header)
+    }
+
+    /** 流式解密：`update` 输出明文，EOF 时 `doFinal` 校验 GCM 标签。 */
+    private class CipherBackedStream(
+        private val raw: InputStream,
+        private val cipher: Cipher,
+    ) : InputStream() {
+        private var buffer: ByteArray? = null
+        private var position = 0
+        private var finished = false
+
+        override fun read(): Int {
+            val one = ByteArray(1)
+            return if (read(one, 0, 1) == -1) -1 else one[0].toInt() and 0xFF
         }
-        return flags to CipherInputStream(raw, cipher)
+
+        override fun read(b: ByteArray, off: Int, len: Int): Int {
+            if (len == 0) return 0
+            while (true) {
+                val current = buffer
+                if (current != null && position < current.size) {
+                    val count = minOf(len, current.size - position)
+                    System.arraycopy(current, position, b, off, count)
+                    position += count
+                    return count
+                }
+                if (finished) return -1
+                val chunk = ByteArray(16 * 1024)
+                val read = raw.read(chunk)
+                val out: ByteArray = if (read == -1) {
+                    finished = true
+                    try {
+                        cipher.doFinal()
+                    } catch (error: Throwable) {
+                        throw IOException("备份已损坏或被篡改", error)
+                    }
+                } else {
+                    try {
+                        cipher.update(chunk, 0, read)
+                    } catch (error: Throwable) {
+                        throw IOException("备份已损坏或被篡改", error)
+                    }
+                }
+                if (out.isNotEmpty()) {
+                    buffer = out
+                    position = 0
+                } else if (finished) {
+                    return -1
+                }
+            }
+        }
+
+        override fun close() {
+            runCatching { raw.close() }
+        }
     }
 
     private fun header(flags: Int, iv: ByteArray): ByteArray {

@@ -68,12 +68,22 @@ class MineFragment : Fragment() {
     /** 选 .bak 文件（内容是不透明二进制，MIME 用通配符）。 */
     private val importPicker = registerForActivityResult(
         androidx.activity.result.contract.ActivityResultContracts.OpenDocument(),
-    ) { uri -> if (uri != null) confirmImport(uri) }
+    ) { uri ->
+        if (uri == null) return@registerForActivityResult
+        // 校验要读 provider（main 上做会卡）与文件头，放到 IO
+        viewLifecycleOwner.lifecycleScope.runIo({ validateBackup(uri) }) { result ->
+            if (result.getOrDefault(false)) {
+                confirmImport(uri)
+            } else {
+                context?.notify(R.string.import_failed, long = true)
+            }
+        }
+    }
 
     private val exportPermission = registerForActivityResult(
         androidx.activity.result.contract.ActivityResultContracts.RequestPermission(),
     ) { granted ->
-        if (granted) openExportConfirm() else requireContext().notify(R.string.export_permission)
+        if (granted) requireActivity().pickExportFormat { format -> doExport(format) } else requireContext().notify(R.string.export_permission)
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -392,26 +402,24 @@ class MineFragment : Fragment() {
             .show()
     }
 
-    private fun confirmImport(uri: android.net.Uri) {
-        // 只接受本应用导出的 .bak：先看文件名与文件头 magic，不符合直接拒绝，不进确认弹窗
+    /** 只接受本应用导出的 .bak：文件名 + 文件头 magic，都过才进确认。IO 线程调用。 */
+    private fun validateBackup(uri: android.net.Uri): Boolean {
+        val resolver = requireContext().contentResolver
         val name = displayName(uri)
-        val extensionOk = name == null || name.endsWith(".bak", ignoreCase = true)
-        val headerOk = runCatching {
-            requireContext().contentResolver.openInputStream(uri)?.use { input ->
-                val head = ByteArray(4)
-                var read = 0
-                while (read < 4) {
-                    val count = input.read(head, read, 4 - read)
-                    if (count <= 0) break
-                    read += count
-                }
-                read == 4 && String(head, Charsets.US_ASCII) == top.qxwkstudio.travel.data.BackupCrypto.MAGIC
-            } ?: false
-        }.getOrDefault(false)
-        if (!extensionOk || !headerOk) {
-            requireContext().notify(R.string.import_failed, long = true)
-            return
-        }
+        if (name != null && !name.endsWith(".bak", ignoreCase = true)) return false
+        return resolver.openInputStream(uri)?.use { input ->
+            val head = ByteArray(4)
+            var read = 0
+            while (read < 4) {
+                val count = input.read(head, read, 4 - read)
+                if (count <= 0) break
+                read += count
+            }
+            read == 4 && String(head, Charsets.US_ASCII) == top.qxwkstudio.travel.data.BackupCrypto.MAGIC
+        } ?: false
+    }
+
+    private fun confirmImport(uri: android.net.Uri) {
         MaterialAlertDialogBuilder(requireContext())
             .setTitle(R.string.import_confirm_title)
             .setMessage(R.string.import_confirm_message)
@@ -444,27 +452,31 @@ class MineFragment : Fragment() {
             .setView(bar)
             .setCancelable(false)
             .show()
+        val appContext = requireContext().applicationContext
+        val main = android.os.Handler(android.os.Looper.getMainLooper())
         viewLifecycleOwner.lifecycleScope.runIo({
-            val ctx = requireContext().applicationContext
-            val temp = java.io.File(ctx.cacheDir, "import-input.bak")
-            ctx.contentResolver.openInputStream(uri)?.use { input ->
-                temp.outputStream().use { input.copyTo(it) }
-            } ?: error("无法读取备份文件")
-            val report = DataImport.import(ctx, AppDatabase.get(ctx), temp) { done, total ->
-                requireActivity().runOnUiThread { bar.progress = if (total <= 0) 0 else done * 100 / total }
+            val temp = java.io.File(appContext.cacheDir, "import-input-${System.currentTimeMillis()}.bak")
+            try {
+                appContext.contentResolver.openInputStream(uri)?.use { input ->
+                    temp.outputStream().use { input.copyTo(it) }
+                } ?: error("无法读取备份文件")
+                DataImport.import(appContext, AppDatabase.get(appContext), temp) { done, total ->
+                    // 进度只碰 ProgressBar 对象，不碰 Fragment/Activity，旋转也不会崩
+                    main.post { bar.progress = if (total <= 0) 0 else done * 100 / total }
+                }
+            } finally {
+                temp.delete()
             }
-            temp.delete()
-            report
         }) { result ->
             importing = false
             dialog.dismiss()
             val report = result.getOrNull()
             if (report == null) {
-                requireContext().notify(R.string.import_failed, long = true)
+                context?.notify(R.string.import_failed, long = true)
                 return@runIo
             }
-            requireContext().notify(
-                getString(
+            context?.notify(
+                requireContext().getString(
                     R.string.import_done,
                     report.tripsAdded, report.checkinsAdded,
                     report.tripsUpdated, report.checkinsUpdated,
@@ -486,18 +498,7 @@ class MineFragment : Fragment() {
             exportPermission.launch(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
             return
         }
-        openExportConfirm()
-    }
-
-    private fun openExportConfirm() {
-        MaterialAlertDialogBuilder(requireContext())
-            .setTitle(R.string.export_confirm_title)
-            .setMessage(R.string.export_confirm_message)
-            .setPositiveButton(R.string.common_confirm) { _, _ ->
-                requireActivity().pickExportFormat { format -> doExport(format) }
-            }
-            .setNegativeButton(R.string.common_cancel, null)
-            .show()
+        requireActivity().pickExportFormat { format -> doExport(format) }
     }
 
     private fun doExport(format: DataExport.Format = DataExport.Format.ZIP) {

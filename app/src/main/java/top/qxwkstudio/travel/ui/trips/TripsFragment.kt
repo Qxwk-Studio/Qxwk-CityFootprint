@@ -203,7 +203,12 @@ class TripsFragment : Fragment() {
             loading = false
             val replay = pendingLoad
             pendingLoad = false
-            val (tripList, checkinList) = result.getOrNull() ?: return@runIo
+            val data = result.getOrNull()
+            if (data == null) {
+                if (replay) load()
+                return@runIo
+            }
+            val (tripList, checkinList) = data
             trips = tripList
             checkins = checkinList
             seqByUuid = tripList.associate { it.uuid to it.seqNo }

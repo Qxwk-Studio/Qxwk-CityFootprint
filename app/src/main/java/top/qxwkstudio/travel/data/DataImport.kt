@@ -43,6 +43,8 @@ object DataImport {
             val (flags, decrypted) = BackupCrypto.open(source)
             val content = (if (flags and BackupCrypto.FLAG_DEFLATE != 0) InflaterInputStream(decrypted) else decrypted)
                 .use { stream -> BackupContainer.read(stream, tempDir, onProgress) }
+            require(content.manifest.optString("type") == "city-footprint-export") { "备份类型不匹配" }
+            require(content.manifest.optInt("version", -1) == 1) { "备份数据版本不支持" }
 
             // 照片落盘并建立「包内条目 → 新绝对路径」映射
             val photoDir = File(context.filesDir, "photos").apply { mkdirs() }
@@ -89,7 +91,7 @@ object DataImport {
                             totalCostCents = json.optInt("totalCostCents"),
                             tripState = json.optInt("tripState", 2),
                             modifiedAt = importedModified,
-                            syncState = SyncState.PENDING,
+                            syncState = SyncState.LOCAL_ONLY,
                         )
                         db.trips().insert(entity)
                         TripRepo.recomputeDerivedForSync(db, entity) { cityLookup[it] }
@@ -106,7 +108,7 @@ object DataImport {
                             tripState = json.optInt("tripState", 2),
                             modifiedAt = importedModified,
                             deletedAt = null,
-                            syncState = SyncState.PENDING,
+                            syncState = SyncState.LOCAL_ONLY,
                         )
                         db.trips().update(entity)
                         TripRepo.recomputeDerivedForSync(db, entity) { cityLookup[it] }
@@ -142,7 +144,7 @@ object DataImport {
                                 stayDays = json.optInt("stayDays", -1).takeIf { it > 0 },
                                 seqNo = db.checkins().nextManualSeqNo(),
                                 modifiedAt = importedModified,
-                                syncState = SyncState.PENDING,
+                                syncState = SyncState.LOCAL_ONLY,
                             ),
                         )
                         checkinsAdded++
@@ -164,7 +166,7 @@ object DataImport {
                                 stayDays = json.optInt("stayDays", -1).takeIf { it > 0 },
                                 modifiedAt = importedModified,
                                 deletedAt = null,
-                                syncState = SyncState.PENDING,
+                                syncState = SyncState.LOCAL_ONLY,
                             ),
                         )
                         checkinsUpdated++
