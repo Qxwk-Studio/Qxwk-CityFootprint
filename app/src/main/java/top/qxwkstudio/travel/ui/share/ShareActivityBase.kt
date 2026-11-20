@@ -580,15 +580,20 @@ internal object SharePhoto {
         } else {
             top.qxwkstudio.travel.ui.common.PhotoStore.load(path, 2048)?.let { return it }
         }
-        return runCatching { BitmapFactory.decodeFile(path) }.getOrNull()
+        // 兜底解码也必须按 maxPx 采样：副本不在 PhotoFiles 目录里时会走到这里，
+        // 直接 decodeFile 会把 12–48MP 原图整个展开
+        return runCatching {
+            val target = if (maxPx > 0) maxPx else 2048
+            val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            BitmapFactory.decodeFile(path, bounds)
+            var sample = 1
+            while (maxOf(bounds.outWidth, bounds.outHeight) / sample > target) sample *= 2
+            BitmapFactory.decodeFile(path, BitmapFactory.Options().apply { inSampleSize = sample })
+        }.getOrNull()
     }
 
-    fun copyFromUri(context: Context, uri: Uri): String? = runCatching {
-        val dir = File(context.cacheDir, "share").apply { mkdirs() }
-        val target = File(dir, "picked-${System.currentTimeMillis()}.jpg")
-        context.contentResolver.openInputStream(uri)?.use { input ->
-            target.outputStream().use { output -> input.copyTo(output) }
-        } ?: return null
-        target.absolutePath
-    }.getOrNull()
+    /** 相册选图：走 PhotoFiles（两段式解码 + EXIF 转正 + JPEG 压缩），不要原样拷原图。 */
+    fun copyFromUri(context: Context, uri: Uri): String? =
+        runCatching { top.qxwkstudio.travel.data.PhotoFiles.save(context, uri, "share_${System.currentTimeMillis()}") }
+            .getOrNull()
 }

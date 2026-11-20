@@ -22,6 +22,9 @@ object PhotoFiles {
 
     @Volatile private var rootPath: String? = null
 
+    /** 本次进程里刚写入的文件：清扫时一律跳过（系统时间跳变也不会误删）。 */
+    private val recentFiles = java.util.Collections.synchronizedSet(mutableSetOf<String>())
+
     private fun dir(context: Context): File = File(context.filesDir, DIR)
 
     /** Application 启动时调用一次：记录照片目录，load 时校验路径不越界。 */
@@ -40,7 +43,8 @@ object PhotoFiles {
         }.isSuccess && bounds.outWidth > 0
         if (!probed) return null
         var sample = 1
-        while (maxOf(bounds.outWidth, bounds.outHeight) / (sample * 2) >= MAX_PX) sample *= 2
+        // 目标：解码结果不超过 MAX_PX（旧条件 `>=` 在 4000px 时会解到 4000，峰值上百 MB）
+        while (maxOf(bounds.outWidth, bounds.outHeight) / sample > MAX_PX) sample *= 2
         val bitmap = runCatching {
             resolver.openInputStream(uri)?.use {
                 BitmapFactory.decodeStream(it, null, BitmapFactory.Options().apply { inSampleSize = sample })
@@ -63,35 +67,26 @@ object PhotoFiles {
                 else -> 0f
             }
         }
-        val upright = if (rotation == 0f) {
+        // 旋转与缩放合成一次矩阵变换：旧写法先建旋转图再缩放，中间位图会让峰值翻倍
+        // 旋转 90/270 不改变最长边，所以比例可以直接按原图算
+        val longest = maxOf(bitmap.width, bitmap.height)
+        val ratio = if (longest > MAX_PX) MAX_PX.toFloat() / longest else 1f
+        val scaled = if (rotation == 0f && ratio >= 1f) {
             bitmap
         } else {
-            Bitmap.createBitmap(
-                bitmap, 0, 0, bitmap.width, bitmap.height,
-                android.graphics.Matrix().apply { postRotate(rotation) },
-                true,
-            ).also { if (it !== bitmap) bitmap.recycle() }
-        }
-
-        val longest = maxOf(upright.width, upright.height)
-        val scaled = if (longest > MAX_PX) {
-            val ratio = MAX_PX.toFloat() / longest
-            Bitmap.createScaledBitmap(
-                upright,
-                (upright.width * ratio).toInt().coerceAtLeast(1),
-                (upright.height * ratio).toInt().coerceAtLeast(1),
-                true,
-            )
-        } else {
-            upright
+            val matrix = android.graphics.Matrix().apply {
+                postRotate(rotation)
+                if (ratio < 1f) postScale(ratio, ratio)
+            }
+            Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+                .also { if (it !== bitmap) bitmap.recycle() }
         }
         val folder = dir(context).apply { mkdirs() }
         val file = File(folder, "$name.jpg")
         runCatching { file.outputStream().use { scaled.compress(Bitmap.CompressFormat.JPEG, 85, it) } }
             .onFailure { return null }
-        if (scaled !== upright) scaled.recycle()
-        if (upright !== bitmap) upright.recycle()
-        bitmap.recycle()
+        if (scaled === bitmap) bitmap.recycle()
+        recentFiles += file.absolutePath
         return file.absolutePath
     }
 
@@ -135,6 +130,8 @@ object PhotoFiles {
         val protectAfter = System.currentTimeMillis() - RECENT_FILE_GUARD_MS
         dir(context).listFiles()?.forEach { file ->
             if (!file.isFile || file.absolutePath in referenced) return@forEach
+            // 进程内刚写的（选图→写库之间）一定不删
+            if (file.absolutePath in recentFiles) return@forEach
             if (file.lastModified() > protectAfter) return@forEach
             val size = file.length()
             if (runCatching { file.delete() }.getOrDefault(false)) {
