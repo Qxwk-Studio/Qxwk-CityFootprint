@@ -273,9 +273,10 @@ object Prefs {
 
     fun saveSyncCursor(context: Context, cursor: Long) {
         syncCursorValue = cursor
-        syncLastAtValue = System.currentTimeMillis()
+        // 不在这里写「最后同步时间」：游标每拉一页就推进，中途失败会把失败伪装成成功；
+        // 时间统一由 saveSyncResult（一轮同步真正结束时）写
         context.applicationContext.getSharedPreferences(SP_NAME, Context.MODE_PRIVATE)
-            .edit().putLong(KEY_SYNC_CURSOR, cursor).putLong(KEY_SYNC_LAST_AT, syncLastAtValue).commit()
+            .edit().putLong(KEY_SYNC_CURSOR, cursor).commit()
     }
 
     private lateinit var appContext: Context
