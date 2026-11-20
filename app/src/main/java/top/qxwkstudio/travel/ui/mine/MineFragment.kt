@@ -115,7 +115,7 @@ class MineFragment : Fragment() {
         binding.rowStorage.setOnClickListener { startActivity(StorageActivity.intent(requireContext())) }
         binding.rowExportData.setOnClickListener { startExportFlow() }
         binding.rowImportData.setOnClickListener {
-            importPicker.launch(arrayOf("application/octet-stream", "application/x-bak"))
+            importPicker.launch(arrayOf("*/*"))
         }
         binding.rowSync.setOnClickListener { startActivity(SyncActivity.intent(requireContext())) }
         binding.root.fadeSlideIn()
