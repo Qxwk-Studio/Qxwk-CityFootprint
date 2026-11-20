@@ -28,4 +28,6 @@
     <string name="menu_renumber">Renumber</string>
     <string name="renumber_done">Numbering updated</string>
     <string name="renumber_failed">Renumber failed</string>
+    <string name="menu_trips_actions">Renumber and multi-select</string>
+    <string name="common_clear_search">Clear search</string>
 </resources>

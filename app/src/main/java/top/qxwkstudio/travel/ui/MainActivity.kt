@@ -193,7 +193,7 @@ class MainActivity : LocalizedActivity(), TripsSelectionHost {
         if (!visible) return
         binding.topBar.btnMenu.setImageResource(if (onTrips) R.drawable.ic_more else R.drawable.ic_add)
         binding.topBar.btnMenu.contentDescription = getString(
-            if (onTrips) R.string.menu_renumber else R.string.common_add,
+            if (onTrips) R.string.menu_trips_actions else R.string.common_add,
         )
     }
 

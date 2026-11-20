@@ -117,6 +117,9 @@ class TripsFragment : Fragment() {
     /** 本次加载在跑：onViewCreated 与 onResume 相邻触发时只读一次库。 */
     private var loading = false
 
+    /** 加载期间又来了 load()：不能直接丢，加载完补跑一次。 */
+    private var pendingLoad = false
+
     /** 每座城市「最早那条打卡」的 id：表格里的首访角标与金色边框按它判断。 */
     private var firstVisitIds: Set<Long> = emptySet()
 
@@ -182,7 +185,10 @@ class TripsFragment : Fragment() {
     }
 
     private fun load() {
-        if (loading) return
+        if (loading) {
+            pendingLoad = true
+            return
+        }
         loading = true
         // 版本号在读库前取：读完再取会把期间的写入标成「已是最新」
         val version = DataVersion.current
@@ -191,6 +197,8 @@ class TripsFragment : Fragment() {
             TripRepo.list(db) to CheckinRepo.list(db)
         }) { result ->
             loading = false
+            val replay = pendingLoad
+            pendingLoad = false
             val (tripList, checkinList) = result.getOrNull() ?: return@runIo
             trips = tripList
             checkins = checkinList
@@ -238,6 +246,8 @@ class TripsFragment : Fragment() {
             }
             render()
             if (selecting) notifySelectionCounts()
+            // 加载期间被吞掉的刷新在这里补跑（例如同步事件、从编辑页返回）
+            if (replay) load()
         }
     }
 

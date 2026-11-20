@@ -28,4 +28,6 @@
     <string name="menu_renumber">重新编号</string>
     <string name="renumber_done">编号已更新</string>
     <string name="renumber_failed">重新编号失败</string>
+    <string name="menu_trips_actions">重新编号与多选</string>
+    <string name="common_clear_search">清除搜索</string>
 </resources>

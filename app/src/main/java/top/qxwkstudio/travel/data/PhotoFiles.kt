@@ -84,7 +84,11 @@ object PhotoFiles {
         val folder = dir(context).apply { mkdirs() }
         val file = File(folder, "$name.jpg")
         runCatching { file.outputStream().use { scaled.compress(Bitmap.CompressFormat.JPEG, 85, it) } }
-            .onFailure { return null }
+            .onFailure {
+                // 失败路径也要回收：这是几十 MB 的活对象，不能等 GC
+                scaled.recycle()
+                return null
+            }
         if (scaled === bitmap) bitmap.recycle()
         recentFiles += file.absolutePath
         return file.absolutePath

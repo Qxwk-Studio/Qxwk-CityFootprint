@@ -72,7 +72,8 @@ enum class FontFamily {
 
     fun base(context: Context): Typeface = when (this) {
         DEFAULT -> Typeface.create("sans-serif", Typeface.NORMAL)
-        MONO -> Typeface.create("sans-serif-monospace", Typeface.NORMAL)
+        // AOSP 只有 monospace / serif-monospace；sans-serif-monospace 不存在，会静默回退默认无衬线
+        MONO -> Typeface.create(Typeface.MONOSPACE, Typeface.NORMAL)
         // 打包的 OFL 毛笔楷书；万一缺字回退系统字体，宁可丑也不能是豆腐块
         HAND -> runCatching { ResourcesCompat.getFont(context, R.font.mashanzheng) }
             .getOrNull() ?: Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
@@ -140,8 +141,6 @@ data class CardFont(
     }
 
     val letterSpacing: Float get() = family.letterSpacing + style.letterSpacing
-
-    val textScaleX: Float get() = 1f
 }
 
 /** 标题排列方向：横排 = 中英同一行；竖排 = 中英都竖着读。 */
