@@ -39,7 +39,15 @@ class SyncActivity : LocalizedActivity() {
         super.onCreate(savedInstanceState)
         Palette.apply(this)
         binding = ActivitySyncBinding.inflate(layoutInflater)
-        applyEdgeToEdge(binding.topBar.root, binding.scroll)
+        applyEdgeToEdge(binding.topBar.root, binding.scroll) {
+            val focused = currentFocus ?: return@applyEdgeToEdge
+            binding.scroll.post {
+                focused.requestRectangleOnScreen(
+                    android.graphics.Rect(0, 0, focused.width, focused.height),
+                    true,
+                )
+            }
+        }
         setContentView(binding.root)
 
         binding.topBar.title.setText(R.string.sync_title)
@@ -369,7 +377,8 @@ class SyncActivity : LocalizedActivity() {
     private fun doLogout(wipeLocal: Boolean) {
         SyncScheduler.cancel()
         Prefs.clearSyncSession(this)
-        Prefs.clearSyncData(this)
+        // 保留数据退出时不动 revision/cursor：清掉它们会让重登变成「全量拉取 + 每条 revision 冲突」
+        if (wipeLocal) Prefs.clearSyncData(this)
         Prefs.saveSyncEnabled(this, false)
         SyncCredentials.clear(this)
         credentialsLoaded = false

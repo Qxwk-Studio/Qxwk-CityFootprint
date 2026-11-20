@@ -77,6 +77,10 @@ interface CheckinDao {
     @Query("SELECT * FROM city_checkins WHERE source = ${CheckinSource.MANUAL}")
     suspend fun manualAllForSync(): List<CheckinEntity>
 
+    /** 全量（含软删墓碑）：照片引用清扫要用，软删行里的 photoPath 仍是引用。 */
+    @Query("SELECT * FROM city_checkins")
+    suspend fun allForSync(): List<CheckinEntity>
+
     @Query("SELECT * FROM city_checkins WHERE uuid = :uuid LIMIT 1")
     suspend fun byUuidAny(uuid: String): CheckinEntity?
     /**

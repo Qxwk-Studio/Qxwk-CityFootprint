@@ -117,4 +117,5 @@
     <string name="trips_selection_delete_hint">Type the confirmation text</string>
     <string name="trips_selection_delete_phrase">I confirm deleting the selected items</string>
     <string name="trips_selection_deleted">Selected items deleted</string>
+    <string name="checkin_err_deleted">This check-in was deleted and cannot be saved</string>
 </resources>

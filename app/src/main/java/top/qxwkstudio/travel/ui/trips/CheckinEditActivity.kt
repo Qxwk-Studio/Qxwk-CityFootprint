@@ -186,7 +186,8 @@ class CheckinEditActivity : LocalizedActivity() {
      */
     private fun restoreDraft(state: Bundle?): Boolean {
         if (state == null) return false
-        val snapshot = state.getString(KEY_SNAPSHOT) ?: return false
+        // 载入还没完成就旋转时 snapshot 是空串：那不是「可恢复的草稿」，走正常载入
+        val snapshot = state.getString(KEY_SNAPSHOT)?.takeIf { it.isNotBlank() } ?: return false
         state.getString(KEY_CITY)?.let { name ->
             setCity(
                 City(
@@ -489,6 +490,10 @@ class CheckinEditActivity : LocalizedActivity() {
             val db = AppDatabase.get(this)
             // 旋转重建后 editingEntity 可能还没取回：按 id 再读一次，避免把「编辑」做成「新建」
             val target = existing ?: if (editingId != 0L) db.checkins().byId(editingId) else null
+            if (editingId != 0L && target == null) {
+                // 原记录已被删除：再走 createManual 会把「编辑」变成「新建一条」
+                throw IllegalStateException(getString(R.string.checkin_err_deleted))
+            }
             // 老数据「记不清了」= UNKNOWN，展示上与「只到年」完全一样；用户没动日期时回写原精度，
             // 否则一次编辑就把历史记录的精度永久改写成 YEAR
             val keptPrecision = if (target?.datePrecision == DatePrecision.UNKNOWN &&

@@ -51,7 +51,7 @@ class CheckinDetailActivity : LocalizedActivity() {
         super.onCreate(savedInstanceState)
         Palette.apply(this)
         binding = ActivityDetailBinding.inflate(layoutInflater)
-        applyEdgeToEdge(binding.topBar.root, null)
+        applyEdgeToEdge(binding.topBar.root, binding.scroll)
         setContentView(binding.root)
 
         checkinId = intent.getLongExtra(EXTRA_ID, 0L)

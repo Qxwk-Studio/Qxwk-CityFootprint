@@ -23,10 +23,12 @@ object PhotoJanitor {
      * 拿空集合去清扫等于把全目录照片删光，宁可留垃圾也不能误删。
      */
     suspend fun referenced(db: AppDatabase): Set<String>? = buildSet {
-        db.checkins().list().forEach { checkin ->
+        // 用「含墓碑」的全量：软删记录里的 photoPath 仍写在时间线/实体里，
+        // 删除推送失败或远端复活后它就是唯一引用，按活着的数据收集会把它删掉
+        db.checkins().allForSync().forEach { checkin ->
             checkin.photoPath?.split(",")?.filter { it.isNotBlank() }?.forEach(::add)
         }
-        db.trips().list().forEach { trip ->
+        db.trips().allForSync().forEach { trip ->
             // 用 items 而不是 segments：第一个到访城市之前的交通/出发照片不属于任何城市段，
             // 按 segments 收集会把它们当孤儿删掉（时间线 JSON 里的路径还在 → 打开即破图）。
             val timeline = Timeline.decode(trip.timeline) ?: return null

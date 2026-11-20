@@ -117,4 +117,5 @@
     <string name="trips_selection_delete_hint">输入确认文字</string>
     <string name="trips_selection_delete_phrase">我确定删除所选内容</string>
     <string name="trips_selection_deleted">已删除所选内容</string>
+    <string name="checkin_err_deleted">这条打卡已被删除，无法保存</string>
 </resources>

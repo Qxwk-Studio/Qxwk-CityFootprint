@@ -85,7 +85,16 @@ abstract class ShareActivityBase : LocalizedActivity() {
         Palette.apply(this)
         binding = ActivityShareBinding.inflate(layoutInflater)
         // 保存/分享是滚动内容的一部分，所以底部 inset 补在内容容器上
-        applyEdgeToEdge(binding.topBar.root, binding.cards)
+        applyEdgeToEdge(binding.topBar.root, binding.scroll) {
+            // 键盘弹出时把焦点输入框滚进可见区（备注是多行输入，容易被键盘盖住）
+            val focused = currentFocus ?: return@applyEdgeToEdge
+            binding.scroll.post {
+                focused.requestRectangleOnScreen(
+                    android.graphics.Rect(0, 0, focused.width, focused.height),
+                    true,
+                )
+            }
+        }
         setContentView(binding.root)
         binding.root.fadeSlideIn()
         binding.topBar.btnBack.visibility = View.VISIBLE

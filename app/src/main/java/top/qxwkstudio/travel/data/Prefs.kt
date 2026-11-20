@@ -41,6 +41,9 @@ object Prefs {
     private const val KEY_SYNC_REVISIONS = "sync_revisions"
     private const val KEY_SYNC_SYNCED = "sync_synced"
     private const val KEY_SYNC_CURSOR = "sync_cursor"
+
+    /** 当前 revision/synced/cursor 属于哪个账号；换账号时据此丢弃映射。 */
+    private const val KEY_SYNC_OWNER = "sync_owner"
     private const val KEY_SYNC_LAST_AT = "sync_last_at"
     private const val KEY_SYNC_LAST_PUSHED = "sync_last_pushed"
     private const val KEY_SYNC_LAST_PULLED = "sync_last_pulled"
@@ -65,6 +68,7 @@ object Prefs {
     @Volatile private var syncRevisions = JSONObject()
     @Volatile private var syncSynced = JSONObject()
     @Volatile private var syncCursorValue = 0L
+    @Volatile private var syncOwnerValue = ""
     @Volatile private var syncLastAtValue = 0L
     @Volatile private var syncServerValue = DEFAULT_SYNC_SERVER
     @Volatile private var legalAcceptedValue = false
@@ -86,6 +90,7 @@ object Prefs {
         syncTokenValue = sp.getString(KEY_SYNC_TOKEN, null).orEmpty()
         syncNicknameValue = sp.getString(KEY_SYNC_NICKNAME, null).orEmpty()
         syncUuidValue = sp.getString(KEY_SYNC_UUID, null).orEmpty()
+        syncOwnerValue = sp.getString(KEY_SYNC_OWNER, null).orEmpty()
         syncAvatarValue = sp.getString(KEY_SYNC_AVATAR, null).orEmpty()
         syncColorValue = sp.getString(KEY_SYNC_COLOR, null).orEmpty()
         syncEnabledValue = sp.getBoolean(KEY_SYNC_ENABLED, false)
@@ -225,6 +230,7 @@ object Prefs {
         syncRevisions = JSONObject()
         syncSynced = JSONObject()
         syncCursorValue = 0L
+        syncOwnerValue = ""
         syncLastAtValue = 0L
         syncLastPushedValue = 0
         syncLastPulledValue = 0
@@ -243,6 +249,7 @@ object Prefs {
             .remove(KEY_SYNC_LAST_OK)
             .remove(KEY_SYNC_LAST_ERROR)
             .remove(KEY_SYNC_CONFLICTS)
+            .remove(KEY_SYNC_OWNER)
             .commit()
     }
 
@@ -289,6 +296,9 @@ object Prefs {
         color: String = "",
     ) {
         val avatarValue = avatar.orEmpty()
+        // 换账号：上一账号的 revision/cursor 不能复用，否则每条记录都会 revision 冲突
+        if (syncOwnerValue.isNotBlank() && syncOwnerValue != uuid) clearSyncData(context)
+        syncOwnerValue = uuid
         val profileChanged = syncUuidValue != uuid ||
             syncNicknameValue != nickname ||
             syncAvatarValue != avatarValue ||
@@ -302,6 +312,7 @@ object Prefs {
             .edit()
             .putString(KEY_SYNC_TOKEN, token)
             .putString(KEY_SYNC_UUID, uuid)
+            .putString(KEY_SYNC_OWNER, uuid)
             .putString(KEY_SYNC_NICKNAME, nickname)
             .putString(KEY_SYNC_AVATAR, avatar.orEmpty())
             .putString(KEY_SYNC_COLOR, color)

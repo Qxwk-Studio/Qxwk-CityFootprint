@@ -14,6 +14,8 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import top.qxwkstudio.travel.R
+import top.qxwkstudio.travel.net.Http
+import top.qxwkstudio.travel.net.HttpException
 import top.qxwkstudio.travel.data.db.AppDatabase
 
 /**
@@ -104,6 +106,16 @@ internal object SyncScheduler {
     }
 
     private fun classify(error: Throwable): String {
+        // 有状态码就按状态码判：不再靠 body 里是否出现 "401" 猜（代理错误页也会带这个数字）
+        (error as? HttpException)?.let { http ->
+            return when {
+                http.code == 401 -> "auth"
+                http.code == Http.NETWORK_FAILED || http.code <= 0 -> "network"
+                http.code in 500..599 -> "server"
+                http.code in 400..499 -> "server"
+                else -> "unknown"
+            }
+        }
         val msg = error.message.orEmpty()
         return when {
             msg.contains("401") || msg.contains("unauthorized") || msg.contains("登录") -> "auth"
