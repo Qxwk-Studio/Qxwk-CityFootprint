@@ -31,6 +31,14 @@ const versionCode = Number(release.versionCode);
 if (!Number.isSafeInteger(versionCode) || versionCode <= 0) {
   fail(`versionCode 必须是正整数，收到：${release.versionCode}`);
 }
+
+// versionCode 由 versionName 推出（主 * 10000 + 次 * 100 + 修订），发版忘改 code 会静默失效
+const [major, minor, patchVersion] = versionName.split('.').map(Number);
+const expectedCode = major * 10000 + minor * 100 + patchVersion;
+if (versionCode !== expectedCode) {
+  fail(`versionCode 应与 versionName 对应（${versionName} → ${expectedCode}），收到：${versionCode}`);
+}
+
 const importance = Number(release.importance ?? 0);
 if (![0, 1, 2].includes(importance)) {
   fail('importance 只能是 0 / 1 / 2');

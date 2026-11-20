@@ -24,6 +24,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import androidx.room.withTransaction
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.widget.ViewPager2
 import com.google.android.material.button.MaterialButton
@@ -113,6 +114,9 @@ class TripsFragment : Fragment() {
 
     private var seenVersion = -1
 
+    /** 本次加载在跑：onViewCreated 与 onResume 相邻触发时只读一次库。 */
+    private var loading = false
+
     /** 每座城市「最早那条打卡」的 id：表格里的首访角标与金色边框按它判断。 */
     private var firstVisitIds: Set<Long> = emptySet()
 
@@ -178,15 +182,20 @@ class TripsFragment : Fragment() {
     }
 
     private fun load() {
+        if (loading) return
+        loading = true
+        // 版本号在读库前取：读完再取会把期间的写入标成「已是最新」
+        val version = DataVersion.current
         viewLifecycleOwner.lifecycleScope.runIo({
             val db = AppDatabase.get(requireContext())
             TripRepo.list(db) to CheckinRepo.list(db)
         }) { result ->
+            loading = false
             val (tripList, checkinList) = result.getOrNull() ?: return@runIo
             trips = tripList
             checkins = checkinList
             seqByUuid = tripList.associate { it.uuid to it.seqNo }
-            seenVersion = DataVersion.current
+            seenVersion = version
             firstVisitIds = checkinList
                 .groupBy { it.cityName }
                 .values
@@ -898,9 +907,12 @@ class TripsFragment : Fragment() {
         val tripIds = trips.filter { it.uuid in tripUuids }.map { it.id }
         viewLifecycleOwner.lifecycleScope.runIo({
             val db = AppDatabase.get(requireContext())
-            // 先删行程：它的派生打卡由 TripRepo 在同一个事务里重算，不会留下孤儿
-            tripIds.forEach { TripRepo.delete(db, it) }
-            checkinIds.forEach { CheckinRepo.delete(db, it) }
+            // 整批一个事务：中途失败不会留下删了一半的列表
+            db.withTransaction {
+                // 先删行程：它的派生打卡由 TripRepo 在同一事务里重算，不会留下孤儿
+                tripIds.forEach { TripRepo.delete(db, it) }
+                checkinIds.forEach { CheckinRepo.delete(db, it) }
+            }
         }) { result ->
             if (!result.isSuccess) {
                 requireContext().notify(R.string.common_error, long = true)

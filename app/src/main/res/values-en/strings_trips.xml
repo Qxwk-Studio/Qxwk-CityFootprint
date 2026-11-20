@@ -6,7 +6,6 @@
     <string name="detail_edit">Edit</string>
     <string name="detail_uuid">UUID: %1$s</string>
     <string name="detail_own_id">No. #%1$d</string>
-    <string name="detail_from_trip">From trip #%1$d</string>
     <string name="trips_seg_checkins">Check-ins (%1$d)</string>
     <string name="trips_seg_trips">Trips (%1$d)</string>
     <string name="trips_empty">No records yet</string>
@@ -18,7 +17,6 @@
     <string name="trips_deleted">Deleted</string>
     <string name="checkin_edit_title">Edit check-in</string>
     <string name="checkin_title">New check-in</string>
-    <string name="checkin_city">City</string>
     <string name="checkin_city_hint">Tap to choose a city</string>
     <string name="checkin_locate">Locate current city</string>
     <string name="checkin_date">Visit date</string>
@@ -58,7 +56,6 @@
     <string name="trip_event_note_hint">Note</string>
     <string name="checkin_section_optional">Optional</string>
     <string name="trip_timeline_label">Timeline</string>
-    <string name="trip_add_city">Add city</string>
     <string name="trip_type_activity">Activity</string>
     <string name="trip_type_ride">Transport</string>
     <string name="trip_note_label">Note</string>
@@ -70,7 +67,6 @@
     <string name="trip_event_cost_hint">Cost</string>
     <string name="trip_counter">%1$d/%2$d</string>
     <string name="trip_saved">Saved</string>
-    <string name="checkin_err_days">Enter days stayed</string>
     <string name="photo_save">Save to gallery</string>
     <string name="photo_saved">Saved to gallery</string>
     <string name="photo_save_failed">Save failed (storage permission required on older Android)</string>
@@ -87,7 +83,6 @@
     <string name="trip_type_activity_label">Activity</string>
     <string name="trip_type_ride_label">Transport</string>
     <string name="trip_event_name">Name</string>
-    <string name="trip_event_cost">Cost</string>
     <string name="trip_city_label">City</string>
     <string name="checkin_err_days_range">Days stayed must be between 1 and 3650</string>
     <string name="detail_checkin_cities">Check-in cities</string>

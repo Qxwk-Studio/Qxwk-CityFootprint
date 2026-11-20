@@ -3,7 +3,6 @@
 <resources>
     <string name="home_stats_title">Trip stats</string>
     <string name="home_range">Date range</string>
-    <string name="home_cities">Cities</string>
     <string name="home_most">Most visits</string>
     <string name="home_cost">Total spent</string>
     <string name="home_rank">City ranking</string>

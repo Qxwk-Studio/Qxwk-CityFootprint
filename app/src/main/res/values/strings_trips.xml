@@ -6,7 +6,6 @@
     <string name="detail_edit">编辑</string>
     <string name="detail_uuid">UUID：%1$s</string>
     <string name="detail_own_id">编号 #%1$d</string>
-    <string name="detail_from_trip">来自足迹 #%1$d</string>
     <string name="trips_seg_checkins">打卡 (%1$d)</string>
     <string name="trips_seg_trips">足迹 (%1$d)</string>
     <string name="trips_empty">这里还没有记录</string>
@@ -18,7 +17,6 @@
     <string name="trips_deleted">已删除</string>
     <string name="checkin_edit_title">编辑打卡</string>
     <string name="checkin_title">新建打卡</string>
-    <string name="checkin_city">城市</string>
     <string name="checkin_city_hint">点击选择城市</string>
     <string name="checkin_locate">定位到当前城市</string>
     <string name="checkin_date">到访时间</string>
@@ -58,7 +56,6 @@
     <string name="trip_event_note_hint">备注</string>
     <string name="checkin_section_optional">可选项</string>
     <string name="trip_timeline_label">时间线</string>
-    <string name="trip_add_city">添加城市</string>
     <string name="trip_type_activity">活动记录</string>
     <string name="trip_type_ride">交通记录</string>
     <string name="trip_note_label">备注</string>
@@ -70,7 +67,6 @@
     <string name="trip_event_cost_hint">花费</string>
     <string name="trip_counter">%1$d/%2$d</string>
     <string name="trip_saved">已保存</string>
-    <string name="checkin_err_days">请填写停留天数</string>
     <string name="photo_save">保存到相册</string>
     <string name="photo_saved">已保存到相册</string>
     <string name="photo_save_failed">保存失败（低版本需存储权限）</string>
@@ -87,7 +83,6 @@
     <string name="trip_type_activity_label">活动记录</string>
     <string name="trip_type_ride_label">交通记录</string>
     <string name="trip_event_name">名称</string>
-    <string name="trip_event_cost">花费</string>
     <string name="trip_city_label">城市</string>
     <string name="checkin_err_days_range">停留天数需在 1–3650 天之间</string>
     <string name="detail_checkin_cities">打卡城市</string>

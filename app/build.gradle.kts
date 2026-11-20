@@ -93,16 +93,11 @@ android {
             // （否则正式签名与 debug 签名冲突，得先卸载 1.x）。release 包名不受影响，
             // 2.0 正式顶替时仍是 `top.qxwkstudio.travel`（见 2.0 工程口径文档 §2）。
             applicationIdSuffix = ".dev"
-            // CI 的「仅构建（调试）」传 -PuseReleaseSigningForDebug=true，
-            // 让调试包也使用正式 keystore；本地普通 debug 构建不受影响。
-            signingConfig = if (
-                keystorePath != null && project.hasProperty("useReleaseSigningForDebug")
-            ) signingConfigs.findByName("release") else null
         }
         release {
             // R8 压缩 + 混淆：省体积，也是最基本的反编译门槛。
             // 风险点在网上查不到的那一类 —— 反射/XML 里按类名写死的组件会被改名后失效，
-            // 所以 proguard-rules.pro 里 keep 住了地图那块按类名 inflate 的自定义 View。
+            // 自定义 View 的 keep 规则来自 AGP 生成的 aapt_rules.txt（proguard-rules.pro 目前为空）。
             isMinifyEnabled = true
             // 资源收缩必须与代码收缩一起开：它靠的就是 R8 结果里「哪些资源还被引用」
             isShrinkResources = true
