@@ -156,6 +156,18 @@ private fun savePagerBitmap(context: Context, bitmap: Bitmap): Boolean = runCatc
         values.put(MediaStore.Images.Media.IS_PENDING, 0)
         resolver.update(uri, values, null, null)
     } else {
+        // Android 7–9 写相册需要存储权限：先申请，用户授权后再点一次保存
+        val granted = androidx.core.content.ContextCompat.checkSelfPermission(
+            context, android.Manifest.permission.WRITE_EXTERNAL_STORAGE,
+        ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        if (!granted) {
+            (context as? android.app.Activity)?.let { activity ->
+                androidx.core.app.ActivityCompat.requestPermissions(
+                    activity, arrayOf(android.Manifest.permission.WRITE_EXTERNAL_STORAGE), 1001,
+                )
+            }
+            return false
+        }
         @Suppress("DEPRECATION")
         MediaStore.Images.Media.insertImage(context.contentResolver, bitmap, name, null) ?: return false
     }

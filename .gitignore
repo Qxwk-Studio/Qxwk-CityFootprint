@@ -1,13 +1,39 @@
-# 依赖与本地文件
-node_modules/
-.wrangler/
+# ───────────────────────── 构建产物 ─────────────────────────
+build/
+.gradle/
+.kotlin/
+captures/
+*.apk
+*.aab
+*.idsig
+
+# 本地打包目录（dist-local/ 只放本机调试用的 APK，不入库）
+dist-local/
+
+# ───────────────────────── 本地配置与签名 ─────────────────────────
+local.properties
+*.jks
+*.keystore
 .dev.vars
 
-# wrangler 自动生成的文件
+# ───────────────────────── 依赖与工具链 ─────────────────────────
+node_modules/
+.wrangler/
+# wrangler 的 XDG 配置目录（脚本把 XDG_CONFIG_HOME 指到项目内，见 README）
+.wrangler-config/
 wrangler.jsonc
 
-# �������ɵ� Release ���ģ�CI ÿ�����ɣ�
+# ───────────────────────── 生成物（CI / 脚本）─────────────────────────
+# CI 每次生成的 Release 正文
 release-notes.md
-
-# CI ���ɵ� D1 ���� SQL
+# CI 生成的 D1 发版 SQL
 backend/.release-version.sql
+# 城界/省界生成脚本的中间产物；最终入库的是 src/main/assets/data/*.geojson
+app/tools/.cache/
+app/tools/.out/
+
+# ───────────────────────── IDE / 系统 ─────────────────────────
+.idea/
+*.iml
+.DS_Store
+Thumbs.db

@@ -83,7 +83,9 @@ enum class FontFamily {
     val letterSpacing: Float
         get() = when (this) {
             HAND -> 0.02f
-            MONO -> -0.01f
+            // 中文没有等宽字形（系统会回退到同一套 CJK），等宽只在数字/拉丁字母上有效；
+            // 这里加明显字距，让中文标题也能看出「等宽」这档的差异
+            MONO -> 0.10f
             DEFAULT -> 0f
         }
 

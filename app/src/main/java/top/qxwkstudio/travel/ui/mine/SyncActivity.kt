@@ -370,11 +370,15 @@ class SyncActivity : LocalizedActivity() {
     }
 
     private fun confirmLogout() {
+        // 两个动作平铺成选项，取消固定在最下面：不再用正/中性按钮挤在一行
+        val options = arrayOf(
+            getString(R.string.sync_logout_keep),
+            getString(R.string.sync_logout_wipe),
+        )
         MaterialAlertDialogBuilder(this)
             .setTitle(R.string.sync_logout_confirm)
             .setMessage(R.string.sync_logout_message)
-            .setPositiveButton(R.string.sync_logout_keep) { _, _ -> doLogout(wipeLocal = false) }
-            .setNeutralButton(R.string.sync_logout_wipe) { _, _ -> doLogout(wipeLocal = true) }
+            .setItems(options) { _, which -> doLogout(wipeLocal = which == 1) }
             .setNegativeButton(R.string.common_cancel, null)
             .show()
     }

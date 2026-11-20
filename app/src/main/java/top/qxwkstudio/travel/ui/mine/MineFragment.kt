@@ -20,6 +20,7 @@ import top.qxwkstudio.travel.R
 import top.qxwkstudio.travel.data.Appearance
 import top.qxwkstudio.travel.data.PhotoJanitor
 import top.qxwkstudio.travel.data.DataExport
+import top.qxwkstudio.travel.data.DataImport
 import top.qxwkstudio.travel.data.Prefs
 import top.qxwkstudio.travel.data.SettingsRepo
 import top.qxwkstudio.travel.data.Update
@@ -62,11 +63,27 @@ class MineFragment : Fragment() {
     /** 检查更新 / 清理照片这类耗时操作在跑时，禁用入口防重复。 */
     private var working = false
     private var exporting = false
+    private var importing = false
+
+    /** 选 .bak 文件（内容是不透明二进制，MIME 用通配符）。 */
+    private val importPicker = registerForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.OpenDocument(),
+    ) { uri ->
+        if (uri == null) return@registerForActivityResult
+        // 校验要读 provider（main 上做会卡）与文件头，放到 IO
+        viewLifecycleOwner.lifecycleScope.runIo({ validateBackup(uri) }) { result ->
+            if (result.getOrDefault(false)) {
+                confirmImport(uri)
+            } else {
+                context?.notify(R.string.import_failed, long = true)
+            }
+        }
+    }
 
     private val exportPermission = registerForActivityResult(
         androidx.activity.result.contract.ActivityResultContracts.RequestPermission(),
     ) { granted ->
-        if (granted) openExportConfirm() else requireContext().notify(R.string.export_permission)
+        if (granted) requireActivity().pickExportFormat { format -> doExport(format) } else requireContext().notify(R.string.export_permission)
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -97,6 +114,9 @@ class MineFragment : Fragment() {
         binding.rowPermissions.setOnClickListener { startActivity(PermissionsActivity.intent(requireContext())) }
         binding.rowStorage.setOnClickListener { startActivity(StorageActivity.intent(requireContext())) }
         binding.rowExportData.setOnClickListener { startExportFlow() }
+        binding.rowImportData.setOnClickListener {
+            importPicker.launch(arrayOf("application/octet-stream", "application/x-bak"))
+        }
         binding.rowSync.setOnClickListener { startActivity(SyncActivity.intent(requireContext())) }
         binding.root.fadeSlideIn()
         binding.textVersion.text = getString(
@@ -382,6 +402,92 @@ class MineFragment : Fragment() {
             .show()
     }
 
+    /** 只接受本应用导出的 .bak：文件名 + 文件头 magic，都过才进确认。IO 线程调用。 */
+    private fun validateBackup(uri: android.net.Uri): Boolean {
+        val resolver = requireContext().contentResolver
+        val name = displayName(uri)
+        if (name != null && !name.endsWith(".bak", ignoreCase = true)) return false
+        return resolver.openInputStream(uri)?.use { input ->
+            val head = ByteArray(4)
+            var read = 0
+            while (read < 4) {
+                val count = input.read(head, read, 4 - read)
+                if (count <= 0) break
+                read += count
+            }
+            read == 4 && String(head, Charsets.US_ASCII) == top.qxwkstudio.travel.data.BackupCrypto.MAGIC
+        } ?: false
+    }
+
+    private fun confirmImport(uri: android.net.Uri) {
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.import_confirm_title)
+            .setMessage(R.string.import_confirm_message)
+            .setPositiveButton(R.string.common_confirm) { _, _ -> startImport(uri) }
+            .setNegativeButton(R.string.common_cancel, null)
+            .show()
+    }
+
+    private fun displayName(uri: android.net.Uri): String? = runCatching {
+        requireContext().contentResolver.query(
+            uri, arrayOf(android.provider.OpenableColumns.DISPLAY_NAME), null, null, null,
+        )?.use { cursor ->
+            if (cursor.moveToFirst()) cursor.getString(0) else null
+        }
+    }.getOrNull()
+
+    private fun startImport(uri: android.net.Uri) {
+        if (importing) return
+        importing = true
+        val bar = android.widget.ProgressBar(
+            requireContext(), null, android.R.attr.progressBarStyleHorizontal,
+        ).apply {
+            max = 100
+            progress = 0
+            val pad = (16 * resources.displayMetrics.density).toInt()
+            setPadding(pad, pad, pad, pad / 2)
+        }
+        val dialog = MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.import_progress_title)
+            .setView(bar)
+            .setCancelable(false)
+            .show()
+        val appContext = requireContext().applicationContext
+        val main = android.os.Handler(android.os.Looper.getMainLooper())
+        viewLifecycleOwner.lifecycleScope.runIo({
+            val temp = java.io.File(appContext.cacheDir, "import-input-${System.currentTimeMillis()}.bak")
+            try {
+                appContext.contentResolver.openInputStream(uri)?.use { input ->
+                    temp.outputStream().use { input.copyTo(it) }
+                } ?: error("无法读取备份文件")
+                DataImport.import(appContext, AppDatabase.get(appContext), temp) { done, total ->
+                    // 进度只碰 ProgressBar 对象，不碰 Fragment/Activity，旋转也不会崩
+                    main.post { bar.progress = if (total <= 0) 0 else done * 100 / total }
+                }
+            } finally {
+                temp.delete()
+            }
+        }) { result ->
+            importing = false
+            dialog.dismiss()
+            val report = result.getOrNull()
+            if (report == null) {
+                context?.notify(R.string.import_failed, long = true)
+                return@runIo
+            }
+            context?.notify(
+                requireContext().getString(
+                    R.string.import_done,
+                    report.tripsAdded, report.checkinsAdded,
+                    report.tripsUpdated, report.checkinsUpdated,
+                    report.photos,
+                ),
+                long = true,
+            )
+            refreshLocal()
+        }
+    }
+
     private fun startExportFlow() {
         if (exporting) return
         if (android.os.Build.VERSION.SDK_INT <= android.os.Build.VERSION_CODES.P &&
@@ -392,24 +498,19 @@ class MineFragment : Fragment() {
             exportPermission.launch(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
             return
         }
-        openExportConfirm()
+        requireActivity().pickExportFormat { format -> doExport(format) }
     }
 
-    private fun openExportConfirm() {
-        MaterialAlertDialogBuilder(requireContext())
-            .setTitle(R.string.export_confirm_title)
-            .setMessage(R.string.export_confirm_message)
-            .setPositiveButton(R.string.common_confirm) { _, _ -> doExport() }
-            .setNegativeButton(R.string.common_cancel, null)
-            .show()
-    }
-
-    private fun doExport() {
+    private fun doExport(format: DataExport.Format = DataExport.Format.ZIP) {
         if (exporting) return
         exporting = true
         _binding?.rowExportData?.isEnabled = false
         viewLifecycleOwner.lifecycleScope.runIo({
-            DataExport.export(requireContext(), AppDatabase.get(requireContext()))
+            DataExport.export(
+                requireContext(),
+                AppDatabase.get(requireContext()),
+                format = format,
+            )
         }) { result ->
             exporting = false
             _binding?.rowExportData?.isEnabled = true
