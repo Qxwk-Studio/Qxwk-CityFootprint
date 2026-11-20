@@ -113,6 +113,15 @@ jobs:
           }
           mv "$APK" "$DIR/CityFootprint-$VERSION_NAME.apk"
 
+      - name: Verify signature and version
+        env:
+          VERSION_NAME: ${{ steps.release.outputs.version_name }}
+          VERSION_CODE: ${{ steps.release.outputs.version_code }}
+        run: |
+          APK="app/build/outputs/apk/release/CityFootprint-$VERSION_NAME.apk"
+          "$ANDROID_HOME/build-tools/34.0.0/apksigner" verify --print-certs "$APK"
+          "$ANDROID_HOME/build-tools/34.0.0/aapt2" dump badging "$APK" | grep -q "versionCode='$VERSION_CODE' versionName='$VERSION_NAME'"
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:

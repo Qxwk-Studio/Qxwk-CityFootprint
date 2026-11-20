@@ -152,6 +152,11 @@ class TripsFragment : Fragment() {
             override fun onPageScrolled(position: Int, positionOffset: Float, positionOffsetPixels: Int) {
                 tracker.update(position + positionOffset)
             }
+
+            override fun onPageSelected(position: Int) {
+                // 换页时再铺这一页（render 只铺当前页）
+                bindCurrentPage()
+            }
         })
         binding.btnSegCheckins.setOnClickListener { binding.pager.setCurrentItem(0, true) }
         binding.btnSegTrips.setOnClickListener { binding.pager.setCurrentItem(1, true) }
@@ -291,7 +296,8 @@ class TripsFragment : Fragment() {
                     other.findViewById<ImageView>(R.id.btnClearSearch)?.visibility =
                         if (text.isBlank()) View.GONE else View.VISIBLE
                 }
-                render()
+                // 250ms 防抖：连打时不再每个字都重铺两页
+                scheduleRender()
             }
         })
         clear.setOnClickListener { input.setText("") }
@@ -312,12 +318,25 @@ class TripsFragment : Fragment() {
         render()
     }
 
+    private var renderPosted = false
+
+    private fun scheduleRender() {
+        if (renderPosted) return
+        val binding = _binding ?: return
+        renderPosted = true
+        binding.pager.postDelayed({
+            renderPosted = false
+            if (_binding != null) render()
+        }, 250)
+    }
+
     private fun render() {
         val b = binding
         b.btnSegCheckins.text = getString(R.string.trips_seg_checkins, checkins.size)
         b.btnSegTrips.text = getString(R.string.trips_seg_trips, trips.size)
-        // 两页都重铺：相邻页常驻在屏幕外，不刷新的话翻过去会看到旧数据
-        pages.forEach { (target, page) -> bindPage(page, target) }
+        // 只重铺当前页：另一页保留旧内容，翻过去时由 onPageSelected 现铺，
+        // 避免一次搜索就把两页共 60 行全部重建
+        bindCurrentPage()
     }
 
     /**
@@ -325,6 +344,11 @@ class TripsFragment : Fragment() {
      *
      * 两页各有一份滚动位置，「加载更多」也按分段单独记 —— 翻页来回不会互相挤掉。
      */
+    private fun bindCurrentPage() {
+        val segment = segments.getOrNull(binding.pager.currentItem) ?: return
+        pages[segment]?.let { bindPage(it, segment) }
+    }
+
     private fun bindPage(page: Page, target: Segment) {
         val keyword = query.trim().lowercase()
         val allVisible = when (target) {
