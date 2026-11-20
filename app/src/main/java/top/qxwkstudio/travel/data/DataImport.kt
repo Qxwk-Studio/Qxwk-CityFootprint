@@ -94,7 +94,8 @@ object DataImport {
                         db.trips().insert(entity)
                         TripRepo.recomputeDerivedForSync(db, entity) { cityLookup[it] }
                         tripsAdded++
-                    } else if (importedModified > existing.modifiedAt) {
+                    } else if (existing.deletedAt != null || importedModified > existing.modifiedAt) {
+                        // 本地已软删但备份里有：按备份恢复，不做时间比较（要求「备份里有就要有」）
                         val entity = existing.copy(
                             title = json.optString("title"),
                             note = json.optString("note").ifBlank { null },
@@ -104,6 +105,7 @@ object DataImport {
                             totalCostCents = json.optInt("totalCostCents"),
                             tripState = json.optInt("tripState", 2),
                             modifiedAt = importedModified,
+                            deletedAt = null,
                             syncState = SyncState.PENDING,
                         )
                         db.trips().update(entity)
@@ -144,7 +146,8 @@ object DataImport {
                             ),
                         )
                         checkinsAdded++
-                    } else if (importedModified > existing.modifiedAt) {
+                    } else if (existing.deletedAt != null || importedModified > existing.modifiedAt) {
+                        // 同上：本地删掉了、备份里有，就恢复
                         db.checkins().update(
                             existing.copy(
                                 cityName = json.optString("cityName"),
@@ -160,6 +163,7 @@ object DataImport {
                                 amountCents = json.optInt("amountCents", -1).takeIf { it >= 0 },
                                 stayDays = json.optInt("stayDays", -1).takeIf { it > 0 },
                                 modifiedAt = importedModified,
+                                deletedAt = null,
                                 syncState = SyncState.PENDING,
                             ),
                         )

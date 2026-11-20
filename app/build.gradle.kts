@@ -198,4 +198,6 @@ dependencies {
     // 这些代码算错了不崩，只会悄悄少给一个成就、或把日期显示成别的样子。
     // 命令：./gradlew testDebugUnitTest
     testImplementation("junit:junit:4.13.2")
+    // JVM 单测要真实现 org.json（android.jar 里的是 stub，会抛 "not mocked"）
+    testImplementation("org.json:json:20240303")
 }
