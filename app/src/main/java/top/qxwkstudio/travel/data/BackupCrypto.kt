@@ -29,7 +29,8 @@ internal object BackupCrypto {
 
     const val FLAG_DEFLATE = 0x01
 
-    private const val MAGIC = "CFBK"
+    /** 文件头 magic；选择导入文件时先用它挡掉非本应用备份。 */
+    const val MAGIC = "CFBK"
     private const val VERSION = 1
     private const val IV_LEN = 12
     private const val HEADER_LEN = 4 + 1 + 1 + IV_LEN

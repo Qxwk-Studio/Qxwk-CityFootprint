@@ -104,7 +104,7 @@ class MineFragment : Fragment() {
         binding.rowPermissions.setOnClickListener { startActivity(PermissionsActivity.intent(requireContext())) }
         binding.rowStorage.setOnClickListener { startActivity(StorageActivity.intent(requireContext())) }
         binding.rowExportData.setOnClickListener { startExportFlow() }
-        binding.rowImportData.setOnClickListener { importPicker.launch(arrayOf("*/*")) }
+        binding.rowImportData.setOnClickListener { importPicker.launch(arrayOf("application/octet-stream")) }
         binding.rowSync.setOnClickListener { startActivity(SyncActivity.intent(requireContext())) }
         binding.root.fadeSlideIn()
         binding.textVersion.text = getString(
@@ -391,6 +391,25 @@ class MineFragment : Fragment() {
     }
 
     private fun confirmImport(uri: android.net.Uri) {
+        // 只接受本应用导出的 .bak：先看文件名与文件头 magic，不符合直接拒绝，不进确认弹窗
+        val name = displayName(uri)
+        val extensionOk = name == null || name.endsWith(".bak", ignoreCase = true)
+        val headerOk = runCatching {
+            requireContext().contentResolver.openInputStream(uri)?.use { input ->
+                val head = ByteArray(4)
+                var read = 0
+                while (read < 4) {
+                    val count = input.read(head, read, 4 - read)
+                    if (count <= 0) break
+                    read += count
+                }
+                read == 4 && String(head, Charsets.US_ASCII) == top.qxwkstudio.travel.data.BackupCrypto.MAGIC
+            } ?: false
+        }.getOrDefault(false)
+        if (!extensionOk || !headerOk) {
+            requireContext().notify(R.string.import_failed, long = true)
+            return
+        }
         MaterialAlertDialogBuilder(requireContext())
             .setTitle(R.string.import_confirm_title)
             .setMessage(R.string.import_confirm_message)
@@ -398,6 +417,14 @@ class MineFragment : Fragment() {
             .setNegativeButton(R.string.common_cancel, null)
             .show()
     }
+
+    private fun displayName(uri: android.net.Uri): String? = runCatching {
+        requireContext().contentResolver.query(
+            uri, arrayOf(android.provider.OpenableColumns.DISPLAY_NAME), null, null, null,
+        )?.use { cursor ->
+            if (cursor.moveToFirst()) cursor.getString(0) else null
+        }
+    }.getOrNull()
 
     private fun startImport(uri: android.net.Uri) {
         if (importing) return
