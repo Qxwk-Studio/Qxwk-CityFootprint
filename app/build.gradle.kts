@@ -8,8 +8,8 @@ import groovy.json.JsonSlurper
 val releaseInfo = JsonSlurper().parse(file("../release.json")) as Map<*, *>
 val releaseVersionName = releaseInfo["versionName"] as String
 val releaseVersionCode = (releaseInfo["versionCode"] as Number).toInt()
-require(releaseVersionName.matches(Regex("""[0-9]+\.[0-9]+\.[0-9]+"""))) {
-    "release.json 的 versionName 必须是 x.y.z"
+require(releaseVersionName.matches(Regex("""[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?"""))) {
+    "release.json 的 versionName 必须是 x.y.z 或 x.y.z-rc（预发布后缀可选）"
 }
 require(releaseVersionCode > 0) { "release.json 的 versionCode 必须是正整数" }
 

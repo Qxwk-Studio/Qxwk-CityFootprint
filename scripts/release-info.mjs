@@ -23,8 +23,8 @@ try {
 }
 
 const versionName = String(release.versionName || '').trim();
-if (!/^[0-9]+\.[0-9]+\.[0-9]+$/.test(versionName)) {
-  fail(`versionName 必须是 x.y.z，收到：${versionName || '(空)'}`);
+if (!/^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$/.test(versionName)) {
+  fail(`versionName 必须是 x.y.z 或 x.y.z-rc，收到：${versionName || '(空)'}`);
 }
 
 const versionCode = Number(release.versionCode);
@@ -33,7 +33,7 @@ if (!Number.isSafeInteger(versionCode) || versionCode <= 0) {
 }
 
 // versionCode 由 versionName 推出（主 * 10000 + 次 * 100 + 修订），发版忘改 code 会静默失效
-const [major, minor, patchVersion] = versionName.split('.').map(Number);
+const [major, minor, patchVersion] = versionName.split('-')[0].split('.').map(Number);
 const expectedCode = major * 10000 + minor * 100 + patchVersion;
 if (versionCode !== expectedCode) {
   fail(`versionCode 应与 versionName 对应（${versionName} → ${expectedCode}），收到：${versionCode}`);
