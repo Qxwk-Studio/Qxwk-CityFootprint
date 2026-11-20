@@ -330,7 +330,10 @@ class SyncActivity : LocalizedActivity() {
             .setMessage(getString(R.string.sync_conflict_message, local, remote))
             .setPositiveButton(R.string.sync_use_local) { _, _ ->
                 lifecycleScope.runIo({
-                    SyncEngine.resolveWithLocal(AppDatabase.get(this), conflict)
+                    // 与自动同步互斥：否则 sync 结束时会用启动快照覆盖用户刚做的选择
+                    SyncScheduler.runExclusive {
+                        SyncEngine.resolveWithLocal(AppDatabase.get(this), conflict)
+                    }
                 }) { ok ->
                     showingConflict = false
                     render()
@@ -340,7 +343,9 @@ class SyncActivity : LocalizedActivity() {
             }
             .setNegativeButton(R.string.sync_use_remote) { _, _ ->
                 lifecycleScope.runIo({
-                    SyncEngine.resolveWithRemote(this, AppDatabase.get(this), conflict)
+                    SyncScheduler.runExclusive {
+                        SyncEngine.resolveWithRemote(this, AppDatabase.get(this), conflict)
+                    }
                 }) {
                     showingConflict = false
                     SyncEvents.notifyChanged()

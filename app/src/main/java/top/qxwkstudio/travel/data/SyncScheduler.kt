@@ -65,6 +65,9 @@ internal object SyncScheduler {
         debounce = null
     }
 
+    /** 与自动同步互斥的操作（手动解决冲突等）：避免 sync 收尾时用启动快照覆盖用户选择。 */
+    suspend fun <T> runExclusive(block: suspend () -> T): T = mutex.withLock { block() }
+
     suspend fun runNow(context: Context, force: Boolean): Result<SyncEngine.Report>? {
         if (!Prefs.legalAccepted) return null
         // 网络开关是无条件闸门：force 只跳过「节流/开关未开」的等待，不能绕过用户关掉的网络
