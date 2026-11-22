@@ -81,9 +81,7 @@
     if (!enabled()) return;
     if (event.ctrlKey) return;
     if (Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
-    var wheelDirection = event.deltaY > 0 ? 1 : -1;
-    // 当前节内容超出视口：放行原生滚动，滚到本节边界再切页
-    if (canScrollWithin(wheelDirection)) return;
+    // 整页吸附优先：滚轮始终由脚本翻页，不交给原生滚动
     event.preventDefault();
     window.clearTimeout(gestureTimer);
     gestureTimer = window.setTimeout(function () {
