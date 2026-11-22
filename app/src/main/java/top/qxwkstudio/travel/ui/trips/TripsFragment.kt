@@ -950,9 +950,18 @@ class TripsFragment : Fragment() {
         }) { result ->
             val data = result.getOrNull()
             if (data == null) {
-                val tooLarge = result.exceptionOrNull()?.message == "TOO_LARGE"
+                val tooLarge = result.exceptionOrNull() is top.qxwkstudio.travel.data.BackupTooLargeException
                 requireContext().notify(
-                    if (tooLarge) R.string.export_too_large else R.string.export_failed,
+                    if (tooLarge) {
+                        getString(
+                            R.string.export_too_large,
+                            top.qxwkstudio.travel.data.BackupLimits.mb(
+                                top.qxwkstudio.travel.data.BackupLimits.EXPORT_BYTES,
+                            ),
+                        )
+                    } else {
+                        getString(R.string.export_failed)
+                    },
                     long = true,
                 )
             } else {

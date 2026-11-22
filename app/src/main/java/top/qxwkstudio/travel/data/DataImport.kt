@@ -38,6 +38,7 @@ object DataImport {
         source: File,
         onProgress: (done: Int, total: Int) -> Unit = { _, _ -> },
     ): Report {
+        if (source.length() > BackupLimits.IMPORT_BYTES) throw BackupTooLargeException()
         val tempDir = File(context.cacheDir, "import-${System.currentTimeMillis()}").apply { mkdirs() }
         return try {
             val (flags, decrypted) = BackupCrypto.open(source)
@@ -62,11 +63,17 @@ object DataImport {
             val photoDir = File(context.filesDir, "photos").apply { mkdirs() }
             val entryToPath = HashMap<String, String>()
             val copiedPhotos = mutableListOf<File>()
-            content.photos.forEachIndexed { index, (entry, file) ->
-                val dest = File(photoDir, "import_${System.currentTimeMillis()}_${index}_${entry.substringAfterLast('/')}")
-                file.copyTo(dest, overwrite = true)
-                copiedPhotos += dest
-                entryToPath[entry] = dest.absolutePath
+            try {
+                content.photos.forEachIndexed { index, (entry, file) ->
+                    val dest = File(photoDir, "import_${System.currentTimeMillis()}_${index}_${entry.substringAfterLast('/')}")
+                    file.copyTo(dest, overwrite = true)
+                    copiedPhotos += dest
+                    entryToPath[entry] = dest.absolutePath
+                }
+            } catch (error: Throwable) {
+                // 拷贝到一半失败：已落盘的前几张也要删
+                copiedPhotos.forEach { runCatching { it.delete() } }
+                throw error
             }
             val photoMap = content.manifest.optJSONObject("photos") ?: JSONObject()
             fun rewrite(raw: String?): String? = raw

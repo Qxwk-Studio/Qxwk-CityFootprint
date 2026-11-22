@@ -67,6 +67,10 @@ object DataExport {
             checkin.photoPath?.split(",")?.filter { it.isNotBlank() }?.forEach(photoPaths::add)
         }
         val existingPhotos = photoPaths.mapNotNull { path -> File(path).takeIf { it.isFile } }
+        // 先按照片实际大小预检，别把 cache 写满再失败
+        if (existingPhotos.sumOf { it.length() } > BackupLimits.EXPORT_BYTES) {
+            throw BackupTooLargeException()
+        }
 
         val written = mutableSetOf<String>()
         val photoEntries = ArrayList<Pair<String, File>>()
@@ -149,15 +153,18 @@ object DataExport {
         }
 
         // 导出同样限大小：超过上限的包客户端自己也导不回来
-        if (temp.length() > BackupCrypto.MAX_BACKUP_BYTES) {
+        if (temp.length() > BackupLimits.EXPORT_BYTES) {
             temp.delete()
-            error("TOO_LARGE")
+            throw BackupTooLargeException()
         }
 
         val mime = if (format == Format.BAK) "application/octet-stream" else "application/zip"
-        val display = publishToDownloads(context, temp, name, mime)
-        temp.delete()
-        return Result(display, trips.size, checkins.size, existingPhotos.size)
+        return try {
+            val display = publishToDownloads(context, temp, name, mime)
+            Result(display, trips.size, checkins.size, existingPhotos.size)
+        } finally {
+            temp.delete()
+        }
     }
 
     private fun publishToDownloads(context: Context, source: File, name: String, mime: String): String {

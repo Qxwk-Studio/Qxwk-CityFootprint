@@ -29,9 +29,6 @@ internal object BackupCrypto {
 
     const val FLAG_DEFLATE = 0x01
 
-    /** 备份文件上限：导入与导出共用，防止导出无法再导入。 */
-    const val MAX_BACKUP_BYTES = 512L * 1024 * 1024
-
     /** 文件头 magic；选择导入文件时先用它挡掉非本应用备份。 */
     const val MAGIC = "CFBK"
     private const val VERSION = 1

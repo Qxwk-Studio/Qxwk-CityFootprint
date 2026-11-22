@@ -13,6 +13,6 @@
     <string name="import_progress_title">Importing…</string>
     <string name="import_done">Imported: %1$d trips / %2$d check-ins added, %3$d trips / %4$d check-ins updated, %5$d photos</string>
     <string name="import_failed">Import failed: damaged file, not a City Footprint backup, or not enough storage</string>
-    <string name="import_too_large">Backup is larger than 512 MB</string>
-    <string name="export_too_large">Data is larger than 512 MB; export in batches</string>
+    <string name="import_too_large">Backup is larger than %1$d MB</string>
+    <string name="export_too_large">Data is larger than %1$d MB; export in batches</string>
 </resources>
