@@ -27,6 +27,16 @@ class SyncRulesTest {
     }
 
     @Test
+    fun `higher remote revision decides existence`() {
+        // 远端 revision 更大：删除/复活以远端为准，时间戳不参与
+        assertTrue(SyncRules.remoteWinsExistence(localRevision = 2, remoteRevision = 3))
+        assertTrue(SyncRules.remoteWinsExistence(localRevision = 2, remoteRevision = 3, force = true))
+        // revision 相同或更小：存在性不由远端决定（交给时间/冲突判定）
+        assertFalse(SyncRules.remoteWinsExistence(localRevision = 3, remoteRevision = 3))
+        assertFalse(SyncRules.remoteWinsExistence(localRevision = 3, remoteRevision = 2))
+    }
+
+    @Test
     fun `cursor only moves forward`() {
         assertEquals(7, SyncRules.nextCursor(3, 7))
         assertEquals(7, SyncRules.nextCursor(7, 3))

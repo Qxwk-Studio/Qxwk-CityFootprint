@@ -282,12 +282,25 @@ internal object SyncEngine {
         val uuid = data["uuid"]?.jsonPrimitive?.contentOrNull ?: return
         val existing = db.trips().byUuidAny(uuid)
         val remoteModified = data["client_modified_at"]?.jsonPrimitive?.longOrNull ?: 0L
-        // 先拉后推时，不能用服务端旧快照覆盖本地尚未推送的修改。
-        // 除了比较修改时间，还要看本地是否仍有未同步修改，避免两端时钟差导致误覆盖。
-        if (!force && existing != null &&
-            SyncRules.shouldPush(existing.modifiedAt, Prefs.syncSyncedAt("trip", uuid))) return
-        if (!SyncRules.shouldApplyRemote(existing?.modifiedAt ?: 0L, remoteModified, force)) return
+        val localRevision = Prefs.syncRevision("trip", uuid)
+        val remoteRevision = data["revision"]?.jsonPrimitive?.intOrNull ?: 0
         val deletedAt = data["deleted_at"]?.jsonPrimitive?.longOrNull
+        val remoteRevives = deletedAt == null && existing?.deletedAt != null &&
+            SyncRules.remoteWinsExistence(localRevision, remoteRevision, force)
+        // 墓碑：远端 revision 更大就以远端为准（删除生效），否则仍按「本地有未推修改不覆盖」
+        if (deletedAt != null) {
+            if (!force && !SyncRules.remoteWinsExistence(localRevision, remoteRevision) &&
+                SyncRules.shouldPush(existing?.modifiedAt ?: 0L, Prefs.syncSyncedAt("trip", uuid))
+            ) return
+        } else {
+            // 内容更新：本地已删而远端 revision 更大 -> 复活；其余仍按时间与未推修改判断
+            if (!force && !remoteRevives &&
+                SyncRules.shouldPush(existing?.modifiedAt ?: 0L, Prefs.syncSyncedAt("trip", uuid))
+            ) return
+            if (!force && !remoteRevives &&
+                !SyncRules.shouldApplyRemote(existing?.modifiedAt ?: 0L, remoteModified, force)
+            ) return
+        }
         if (deletedAt != null) {
             existing?.let {
                 db.trips().update(it.copy(deletedAt = deletedAt, modifiedAt = deletedAt, syncState = SyncState.SYNCED))
@@ -333,12 +346,23 @@ internal object SyncEngine {
         val uuid = data["uuid"]?.jsonPrimitive?.contentOrNull ?: return
         val existing = db.checkins().byUuidAny(uuid)
         val remoteModified = data["client_modified_at"]?.jsonPrimitive?.longOrNull ?: 0L
-        // 与行程一致：本地还有没推上去的修改时，远端快照不能直接覆盖（否则多设备下静默丢编辑）
-        if (!force && existing != null &&
-            SyncRules.shouldPush(existing.modifiedAt, Prefs.syncSyncedAt("checkin", uuid))) return
-        // 时间相等时也不要当「远端更新」
-        if (!SyncRules.shouldApplyRemote(existing?.modifiedAt ?: 0L, remoteModified, force)) return
+        val localRevision = Prefs.syncRevision("checkin", uuid)
+        val remoteRevision = data["revision"]?.jsonPrimitive?.intOrNull ?: 0
         val deletedAt = data["deleted_at"]?.jsonPrimitive?.longOrNull
+        val remoteRevives = deletedAt == null && existing?.deletedAt != null &&
+            SyncRules.remoteWinsExistence(localRevision, remoteRevision, force)
+        if (deletedAt != null) {
+            if (!force && !SyncRules.remoteWinsExistence(localRevision, remoteRevision) &&
+                SyncRules.shouldPush(existing?.modifiedAt ?: 0L, Prefs.syncSyncedAt("checkin", uuid))
+            ) return
+        } else {
+            if (!force && !remoteRevives &&
+                SyncRules.shouldPush(existing?.modifiedAt ?: 0L, Prefs.syncSyncedAt("checkin", uuid))
+            ) return
+            if (!force && !remoteRevives &&
+                !SyncRules.shouldApplyRemote(existing?.modifiedAt ?: 0L, remoteModified, force)
+            ) return
+        }
         if (deletedAt != null) {
             existing?.let { db.checkins().update(it.copy(deletedAt = deletedAt, modifiedAt = deletedAt)) }
             Prefs.saveSyncEntity("checkin", uuid, data["revision"]?.jsonPrimitive?.intOrNull ?: 0, deletedAt)
