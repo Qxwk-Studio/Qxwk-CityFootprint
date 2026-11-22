@@ -154,7 +154,7 @@ class SyncActivity : LocalizedActivity() {
                 setServerInfo(photo = "—", version = "—")
                 return@runIo
             }
-            binding.textServerName.text = info.serverName.ifBlank { "City Footprint 官方示例服务器" }
+            binding.textServerName.text = info.serverName.ifBlank { getString(R.string.sync_server_unknown) }
             binding.textPhotoSupport.setText(
                 if (info.supportsPhotoUpload) R.string.sync_photo_yes else R.string.sync_photo_no,
             )
