@@ -463,7 +463,7 @@ class MineFragment : Fragment() {
                     uri, arrayOf(android.provider.OpenableColumns.SIZE), null, null, null,
                 )?.use { cursor -> if (cursor.moveToFirst() && !cursor.isNull(0)) cursor.getLong(0) else 0L } ?: 0L
             }.getOrDefault(0L)
-            if (size > 256L * 1024 * 1024) error("TOO_LARGE")
+            if (size > top.qxwkstudio.travel.data.BackupCrypto.MAX_BACKUP_BYTES) error("TOO_LARGE")
             try {
                 appContext.contentResolver.openInputStream(uri)?.use { input ->
                     temp.outputStream().use { input.copyTo(it) }
@@ -478,7 +478,7 @@ class MineFragment : Fragment() {
                 ) {
                     runCatching {
                         top.qxwkstudio.travel.data.SyncScheduler.runExclusive {
-                            top.qxwkstudio.travel.data.SyncEngine.reconcile(appContext, AppDatabase.get(appContext))
+                            top.qxwkstudio.travel.data.SyncEngine.reconcile(AppDatabase.get(appContext))
                         }
                     }
                 }
@@ -539,7 +539,11 @@ class MineFragment : Fragment() {
             _binding?.rowExportData?.isEnabled = true
             val data = result.getOrNull()
             if (data == null) {
-                requireContext().notify(R.string.export_failed, long = true)
+                val tooLarge = result.exceptionOrNull()?.message == "TOO_LARGE"
+                requireContext().notify(
+                    if (tooLarge) R.string.export_too_large else R.string.export_failed,
+                    long = true,
+                )
             } else {
                 requireContext().notify(
                     getString(R.string.export_done, data.displayPath, data.trips, data.checkins, data.photos),

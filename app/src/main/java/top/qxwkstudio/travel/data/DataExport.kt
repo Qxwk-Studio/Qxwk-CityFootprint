@@ -148,6 +148,12 @@ object DataExport {
             }
         }
 
+        // 导出同样限大小：超过上限的包客户端自己也导不回来
+        if (temp.length() > BackupCrypto.MAX_BACKUP_BYTES) {
+            temp.delete()
+            error("TOO_LARGE")
+        }
+
         val mime = if (format == Format.BAK) "application/octet-stream" else "application/zip"
         val display = publishToDownloads(context, temp, name, mime)
         temp.delete()

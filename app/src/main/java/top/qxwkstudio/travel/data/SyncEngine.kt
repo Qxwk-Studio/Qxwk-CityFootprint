@@ -214,20 +214,20 @@ internal object SyncEngine {
             }
             cursor = SyncRules.nextCursor(cursor, response.nextSince)
             // 游标要越过 blocked 变更，跳过集合必须先落盘；否则这页之后抛异常就永远收不到它们
-            replaceSkipped(context, stillSkipped)
+            replaceSkipped(stillSkipped)
             Prefs.saveSyncCursor(context, cursor)
             if (!response.hasMore || response.changes.isEmpty()) return count
         }
         return count
         } finally {
             // 中途抛异常也保留已收集的跳过项
-            replaceSkipped(context, stillSkipped)
+            replaceSkipped(stillSkipped)
         }
     }
 
     /** 用本轮实际仍被跳过的 seq 覆盖持久化集合（一次写入）。 */
-    private fun replaceSkipped(context: Context, seqs: Set<Long>) {
-        Prefs.replaceSyncSkipped(context, seqs)
+    private fun replaceSkipped(seqs: Set<Long>) {
+        Prefs.replaceSyncSkipped(seqs)
     }
 
     /**
@@ -236,7 +236,7 @@ internal object SyncEngine {
      *
      * 不一致的记录不动：让后续 push 走冲突流程，由用户决定谁覆盖谁。
      */
-    suspend fun reconcile(context: Context, db: AppDatabase): Int {
+    suspend fun reconcile(db: AppDatabase): Int {
         val server = Prefs.syncServer
         val token = Prefs.syncToken
         if (server.isBlank() || token.isBlank()) return 0

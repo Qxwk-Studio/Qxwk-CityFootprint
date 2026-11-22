@@ -5,13 +5,14 @@
     <string name="export_failed">Export failed</string>
     <string name="export_permission">Storage permission is required to write to Downloads</string>
     <string name="export_format_title">Choose export format</string>
-    <string name="export_format_zip">Package as .zip (with photos, unzippable)</string>
-    <string name="export_format_bak">Package as .bak (encrypted, importable on any client)</string>
+    <string name="export_format_zip">.zip format (unzippable)</string>
+    <string name="export_format_bak">.bak format (importable on any client)</string>
     <string name="mine_import_data">Import backup</string>
     <string name="import_confirm_title">Import this backup?</string>
     <string name="import_confirm_message">Records merge by modified time: newer wins, older are skipped. Records deleted locally but present in the backup will be restored. Other local data is kept.</string>
     <string name="import_progress_title">Importing…</string>
     <string name="import_done">Imported: %1$d trips / %2$d check-ins added, %3$d trips / %4$d check-ins updated, %5$d photos</string>
     <string name="import_failed">Import failed: damaged file, not a City Footprint backup, or not enough storage</string>
-    <string name="import_too_large">Backup is larger than 256 MB; split it before importing</string>
+    <string name="import_too_large">Backup is larger than 512 MB</string>
+    <string name="export_too_large">Data is larger than 512 MB; export in batches</string>
 </resources>

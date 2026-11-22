@@ -950,7 +950,11 @@ class TripsFragment : Fragment() {
         }) { result ->
             val data = result.getOrNull()
             if (data == null) {
-                requireContext().notify(R.string.export_failed, long = true)
+                val tooLarge = result.exceptionOrNull()?.message == "TOO_LARGE"
+                requireContext().notify(
+                    if (tooLarge) R.string.export_too_large else R.string.export_failed,
+                    long = true,
+                )
             } else {
                 requireContext().notify(
                     getString(R.string.export_done, data.displayPath, data.trips, data.checkins, data.photos),
