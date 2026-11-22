@@ -67,10 +67,21 @@
     if (event.deltaMode === 2) return event.deltaY * window.innerHeight;
     return event.deltaY;
   }
+  function canScrollWithin(direction) {
+    var el = sections[current] || sections[0];
+    if (!el) return false;
+    var over = el.scrollHeight - el.clientHeight;
+    if (over <= 4) return false;
+    var top = Math.max(0, el.offsetTop - headerHeight());
+    return direction > 0
+      ? window.scrollY < top + over - 2
+      : window.scrollY > top + 2;
+  }
   function onWheel(event) {
     if (!enabled()) return;
     if (event.ctrlKey) return;
     if (Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
+    // 整页吸附优先：滚轮始终由脚本翻页，不交给原生滚动
     event.preventDefault();
     window.clearTimeout(gestureTimer);
     gestureTimer = window.setTimeout(function () {
@@ -92,8 +103,10 @@
     if (!enabled()) return;
     if (event.altKey || event.ctrlKey || event.metaKey) return;
     if (['ArrowDown', 'PageDown', ' '].indexOf(event.key) >= 0) {
+      if (canScrollWithin(1)) return;
       event.preventDefault(); goTo(current + 1);
     } else if (['ArrowUp', 'PageUp'].indexOf(event.key) >= 0) {
+      if (canScrollWithin(-1)) return;
       event.preventDefault(); goTo(current - 1);
     } else if (event.key === 'Home') {
       event.preventDefault(); goTo(0);
@@ -113,11 +126,14 @@
   reduced.addEventListener('change', function () { setSnap(enabled()); });
   var signature = document.querySelector('.home-hero object');
   var signatureTimer = 0;
+  var signatureReloads = 0;
 
   function replaySignature() {
-    if (!signature || reduced.matches) return;
+    if (!signature || reduced.matches || document.hidden) return;
     var doc = signature.contentDocument;
     if (!doc) {
+      if (signatureReloads >= 3) return;
+      signatureReloads++;
       try {
         var url = new URL(signature.data, window.location.href);
         url.searchParams.set('replay', String(Date.now()));

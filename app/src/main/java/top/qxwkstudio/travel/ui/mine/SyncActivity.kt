@@ -134,25 +134,78 @@ class SyncActivity : LocalizedActivity() {
     private fun showServerHistory() {
         val example = top.qxwkstudio.travel.data.Prefs.EXAMPLE_SYNC_SERVER
         val items = (listOf(example) + top.qxwkstudio.travel.data.Prefs.syncServerHistory()).distinct()
-        val labels = items.map { url ->
-            if (url == example) getString(R.string.sync_server_example) + " · " + url else url
+        val density = resources.displayMetrics.density
+        fun dp(value: Int) = (value * density).toInt()
+
+        val container = android.widget.LinearLayout(this).apply {
+            orientation = android.widget.LinearLayout.VERTICAL
+            setPadding(dp(6), dp(6), dp(6), dp(6))
+            background = android.graphics.drawable.GradientDrawable().apply {
+                cornerRadius = dp(14).toFloat()
+                setColor(androidx.core.content.ContextCompat.getColor(this@SyncActivity, R.color.card))
+                setStroke(
+                    dp(1),
+                    androidx.core.content.ContextCompat.getColor(this@SyncActivity, R.color.border),
+                )
+            }
+            elevation = dp(8).toFloat()
         }
-        val popup = android.widget.ListPopupWindow(this)
-        popup.anchorView = binding.btnServerHistory
-        val width = binding.inputServer.width.coerceAtLeast(
-            (220 * resources.displayMetrics.density).toInt(),
-        )
-        popup.width = width
-        popup.height = android.widget.ListPopupWindow.WRAP_CONTENT
-        popup.setAdapter(
-            android.widget.ArrayAdapter(this, android.R.layout.simple_list_item_1, labels),
-        )
-        popup.setOnItemClickListener { _, _, position, _ ->
-            binding.inputServer.setText(items[position])
-            binding.inputServer.setSelection(binding.inputServer.text.length)
-            popup.dismiss()
+
+        lateinit var popup: android.widget.PopupWindow
+        items.forEach { url ->
+            val tv = android.util.TypedValue()
+            theme.resolveAttribute(android.R.attr.selectableItemBackground, tv, true)
+            val row = android.widget.TextView(this).apply {
+                textSize = 13f
+                maxLines = 1
+                ellipsize = android.text.TextUtils.TruncateAt.MIDDLE
+                setPadding(dp(12), dp(10), dp(12), dp(10))
+                background = androidx.core.content.ContextCompat.getDrawable(this@SyncActivity, tv.resourceId)
+                setTextColor(androidx.core.content.ContextCompat.getColor(this@SyncActivity, R.color.fg))
+                text = if (url == example) {
+                    val prefix = getString(R.string.sync_server_example)
+                    android.text.SpannableString("$prefix  $url").apply {
+                        setSpan(
+                            android.text.style.ForegroundColorSpan(
+                                androidx.core.content.ContextCompat.getColor(this@SyncActivity, R.color.accent),
+                            ),
+                            0,
+                            prefix.length,
+                            android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
+                        )
+                    }
+                } else {
+                    url
+                }
+                setOnClickListener {
+                    binding.inputServer.setText(url)
+                    binding.inputServer.setSelection(binding.inputServer.text.length)
+                    popup.dismiss()
+                }
+            }
+            container.addView(
+                row,
+                android.widget.LinearLayout.LayoutParams(
+                    android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+                    android.widget.LinearLayout.LayoutParams.WRAP_CONTENT,
+                ),
+            )
         }
-        popup.show()
+
+        val width = binding.inputServer.width.coerceAtLeast(dp(220))
+        popup = android.widget.PopupWindow(
+            container,
+            width,
+            android.widget.LinearLayout.LayoutParams.WRAP_CONTENT,
+            true,
+        ).apply {
+            isOutsideTouchable = true
+            elevation = dp(8).toFloat()
+            setBackgroundDrawable(
+                android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT),
+            )
+            showAsDropDown(binding.inputServer, 0, dp(6))
+        }
     }
 
     private fun loadServer(manual: Boolean = false) {

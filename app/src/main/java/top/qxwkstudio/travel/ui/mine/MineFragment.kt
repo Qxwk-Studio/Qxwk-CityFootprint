@@ -439,7 +439,6 @@ class MineFragment : Fragment() {
 
     private fun startImport(uri: android.net.Uri) {
         if (importing) return
-        importing = true
         val bar = android.widget.ProgressBar(
             requireContext(), null, android.R.attr.progressBarStyleHorizontal,
         ).apply {
@@ -453,20 +452,36 @@ class MineFragment : Fragment() {
             .setView(bar)
             .setCancelable(false)
             .show()
+        importing = true
         val appContext = requireContext().applicationContext
         val main = android.os.Handler(android.os.Looper.getMainLooper())
         viewLifecycleOwner.lifecycleScope.runIo({
             val temp = java.io.File(appContext.cacheDir, "import-input-${System.currentTimeMillis()}.bak")
-            // 上限 256MB：GCM 解密会把明文整块驻留内存，超大文件先挡住
-            val size = runCatching {
+            // 导入上限低于导出：GCM 解密会把明文整块驻留内存
+            // OpenableColumns.SIZE 对云盘/流式 provider 可能是 null/0，不能只信它，复制时按实际字节再卡一次
+            val declared = runCatching {
                 appContext.contentResolver.query(
                     uri, arrayOf(android.provider.OpenableColumns.SIZE), null, null, null,
                 )?.use { cursor -> if (cursor.moveToFirst() && !cursor.isNull(0)) cursor.getLong(0) else 0L } ?: 0L
             }.getOrDefault(0L)
-            if (size > 256L * 1024 * 1024) error("TOO_LARGE")
+            if (declared > top.qxwkstudio.travel.data.BackupLimits.IMPORT_BYTES) {
+                throw top.qxwkstudio.travel.data.BackupTooLargeException()
+            }
             try {
                 appContext.contentResolver.openInputStream(uri)?.use { input ->
-                    temp.outputStream().use { input.copyTo(it) }
+                    temp.outputStream().use { out ->
+                        val buffer = ByteArray(64 * 1024)
+                        var total = 0L
+                        while (true) {
+                            val read = input.read(buffer)
+                            if (read < 0) break
+                            total += read
+                            if (total > top.qxwkstudio.travel.data.BackupLimits.IMPORT_BYTES) {
+                                throw top.qxwkstudio.travel.data.BackupTooLargeException()
+                            }
+                            out.write(buffer, 0, read)
+                        }
+                    }
                 } ?: error("无法读取备份文件")
                 val report = DataImport.import(appContext, AppDatabase.get(appContext), temp) { done, total ->
                     // 进度只碰 ProgressBar 对象，不碰 Fragment/Activity，旋转也不会崩
@@ -478,7 +493,7 @@ class MineFragment : Fragment() {
                 ) {
                     runCatching {
                         top.qxwkstudio.travel.data.SyncScheduler.runExclusive {
-                            top.qxwkstudio.travel.data.SyncEngine.reconcile(appContext, AppDatabase.get(appContext))
+                            top.qxwkstudio.travel.data.SyncEngine.reconcile(AppDatabase.get(appContext))
                         }
                     }
                 }
@@ -491,9 +506,18 @@ class MineFragment : Fragment() {
             dialog.dismiss()
             val report = result.getOrNull()
             if (report == null) {
-                val tooLarge = result.exceptionOrNull()?.message == "TOO_LARGE"
+                val tooLarge = result.exceptionOrNull() is top.qxwkstudio.travel.data.BackupTooLargeException
                 context?.notify(
-                    if (tooLarge) R.string.import_too_large else R.string.import_failed,
+                    if (tooLarge) {
+                        appContext.getString(
+                            R.string.import_too_large,
+                            top.qxwkstudio.travel.data.BackupLimits.mb(
+                                top.qxwkstudio.travel.data.BackupLimits.IMPORT_BYTES,
+                            ),
+                        )
+                    } else {
+                        appContext.getString(R.string.import_failed)
+                    },
                     long = true,
                 )
                 return@runIo
@@ -539,7 +563,20 @@ class MineFragment : Fragment() {
             _binding?.rowExportData?.isEnabled = true
             val data = result.getOrNull()
             if (data == null) {
-                requireContext().notify(R.string.export_failed, long = true)
+                val tooLarge = result.exceptionOrNull() is top.qxwkstudio.travel.data.BackupTooLargeException
+                requireContext().notify(
+                    if (tooLarge) {
+                        getString(
+                            R.string.export_too_large,
+                            top.qxwkstudio.travel.data.BackupLimits.mb(
+                                top.qxwkstudio.travel.data.BackupLimits.EXPORT_BYTES,
+                            ),
+                        )
+                    } else {
+                        getString(R.string.export_failed)
+                    },
+                    long = true,
+                )
             } else {
                 requireContext().notify(
                     getString(R.string.export_done, data.displayPath, data.trips, data.checkins, data.photos),

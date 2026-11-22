@@ -304,7 +304,7 @@ object Prefs {
     }.getOrDefault(emptyList())
 
     /** 一次性覆盖整个集合，避免 N+1 次 commit 与中途被杀导致集合丢失。 */
-    fun replaceSyncSkipped(context: Context, seqs: Collection<Long>) {
+    fun replaceSyncSkipped(seqs: Collection<Long>) {
         val array = org.json.JSONArray(seqs.sorted())
         appContext.getSharedPreferences(SP_NAME, Context.MODE_PRIVATE)
             .edit().putString(KEY_SYNC_SKIPPED, array.toString()).commit()

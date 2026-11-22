@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="zh-CN" class="home">
+<html lang="zh-CN" class="home snap-home">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>City Footprint · 旅行记录与足迹地图</title>
-  <meta name="description" content="记录去过的城市、行程和花费，支持离线使用与 ZIP 导出。">
+  <meta name="description" content="记录去过的城市、行程和花费，支持离线使用，可导出 ZIP 或加密 .bak 备份。">
   <meta name="theme-color" content="#0891b2">
   <link rel="icon" type="image/webp" href="/favicon.webp">
   <link rel="stylesheet" href="/site.css">
@@ -62,7 +62,7 @@
         <div class="feature-copy">
           <p class="feature-index">01 / CHECK-INS</p>
           <h2>每次打卡，<br><span>都留成一张卡片</span></h2>
-          <p class="feature-lead">城市、时间、花费、评分和同行人放在同一张卡片里。记录多了按时间排好，需要时连照片一起导出成 ZIP。</p>
+          <p class="feature-lead">城市、时间、花费、评分和同行人放在同一张卡片里。记录多了按时间排好，需要时连照片一起导出成 ZIP 或加密 .bak。</p>
           <ul class="feature-points">
             <li>城市、时间、花费一张卡</li>
             <li>评分、同行人、照片一起留</li>
@@ -74,9 +74,9 @@
           <div class="record-stack">
             <img class="record-card" style="--i:0" src="/assets/promo/card-01.webp" alt="" width="1152" height="298" loading="eager" decoding="async">
             <img class="record-card" style="--i:1" src="/assets/promo/card-02.webp" alt="" width="1152" height="298" loading="eager" decoding="async">
-            <img class="record-card" style="--i:2" src="/assets/promo/card-03.webp" alt="" width="1152" height="298" loading="eager" decoding="async">
-            <img class="record-card" style="--i:3" src="/assets/promo/card-04.webp" alt="" width="1152" height="298" loading="eager" decoding="async">
-            <img class="record-card" style="--i:4" src="/assets/promo/card-05.webp" alt="" width="1152" height="298" loading="eager" decoding="async">
+            <img class="record-card" style="--i:2" src="/assets/promo/card-03.webp" alt="" width="1152" height="298" loading="lazy" decoding="async">
+            <img class="record-card" style="--i:3" src="/assets/promo/card-04.webp" alt="" width="1152" height="298" loading="lazy" decoding="async">
+            <img class="record-card" style="--i:4" src="/assets/promo/card-05.webp" alt="" width="1152" height="298" loading="lazy" decoding="async">
           </div>
           <p class="visual-caption">卡片按时间叠好，随时能翻</p>
         </div>
@@ -198,7 +198,7 @@
 
   <footer class="site-footer">
     <div class="wrap footer-inner">
-      <span>Qxwk Studio · City Footprint</span>
+      <span>City Footprint</span>
       <div class="footer-links">
         <a href="/map">行程地图</a>
         <a href="/user">用户查询</a>
@@ -209,7 +209,7 @@
     </div>
   </footer>
 
-  <script src="/site.js"></script>
-  <script src="/home.js" defer></script>
+  <script src="/site.js?v=2.4.5"></script>
+  <script src="/home.js?v=2.4.5" defer></script>
 </body>
 </html>

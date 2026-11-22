@@ -950,7 +950,20 @@ class TripsFragment : Fragment() {
         }) { result ->
             val data = result.getOrNull()
             if (data == null) {
-                requireContext().notify(R.string.export_failed, long = true)
+                val tooLarge = result.exceptionOrNull() is top.qxwkstudio.travel.data.BackupTooLargeException
+                requireContext().notify(
+                    if (tooLarge) {
+                        getString(
+                            R.string.export_too_large,
+                            top.qxwkstudio.travel.data.BackupLimits.mb(
+                                top.qxwkstudio.travel.data.BackupLimits.EXPORT_BYTES,
+                            ),
+                        )
+                    } else {
+                        getString(R.string.export_failed)
+                    },
+                    long = true,
+                )
             } else {
                 requireContext().notify(
                     getString(R.string.export_done, data.displayPath, data.trips, data.checkins, data.photos),

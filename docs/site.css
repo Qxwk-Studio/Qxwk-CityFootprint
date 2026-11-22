@@ -355,6 +355,7 @@ button, input { font: inherit; }
 /* ── lookup pages ─────────────────────────────────────── */
 .lookup-page {
   width: min(860px, calc(100% - 40px));
+  min-height: calc(100vh - 68px);
   min-height: calc(100svh - 68px);
   margin: 0 auto;
   padding: 54px 0 80px;
@@ -528,6 +529,10 @@ button, input { font: inherit; }
 }
 
 /* ── footer ───────────────────────────────────────────── */
+html.snap-home .site-footer {
+  scroll-snap-align: end;
+}
+
 .site-footer {
   padding: 30px 0;
   border-top: 1px solid var(--line);
@@ -570,10 +575,39 @@ button, input { font: inherit; }
 
 .map-page-main {
   position: relative;
+  height: calc(100vh - 68px);
   height: calc(100svh - 68px);
   min-height: 420px;
 }
 
+/* map notice / legal links */
+.map-notice {
+  position: absolute;
+  left: 50%;
+  top: 14px;
+  transform: translateX(-50%);
+  z-index: 600;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, .88);
+  color: #fff;
+  font-size: 13px;
+}
+.map-legal-links {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  z-index: 600;
+  display: flex;
+  gap: 8px;
+  font-size: 12px;
+}
+.map-legal-links a {
+  color: #fff;
+  background: rgba(15, 23, 42, .7);
+  padding: 4px 8px;
+  border-radius: 999px;
+}
 .map-canvas-full {
   position: absolute;
   inset: 0;
@@ -881,6 +915,7 @@ html.snap-home .hero,
 html.snap-home main > .section {
   display: flex;
   align-items: center;
+  min-height: calc(100vh - 68px);
   min-height: calc(100svh - 68px);
   scroll-snap-align: start;
   scroll-snap-stop: always;
@@ -902,6 +937,7 @@ html.snap-home main > .section > .wrap {
 
 /* ── full-screen home story ───────────────────────────── */
 .home-hero {
+  min-height: calc(100vh - 68px);
   min-height: calc(100svh - 68px);
 }
 
@@ -911,6 +947,7 @@ html.snap-home main > .section > .wrap {
   align-items: center;
   justify-content: center;
   width: min(var(--max), calc(100% - 40px));
+  min-height: calc(100vh - 68px);
   min-height: calc(100svh - 68px);
   margin: 0 auto;
   padding: 64px 0;
@@ -2119,6 +2156,7 @@ body.home {
 #feature-map .phone-frame,
 #feature-timeline .phone-frame,
 #feature-achievements .phone-frame {
+  height: min(680px, calc(100vh - 254px));
   height: min(680px, calc(100svh - 254px));
 }
 
@@ -2451,6 +2489,7 @@ body.legal .legal-page a {
 #feature-map .phone-frame,
 #feature-timeline .phone-frame,
 #feature-achievements .phone-frame {
+  height: min(612px, calc(100vh - 294px));
   height: min(612px, calc(100svh - 294px));
 }
 
