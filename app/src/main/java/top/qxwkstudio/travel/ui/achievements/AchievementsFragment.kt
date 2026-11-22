@@ -221,9 +221,11 @@ class AchievementsFragment : Fragment() {
         val categories = Achievements.categories
         val codes = categories[category].items.map { it.code }
         val done = codes.count { states[it]?.done == true }
-        val rows = ArrayList<Row>(16)
+        val rows = ArrayList<Row>(codes.size + 1)
         rows.add(Row.Header(categoryTitle(category), done, codes.size))
-        categories[category].items.forEach { def ->
+        // 已完成的统一排到最上面；partition 是稳定分组，两组内部仍是原来的默认顺序
+        val (completed, pending) = categories[category].items.partition { states[it.code]?.done == true }
+        (completed + pending).forEach { def ->
             val state = states[def.code] ?: return@forEach
             rows.add(Row.Card(category, def, state))
         }

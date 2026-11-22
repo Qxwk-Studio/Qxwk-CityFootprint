@@ -13,6 +13,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import top.qxwkstudio.travel.BuildConfig
 import top.qxwkstudio.travel.R
 import top.qxwkstudio.travel.net.Http
 import top.qxwkstudio.travel.net.HttpException
@@ -46,6 +47,7 @@ internal object SyncScheduler {
 
     fun request(delayMs: Long = 2500) {
         val app = appContext ?: return
+        if (!BuildConfig.SYNC_OPTION) return
         if (!Prefs.legalAccepted || !Prefs.networkAllowed || !Prefs.syncEnabled ||
             Prefs.syncToken.isBlank() || Prefs.syncServer.isBlank()) return
         // 同步刚结束的冷却窗口：不是丢弃这次编辑，而是等窗口结束再排一次，
@@ -69,6 +71,7 @@ internal object SyncScheduler {
     suspend fun <T> runExclusive(block: suspend () -> T): T = mutex.withLock { block() }
 
     suspend fun runNow(context: Context, force: Boolean): Result<SyncEngine.Report>? {
+        if (!BuildConfig.SYNC_OPTION) return null
         if (!Prefs.legalAccepted) return null
         // 网络开关是无条件闸门：force 只跳过「节流/开关未开」的等待，不能绕过用户关掉的网络
         if (!Prefs.networkAllowed) return null

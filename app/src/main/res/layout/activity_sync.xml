@@ -106,6 +106,16 @@
                         android:layout_marginStart="8dp"
                         android:minWidth="64dp"
                         android:text="@string/sync_server_fetch" />
+
+                    <ImageButton
+                        android:id="@+id/btnServerHistory"
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:layout_marginStart="4dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="@string/sync_server_history"
+                        android:src="@drawable/ic_arrow_down"
+                        android:tint="@color/text_tertiary" />
                 </LinearLayout>
 
                 <LinearLayout

@@ -13,4 +13,5 @@
     <string name="import_progress_title">正在导入…</string>
     <string name="import_done">导入完成：新增 %1$d 条行程 / %2$d 条打卡，更新 %3$d 条行程 / %4$d 条打卡，%5$d 张照片</string>
     <string name="import_failed">导入失败：备份损坏、不是本应用导出的备份，或存储空间不足</string>
+    <string name="import_too_large">备份文件过大（超过 256 MB），请分批导出后再导入</string>
 </resources>

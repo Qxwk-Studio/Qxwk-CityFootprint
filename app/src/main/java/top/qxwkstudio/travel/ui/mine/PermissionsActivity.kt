@@ -17,6 +17,7 @@ import top.qxwkstudio.travel.R
 import top.qxwkstudio.travel.data.Prefs
 import top.qxwkstudio.travel.data.SyncScheduler
 import top.qxwkstudio.travel.databinding.ActivityPermissionsBinding
+import top.qxwkstudio.travel.BuildConfig
 import top.qxwkstudio.travel.ui.common.Palette
 
 /** 权限管理：只列这个 App 真正会用到/会申请的权限。 */
@@ -64,14 +65,18 @@ class PermissionsActivity : LocalizedActivity() {
                 storagePermission.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
             }
         }
+        // 标准包（syncOption=false）不提供「网络 → 同步」子选项
+        val showSyncOption = BuildConfig.SYNC_OPTION
         binding.switchNetwork.isChecked = Prefs.networkAllowed
-        binding.rowSyncPermission.visibility = if (Prefs.networkAllowed) View.VISIBLE else View.GONE
-        binding.dividerSyncPermission.visibility = if (Prefs.networkAllowed) View.VISIBLE else View.GONE
+        binding.rowSyncPermission.visibility =
+            if (showSyncOption && Prefs.networkAllowed) View.VISIBLE else View.GONE
+        binding.dividerSyncPermission.visibility =
+            if (showSyncOption && Prefs.networkAllowed) View.VISIBLE else View.GONE
         binding.switchSyncPermission.isChecked = Prefs.syncEnabled
         binding.switchNetwork.setOnCheckedChangeListener { _, checked ->
             Prefs.saveNetworkAllowed(this, checked)
-            binding.rowSyncPermission.visibility = if (checked) View.VISIBLE else View.GONE
-            binding.dividerSyncPermission.visibility = if (checked) View.VISIBLE else View.GONE
+            binding.rowSyncPermission.visibility = if (showSyncOption && checked) View.VISIBLE else View.GONE
+            binding.dividerSyncPermission.visibility = if (showSyncOption && checked) View.VISIBLE else View.GONE
             if (!checked) {
                 Prefs.saveSyncEnabled(this, false)
                 binding.switchSyncPermission.isChecked = false

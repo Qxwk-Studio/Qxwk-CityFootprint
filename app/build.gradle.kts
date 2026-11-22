@@ -44,6 +44,9 @@ android {
     namespace = "top.qxwkstudio.travel"
     compileSdk = 34
 
+    // 构建期开关：false 时隐藏「网络 → 同步」子选项（CI 出的标准包用）
+    val syncOptionEnabled = (project.findProperty("syncOption") as String?)?.toBooleanStrictOrNull() ?: true
+
     defaultConfig {
         applicationId = "top.qxwkstudio.travel"
         minSdk = 24
@@ -51,6 +54,7 @@ android {
         // 来自仓库根目录 release.json；发版只改 JSON，不再改本文件。
         versionCode = releaseVersionCode
         versionName = releaseVersionName
+        buildConfigField("boolean", "SYNC_OPTION", syncOptionEnabled.toString())
 
         // MapLibre 的原生库四个 ABI 各 12 MB 左右，全打进去 APK 会从 8 MB 涨到 50 MB。
         // ABI 的取舍写在下面的 `splits { abi { include(...) } }` 里 —— 那里已经限定了

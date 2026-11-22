@@ -93,7 +93,8 @@ class MineFragment : Fragment() {
 
     override fun onResume() {
         super.onResume()
-        val showSync = top.qxwkstudio.travel.data.Prefs.networkAllowed &&
+        val showSync = BuildConfig.SYNC_OPTION &&
+            top.qxwkstudio.travel.data.Prefs.networkAllowed &&
             top.qxwkstudio.travel.data.Prefs.syncEnabled
         _binding?.rowSync?.visibility = if (showSync) View.VISIBLE else View.GONE
         _binding?.dividerSync?.visibility = if (showSync) View.VISIBLE else View.GONE
@@ -456,14 +457,32 @@ class MineFragment : Fragment() {
         val main = android.os.Handler(android.os.Looper.getMainLooper())
         viewLifecycleOwner.lifecycleScope.runIo({
             val temp = java.io.File(appContext.cacheDir, "import-input-${System.currentTimeMillis()}.bak")
+            // 上限 256MB：GCM 解密会把明文整块驻留内存，超大文件先挡住
+            val size = runCatching {
+                appContext.contentResolver.query(
+                    uri, arrayOf(android.provider.OpenableColumns.SIZE), null, null, null,
+                )?.use { cursor -> if (cursor.moveToFirst() && !cursor.isNull(0)) cursor.getLong(0) else 0L } ?: 0L
+            }.getOrDefault(0L)
+            if (size > 256L * 1024 * 1024) error("TOO_LARGE")
             try {
                 appContext.contentResolver.openInputStream(uri)?.use { input ->
                     temp.outputStream().use { input.copyTo(it) }
                 } ?: error("无法读取备份文件")
-                DataImport.import(appContext, AppDatabase.get(appContext), temp) { done, total ->
+                val report = DataImport.import(appContext, AppDatabase.get(appContext), temp) { done, total ->
                     // 进度只碰 ProgressBar 对象，不碰 Fragment/Activity，旋转也不会崩
                     main.post { bar.progress = if (total <= 0) 0 else done * 100 / total }
                 }
+                // 已登录：对账一次，把内容一致的记录映射到服务端 revision，减少导入后的冲突
+                if (top.qxwkstudio.travel.data.Prefs.syncToken.isNotBlank() &&
+                    top.qxwkstudio.travel.data.Prefs.networkAllowed
+                ) {
+                    runCatching {
+                        top.qxwkstudio.travel.data.SyncScheduler.runExclusive {
+                            top.qxwkstudio.travel.data.SyncEngine.reconcile(appContext, AppDatabase.get(appContext))
+                        }
+                    }
+                }
+                report
             } finally {
                 temp.delete()
             }
@@ -472,7 +491,11 @@ class MineFragment : Fragment() {
             dialog.dismiss()
             val report = result.getOrNull()
             if (report == null) {
-                context?.notify(R.string.import_failed, long = true)
+                val tooLarge = result.exceptionOrNull()?.message == "TOO_LARGE"
+                context?.notify(
+                    if (tooLarge) R.string.import_too_large else R.string.import_failed,
+                    long = true,
+                )
                 return@runIo
             }
             context?.notify(
@@ -579,7 +602,19 @@ class MineFragment : Fragment() {
                 .setTitle(getString(titleRes))
                 .setMessage(message)
                 .setPositiveButton(R.string.profile_update_go) { _, _ ->
-                    val url = info.downloadUrl
+                    // 默认下载基本包；sync 构建换成对应的 -sync 包
+                    val url = info.downloadUrl.let { base ->
+                        if (!BuildConfig.SYNC_OPTION) return@let base
+                        // 在扩展名前插入 -sync，保留可能的 query（?from=...）
+                        val queryIndex = base.indexOf('?')
+                        val path = if (queryIndex >= 0) base.substring(0, queryIndex) else base
+                        val query = if (queryIndex >= 0) base.substring(queryIndex) else ""
+                        if (path.endsWith(".apk", ignoreCase = true)) {
+                            path.dropLast(4) + "-sync.apk" + query
+                        } else {
+                            base
+                        }
+                    }
                     val safeUri = android.net.Uri.parse(url.ifBlank { "" })
                     if (url.isBlank() || safeUri.scheme !in setOf("https", "http")) {
                         requireContext().notify(R.string.profile_update_no_url, long = true)

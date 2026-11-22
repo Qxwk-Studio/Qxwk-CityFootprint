@@ -444,7 +444,7 @@ async function handleServer(request, env) {
     ).first();
   }
   return json({
-    server_name: row?.server_name || 'City Footprint',
+    server_name: row?.server_name || 'City Footprint 官方示例服务器',
     supports_photo_upload: !!row?.supports_photo_upload,
     supported_versions: supportedVersions(row?.supported_versions),
   });

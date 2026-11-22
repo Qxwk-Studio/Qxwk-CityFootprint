@@ -21,19 +21,6 @@ import top.qxwkstudio.travel.R
 internal fun showPhotoDialog(context: Context, paths: List<String>, startIndex: Int = 0) {
     val usable = paths.filter { it.isNotBlank() }
     if (usable.isEmpty()) return
-    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q && context is android.app.Activity) {
-        val granted = androidx.core.content.ContextCompat.checkSelfPermission(
-            context,
-            android.Manifest.permission.WRITE_EXTERNAL_STORAGE,
-        ) == android.content.pm.PackageManager.PERMISSION_GRANTED
-        if (!granted) {
-            androidx.core.app.ActivityCompat.requestPermissions(
-                context,
-                arrayOf(android.Manifest.permission.WRITE_EXTERNAL_STORAGE),
-                9001,
-            )
-        }
-    }
     val dialog = Dialog(context, android.R.style.Theme_Black_NoTitleBar_Fullscreen)
     val pageLabel = TextView(context).apply {
         textSize = 13f
@@ -68,6 +55,20 @@ internal fun showPhotoDialog(context: Context, paths: List<String>, startIndex: 
             setColor(0xCC1F2937.toInt())
         }
         setOnClickListener {
+            // Android 7–9：权限判断与申请必须在主线程，不能塞进下面的保存线程
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q &&
+                androidx.core.content.ContextCompat.checkSelfPermission(
+                    context, android.Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                ) != android.content.pm.PackageManager.PERMISSION_GRANTED
+            ) {
+                (context as? android.app.Activity)?.let { activity ->
+                    androidx.core.app.ActivityCompat.requestPermissions(
+                        activity, arrayOf(android.Manifest.permission.WRITE_EXTERNAL_STORAGE), 1001,
+                    )
+                }
+                Toast.makeText(context, R.string.photo_need_permission, Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
             val bitmap = pager.currentBitmap() ?: run {
                 Toast.makeText(context, R.string.photo_save_failed, Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
@@ -156,18 +157,6 @@ private fun savePagerBitmap(context: Context, bitmap: Bitmap): Boolean = runCatc
         values.put(MediaStore.Images.Media.IS_PENDING, 0)
         resolver.update(uri, values, null, null)
     } else {
-        // Android 7–9 写相册需要存储权限：先申请，用户授权后再点一次保存
-        val granted = androidx.core.content.ContextCompat.checkSelfPermission(
-            context, android.Manifest.permission.WRITE_EXTERNAL_STORAGE,
-        ) == android.content.pm.PackageManager.PERMISSION_GRANTED
-        if (!granted) {
-            (context as? android.app.Activity)?.let { activity ->
-                androidx.core.app.ActivityCompat.requestPermissions(
-                    activity, arrayOf(android.Manifest.permission.WRITE_EXTERNAL_STORAGE), 1001,
-                )
-            }
-            return false
-        }
         @Suppress("DEPRECATION")
         MediaStore.Images.Media.insertImage(context.contentResolver, bitmap, name, null) ?: return false
     }

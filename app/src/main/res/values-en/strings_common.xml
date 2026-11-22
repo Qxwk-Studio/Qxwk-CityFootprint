@@ -30,4 +30,5 @@
     <string name="renumber_failed">Renumber failed</string>
     <string name="menu_trips_actions">Renumber and multi-select</string>
     <string name="common_clear_search">Clear search</string>
+    <string name="photo_need_permission">Allow storage access first, then tap save again</string>
 </resources>

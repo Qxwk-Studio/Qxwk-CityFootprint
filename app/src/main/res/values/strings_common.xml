@@ -30,4 +30,5 @@
     <string name="renumber_failed">重新编号失败</string>
     <string name="menu_trips_actions">重新编号与多选</string>
     <string name="common_clear_search">清除搜索</string>
+    <string name="photo_need_permission">请先允许存储权限，再点保存</string>
 </resources>

@@ -41,17 +41,31 @@ object DataImport {
         val tempDir = File(context.cacheDir, "import-${System.currentTimeMillis()}").apply { mkdirs() }
         return try {
             val (flags, decrypted) = BackupCrypto.open(source)
-            val content = (if (flags and BackupCrypto.FLAG_DEFLATE != 0) InflaterInputStream(decrypted) else decrypted)
-                .use { stream -> BackupContainer.read(stream, tempDir, onProgress) }
+            val payload = if (flags and BackupCrypto.FLAG_DEFLATE != 0) InflaterInputStream(decrypted) else decrypted
+            val content = try {
+                val parsed = BackupContainer.read(payload, tempDir, onProgress)
+                // 容器读完 ≠ 密文读完：deflate 末尾不会继续读底层流。
+                // GCM 标签在流尾，这里必须严格读到 EOF —— 篡改/截断的异常不能被吞掉
+                val scratch = ByteArray(8 * 1024)
+                while (decrypted.read(scratch) != -1) {
+                    // drain cipher stream
+                }
+                parsed
+            } finally {
+                // 只对关闭做兜底：payload.close() 会连带关闭 decrypted
+                runCatching { payload.close() }
+            }
             require(content.manifest.optString("type") == "city-footprint-export") { "备份类型不匹配" }
             require(content.manifest.optInt("version", -1) == 1) { "备份数据版本不支持" }
 
             // 照片落盘并建立「包内条目 → 新绝对路径」映射
             val photoDir = File(context.filesDir, "photos").apply { mkdirs() }
             val entryToPath = HashMap<String, String>()
+            val copiedPhotos = mutableListOf<File>()
             content.photos.forEachIndexed { index, (entry, file) ->
                 val dest = File(photoDir, "import_${System.currentTimeMillis()}_${index}_${entry.substringAfterLast('/')}")
                 file.copyTo(dest, overwrite = true)
+                copiedPhotos += dest
                 entryToPath[entry] = dest.absolutePath
             }
             val photoMap = content.manifest.optJSONObject("photos") ?: JSONObject()
@@ -68,6 +82,7 @@ object DataImport {
             var tripsUpdated = 0
             var checkinsAdded = 0
             var checkinsUpdated = 0
+            try {
             db.withTransaction {
                 val cityLookup = CityStore.all(context).associateBy { it.name }
 
@@ -172,6 +187,11 @@ object DataImport {
                         checkinsUpdated++
                     }
                 }
+            }
+            } catch (error: Throwable) {
+                // 写库失败：本次拷入的照片也要删掉，别留成无主文件
+                copiedPhotos.forEach { runCatching { it.delete() } }
+                throw error
             }
 
             DataVersion.bump()
