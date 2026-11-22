@@ -8,9 +8,6 @@
     if (href === path) a.setAttribute('aria-current', 'page');
   });
 
-  const yearEl = document.getElementById('footprintYear');
-  if (yearEl) yearEl.textContent = String(new Date().getFullYear());
-
   const versionEl = document.getElementById('releaseVersion');
   const githubLink = document.getElementById('githubDownload');
   if (versionEl) {
@@ -41,8 +38,12 @@
   }
 
   function fmtTime(value) {
-    if (!value) return '—';
-    const n = Number(value);
+    if (value == null || value === '') return '—';
+    let n = Number(value);
+    if (!Number.isFinite(n) && typeof value === 'string') {
+      // SQLite datetime('now') 返回 "YYYY-MM-DD HH:MM:SS"（UTC），Number() 会得到 NaN
+      n = Date.parse(value.includes('T') ? value : value.replace(' ', 'T') + 'Z');
+    }
     if (!Number.isFinite(n)) return text(value);
     return new Date(n).toLocaleString('zh-CN', { hour12: false });
   }
@@ -51,9 +52,10 @@
     if (!value || Number(precision) === 3) return '时间不详';
     const d = new Date(Number(value));
     if (!Number.isFinite(d.getTime())) return '时间不详';
-    const y = d.getUTCFullYear();
-    const m = String(d.getUTCMonth() + 1).padStart(2, '0');
-    const day = String(d.getUTCDate()).padStart(2, '0');
+    // 与 App 一致：记录是 UTC 毫秒，展示按设备本地时区取年月日
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
     if (Number(precision) === 0) return String(y);
     if (Number(precision) === 1) return y + '-' + m;
     return y + '-' + m + '-' + day;
@@ -93,7 +95,8 @@
     try {
       const timeline = typeof trip?.timeline === 'string' ? JSON.parse(trip.timeline) : trip?.timeline;
       items = timeline?.items || [];
-      cities = items.filter((x) => x.type === 'visit').map((x) => x.text).filter(Boolean);
+      cities = items.filter((x) => x.type === 'visit').map((x) => x.text).filter(Boolean)
+        .filter((v, i, list) => list.indexOf(v) === i);
     } catch { /* 忽略时间线解析失败 */ }
     return rowsToHtml([
       ['行程 UUID', text(trip?.uuid)],
@@ -108,8 +111,9 @@
 
   function renderCheckin(data) {
     const checkin = data?.checkin || data;
-    const amount = Number(checkin?.amount_cents);
-    const days = Number(checkin?.stay_days);
+    // Number(null) === 0：必须区分「没填」与合法的 0
+    const amount = checkin?.amount_cents == null ? null : Number(checkin.amount_cents);
+    const days = checkin?.stay_days == null ? null : Number(checkin.stay_days);
     return rowsToHtml([
       ['打卡 UUID', text(checkin?.uuid)],
       ['城市', text(checkin?.city_name)],
@@ -119,8 +123,8 @@
       ['备注', text(checkin?.note)],
       ['同行人', text(checkin?.companions)],
       ['评分', checkin?.rating ? checkin.rating + ' 分' : '—'],
-      ['金额', Number.isFinite(amount) ? '¥' + (amount / 100).toFixed(2) : '—'],
-      ['停留天数', Number.isFinite(days) ? days + ' 天' : '—'],
+      ['金额', amount != null && Number.isFinite(amount) ? '¥' + (amount / 100).toFixed(2) : '—'],
+      ['停留天数', days != null && Number.isFinite(days) ? days + ' 天' : '—'],
     ]);
   }
 
@@ -130,7 +134,15 @@
     result.innerHTML = html;
   }
 
+  let lookupSeq = 0;
+  let lookupAbort = null;
+
   async function lookup(id) {
+    const seq = ++lookupSeq;
+    if (lookupAbort) lookupAbort.abort();
+    const controller = typeof AbortController === 'function' ? new AbortController() : null;
+    lookupAbort = controller;
+    const timer = controller ? window.setTimeout(() => controller.abort(), 10000) : 0;
     const pathName = recordType === 'user'
       ? 'users'
       : (recordType === 'checkin' ? 'checkins' : 'trips');
@@ -138,21 +150,29 @@
     button.disabled = true;
     show('empty', '查询中…');
     try {
-      const res = await fetch(url, { headers: { Accept: 'application/json' } });
+      const options = { headers: { Accept: 'application/json' } };
+      if (controller) options.signal = controller.signal;
+      const res = await fetch(url, options);
+      if (seq !== lookupSeq) return;
       if (!res.ok) {
         if (res.status === 404) return show('empty', '未找到对应记录。');
         if (res.status === 401 || res.status === 403) return show('error', '查询接口需要登录，当前页面暂未接入。');
         return show('error', '查询失败（HTTP ' + res.status + '）');
       }
       const data = await res.json();
+      if (seq !== lookupSeq) return;
       const html = recordType === 'user'
         ? renderUser(data)
         : (recordType === 'checkin' ? renderCheckin(data) : renderTrip(data));
       show('result', '<div class="result-card">' + html + '</div>');
-    } catch {
-      show('error', '查询服务暂不可用，请稍后重试。');
+    } catch (error) {
+      if (seq !== lookupSeq) return;
+      show('error', error?.name === 'AbortError'
+        ? '查询超时，请检查网络后重试。'
+        : '查询服务暂不可用，请稍后重试。');
     } finally {
-      button.disabled = false;
+      window.clearTimeout(timer);
+      if (seq === lookupSeq) button.disabled = false;
     }
   }
 
@@ -186,6 +206,21 @@
     setType(tab.dataset.recordType);
     const id = input.value.trim();
     if (id) lookup(id);
+  }));
+
+  // 方向键/Home/End 在 tab 间移动并激活
+  tabs.forEach((tab, index) => tab.addEventListener('keydown', (event) => {
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+    event.preventDefault();
+    const last = tabs.length - 1;
+    let next = index;
+    if (event.key === 'ArrowLeft') next = index === 0 ? last : index - 1;
+    else if (event.key === 'ArrowRight') next = index === last ? 0 : index + 1;
+    else if (event.key === 'Home') next = 0;
+    else next = last;
+    const target = tabs[next];
+    setType(target.dataset.recordType);
+    target.focus();
   }));
 
   form.addEventListener('submit', (event) => {
