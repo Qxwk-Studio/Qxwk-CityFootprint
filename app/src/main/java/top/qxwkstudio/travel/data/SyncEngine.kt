@@ -184,21 +184,91 @@ internal object SyncEngine {
 
     private suspend fun pull(context: Context, db: AppDatabase, token: String, server: String): Int {
         var cursor = Prefs.syncCursor
+        // 上次有冲突跳过的条目：从最小 seq 之前重拉一遍（已解决的会补上，未解决的会再次记录）
+        val skipped = Prefs.syncSkippedSeqs()
+        if (skipped.isNotEmpty()) cursor = minOf(cursor, skipped.min() - 1).coerceAtLeast(0L)
+        // 本轮仍被跳过的 seq：结束后只保留这些，已解决的不要再补拉
+        val stillSkipped = mutableSetOf<Long>()
         var count = 0
         repeat(20) {
             val response = SyncApi.pull(server, token, cursor).getOrThrow()
             response.changes.forEach { change ->
-                change.data?.let {
-                    applyRemote(context, db, change.entityType, it)
-                    count++
+                val data = change.data
+                if (data != null) {
+                    val uuid = data["uuid"]?.jsonPrimitive?.contentOrNull
+                    val blocked = uuid != null && Prefs.syncConflicts().any {
+                        it.entityType == change.entityType && it.uuid == uuid
+                    }
+                    if (blocked) {
+                        // 冲突未决：游标可以继续推进，但要记住 seq，解决后补拉，否则这条的新版本永远收不到
+                        stillSkipped += change.seq
+                        Prefs.addSyncSkipped(context, change.seq)
+                    } else {
+                        applyRemote(context, db, change.entityType, data)
+                        count++
+                    }
                 }
                 cursor = SyncRules.nextCursor(cursor, change.seq)
             }
             cursor = SyncRules.nextCursor(cursor, response.nextSince)
             Prefs.saveSyncCursor(context, cursor)
-            if (!response.hasMore || response.changes.isEmpty()) return count
+            if (!response.hasMore || response.changes.isEmpty()) {
+                replaceSkipped(context, stillSkipped)
+                return count
+            }
         }
+        replaceSkipped(context, stillSkipped)
         return count
+    }
+
+    /** 用本轮实际仍被跳过的 seq 覆盖持久化集合。 */
+    private fun replaceSkipped(context: Context, seqs: Set<Long>) {
+        Prefs.clearSyncSkipped(context)
+        seqs.forEach { Prefs.addSyncSkipped(context, it) }
+    }
+
+    /**
+     * 导入后的 revision 对账：拉一遍远端元数据，把「内容与服务端一致」的本地记录
+     * 标记成已同步（带上服务端 revision），避免导入后第一次同步逐条 revision 冲突。
+     *
+     * 不一致的记录不动：让后续 push 走冲突流程，由用户决定谁覆盖谁。
+     */
+    suspend fun reconcile(context: Context, db: AppDatabase): Int {
+        val server = Prefs.syncServer
+        val token = Prefs.syncToken
+        if (server.isBlank() || token.isBlank()) return 0
+        val remote = HashMap<String, Pair<Int, Long>>()
+        var since = 0L
+        var rounds = 0
+        while (rounds++ < 50) {
+            val response = SyncApi.pull(server, token, since).getOrThrow()
+            response.changes.forEach { change ->
+                val data = change.data ?: return@forEach
+                val uuid = data["uuid"]?.jsonPrimitive?.contentOrNull ?: return@forEach
+                val revision = data["revision"]?.jsonPrimitive?.intOrNull ?: 0
+                val modified = data["client_modified_at"]?.jsonPrimitive?.longOrNull ?: 0L
+                remote["${change.entityType}:$uuid"] = revision to modified
+                since = SyncRules.nextCursor(since, change.seq)
+            }
+            since = SyncRules.nextCursor(since, response.nextSince)
+            if (!response.hasMore || response.changes.isEmpty()) break
+        }
+        var matched = 0
+        db.trips().allForSync().forEach { trip ->
+            val entry = remote["trip:${trip.uuid}"] ?: return@forEach
+            if (trip.modifiedAt == entry.second) {
+                Prefs.saveSyncEntity("trip", trip.uuid, entry.first, entry.second)
+                matched++
+            }
+        }
+        db.checkins().allForSync().forEach { checkin ->
+            val entry = remote["checkin:${checkin.uuid}"] ?: return@forEach
+            if (checkin.modifiedAt == entry.second) {
+                Prefs.saveSyncEntity("checkin", checkin.uuid, entry.first, entry.second)
+                matched++
+            }
+        }
+        return matched
     }
 
     private suspend fun applyRemote(context: Context, db: AppDatabase, type: String, data: JsonObject, force: Boolean = false) {

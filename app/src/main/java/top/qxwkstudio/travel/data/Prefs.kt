@@ -42,6 +42,9 @@ object Prefs {
     private const val KEY_SYNC_SYNCED = "sync_synced"
     private const val KEY_SYNC_CURSOR = "sync_cursor"
 
+    /** 有未决冲突而跳过的远端 seq：下次 pull 从最小 seq 之前补拉。 */
+    private const val KEY_SYNC_SKIPPED = "sync_skipped"
+
     /** 当前 revision/synced/cursor 属于哪个账号；换账号时据此丢弃映射。 */
     private const val KEY_SYNC_OWNER = "sync_owner"
     private const val KEY_SYNC_LAST_AT = "sync_last_at"
@@ -242,6 +245,7 @@ object Prefs {
             .remove(KEY_SYNC_REVISIONS)
             .remove(KEY_SYNC_SYNCED)
             .remove(KEY_SYNC_CURSOR)
+            .remove(KEY_SYNC_SKIPPED)
             .remove(KEY_SYNC_LAST_AT)
             .remove(KEY_SYNC_LAST_PUSHED)
             .remove(KEY_SYNC_LAST_PULLED)
@@ -269,6 +273,25 @@ object Prefs {
             .putString(KEY_SYNC_LAST_ERROR, if (ok) "" else error)
             .putLong(KEY_SYNC_LAST_AT, syncLastAtValue)
             .commit()
+    }
+
+    fun syncSkippedSeqs(): List<Long> = runCatching {
+        val raw = appContext.getSharedPreferences(SP_NAME, Context.MODE_PRIVATE)
+            .getString(KEY_SYNC_SKIPPED, null) ?: return emptyList()
+        org.json.JSONArray(raw).let { array -> (0 until array.length()).map { array.getLong(it) } }
+    }.getOrDefault(emptyList())
+
+    fun addSyncSkipped(context: Context, seq: Long) {
+        if (seq <= 0) return
+        val current = syncSkippedSeqs().toMutableSet()
+        if (!current.add(seq)) return
+        appContext.getSharedPreferences(SP_NAME, Context.MODE_PRIVATE)
+            .edit().putString(KEY_SYNC_SKIPPED, org.json.JSONArray(current.toList()).toString()).commit()
+    }
+
+    fun clearSyncSkipped(context: Context) {
+        appContext.getSharedPreferences(SP_NAME, Context.MODE_PRIVATE)
+            .edit().remove(KEY_SYNC_SKIPPED).commit()
     }
 
     fun saveSyncCursor(context: Context, cursor: Long) {

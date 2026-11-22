@@ -460,10 +460,17 @@ class MineFragment : Fragment() {
                 appContext.contentResolver.openInputStream(uri)?.use { input ->
                     temp.outputStream().use { input.copyTo(it) }
                 } ?: error("无法读取备份文件")
-                DataImport.import(appContext, AppDatabase.get(appContext), temp) { done, total ->
+                val report = DataImport.import(appContext, AppDatabase.get(appContext), temp) { done, total ->
                     // 进度只碰 ProgressBar 对象，不碰 Fragment/Activity，旋转也不会崩
                     main.post { bar.progress = if (total <= 0) 0 else done * 100 / total }
                 }
+                // 已登录：对账一次，把内容一致的记录映射到服务端 revision，减少导入后的冲突
+                if (top.qxwkstudio.travel.data.Prefs.syncToken.isNotBlank()) {
+                    runCatching {
+                        top.qxwkstudio.travel.data.SyncEngine.reconcile(appContext, AppDatabase.get(appContext))
+                    }
+                }
+                report
             } finally {
                 temp.delete()
             }
