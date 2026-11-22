@@ -303,7 +303,7 @@ class TripsFragment : Fragment() {
         clear.setOnClickListener { input.setText("") }
         card.layoutParams = LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT,
-            dp(44),
+            dp(48),
         ).apply { bottomMargin = dp(10) }
         searchInputs += input
         return card
@@ -318,16 +318,18 @@ class TripsFragment : Fragment() {
         render()
     }
 
-    private var renderPosted = false
+    private var renderPending: Runnable? = null
 
+    /** 标准防抖：每次输入都取消上一次待执行的重排，只有停手 250ms 才真正渲染。 */
     private fun scheduleRender() {
-        if (renderPosted) return
         val binding = _binding ?: return
-        renderPosted = true
-        binding.pager.postDelayed({
-            renderPosted = false
+        renderPending?.let(binding.pager::removeCallbacks)
+        val action = Runnable {
+            renderPending = null
             if (_binding != null) render()
-        }, 250)
+        }
+        renderPending = action
+        binding.pager.postDelayed(action, 250)
     }
 
     private fun render() {

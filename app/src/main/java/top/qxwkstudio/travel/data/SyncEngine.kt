@@ -202,7 +202,6 @@ internal object SyncEngine {
                     if (blocked) {
                         // 冲突未决：游标可以继续推进，但要记住 seq，解决后补拉，否则这条的新版本永远收不到
                         stillSkipped += change.seq
-                        Prefs.addSyncSkipped(context, change.seq)
                     } else {
                         applyRemote(context, db, change.entityType, data)
                         count++
@@ -221,10 +220,9 @@ internal object SyncEngine {
         return count
     }
 
-    /** 用本轮实际仍被跳过的 seq 覆盖持久化集合。 */
+    /** 用本轮实际仍被跳过的 seq 覆盖持久化集合（一次写入）。 */
     private fun replaceSkipped(context: Context, seqs: Set<Long>) {
-        Prefs.clearSyncSkipped(context)
-        seqs.forEach { Prefs.addSyncSkipped(context, it) }
+        Prefs.replaceSyncSkipped(context, seqs)
     }
 
     /**
@@ -284,6 +282,8 @@ internal object SyncEngine {
         val remoteModified = data["client_modified_at"]?.jsonPrimitive?.longOrNull ?: 0L
         val localRevision = Prefs.syncRevision("trip", uuid)
         val remoteRevision = data["revision"]?.jsonPrimitive?.intOrNull ?: 0
+        // 比本地已知 revision 还旧的远端变更：可能是补拉时重放的旧版本，不能覆盖当前内容
+        if (!force && remoteRevision > 0 && remoteRevision < localRevision) return
         val deletedAt = data["deleted_at"]?.jsonPrimitive?.longOrNull
         val remoteRevives = deletedAt == null && existing?.deletedAt != null &&
             SyncRules.remoteWinsExistence(localRevision, remoteRevision, force)
@@ -348,6 +348,7 @@ internal object SyncEngine {
         val remoteModified = data["client_modified_at"]?.jsonPrimitive?.longOrNull ?: 0L
         val localRevision = Prefs.syncRevision("checkin", uuid)
         val remoteRevision = data["revision"]?.jsonPrimitive?.intOrNull ?: 0
+        if (!force && remoteRevision > 0 && remoteRevision < localRevision) return
         val deletedAt = data["deleted_at"]?.jsonPrimitive?.longOrNull
         val remoteRevives = deletedAt == null && existing?.deletedAt != null &&
             SyncRules.remoteWinsExistence(localRevision, remoteRevision, force)

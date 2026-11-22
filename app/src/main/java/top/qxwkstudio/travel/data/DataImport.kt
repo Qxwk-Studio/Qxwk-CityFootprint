@@ -42,7 +42,15 @@ object DataImport {
         return try {
             val (flags, decrypted) = BackupCrypto.open(source)
             val content = (if (flags and BackupCrypto.FLAG_DEFLATE != 0) InflaterInputStream(decrypted) else decrypted)
-                .use { stream -> BackupContainer.read(stream, tempDir, onProgress) }
+                .use { stream ->
+                    val parsed = BackupContainer.read(stream, tempDir, onProgress)
+                    // 容器读完不等于流读完：GCM 标签在流尾，必须读到 EOF 才会校验
+                    val scratch = ByteArray(8 * 1024)
+                    while (stream.read(scratch) != -1) {
+                        // drain
+                    }
+                    parsed
+                }
             require(content.manifest.optString("type") == "city-footprint-export") { "备份类型不匹配" }
             require(content.manifest.optInt("version", -1) == 1) { "备份数据版本不支持" }
 

@@ -21,19 +21,6 @@ import top.qxwkstudio.travel.R
 internal fun showPhotoDialog(context: Context, paths: List<String>, startIndex: Int = 0) {
     val usable = paths.filter { it.isNotBlank() }
     if (usable.isEmpty()) return
-    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q && context is android.app.Activity) {
-        val granted = androidx.core.content.ContextCompat.checkSelfPermission(
-            context,
-            android.Manifest.permission.WRITE_EXTERNAL_STORAGE,
-        ) == android.content.pm.PackageManager.PERMISSION_GRANTED
-        if (!granted) {
-            androidx.core.app.ActivityCompat.requestPermissions(
-                context,
-                arrayOf(android.Manifest.permission.WRITE_EXTERNAL_STORAGE),
-                9001,
-            )
-        }
-    }
     val dialog = Dialog(context, android.R.style.Theme_Black_NoTitleBar_Fullscreen)
     val pageLabel = TextView(context).apply {
         textSize = 13f

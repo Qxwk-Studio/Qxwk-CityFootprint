@@ -289,6 +289,13 @@ object Prefs {
             .edit().putString(KEY_SYNC_SKIPPED, org.json.JSONArray(current.toList()).toString()).commit()
     }
 
+    /** 一次性覆盖整个集合，避免 N+1 次 commit 与中途被杀导致集合丢失。 */
+    fun replaceSyncSkipped(context: Context, seqs: Collection<Long>) {
+        val array = org.json.JSONArray(seqs.sorted())
+        appContext.getSharedPreferences(SP_NAME, Context.MODE_PRIVATE)
+            .edit().putString(KEY_SYNC_SKIPPED, array.toString()).commit()
+    }
+
     fun clearSyncSkipped(context: Context) {
         appContext.getSharedPreferences(SP_NAME, Context.MODE_PRIVATE)
             .edit().remove(KEY_SYNC_SKIPPED).commit()

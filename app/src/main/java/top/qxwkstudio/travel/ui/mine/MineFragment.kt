@@ -465,9 +465,13 @@ class MineFragment : Fragment() {
                     main.post { bar.progress = if (total <= 0) 0 else done * 100 / total }
                 }
                 // 已登录：对账一次，把内容一致的记录映射到服务端 revision，减少导入后的冲突
-                if (top.qxwkstudio.travel.data.Prefs.syncToken.isNotBlank()) {
+                if (top.qxwkstudio.travel.data.Prefs.syncToken.isNotBlank() &&
+                    top.qxwkstudio.travel.data.Prefs.networkAllowed
+                ) {
                     runCatching {
-                        top.qxwkstudio.travel.data.SyncEngine.reconcile(appContext, AppDatabase.get(appContext))
+                        top.qxwkstudio.travel.data.SyncScheduler.runExclusive {
+                            top.qxwkstudio.travel.data.SyncEngine.reconcile(appContext, AppDatabase.get(appContext))
+                        }
                     }
                 }
                 report
