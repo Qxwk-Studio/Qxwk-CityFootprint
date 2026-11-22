@@ -56,6 +56,7 @@ class SyncActivity : LocalizedActivity() {
 
         binding.inputServer.setText(Prefs.syncServer)
         binding.btnFetchServer.setOnClickListener { loadServer(manual = true) }
+        binding.btnServerHistory.setOnClickListener { showServerHistory() }
         binding.btnLogin.setOnClickListener { login() }
         binding.btnLogout.setOnClickListener { confirmLogout() }
         binding.btnSyncNow.setOnClickListener { syncNow() }
@@ -129,6 +130,31 @@ class SyncActivity : LocalizedActivity() {
      * [manual] = 用户点「获取」：额外校验/保存地址、按钮转圈，失败文案是「获取失败」；
      * 自动拉（进页面、切回前台）不打断用户，失败只提示网络问题。两种情况共用同一段解析。
      */
+    /** 下拉：官方示例固定第一项，其后是最近保存过的服务器。 */
+    private fun showServerHistory() {
+        val example = top.qxwkstudio.travel.data.Prefs.EXAMPLE_SYNC_SERVER
+        val items = (listOf(example) + top.qxwkstudio.travel.data.Prefs.syncServerHistory()).distinct()
+        val labels = items.map { url ->
+            if (url == example) getString(R.string.sync_server_example) + " · " + url else url
+        }
+        val popup = android.widget.ListPopupWindow(this)
+        popup.anchorView = binding.btnServerHistory
+        val width = binding.inputServer.width.coerceAtLeast(
+            (220 * resources.displayMetrics.density).toInt(),
+        )
+        popup.width = width
+        popup.height = android.widget.ListPopupWindow.WRAP_CONTENT
+        popup.setAdapter(
+            android.widget.ArrayAdapter(this, android.R.layout.simple_list_item_1, labels),
+        )
+        popup.setOnItemClickListener { _, _, position, _ ->
+            binding.inputServer.setText(items[position])
+            binding.inputServer.setSelection(binding.inputServer.text.length)
+            popup.dismiss()
+        }
+        popup.show()
+    }
+
     private fun loadServer(manual: Boolean = false) {
         val server = normalizedServer()
         if (server == null) {

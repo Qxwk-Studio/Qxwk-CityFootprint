@@ -4,6 +4,12 @@ name: Build, Release and Publish Android APK
 # 触发后在 Actions 页面点「Run workflow」即可，不需要填写版本参数。
 on:
   workflow_dispatch:
+    inputs:
+      version_suffix:
+        description: '版本名后缀（可选），例如 -hotfix / -rc；拼在 release.json 的版本名之后'
+        required: false
+        default: ''
+        type: string
 
 permissions:
   contents: write
@@ -33,9 +39,9 @@ jobs:
     needs: backend-tests
     runs-on: ubuntu-latest
     outputs:
-      version_name: ${{ steps.release.outputs.version_name }}
+      version_name: ${{ steps.effective.outputs.name }}
       version_code: ${{ steps.release.outputs.version_code }}
-      tag: ${{ steps.release.outputs.tag }}
+      tag: ${{ steps.effective.outputs.tag }}
 
     steps:
       - name: Checkout
@@ -52,9 +58,19 @@ jobs:
         id: release
         run: node scripts/release-info.mjs
 
+      - name: Apply version suffix
+        id: effective
+        env:
+          SUFFIX: ${{ inputs.version_suffix }}
+          BASE: ${{ steps.release.outputs.version_name }}
+        run: |
+          NAME="${BASE}${SUFFIX}"
+          echo "name=$NAME" >> "$GITHUB_OUTPUT"
+          echo "tag=v$NAME" >> "$GITHUB_OUTPUT"
+
       - name: Ensure release tag does not exist
         env:
-          TAG: ${{ steps.release.outputs.tag }}
+          TAG: ${{ steps.effective.outputs.tag }}
         run: |
           git fetch --tags --force
           if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
@@ -93,45 +109,59 @@ jobs:
         run: ./gradlew testDebugUnitTest
         working-directory: app
 
-      - name: Build Release APK
+      - name: Build APK (standard, sync option hidden)
         env:
           CF_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           CF_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           CF_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        run: ./gradlew assembleRelease
+          VERSION_NAME: ${{ steps.effective.outputs.name }}
+        run: ./gradlew assembleRelease -PtestVersionName="$VERSION_NAME" -PsyncOption=false
         working-directory: app
 
-      - name: Rename APK
+      - name: Stage standard APK
         env:
-          VERSION_NAME: ${{ steps.release.outputs.version_name }}
+          VERSION_NAME: ${{ steps.effective.outputs.name }}
         run: |
-          DIR=app/build/outputs/apk/release
-          APK=$(ls "$DIR"/*-arm64-v8a-release.apk 2>/dev/null) || {
-            echo "::error::没找到已签名的 *-arm64-v8a-release.apk（签名没生效？），目录内容："
-            ls -l "$DIR"
-            exit 1
-          }
-          mv "$APK" "$DIR/CityFootprint-$VERSION_NAME.apk"
+          mkdir -p dist-out
+          cp app/build/outputs/apk/release/*-arm64-v8a-release.apk "dist-out/CityFootprint-$VERSION_NAME.apk"
 
-      - name: Verify signature and version
+      - name: Build APK (sync option enabled)
         env:
-          VERSION_NAME: ${{ steps.release.outputs.version_name }}
+          CF_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          CF_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          CF_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          VERSION_NAME: ${{ steps.effective.outputs.name }}
+        run: ./gradlew assembleRelease -PtestVersionName="$VERSION_NAME-sync" -PsyncOption=true
+        working-directory: app
+
+      - name: Stage sync APK
+        env:
+          VERSION_NAME: ${{ steps.effective.outputs.name }}
+        run: |
+          cp app/build/outputs/apk/release/*-arm64-v8a-release.apk "dist-out/CityFootprint-$VERSION_NAME-sync.apk"
+
+      - name: Verify signature and versions
+        env:
+          VERSION_NAME: ${{ steps.effective.outputs.name }}
           VERSION_CODE: ${{ steps.release.outputs.version_code }}
         run: |
-          APK="app/build/outputs/apk/release/CityFootprint-$VERSION_NAME.apk"
-          "$ANDROID_HOME/build-tools/34.0.0/apksigner" verify --print-certs "$APK"
-          "$ANDROID_HOME/build-tools/34.0.0/aapt2" dump badging "$APK" | grep -q "versionCode='$VERSION_CODE' versionName='$VERSION_NAME'"
+          for pair in "CityFootprint-$VERSION_NAME.apk:$VERSION_NAME" "CityFootprint-$VERSION_NAME-sync.apk:$VERSION_NAME-sync"; do
+            APK="dist-out/${pair%%:*}"
+            NAME="${pair##*:}"
+            "$ANDROID_HOME/build-tools/34.0.0/apksigner" verify --print-certs "$APK"
+            "$ANDROID_HOME/build-tools/34.0.0/aapt2" dump badging "$APK" | grep -q "versionCode='$VERSION_CODE' versionName='$NAME'"
+          done
 
-      - name: Upload APK
+      - name: Upload APKs
         uses: actions/upload-artifact@v4
         with:
-          name: CityFootprint-${{ steps.release.outputs.version_name }}
-          path: app/build/outputs/apk/release/CityFootprint-${{ steps.release.outputs.version_name }}.apk
+          name: CityFootprint-${{ steps.effective.outputs.name }}
+          path: dist-out/*.apk
 
       - name: Upload release notes
         uses: actions/upload-artifact@v4
         with:
-          name: release-notes-${{ steps.release.outputs.version_name }}
+          name: release-notes-${{ steps.effective.outputs.name }}
           path: release-notes.md
 
   release:
@@ -164,6 +194,7 @@ jobs:
         run: |
           gh release create "$TAG" \
             "dist/CityFootprint-$VERSION_NAME.apk" \
+            "dist/CityFootprint-$VERSION_NAME-sync.apk" \
             --repo "$GITHUB_REPOSITORY" \
             --target "$GITHUB_SHA" \
             --title "City Footprint $VERSION_NAME" \
@@ -172,6 +203,7 @@ jobs:
       - name: Generate D1 version SQL
         env:
           GITHUB_REPOSITORY: ${{ github.repository }}
+          RELEASE_VERSION_NAME: ${{ needs.build.outputs.version_name }}
         run: node scripts/d1-release-sql.mjs
 
       - name: Update D1 app_versions

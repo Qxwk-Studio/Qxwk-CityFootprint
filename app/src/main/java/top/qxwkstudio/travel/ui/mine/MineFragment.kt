@@ -93,7 +93,8 @@ class MineFragment : Fragment() {
 
     override fun onResume() {
         super.onResume()
-        val showSync = top.qxwkstudio.travel.data.Prefs.networkAllowed &&
+        val showSync = BuildConfig.SYNC_OPTION &&
+            top.qxwkstudio.travel.data.Prefs.networkAllowed &&
             top.qxwkstudio.travel.data.Prefs.syncEnabled
         _binding?.rowSync?.visibility = if (showSync) View.VISIBLE else View.GONE
         _binding?.dividerSync?.visibility = if (showSync) View.VISIBLE else View.GONE
@@ -590,7 +591,19 @@ class MineFragment : Fragment() {
                 .setTitle(getString(titleRes))
                 .setMessage(message)
                 .setPositiveButton(R.string.profile_update_go) { _, _ ->
-                    val url = info.downloadUrl
+                    // 默认下载基本包；sync 构建换成对应的 -sync 包
+                    val url = info.downloadUrl.let { base ->
+                        if (!BuildConfig.SYNC_OPTION) return@let base
+                        // 在扩展名前插入 -sync，保留可能的 query（?from=...）
+                        val queryIndex = base.indexOf('?')
+                        val path = if (queryIndex >= 0) base.substring(0, queryIndex) else base
+                        val query = if (queryIndex >= 0) base.substring(queryIndex) else ""
+                        if (path.endsWith(".apk", ignoreCase = true)) {
+                            path.dropLast(4) + "-sync.apk" + query
+                        } else {
+                            base
+                        }
+                    }
                     val safeUri = android.net.Uri.parse(url.ifBlank { "" })
                     if (url.isBlank() || safeUri.scheme !in setOf("https", "http")) {
                         requireContext().notify(R.string.profile_update_no_url, long = true)

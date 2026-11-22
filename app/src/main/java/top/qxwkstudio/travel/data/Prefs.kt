@@ -55,6 +55,12 @@ object Prefs {
     private const val KEY_SYNC_LAST_ERROR = "sync_last_error"
     private const val KEY_SYNC_CONFLICTS = "sync_conflicts"
     private const val KEY_SYNC_SERVER = "sync_server"
+
+    /** 服务器历史（最近使用在前），供同步页下拉选择。 */
+    private const val KEY_SYNC_SERVER_HISTORY = "sync_server_history"
+
+    /** 官方示例服务器；下拉菜单里固定排第一。 */
+    const val EXAMPLE_SYNC_SERVER = "https://api.travel.qxwkstudio.top"
     private const val KEY_LEGAL_ACCEPTED = "legal_accepted"
     const val DEFAULT_SYNC_SERVER = ""
 
@@ -191,9 +197,25 @@ object Prefs {
 
     fun saveSyncServer(context: Context, server: String) {
         syncServerValue = server.trim().trimEnd('/')
+        val history = (listOf(syncServerValue) + syncServerHistory().filter { it != syncServerValue })
+            .filter { it.isNotBlank() }
+            .take(MAX_SERVER_HISTORY)
         context.applicationContext.getSharedPreferences(SP_NAME, Context.MODE_PRIVATE)
-            .edit().putString(KEY_SYNC_SERVER, syncServerValue).commit()
+            .edit()
+            .putString(KEY_SYNC_SERVER, syncServerValue)
+            .putString(KEY_SYNC_SERVER_HISTORY, JSONArray(history).toString())
+            .commit()
     }
+
+    /** 最近使用过的服务器地址，最新的在前；官方示例不存进历史（下拉里固定提供）。 */
+    fun syncServerHistory(): List<String> = runCatching {
+        val raw = appContext.getSharedPreferences(SP_NAME, Context.MODE_PRIVATE)
+            .getString(KEY_SYNC_SERVER_HISTORY, null) ?: return emptyList()
+        val array = JSONArray(raw)
+        (0 until array.length()).mapNotNull { array.optString(it).takeIf(String::isNotBlank) }
+    }.getOrDefault(emptyList())
+
+    private const val MAX_SERVER_HISTORY = 6
 
     /** 切换/退出账号时清空同步元数据，避免把旧账号的本地数据推到新账号。 */
     fun syncConflicts(): List<SyncConflict> {
@@ -281,24 +303,11 @@ object Prefs {
         org.json.JSONArray(raw).let { array -> (0 until array.length()).map { array.getLong(it) } }
     }.getOrDefault(emptyList())
 
-    fun addSyncSkipped(context: Context, seq: Long) {
-        if (seq <= 0) return
-        val current = syncSkippedSeqs().toMutableSet()
-        if (!current.add(seq)) return
-        appContext.getSharedPreferences(SP_NAME, Context.MODE_PRIVATE)
-            .edit().putString(KEY_SYNC_SKIPPED, org.json.JSONArray(current.toList()).toString()).commit()
-    }
-
     /** 一次性覆盖整个集合，避免 N+1 次 commit 与中途被杀导致集合丢失。 */
     fun replaceSyncSkipped(context: Context, seqs: Collection<Long>) {
         val array = org.json.JSONArray(seqs.sorted())
         appContext.getSharedPreferences(SP_NAME, Context.MODE_PRIVATE)
             .edit().putString(KEY_SYNC_SKIPPED, array.toString()).commit()
-    }
-
-    fun clearSyncSkipped(context: Context) {
-        appContext.getSharedPreferences(SP_NAME, Context.MODE_PRIVATE)
-            .edit().remove(KEY_SYNC_SKIPPED).commit()
     }
 
     fun saveSyncCursor(context: Context, cursor: Long) {

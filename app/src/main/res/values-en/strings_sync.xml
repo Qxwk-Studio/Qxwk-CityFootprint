@@ -64,4 +64,6 @@ Remote: %2$s</string>
     <string name="sync_auto_note">When enabled, sync runs on app start and after trip or check-in changes.</string>
     <string name="sync_one_tap_login">One-tap sign in</string>
     <string name="sync_server_unknown">Unknown server</string>
+    <string name="sync_server_history">Choose server</string>
+    <string name="sync_server_example">Official example</string>
 </resources>

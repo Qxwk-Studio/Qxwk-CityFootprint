@@ -187,9 +187,10 @@ internal object SyncEngine {
         // 上次有冲突跳过的条目：从最小 seq 之前重拉一遍（已解决的会补上，未解决的会再次记录）
         val skipped = Prefs.syncSkippedSeqs()
         if (skipped.isNotEmpty()) cursor = minOf(cursor, skipped.min() - 1).coerceAtLeast(0L)
-        // 本轮仍被跳过的 seq：结束后只保留这些，已解决的不要再补拉
-        val stillSkipped = mutableSetOf<Long>()
+        // 从既有集合开始：本轮一条都没处理成功时，不能把上一轮的 skipped 清空
+        val stillSkipped = skipped.toMutableSet()
         var count = 0
+        try {
         repeat(20) {
             val response = SyncApi.pull(server, token, cursor).getOrThrow()
             response.changes.forEach { change ->
@@ -204,20 +205,24 @@ internal object SyncEngine {
                         stillSkipped += change.seq
                     } else {
                         applyRemote(context, db, change.entityType, data)
+                        // 这条已经成功应用，不再需要补拉
+                        stillSkipped.remove(change.seq)
                         count++
                     }
                 }
                 cursor = SyncRules.nextCursor(cursor, change.seq)
             }
             cursor = SyncRules.nextCursor(cursor, response.nextSince)
+            // 游标要越过 blocked 变更，跳过集合必须先落盘；否则这页之后抛异常就永远收不到它们
+            replaceSkipped(context, stillSkipped)
             Prefs.saveSyncCursor(context, cursor)
-            if (!response.hasMore || response.changes.isEmpty()) {
-                replaceSkipped(context, stillSkipped)
-                return count
-            }
+            if (!response.hasMore || response.changes.isEmpty()) return count
         }
-        replaceSkipped(context, stillSkipped)
         return count
+        } finally {
+            // 中途抛异常也保留已收集的跳过项
+            replaceSkipped(context, stillSkipped)
+        }
     }
 
     /** 用本轮实际仍被跳过的 seq 覆盖持久化集合（一次写入）。 */

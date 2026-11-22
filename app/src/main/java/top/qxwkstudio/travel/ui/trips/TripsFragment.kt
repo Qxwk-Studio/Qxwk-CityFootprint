@@ -168,6 +168,8 @@ class TripsFragment : Fragment() {
         // 页面和行缓存都绑在旧视图上（换主题/尺寸会整页重建），留着会被下一份视图复用成僵尸 View
         pages.clear()
         searchInputs.clear()
+        renderPending?.let { _binding?.pager?.removeCallbacks(it) }
+        renderPending = null
         invalidateRowCaches()
         _binding?.pager?.adapter = null
         _binding = null
@@ -315,6 +317,9 @@ class TripsFragment : Fragment() {
         searchInputs.forEach { it.setText("") }
         syncingQuery = false
         visibleCount.clear()
+        // 取消待执行的防抖重排，避免清空后又多铺一次
+        renderPending?.let { _binding?.pager?.removeCallbacks(it) }
+        renderPending = null
         render()
     }
 

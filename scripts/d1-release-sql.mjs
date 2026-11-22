@@ -6,7 +6,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 
 const release = JSON.parse(readFileSync('release.json', 'utf8'));
-const versionName = String(release.versionName || '').trim();
+const versionName = String(process.env.RELEASE_VERSION_NAME || release.versionName || '').trim();
 const versionCode = Number(release.versionCode);
 const importance = Number(release.importance ?? 0);
 const repo = process.env.GITHUB_REPOSITORY || '';
@@ -34,6 +34,7 @@ if (!notes) {
   process.exit(1);
 }
 
+// 默认下载基本包；sync 构建由客户端在 .apk 前加 -sync
 const downloadUrl = `https://github.com/${repo}/releases/download/${tag}/CityFootprint-${versionName}.apk`;
 const esc = (value) => String(value).replaceAll("'", "''");
 

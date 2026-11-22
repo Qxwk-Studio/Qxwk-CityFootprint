@@ -41,16 +41,20 @@ object DataImport {
         val tempDir = File(context.cacheDir, "import-${System.currentTimeMillis()}").apply { mkdirs() }
         return try {
             val (flags, decrypted) = BackupCrypto.open(source)
-            val content = (if (flags and BackupCrypto.FLAG_DEFLATE != 0) InflaterInputStream(decrypted) else decrypted)
-                .use { stream ->
-                    val parsed = BackupContainer.read(stream, tempDir, onProgress)
-                    // 容器读完不等于流读完：GCM 标签在流尾，必须读到 EOF 才会校验
-                    val scratch = ByteArray(8 * 1024)
-                    while (stream.read(scratch) != -1) {
-                        // drain
-                    }
-                    parsed
+            val payload = if (flags and BackupCrypto.FLAG_DEFLATE != 0) InflaterInputStream(decrypted) else decrypted
+            val content = try {
+                val parsed = BackupContainer.read(payload, tempDir, onProgress)
+                // 容器读完 ≠ 密文读完：deflate 末尾不会继续读底层流。
+                // GCM 标签在流尾，这里必须严格读到 EOF —— 篡改/截断的异常不能被吞掉
+                val scratch = ByteArray(8 * 1024)
+                while (decrypted.read(scratch) != -1) {
+                    // drain cipher stream
                 }
+                parsed
+            } finally {
+                // 只对关闭做兜底：payload.close() 会连带关闭 decrypted
+                runCatching { payload.close() }
+            }
             require(content.manifest.optString("type") == "city-footprint-export") { "备份类型不匹配" }
             require(content.manifest.optInt("version", -1) == 1) { "备份数据版本不支持" }
 
