@@ -457,6 +457,13 @@ class MineFragment : Fragment() {
         val main = android.os.Handler(android.os.Looper.getMainLooper())
         viewLifecycleOwner.lifecycleScope.runIo({
             val temp = java.io.File(appContext.cacheDir, "import-input-${System.currentTimeMillis()}.bak")
+            // 上限 256MB：GCM 解密会把明文整块驻留内存，超大文件先挡住
+            val size = runCatching {
+                appContext.contentResolver.query(
+                    uri, arrayOf(android.provider.OpenableColumns.SIZE), null, null, null,
+                )?.use { cursor -> if (cursor.moveToFirst() && !cursor.isNull(0)) cursor.getLong(0) else 0L } ?: 0L
+            }.getOrDefault(0L)
+            if (size > 256L * 1024 * 1024) error("TOO_LARGE")
             try {
                 appContext.contentResolver.openInputStream(uri)?.use { input ->
                     temp.outputStream().use { input.copyTo(it) }
@@ -484,7 +491,11 @@ class MineFragment : Fragment() {
             dialog.dismiss()
             val report = result.getOrNull()
             if (report == null) {
-                context?.notify(R.string.import_failed, long = true)
+                val tooLarge = result.exceptionOrNull()?.message == "TOO_LARGE"
+                context?.notify(
+                    if (tooLarge) R.string.import_too_large else R.string.import_failed,
+                    long = true,
+                )
                 return@runIo
             }
             context?.notify(

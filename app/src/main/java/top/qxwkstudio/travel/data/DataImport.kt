@@ -61,9 +61,11 @@ object DataImport {
             // 照片落盘并建立「包内条目 → 新绝对路径」映射
             val photoDir = File(context.filesDir, "photos").apply { mkdirs() }
             val entryToPath = HashMap<String, String>()
+            val copiedPhotos = mutableListOf<File>()
             content.photos.forEachIndexed { index, (entry, file) ->
                 val dest = File(photoDir, "import_${System.currentTimeMillis()}_${index}_${entry.substringAfterLast('/')}")
                 file.copyTo(dest, overwrite = true)
+                copiedPhotos += dest
                 entryToPath[entry] = dest.absolutePath
             }
             val photoMap = content.manifest.optJSONObject("photos") ?: JSONObject()
@@ -80,6 +82,7 @@ object DataImport {
             var tripsUpdated = 0
             var checkinsAdded = 0
             var checkinsUpdated = 0
+            try {
             db.withTransaction {
                 val cityLookup = CityStore.all(context).associateBy { it.name }
 
@@ -184,6 +187,11 @@ object DataImport {
                         checkinsUpdated++
                     }
                 }
+            }
+            } catch (error: Throwable) {
+                // 写库失败：本次拷入的照片也要删掉，别留成无主文件
+                copiedPhotos.forEach { runCatching { it.delete() } }
+                throw error
             }
 
             DataVersion.bump()
