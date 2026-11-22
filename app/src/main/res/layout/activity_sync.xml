@@ -82,40 +82,53 @@
                         android:src="@drawable/ic_link"
                         app:tint="@color/text_tertiary" />
 
-                    <EditText
-                        android:id="@+id/inputServer"
+                    <FrameLayout
                         android:layout_width="0dp"
                         android:layout_height="42dp"
                         android:layout_marginStart="10dp"
-                        android:layout_weight="1"
-                        android:background="@drawable/bg_input_box"
-                        android:hint="https://api.example.com"
-                        android:inputType="textUri"
-                        android:maxLines="1"
-                        android:paddingStart="12dp"
-                        android:paddingEnd="12dp"
-                        android:textColor="@color/fg"
-                        android:textColorHint="@color/text_tertiary"
-                        android:textSize="13sp" />
+                        android:layout_weight="1">
+
+                        <EditText
+                            android:id="@+id/inputServer"
+                            android:layout_width="match_parent"
+                            android:layout_height="42dp"
+                            android:background="@drawable/bg_input_box"
+                            android:hint="https://api.example.com"
+                            android:inputType="textUri"
+                            android:maxLines="1"
+                            android:paddingStart="12dp"
+                            android:paddingEnd="36dp"
+                            android:textColor="@color/fg"
+                            android:textColorHint="@color/text_tertiary"
+                            android:textSize="13sp" />
+
+                        <ImageView
+                            android:id="@+id/btnServerHistory"
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:layout_gravity="end|center_vertical"
+                            android:layout_marginEnd="8dp"
+                            android:background="?attr/selectableItemBackgroundBorderless"
+                            android:contentDescription="@string/sync_server_history"
+                            android:padding="3dp"
+                            android:src="@drawable/ic_arrow_down"
+                            android:tint="@color/text_tertiary" />
+                    </FrameLayout>
 
                     <Button
                         android:id="@+id/btnFetchServer"
                         style="?attr/materialButtonOutlinedStyle"
                         android:layout_width="wrap_content"
-                        android:layout_height="46dp"
-                        android:layout_marginStart="8dp"
-                        android:minWidth="64dp"
-                        android:text="@string/sync_server_fetch" />
-
-                    <ImageButton
-                        android:id="@+id/btnServerHistory"
-                        android:layout_width="40dp"
-                        android:layout_height="40dp"
-                        android:layout_marginStart="4dp"
-                        android:background="?attr/selectableItemBackgroundBorderless"
-                        android:contentDescription="@string/sync_server_history"
-                        android:src="@drawable/ic_arrow_down"
-                        android:tint="@color/text_tertiary" />
+                        android:layout_height="38dp"
+                        android:layout_marginStart="6dp"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
+                        android:minHeight="0dp"
+                        android:minWidth="0dp"
+                        android:paddingStart="12dp"
+                        android:paddingEnd="12dp"
+                        android:text="@string/sync_server_fetch"
+                        android:textSize="12sp" />
                 </LinearLayout>
 
                 <LinearLayout
