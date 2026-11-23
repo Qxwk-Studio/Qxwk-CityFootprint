@@ -39,7 +39,7 @@ class CheckinShareActivity : ShareActivityBase() {
     private var dateStyle = DateStyle.DOT
     private var lunarStyle = 0
     private var noteColor = InkColor.BLACK
-    private var stampStyle = StampStyle.ROUND
+    private var stampStyle = StampStyle.PERFORATED
     private var stampColor = InkColor.ACCENT
     private var paperColor = PaperColor.CREAM
 
@@ -279,11 +279,11 @@ class CheckinShareActivity : ShareActivityBase() {
                 chips(
                     labelRes = R.string.share_label_style,
                     options = listOf(
+                        getString(R.string.share_stamp_perforated),
                         getString(R.string.share_stamp_round),
                         getString(R.string.share_stamp_double),
                         getString(R.string.share_stamp_square),
                         getString(R.string.share_stamp_oval),
-                        getString(R.string.share_stamp_perforated),
                     ),
                     selected = stampStyle.ordinal,
                 ) { index ->

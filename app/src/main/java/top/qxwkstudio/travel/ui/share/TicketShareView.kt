@@ -36,7 +36,7 @@ internal class TicketShareView(context: Context) : ShareCanvas(context) {
     var noteColor = InkColor.BLACK
 
     var stampColor = InkColor.ACCENT
-    var stampStyle = StampStyle.ROUND
+    var stampStyle = StampStyle.PERFORATED
 
     /** 票根纸底色（第一张「背景」卡可调）。 */
     var paperColor = PaperColor.CREAM

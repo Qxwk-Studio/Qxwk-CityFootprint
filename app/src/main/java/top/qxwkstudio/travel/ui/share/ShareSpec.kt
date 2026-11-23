@@ -39,7 +39,7 @@ enum class InkColor {
 }
 
 /** 邮戳样式。 */
-enum class StampStyle { ROUND, DOUBLE, SQUARE, OVAL, PERFORATED }
+enum class StampStyle { PERFORATED, ROUND, DOUBLE, SQUARE, OVAL }
 
 /** 票根 / 海报的纸底色：都是浅色，保证墨字与印章始终看得清。 */
 enum class PaperColor {
