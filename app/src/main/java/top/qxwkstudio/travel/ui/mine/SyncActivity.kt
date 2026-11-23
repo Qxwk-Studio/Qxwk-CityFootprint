@@ -167,7 +167,11 @@ class SyncActivity : LocalizedActivity() {
                     android.text.SpannableString("$prefix  $url").apply {
                         setSpan(
                             android.text.style.ForegroundColorSpan(
-                                androidx.core.content.ContextCompat.getColor(this@SyncActivity, R.color.accent),
+                                com.google.android.material.color.MaterialColors.getColor(
+                                    this@SyncActivity,
+                                    com.google.android.material.R.attr.colorPrimary,
+                                    0,
+                                ),
                             ),
                             0,
                             prefix.length,
