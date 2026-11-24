@@ -146,6 +146,7 @@ class CheckinEditActivity : LocalizedActivity() {
         b.btnAddPhoto.setOnClickListener {
             if (photoPaths.size < 3) photoPicker.launch("image/*")
         }
+        b.btnCancel.setOnClickListener { confirmDiscard() }
         b.btnSave.setOnClickListener { save() }
         b.topBar.btnSaveIcon.visibility = View.VISIBLE
         b.topBar.btnSaveIcon.setOnClickListener { save() }
